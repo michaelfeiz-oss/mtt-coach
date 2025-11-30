@@ -2,12 +2,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, Edit } from "lucide-react";
 import { useLocation } from "wouter";
 import { QuickAddHand } from "@/components/QuickAddHand";
+import { QuickEditHand } from "@/components/QuickEditHand";
+import { useState } from "react";
 
 export default function HandsList() {
   const [, setLocation] = useLocation();
+  const [editingHandId, setEditingHandId] = useState<number | null>(null);
 
   const { data: hands, isLoading } = trpc.hands.getByUser.useQuery({ limit: 50 });
 
@@ -51,10 +54,9 @@ export default function HandsList() {
                   const tags = hand.tagsJson ? JSON.parse(hand.tagsJson) : [];
                   
                   return (
-                    <button
+                    <div
                       key={hand.id}
-                      onClick={() => setLocation(`/hands/${hand.id}`)}
-                      className="w-full text-left p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all"
+                      className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -106,9 +108,27 @@ export default function HandsList() {
                           )}
                         </div>
 
-                        <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingHandId(hand.id);
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <button
+                            onClick={() => setLocation(`/hands/${hand.id}`)}
+                            className="p-1 hover:bg-slate-100 rounded"
+                          >
+                            <ChevronRight className="h-5 w-5 text-slate-400" />
+                          </button>
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -116,6 +136,14 @@ export default function HandsList() {
           </CardContent>
         </Card>
       </main>
+
+      {editingHandId && (
+        <QuickEditHand
+          handId={editingHandId}
+          open={!!editingHandId}
+          onOpenChange={(open) => !open && setEditingHandId(null)}
+        />
+      )}
     </div>
   );
 }
