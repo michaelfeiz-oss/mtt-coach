@@ -29,6 +29,50 @@ export interface DailyFocus {
 }
 
 /**
+ * Get default focus areas for a category
+ */
+function getDefaultFocusAreasForCategory(category: string): string[] {
+  switch (category) {
+    case "PREFLOP":
+      return [
+        "Opening ranges by position",
+        "3bet and call ranges",
+        "Preflop sizing",
+      ];
+    case "POSTFLOP":
+      return [
+        "Flop strategy and board reading",
+        "Turn and river play",
+        "Bet sizing and frequency",
+      ];
+    case "ICM":
+      return [
+        "Short stack push/fold",
+        "Final table bubble play",
+        "ICM pressure spots",
+      ];
+    case "MENTAL":
+      return [
+        "Tilt recognition and control",
+        "Focus and decision quality",
+        "Emotional regulation",
+      ];
+    case "EXPLOIT":
+      return [
+        "Population tendencies",
+        "Player type identification",
+        "Exploitative adjustments",
+      ];
+    default:
+      return [
+        "Review fundamentals",
+        "Study theory",
+        "Practice scenarios",
+      ];
+  }
+}
+
+/**
  * Map leak categories to study types
  */
 const LEAK_TO_STUDY_TYPE: Record<string, StudyType[]> = {
@@ -46,24 +90,30 @@ function generateFocusAreas(leak: LeakData): string[] {
   const { name, category } = leak;
   const areas: string[] = [];
 
+  // Safety check
+  if (!name) {
+    return getDefaultFocusAreasForCategory(category);
+  }
+
   // Generate specific actionable focus areas based on leak patterns
-  if (name.toLowerCase().includes("bb") || name.toLowerCase().includes("big blind")) {
+  const nameLower = name.toLowerCase();
+  if (nameLower.includes("bb") || nameLower.includes("big blind")) {
     areas.push("BB defense ranges vs different positions");
     areas.push("BB 3bet and call frequencies");
     areas.push("BB postflop play in single-raised pots");
-  } else if (name.toLowerCase().includes("3bet") || name.toLowerCase().includes("3-bet")) {
+  } else if (nameLower.includes("3bet") || nameLower.includes("3-bet")) {
     areas.push("3bet sizing and frequency by position");
     areas.push("Playing 3bet pots in and out of position");
     areas.push("4bet and fold ranges");
-  } else if (name.toLowerCase().includes("turn")) {
+  } else if (nameLower.includes("turn")) {
     areas.push("Turn barrel frequency and sizing");
     areas.push("Turn check-back ranges");
     areas.push("Turn defense vs aggression");
-  } else if (name.toLowerCase().includes("river")) {
+  } else if (nameLower.includes("river")) {
     areas.push("River value bet sizing");
     areas.push("River bluff frequency");
     areas.push("River call/fold decisions");
-  } else if (name.toLowerCase().includes("cbet") || name.toLowerCase().includes("c-bet")) {
+  } else if (nameLower.includes("cbet") || nameLower.includes("c-bet")) {
     areas.push("Flop continuation bet frequency");
     areas.push("Board texture analysis");
     areas.push("Range advantage recognition");
@@ -242,6 +292,8 @@ export function getSuggestedDeepDiveTopic(topLeaks: LeakData[]): string | null {
   if (topLeaks.length === 0) return null;
 
   const primaryLeak = topLeaks[0]!;
+  if (!primaryLeak.name) return null;
+  
   const name = primaryLeak.name.toLowerCase();
 
   // Map leak names to deep dive topics

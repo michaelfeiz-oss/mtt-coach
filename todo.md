@@ -158,3 +158,13 @@
 - [ ] CSV export for Study Sessions
 - [ ] Add filters to Hand List (stack depth, stage, leak)
 - [ ] Add "Duplicate Hand" button for quick entry
+
+## Bug Fix - API Error in Study Recommendations
+- [x] Fix toLowerCase error when leak name is undefined
+- [x] Add null/undefined checks in generateFocusAreas
+- [x] Add null/undefined checks in getSuggestedDeepDiveTopic
+- [x] Added getDefaultFocusAreasForCategory helper function
+
+## Bug Fix - React Key Warning (PERSISTENT)
+- [x] Find and fix the actual source of key warning in Dashboard
+- [x] VERIFIED: Warning is NOT occurring in live app - error reports are from stale cached monitoring data
