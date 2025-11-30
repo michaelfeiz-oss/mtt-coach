@@ -13,6 +13,8 @@ export default function Dashboard() {
   const { data: currentWeek, isLoading: weekLoading } = trpc.weeks.getCurrent.useQuery();
 
   const { data: todayPlan } = trpc.studyPlan.getToday.useQuery();
+  
+  const { data: dailyFocus } = trpc.studyPlan.getDailyFocus.useQuery();
 
   const { data: dashboardStats, isLoading: statsLoading } = trpc.dashboard.getStats.useQuery(
     { weekId: currentWeek?.id ?? 0 },
@@ -78,6 +80,31 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-slate-700">{todayPlan.description}</p>
+              
+              {/* Show today's focus areas if available */}
+              {dailyFocus && dailyFocus.recommendations && (
+                <>
+                  {(() => {
+                    const todayRec = dailyFocus.recommendations.find(r => r.type === todayPlan.type);
+                    if (todayRec && todayRec.priority !== "LOW") {
+                      return (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                          <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">Today's Focus</p>
+                          <p className="text-sm text-slate-700">{todayRec.reason}</p>
+                          {todayRec.focusAreas.length > 0 && (
+                            <ul className="text-xs text-slate-600 space-y-1 ml-4">
+                              {todayRec.focusAreas.map((area, idx) => (
+                                <li key={idx} className="list-disc">{area}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </>
+              )}
               <div className="flex gap-2">
                 {!todayPlan.completed && (
                   <Button

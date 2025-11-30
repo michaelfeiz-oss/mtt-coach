@@ -12,6 +12,8 @@ export default function StudyPlan() {
   const { data: weekPlan, isLoading } = trpc.studyPlan.getWeek.useQuery({
     date: selectedDate,
   });
+  
+  const { data: dailyFocus } = trpc.studyPlan.getDailyFocus.useQuery();
 
   if (isLoading) {
     return (
@@ -70,6 +72,48 @@ export default function StudyPlan() {
           </p>
         </div>
       </div>
+
+      {/* Daily Focus Section */}
+      {dailyFocus && (
+        <div className="container max-w-2xl px-4 pt-6">
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">This Week's Focus</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {dailyFocus.primaryLeak ? (
+                <>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-1">Primary Leak:</p>
+                    <p className="text-base font-semibold text-blue-900">{dailyFocus.primaryLeak}</p>
+                  </div>
+                  {dailyFocus.secondaryLeaks.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 mb-1">Also Working On:</p>
+                      <p className="text-sm text-slate-600">{dailyFocus.secondaryLeaks.join(", ")}</p>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-blue-200">
+                    <p className="text-sm font-medium text-slate-700 mb-1">Weekly Goal:</p>
+                    <p className="text-sm text-slate-600">{dailyFocus.weeklyGoal}</p>
+                  </div>
+                  {dailyFocus.suggestedDeepDiveTopic && (
+                    <div className="pt-2 border-t border-blue-200">
+                      <p className="text-sm font-medium text-slate-700 mb-1">Suggested Deep Dive Topic:</p>
+                      <p className="text-sm font-semibold text-blue-800">{dailyFocus.suggestedDeepDiveTopic}</p>
+                      <p className="text-xs text-slate-500 mt-1">Based on your top leak - will appear on Day 5</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-slate-600">
+                  No leaks tracked yet. Start logging hands to get personalized recommendations!
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Study Plan Days */}
       <div className="container max-w-2xl px-4 py-6 space-y-4">

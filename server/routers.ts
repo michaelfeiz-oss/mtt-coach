@@ -6,6 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { generateWeekPlan, getTodayPlan } from "./studyPlan";
 import { getCompletedPlanSlots } from "./studyPlanDb";
+import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveTopic, type LeakData } from "./studyRecommendations";
 
 // Hardcoded user ID for single-user app
 const HARDCODED_USER_ID = 1;
@@ -316,6 +317,29 @@ export const appRouter = router({
 
   // Study Plan
   studyPlan: router({
+    getDailyFocus: publicProcedure.query(async () => {
+      // Get top leaks from current week
+      const topLeaks = await db.getTopLeaks(HARDCODED_USER_ID, 5);
+      
+      // Transform to LeakData format
+      const leakData: LeakData[] = topLeaks.map(leak => ({
+        id: leak.id,
+        name: leak.name,
+        category: leak.category,
+        handsLinkedCount: leak.handCount,
+      }));
+      
+      // Generate daily focus
+      const dailyFocus = generateDailyFocus(leakData);
+      
+      // Get suggested deep dive topic
+      const suggestedTopic = getSuggestedDeepDiveTopic(leakData);
+      
+      return {
+        ...dailyFocus,
+        suggestedDeepDiveTopic: suggestedTopic,
+      };
+    }),
     getWeek: publicProcedure
       .input(z.object({ date: z.date().optional() }))
       .query(async ({ input }) => {

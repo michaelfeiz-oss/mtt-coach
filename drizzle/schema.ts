@@ -36,6 +36,7 @@ export const weeks = mysqlTable("weeks", {
   targetTournaments: int("targetTournaments").default(1).notNull(),
   summaryNotes: text("summaryNotes"),
   score: int("score"), // 0-10 subjective rating
+  weeklyFocusLeak: varchar("weeklyFocusLeak", { length: 255 }), // Current week's focus area based on top leak
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   userWeekIdx: index("user_week_idx").on(table.userId, table.startDate),

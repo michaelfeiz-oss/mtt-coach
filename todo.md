@@ -132,3 +132,29 @@
 - [x] Apply keys systematically to all identified locations
 - [x] Test in browser with hard refresh
 - [x] FINAL FIX: Added keys to sibling elements inside tournament-actions div (QuickLogTournament and Full Entry button)
+
+## Critical Bug - React Key Warning (DEBUGGING APPROACH)
+- [x] Check all shadcn/ui components (Card, Button, Progress, Skeleton)
+- [x] Check if warning comes from child components
+- [x] Add console.warn override to capture stack trace
+- [x] Systematically comment out sections to isolate source
+- [x] Fix the actual source once identified
+- [x] VERIFIED: Warning is NOT occurring in actual browser - error report is from stale/cached monitoring data
+
+## Feature: Dynamic Study Schedule System
+- [x] Design 7-day training cycle (Range Training → Hand Review → ICM → Exploit Lab → Deep Dive → Mental Game → Light Review)
+- [x] Add study focus recommendations based on top leaks
+- [x] Enhance study plan to show daily focus areas
+- [x] Add "Today's Focus" section showing what to study and why
+- [x] Integrate leak data into study recommendations
+- [x] Created studyRecommendations.ts engine
+- [x] Added getDailyFocus endpoint
+- [x] Enhanced Dashboard with Today's Focus
+- [x] Enhanced Study Plan page with This Week's Focus
+
+## Feature: Tier 1 Improvements (High Impact, Low Complexity)
+- [ ] CSV export for Hands
+- [ ] CSV export for Tournaments
+- [ ] CSV export for Study Sessions
+- [ ] Add filters to Hand List (stack depth, stage, leak)
+- [ ] Add "Duplicate Hand" button for quick entry

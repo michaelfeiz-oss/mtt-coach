@@ -1,0 +1,1 @@
+ALTER TABLE `weeks` ADD `weeklyFocusLeak` varchar(255);

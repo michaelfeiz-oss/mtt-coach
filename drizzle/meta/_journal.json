@@ -15,6 +15,13 @@
       "when": 1764485918858,
       "tag": "0001_lumpy_ezekiel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1764536290092,
+      "tag": "0002_rapid_dark_beast",
+      "breakpoints": true
     }
   ]
 }
