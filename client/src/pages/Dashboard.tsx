@@ -127,7 +127,7 @@ export default function Dashboard() {
                 <Skeleton key="skeleton-2" className="h-16 w-full" />
               </div>
             ) : (
-              <>
+              <div className="space-y-4">
                 {/* Study Hours */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -161,7 +161,7 @@ export default function Dashboard() {
                     ${dashboardStats?.netResult.toFixed(0)}
                   </span>
                 </div>
-              </>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -89,3 +89,6 @@
 
 ## Bug Fixes
 - [x] Fix missing key prop error in Dashboard component lists
+
+## Bug Fixes - Urgent
+- [x] Fix persistent missing key prop error in Dashboard (line 4985 in reconcileChildrenArray)
