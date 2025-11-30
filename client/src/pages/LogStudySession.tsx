@@ -9,6 +9,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { SessionTimer } from "@/components/SessionTimer";
 
 const SESSION_TYPES = [
   { value: "RANGE_TRAINING", label: "Range Training" },
@@ -33,7 +34,7 @@ export default function LogStudySession() {
 
   const [formData, setFormData] = useState({
     type: typeFromUrl,
-    durationMinutes: "",
+    durationMinutes: "0",
     resourceUsed: "",
     handsReviewedCount: "0",
     drillsCompletedCount: "0",
@@ -125,7 +126,16 @@ export default function LogStudySession() {
                 </Select>
               </div>
 
-              {/* Duration */}
+              {/* Session Timer */}
+              <div className="space-y-2">
+                <Label>Session Timer</Label>
+                <SessionTimer
+                  onDurationChange={(minutes) => setFormData({ ...formData, durationMinutes: minutes.toString() })}
+                  initialMinutes={parseInt(formData.durationMinutes) || 0}
+                />
+              </div>
+
+              {/* Duration (manual override) */}
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration (minutes) *</Label>
                 <Input
@@ -137,6 +147,7 @@ export default function LogStudySession() {
                   onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
                   required
                 />
+                <p className="text-xs text-slate-500">Auto-filled by timer, or enter manually</p>
               </div>
 
               {/* Resource Used */}
