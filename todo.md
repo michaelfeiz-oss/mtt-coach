@@ -106,3 +106,11 @@
 - [x] Examine the "Today's Study" card conditional rendering
 - [x] Look for any implicit arrays created by conditional logic
 - [x] Fixed: Added key props to buttons in Today's Study card (conditional rendering creates implicit array)
+
+## Critical Bug - React Key Warning (FINAL FIX)
+- [x] Systematically audit ALL .map() calls in Dashboard
+- [x] Check conditional renderings creating implicit arrays
+- [x] Add keys using stable identifiers (id, planSlot, etc)
+- [x] Never use array index as key
+- [x] Verify in browser console
+- [x] Fixed: Added keys to action buttons grid children (log-session-btn, tournament-actions, review-hands-btn)
