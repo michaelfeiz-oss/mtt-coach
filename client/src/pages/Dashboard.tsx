@@ -152,7 +152,11 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {tournaments.slice(0, 4).map((t) => (
-                  <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                  <button
+                    key={t.id}
+                    onClick={() => setLocation(`/tournaments/${t.id}`)}
+                    className="w-full flex justify-between items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 hover:shadow-sm transition-all text-left"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{t.name || t.venue}</p>
                       <p className="text-xs text-slate-600">
@@ -168,7 +172,7 @@ export default function Dashboard() {
                         {t.netResult >= 0 ? "+" : ""}${t.netResult.toFixed(0)}
                       </p>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -193,7 +197,11 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {topLeaks.map((leak: any) => (
-                  <div key={leak.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
+                  <button
+                    key={leak.id}
+                    onClick={() => setLocation(`/leaks/${leak.id}`)}
+                    className="w-full flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 hover:shadow-sm transition-all text-left"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{leak.name}</p>
                       <p className="text-xs text-slate-600 mt-1">{leak.category}</p>
@@ -201,7 +209,7 @@ export default function Dashboard() {
                     <div className="text-xs text-slate-500">
                       {leak.handCount || 0} hands
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

@@ -51,3 +51,8 @@
 - [x] Quick Log Tournament button with minimal fields (buy-in, re-entries, position, prize, notes)
 - [x] Leak Detail Screen with linked hands list and filtering
 - [x] Mark leak as FIXED functionality
+
+## Phase 1.5 - Additional Refinements
+- [x] Make leak badges clickable on dashboard (navigate to leak detail page)
+- [x] Add autocomplete for hand entry (position dropdown, stack presets, board picker)
+- [x] Build tournament detail view (hands list, mistake summary, net result)

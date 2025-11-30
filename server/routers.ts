@@ -89,7 +89,7 @@ export const appRouter = router({
     getByWeek: publicProcedure
       .input(z.object({ weekId: z.number() }))
       .query(async ({ input }) => {
-        return db.getStudySessionsByWeek(input.weekId);
+        return db.getTournamentsByWeek(input.weekId);
       }),
   }),
 
@@ -139,6 +139,11 @@ export const appRouter = router({
       .input(z.object({ weekId: z.number(), limit: z.number().default(10) }))
       .query(async ({ input }) => {
         return db.getTournamentsByWeek(input.weekId);
+      }),
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return db.getTournamentById(input.id);
       }),
   }),
 
@@ -236,6 +241,11 @@ export const appRouter = router({
       .input(z.object({ handId: z.number(), leakId: z.number() }))
       .mutation(async ({ input }) => {
         return db.unlinkHandFromLeak(input.handId, input.leakId);
+      }),
+    getByTournament: publicProcedure
+      .input(z.object({ tournamentId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getHandsByTournament(input.tournamentId);
       }),
   }),
 

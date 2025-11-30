@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
+import { QuickAddHand } from "@/components/QuickAddHand";
 
 export default function HandsList() {
   const [, setLocation] = useLocation();
@@ -14,10 +15,13 @@ export default function HandsList() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="container py-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <QuickAddHand />
+          </div>
         </div>
       </header>
 
