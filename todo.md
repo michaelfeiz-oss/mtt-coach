@@ -122,3 +122,13 @@
 - [x] Look for fragments, conditionals, and any JSX creating arrays
 - [x] Apply fix and verify in browser
 - [x] Fixed: Removed Fragment in CardDescription date range - was creating implicit array of text nodes
+
+## Critical Bug - React Key Warning (EXHAUSTIVE AUDIT)
+- [x] Read ENTIRE Dashboard.tsx file (all 280+ lines)
+- [x] Catalog EVERY .map() call
+- [x] Catalog EVERY conditional rendering
+- [x] Catalog EVERY Fragment
+- [x] Catalog EVERY set of sibling JSX elements
+- [x] Apply keys systematically to all identified locations
+- [x] Test in browser with hard refresh
+- [x] FINAL FIX: Added keys to sibling elements inside tournament-actions div (QuickLogTournament and Full Entry button)

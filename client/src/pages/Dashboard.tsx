@@ -176,8 +176,9 @@ export default function Dashboard() {
             <span>Log Study Session</span>
           </Button>
           <div key="tournament-actions" className="flex flex-col gap-2">
-            <QuickLogTournament />
+            <QuickLogTournament key="quick-log" />
             <Button
+              key="full-entry"
               size="sm"
               variant="ghost"
               className="h-8 text-xs"
