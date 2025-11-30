@@ -81,6 +81,7 @@ export default function Dashboard() {
               <div className="flex gap-2">
                 {!todayPlan.completed && (
                   <Button
+                    key="start-session"
                     onClick={() => {
                       const params = new URLSearchParams({
                         fromPlan: "true",
@@ -96,6 +97,7 @@ export default function Dashboard() {
                   </Button>
                 )}
                 <Button
+                  key="view-plan"
                   onClick={() => setLocation("/study-plan")}
                   variant="outline"
                   className="flex-1"

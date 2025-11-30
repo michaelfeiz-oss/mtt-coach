@@ -99,3 +99,10 @@
 - [x] Check QuickLogTournament component for missing keys
 - [x] Verify all conditional renders have proper keys
 - [x] Fixed JSX syntax error causing React reconciliation issues
+
+## Critical Bug - React Key Warning (REOPEN)
+- [x] Deep dive into Dashboard component - check ALL conditional rendering patterns
+- [x] Check if buttons in action grid need keys
+- [x] Examine the "Today's Study" card conditional rendering
+- [x] Look for any implicit arrays created by conditional logic
+- [x] Fixed: Added key props to buttons in Today's Study card (conditional rendering creates implicit array)
