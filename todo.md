@@ -66,3 +66,6 @@
 - [x] Add Today's Study card to Dashboard
 - [x] Update Study Session form for plan-based sessions
 - [x] Test completion tracking logic
+
+## Bug Fixes
+- [x] Fix Select.Item empty value error in HandDetail page

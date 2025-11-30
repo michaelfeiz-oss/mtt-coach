@@ -30,7 +30,7 @@ export default function HandDetail() {
 
   const [formData, setFormData] = useState({
     reviewed: false,
-    mistakeStreet: "",
+    mistakeStreet: "NONE",
     mistakeSeverity: "0",
     tags: "",
     lesson: "",
@@ -41,7 +41,7 @@ export default function HandDetail() {
     if (hand) {
       setFormData({
         reviewed: hand.reviewed,
-        mistakeStreet: hand.mistakeStreet || "",
+        mistakeStreet: hand.mistakeStreet || "NONE",
         mistakeSeverity: hand.mistakeSeverity.toString(),
         tags: hand.tagsJson ? JSON.parse(hand.tagsJson).join(", ") : "",
         lesson: hand.lesson || "",
@@ -87,7 +87,7 @@ export default function HandDetail() {
     await updateHand.mutateAsync({
       id: parseInt(id!),
       reviewed: formData.reviewed,
-      mistakeStreet: formData.mistakeStreet ? (formData.mistakeStreet as any) : undefined,
+      mistakeStreet: (formData.mistakeStreet && formData.mistakeStreet !== "NONE") ? (formData.mistakeStreet as any) : undefined,
       mistakeSeverity: parseInt(formData.mistakeSeverity),
       tags: tagsArray,
       lesson: formData.lesson || undefined,
@@ -268,7 +268,7 @@ export default function HandDetail() {
                     <SelectValue placeholder="Select street (if applicable)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="NONE">None</SelectItem>
                     <SelectItem value="PREFLOP">Preflop</SelectItem>
                     <SelectItem value="FLOP">Flop</SelectItem>
                     <SelectItem value="TURN">Turn</SelectItem>
