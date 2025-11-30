@@ -67,6 +67,8 @@ export const studySessions = mysqlTable("studySessions", {
   drillsCompletedCount: int("drillsCompletedCount").default(0).notNull(),
   accuracyPercent: float("accuracyPercent"),
   keyTakeaways: text("keyTakeaways"),
+  fromPlan: boolean("fromPlan").default(false).notNull(),
+  planSlot: varchar("planSlot", { length: 30 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   userDateIdx: index("user_date_idx").on(table.userId, table.date),

@@ -56,3 +56,13 @@
 - [x] Make leak badges clickable on dashboard (navigate to leak detail page)
 - [x] Add autocomplete for hand entry (position dropdown, stack presets, board picker)
 - [x] Build tournament detail view (hands list, mistake summary, net result)
+
+## Phase 1.7 - Study Plan Feature
+- [x] Update studySessions schema with fromPlan and planSlot fields
+- [x] Build study plan logic with 7-day weekly structure
+- [x] Implement Deep Dive topic rotation algorithm
+- [x] Create study plan API endpoints (getWeek, getToday)
+- [x] Build Study Plan page with 7-day cards
+- [x] Add Today's Study card to Dashboard
+- [x] Update Study Session form for plan-based sessions
+- [x] Test completion tracking logic

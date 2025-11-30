@@ -12,6 +12,8 @@ export default function Dashboard() {
 
   const { data: currentWeek, isLoading: weekLoading } = trpc.weeks.getCurrent.useQuery();
 
+  const { data: todayPlan } = trpc.studyPlan.getToday.useQuery();
+
   const { data: dashboardStats, isLoading: statsLoading } = trpc.dashboard.getStats.useQuery(
     { weekId: currentWeek?.id ?? 0 },
     { enabled: !!currentWeek }
@@ -23,8 +25,6 @@ export default function Dashboard() {
     { weekId: currentWeek?.id ?? 0 },
     { enabled: !!currentWeek }
   );
-
-
 
   const isLoading = weekLoading || statsLoading;
 
@@ -50,6 +50,63 @@ export default function Dashboard() {
       </header>
 
       <main className="container py-6 space-y-6">
+        {/* Today's Study Card */}
+        {todayPlan && (
+          <Card className={`${
+            todayPlan.completed
+              ? "border-green-200 bg-green-50"
+              : "border-blue-500 border-2 shadow-md"
+          }`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Today's Study</CardTitle>
+                  <CardDescription className="mt-1">
+                    {todayPlan.label} • {new Date(todayPlan.date).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </CardDescription>
+                </div>
+                {todayPlan.completed && (
+                  <div className="text-green-600 text-sm font-medium bg-green-100 px-3 py-1 rounded-full">
+                    ✓ Done
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-slate-700">{todayPlan.description}</p>
+              <div className="flex gap-2">
+                {!todayPlan.completed && (
+                  <Button
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        fromPlan: "true",
+                        planSlot: todayPlan.planSlot,
+                        type: todayPlan.type,
+                        date: new Date(todayPlan.date).toISOString(),
+                      });
+                      setLocation(`/log-session?${params.toString()}`);
+                    }}
+                    className="flex-1"
+                  >
+                    Start Session
+                  </Button>
+                )}
+                <Button
+                  onClick={() => setLocation("/study-plan")}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  View Full Plan
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Week Overview */}
         <Card>
           <CardHeader>

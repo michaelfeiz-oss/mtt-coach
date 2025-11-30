@@ -4,6 +4,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { generateWeekPlan, getTodayPlan } from "./studyPlan";
+import { getCompletedPlanSlots } from "./studyPlanDb";
 
 // Hardcoded user ID for single-user app
 const HARDCODED_USER_ID = 1;
@@ -69,6 +71,8 @@ export const appRouter = router({
         drillsCompletedCount: z.number().default(0),
         accuracyPercent: z.number().optional(),
         keyTakeaways: z.string().optional(),
+        fromPlan: z.boolean().default(false),
+        planSlot: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const week = await db.getOrCreateWeekForDate(HARDCODED_USER_ID, input.date, 'Australia/Sydney');
@@ -84,6 +88,8 @@ export const appRouter = router({
           drillsCompletedCount: input.drillsCompletedCount,
           accuracyPercent: input.accuracyPercent,
           keyTakeaways: input.keyTakeaways,
+          fromPlan: input.fromPlan,
+          planSlot: input.planSlot,
         });
       }),
     getByWeek: publicProcedure
@@ -301,6 +307,60 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return db.getTopLeaks(HARDCODED_USER_ID, input.limit);
       }),
+  }),
+
+  // Study Plan
+  studyPlan: router({
+    getWeek: publicProcedure
+      .input(z.object({ date: z.date().optional() }))
+      .query(async ({ input }) => {
+        const targetDate = input.date || new Date();
+        
+        // Get week boundaries
+        const dayOfWeek = targetDate.getDay();
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const monday = new Date(targetDate);
+        monday.setDate(monday.getDate() - daysFromMonday);
+        monday.setHours(0, 0, 0, 0);
+        
+        const sunday = new Date(monday);
+        sunday.setDate(sunday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        
+        // Get completed slots for this week
+        const completedSlots = await getCompletedPlanSlots(HARDCODED_USER_ID, monday, sunday);
+        
+        // Generate week plan
+        const weekPlan = generateWeekPlan(targetDate, completedSlots);
+        
+        return {
+          startDate: monday,
+          endDate: sunday,
+          days: weekPlan,
+        };
+      }),
+    getToday: publicProcedure.query(async () => {
+      const today = new Date();
+      
+      // Get week boundaries
+      const dayOfWeek = today.getDay();
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(today);
+      monday.setDate(monday.getDate() - daysFromMonday);
+      monday.setHours(0, 0, 0, 0);
+      
+      const sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      
+      // Get completed slots for this week
+      const completedSlots = await getCompletedPlanSlots(HARDCODED_USER_ID, monday, sunday);
+      
+      // Get today's plan
+      const todayPlan = getTodayPlan(today, completedSlots);
+      
+      return todayPlan;
+    }),
   }),
 
   // Dashboard

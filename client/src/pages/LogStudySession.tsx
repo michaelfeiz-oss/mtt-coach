@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -24,8 +24,15 @@ export default function LogStudySession() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
 
+  // Parse URL params for plan-based sessions
+  const urlParams = new URLSearchParams(window.location.search);
+  const fromPlan = urlParams.get("fromPlan") === "true";
+  const planSlot = urlParams.get("planSlot") || undefined;
+  const typeFromUrl = urlParams.get("type") || "HAND_REVIEW";
+  const dateFromUrl = urlParams.get("date") ? new Date(urlParams.get("date")!) : new Date();
+
   const [formData, setFormData] = useState({
-    type: "HAND_REVIEW",
+    type: typeFromUrl,
     durationMinutes: "",
     resourceUsed: "",
     handsReviewedCount: "0",
@@ -39,6 +46,8 @@ export default function LogStudySession() {
       toast.success("Study session logged successfully!");
       utils.weeks.getCurrent.invalidate();
       utils.dashboard.getStats.invalidate();
+      utils.studyPlan.getWeek.invalidate();
+      utils.studyPlan.getToday.invalidate();
       setLocation("/");
     },
     onError: (error) => {
@@ -55,7 +64,7 @@ export default function LogStudySession() {
     }
 
     createSession.mutate({
-      date: new Date(),
+      date: dateFromUrl,
       type: formData.type as any,
       durationMinutes: parseInt(formData.durationMinutes),
       resourceUsed: formData.resourceUsed || undefined,
@@ -63,6 +72,8 @@ export default function LogStudySession() {
       drillsCompletedCount: parseInt(formData.drillsCompletedCount) || 0,
       accuracyPercent: formData.accuracyPercent ? parseFloat(formData.accuracyPercent) : undefined,
       keyTakeaways: formData.keyTakeaways || undefined,
+      fromPlan,
+      planSlot,
     });
   };
 
@@ -81,7 +92,15 @@ export default function LogStudySession() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Log Study Session</CardTitle>
-            <CardDescription>Record your poker study session details</CardDescription>
+            <CardDescription>
+              {fromPlan ? (
+                <span className="text-blue-600 font-medium">
+                  📅 From Study Plan • {SESSION_TYPES.find(t => t.value === typeFromUrl)?.label}
+                </span>
+              ) : (
+                "Record your poker study session details"
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -91,6 +110,7 @@ export default function LogStudySession() {
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
+                  disabled={fromPlan}
                 >
                   <SelectTrigger>
                     <SelectValue />
