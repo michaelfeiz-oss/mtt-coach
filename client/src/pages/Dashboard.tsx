@@ -114,12 +114,8 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle>This Week</CardTitle>
             <CardDescription>
-              {currentWeek && (
-                <>
-                  {new Date(currentWeek.startDate).toLocaleDateString()} -{" "}
-                  {new Date(currentWeek.endDate).toLocaleDateString()}
-                </>
-              )}
+              {currentWeek &&
+                `${new Date(currentWeek.startDate).toLocaleDateString()} - ${new Date(currentWeek.endDate).toLocaleDateString()}`}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

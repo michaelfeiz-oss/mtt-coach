@@ -114,3 +114,11 @@
 - [x] Never use array index as key
 - [x] Verify in browser console
 - [x] Fixed: Added keys to action buttons grid children (log-session-btn, tournament-actions, review-hands-btn)
+
+## Critical Bug - React Key Warning (COMPREHENSIVE FIX)
+- [x] Read entire Dashboard component line by line
+- [x] Check QuickLogTournament component for missing keys
+- [x] Check all nested components
+- [x] Look for fragments, conditionals, and any JSX creating arrays
+- [x] Apply fix and verify in browser
+- [x] Fixed: Removed Fragment in CardDescription date range - was creating implicit array of text nodes
