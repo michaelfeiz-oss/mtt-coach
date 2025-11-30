@@ -80,3 +80,9 @@
 - [x] Integrate timer into LogStudySession form
 - [x] Auto-fill duration field from timer
 - [x] Test timer functionality
+
+## Hand Card UX Improvements
+- [x] Add delete button to hand cards
+- [x] Make entire hand card clickable (not just arrow)
+- [x] Add delete confirmation dialog
+- [x] Test delete and navigation functionality

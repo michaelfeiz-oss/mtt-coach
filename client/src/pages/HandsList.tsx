@@ -2,7 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, ChevronRight, Edit } from "lucide-react";
+import { ArrowLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLocation } from "wouter";
 import { QuickAddHand } from "@/components/QuickAddHand";
 import { QuickEditHand } from "@/components/QuickEditHand";
@@ -11,8 +22,22 @@ import { useState } from "react";
 export default function HandsList() {
   const [, setLocation] = useLocation();
   const [editingHandId, setEditingHandId] = useState<number | null>(null);
+  const [deletingHandId, setDeletingHandId] = useState<number | null>(null);
+  const utils = trpc.useUtils();
 
   const { data: hands, isLoading } = trpc.hands.getByUser.useQuery({ limit: 50 });
+
+  const deleteHand = trpc.hands.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Hand deleted successfully");
+      utils.hands.getByUser.invalidate();
+      utils.dashboard.getStats.invalidate();
+      setDeletingHandId(null);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete hand: ${error.message}`);
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -56,7 +81,8 @@ export default function HandsList() {
                   return (
                     <div
                       key={hand.id}
-                      className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all"
+                      onClick={() => setLocation(`/hands/${hand.id}`)}
+                      className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -120,12 +146,18 @@ export default function HandsList() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <button
-                            onClick={() => setLocation(`/hands/${hand.id}`)}
-                            className="p-1 hover:bg-slate-100 rounded"
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingHandId(hand.id);
+                            }}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
-                            <ChevronRight className="h-5 w-5 text-slate-400" />
-                          </button>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <ChevronRight className="h-5 w-5 text-slate-400" />
                         </div>
                       </div>
                     </div>
@@ -144,6 +176,27 @@ export default function HandsList() {
           onOpenChange={(open) => !open && setEditingHandId(null)}
         />
       )}
+
+      <AlertDialog open={!!deletingHandId} onOpenChange={(open) => !open && setDeletingHandId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Hand?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this hand and remove it from all leak associations.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingHandId && deleteHand.mutate({ id: deletingHandId })}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

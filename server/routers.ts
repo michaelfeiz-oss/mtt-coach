@@ -253,6 +253,11 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return db.getHandsByTournament(input.tournamentId);
       }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return db.deleteHand(input.id);
+      }),
   }),
 
   // Leaks
