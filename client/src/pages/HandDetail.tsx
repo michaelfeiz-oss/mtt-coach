@@ -43,7 +43,7 @@ export default function HandDetail() {
         reviewed: hand.reviewed,
         mistakeStreet: hand.mistakeStreet || "",
         mistakeSeverity: hand.mistakeSeverity.toString(),
-        tags: hand.tags ? hand.tags.join(", ") : "",
+        tags: hand.tagsJson ? JSON.parse(hand.tagsJson).join(", ") : "",
         lesson: hand.lesson || "",
         selectedLeakIds: handLeaks?.map((l) => l.id) || [],
       });

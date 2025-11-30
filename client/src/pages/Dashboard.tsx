@@ -1,53 +1,29 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, BookOpen, Trophy, TrendingUp } from "lucide-react";
+import { BookOpen, Trophy, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Dashboard() {
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
-  const { data: currentWeek, isLoading: weekLoading } = trpc.weeks.getCurrent.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  const { data: currentWeek, isLoading: weekLoading } = trpc.weeks.getCurrent.useQuery();
 
   const { data: dashboardStats, isLoading: statsLoading } = trpc.dashboard.getStats.useQuery(
     { weekId: currentWeek?.id ?? 0 },
     { enabled: !!currentWeek }
   );
 
-  const { data: topLeaks, isLoading: leaksLoading } = trpc.leaks.getTop.useQuery(
-    { limit: 3 },
-    { enabled: isAuthenticated }
-  );
+  const { data: topLeaks, isLoading: leaksLoading } = trpc.leaks.getTop.useQuery({ limit: 3 });
 
   const { data: tournaments } = trpc.tournaments.getByWeek.useQuery(
     { weekId: currentWeek?.id ?? 0 },
     { enabled: !!currentWeek }
   );
 
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">MTT Coach</CardTitle>
-            <CardDescription>Track your poker tournament progress</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full" size="lg" asChild>
-              <a href={getLoginUrl()}>Sign In to Continue</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
 
   const isLoading = weekLoading || statsLoading;
 
@@ -66,7 +42,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-slate-900">MTT Coach</h1>
-              <p className="text-sm text-slate-600">Welcome back, {user?.name}</p>
+              <p className="text-sm text-slate-600">Welcome back, Mike</p>
             </div>
           </div>
         </div>

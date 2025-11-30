@@ -43,3 +43,6 @@
 - [ ] Test CSV export (not in MVP)
 - [x] Mobile responsiveness verification
 - [x] End-to-end user flow testing
+
+## Post-MVP Changes
+- [x] Remove login requirement - app works directly for Mike without authentication

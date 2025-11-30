@@ -1,9 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+
+// Hardcoded user ID for single-user app
+const HARDCODED_USER_ID = 1;
 
 export const appRouter = router({
   system: systemRouter,
@@ -20,10 +23,10 @@ export const appRouter = router({
 
   // User profile
   profile: router({
-    get: protectedProcedure.query(async ({ ctx }) => {
-      return db.getUserProfile(ctx.user.id);
+    get: publicProcedure.query(async () => {
+      return db.getUserProfile(HARDCODED_USER_ID);
     }),
-    update: protectedProcedure
+    update: publicProcedure
       .input(z.object({
         timezone: z.string().optional(),
         goals: z.object({
@@ -32,368 +35,260 @@ export const appRouter = router({
           weeklyTournaments: z.number().optional(),
         }).optional(),
       }))
-      .mutation(async ({ ctx, input }) => {
+      .mutation(async ({ input }) => {
         const updates: any = {};
         if (input.timezone) updates.timezone = input.timezone;
         if (input.goals) updates.goalsJson = JSON.stringify(input.goals);
         
-        await db.updateUserProfile(ctx.user.id, updates);
+        await db.updateUserProfile(HARDCODED_USER_ID, updates);
         return { success: true };
       }),
   }),
 
   // Weeks
   weeks: router({
-    list: protectedProcedure
+    list: publicProcedure
       .input(z.object({ limit: z.number().default(10) }).optional())
-      .query(async ({ ctx, input }) => {
-        return db.getUserWeeks(ctx.user.id, input?.limit);
-      }),
-    getCurrent: protectedProcedure.query(async ({ ctx }) => {
-      return db.getCurrentWeek(ctx.user.id, ctx.user.timezone);
-    }),
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
-        return db.getWeekById(input.id);
+        return db.getUserWeeks(HARDCODED_USER_ID, input?.limit);
       }),
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        summaryNotes: z.string().optional(),
-        score: z.number().min(0).max(10).optional(),
-        targetStudyHours: z.number().optional(),
-        targetSessions: z.number().optional(),
-        targetTournaments: z.number().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...updates } = input;
-        await db.updateWeek(id, updates);
-        return { success: true };
-      }),
+    getCurrent: publicProcedure.query(async () => {
+      return db.getCurrentWeek(HARDCODED_USER_ID, 'Australia/Sydney');
+    }),
   }),
 
-  // Study sessions
+  // Study Sessions
   studySessions: router({
-    create: protectedProcedure
+    create: publicProcedure
       .input(z.object({
         date: z.date(),
         type: z.enum(['RANGE_TRAINING', 'HAND_REVIEW', 'ICM', 'EXPLOIT_LAB', 'DEEP_DIVE', 'MENTAL_GAME', 'LIGHT_REVIEW']),
-        durationMinutes: z.number().min(1),
+        durationMinutes: z.number(),
         resourceUsed: z.string().optional(),
         handsReviewedCount: z.number().default(0),
         drillsCompletedCount: z.number().default(0),
-        accuracyPercent: z.number().min(0).max(100).optional(),
+        accuracyPercent: z.number().optional(),
         keyTakeaways: z.string().optional(),
       }))
-      .mutation(async ({ ctx, input }) => {
-        // Auto-assign to week
-        const week = await db.getOrCreateWeekForDate(ctx.user.id, input.date, ctx.user.timezone);
+      .mutation(async ({ input }) => {
+        const week = await db.getOrCreateWeekForDate(HARDCODED_USER_ID, input.date, 'Australia/Sydney');
         
         return db.createStudySession({
-          userId: ctx.user.id,
+          userId: HARDCODED_USER_ID,
           weekId: week.id,
-          ...input,
+          date: input.date,
+          type: input.type,
+          durationMinutes: input.durationMinutes,
+          resourceUsed: input.resourceUsed,
+          handsReviewedCount: input.handsReviewedCount,
+          drillsCompletedCount: input.drillsCompletedCount,
+          accuracyPercent: input.accuracyPercent,
+          keyTakeaways: input.keyTakeaways,
         });
       }),
-    getByWeek: protectedProcedure
+    getByWeek: publicProcedure
       .input(z.object({ weekId: z.number() }))
       .query(async ({ input }) => {
         return db.getStudySessionsByWeek(input.weekId);
-      }),
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return db.getStudySessionById(input.id);
-      }),
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        type: z.enum(['RANGE_TRAINING', 'HAND_REVIEW', 'ICM', 'EXPLOIT_LAB', 'DEEP_DIVE', 'MENTAL_GAME', 'LIGHT_REVIEW']).optional(),
-        durationMinutes: z.number().min(1).optional(),
-        resourceUsed: z.string().optional(),
-        handsReviewedCount: z.number().optional(),
-        drillsCompletedCount: z.number().optional(),
-        accuracyPercent: z.number().min(0).max(100).optional(),
-        keyTakeaways: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...updates } = input;
-        await db.updateStudySession(id, updates);
-        return { success: true };
-      }),
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.deleteStudySession(input.id);
-        return { success: true };
       }),
   }),
 
   // Tournaments
   tournaments: router({
-    create: protectedProcedure
+    create: publicProcedure
       .input(z.object({
         date: z.date(),
         venue: z.string().optional(),
         name: z.string().optional(),
-        buyIn: z.number().min(0),
+        buyIn: z.number(),
         startingStack: z.number().optional(),
         fieldSize: z.number().optional(),
         reEntries: z.number().default(0),
         finalPosition: z.number().optional(),
         prize: z.number().default(0),
         stageReached: z.enum(['EARLY', 'MID', 'LATE', 'FT']).optional(),
-        selfRating: z.number().min(0).max(10).optional(),
-        mentalRating: z.number().min(0).max(10).optional(),
+        selfRating: z.number().optional(),
+        mentalRating: z.number().optional(),
         notesOverall: z.string().optional(),
       }))
-      .mutation(async ({ ctx, input }) => {
-        // Auto-assign to week
-        const week = await db.getOrCreateWeekForDate(ctx.user.id, input.date, ctx.user.timezone);
+      .mutation(async ({ input }) => {
+        const week = await db.getOrCreateWeekForDate(HARDCODED_USER_ID, input.date, 'Australia/Sydney');
         
-        // Calculate net result
-        const netResult = input.prize - (input.buyIn * (input.reEntries + 1));
+        const netResult = input.prize - (input.buyIn * (1 + input.reEntries));
         
         return db.createTournament({
-          userId: ctx.user.id,
+          userId: HARDCODED_USER_ID,
           weekId: week.id,
+          date: input.date,
+          venue: input.venue,
+          name: input.name,
+          buyIn: input.buyIn,
+          startingStack: input.startingStack,
+          fieldSize: input.fieldSize,
+          reEntries: input.reEntries,
+          finalPosition: input.finalPosition,
+          prize: input.prize,
           netResult,
-          ...input,
+          stageReached: input.stageReached,
+          selfRating: input.selfRating,
+          mentalRating: input.mentalRating,
+          notesOverall: input.notesOverall,
         });
       }),
-    getByWeek: protectedProcedure
-      .input(z.object({ weekId: z.number() }))
+    getByWeek: publicProcedure
+      .input(z.object({ weekId: z.number(), limit: z.number().default(10) }))
       .query(async ({ input }) => {
         return db.getTournamentsByWeek(input.weekId);
-      }),
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return db.getTournamentById(input.id);
-      }),
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        venue: z.string().optional(),
-        name: z.string().optional(),
-        buyIn: z.number().min(0).optional(),
-        startingStack: z.number().optional(),
-        fieldSize: z.number().optional(),
-        reEntries: z.number().optional(),
-        finalPosition: z.number().optional(),
-        prize: z.number().optional(),
-        stageReached: z.enum(['EARLY', 'MID', 'LATE', 'FT']).optional(),
-        selfRating: z.number().min(0).max(10).optional(),
-        mentalRating: z.number().min(0).max(10).optional(),
-        notesOverall: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...updates } = input;
-        
-        // Recalculate net result if relevant fields changed
-        if (updates.prize !== undefined || updates.buyIn !== undefined || updates.reEntries !== undefined) {
-          const tournament = await db.getTournamentById(id);
-          if (tournament) {
-            const prize = updates.prize ?? tournament.prize;
-            const buyIn = updates.buyIn ?? tournament.buyIn;
-            const reEntries = updates.reEntries ?? tournament.reEntries;
-            (updates as any).netResult = prize - (buyIn * (reEntries + 1));
-          }
-        }
-        
-        await db.updateTournament(id, updates);
-        return { success: true };
-      }),
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.deleteTournament(input.id);
-        return { success: true };
       }),
   }),
 
   // Hands
   hands: router({
-    create: protectedProcedure
+    create: publicProcedure
       .input(z.object({
         tournamentId: z.number().optional(),
-        studySessionId: z.number().optional(),
         heroPosition: z.string().optional(),
         heroHand: z.string().optional(),
         boardRunout: z.string().optional(),
         effectiveStackBb: z.number().optional(),
         spr: z.number().optional(),
-        streetData: z.any().optional(),
         spotType: z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BvB', 'ICM_SPOT', 'LIMPED_POT']).optional(),
         heroDecisionPreflop: z.string().optional(),
         heroDecisionFlop: z.string().optional(),
         heroDecisionTurn: z.string().optional(),
         heroDecisionRiver: z.string().optional(),
         reviewed: z.boolean().default(false),
-        evalSource: z.enum(['SOLVER', 'COACH', 'SELF']).optional(),
         mistakeStreet: z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER']).optional(),
-        mistakeSeverity: z.number().min(0).max(3).default(0),
-        evDiffBb: z.number().optional(),
+        mistakeSeverity: z.number().default(0),
         tags: z.array(z.string()).optional(),
         lesson: z.string().optional(),
         leakIds: z.array(z.number()).optional(),
       }))
-      .mutation(async ({ ctx, input }) => {
-        const { leakIds, streetData, tags, ...handData } = input;
-        
+      .mutation(async ({ input }) => {
         const hand = await db.createHand({
-          userId: ctx.user.id,
-          streetDataJson: streetData ? JSON.stringify(streetData) : undefined,
-          tagsJson: tags ? JSON.stringify(tags) : undefined,
-          ...handData,
+          userId: HARDCODED_USER_ID,
+          tournamentId: input.tournamentId,
+          heroPosition: input.heroPosition,
+          heroHand: input.heroHand,
+          boardRunout: input.boardRunout,
+          effectiveStackBb: input.effectiveStackBb,
+          spr: input.spr,
+          spotType: input.spotType,
+          heroDecisionPreflop: input.heroDecisionPreflop,
+          heroDecisionFlop: input.heroDecisionFlop,
+          heroDecisionTurn: input.heroDecisionTurn,
+          heroDecisionRiver: input.heroDecisionRiver,
+          reviewed: input.reviewed,
+          mistakeStreet: input.mistakeStreet,
+          mistakeSeverity: input.mistakeSeverity,
+          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
+          lesson: input.lesson,
         });
-        
-        // Link to leaks if provided
-        if (leakIds && leakIds.length > 0) {
-          for (const leakId of leakIds) {
+
+        // Link leaks if provided
+        if (input.leakIds && input.leakIds.length > 0) {
+          for (const leakId of input.leakIds) {
             await db.linkHandToLeak(hand.id, leakId);
           }
         }
-        
+
         return hand;
       }),
-    getByTournament: protectedProcedure
-      .input(z.object({ tournamentId: z.number() }))
-      .query(async ({ input }) => {
-        return db.getHandsByTournament(input.tournamentId);
-      }),
-    getByUser: protectedProcedure
-      .input(z.object({ limit: z.number().default(50) }).optional())
-      .query(async ({ ctx, input }) => {
-        return db.getHandsByUser(ctx.user.id, input?.limit);
-      }),
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        const hand = await db.getHandById(input.id);
-        if (!hand) return null;
-        
-        // Parse JSON fields
-        return {
-          ...hand,
-          streetData: hand.streetDataJson ? JSON.parse(hand.streetDataJson) : null,
-          tags: hand.tagsJson ? JSON.parse(hand.tagsJson) : [],
-        };
-      }),
-    update: protectedProcedure
+    update: publicProcedure
       .input(z.object({
         id: z.number(),
-        heroPosition: z.string().optional(),
-        heroHand: z.string().optional(),
-        boardRunout: z.string().optional(),
-        effectiveStackBb: z.number().optional(),
-        spr: z.number().optional(),
-        streetData: z.any().optional(),
-        spotType: z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BvB', 'ICM_SPOT', 'LIMPED_POT']).optional(),
-        heroDecisionPreflop: z.string().optional(),
-        heroDecisionFlop: z.string().optional(),
-        heroDecisionTurn: z.string().optional(),
-        heroDecisionRiver: z.string().optional(),
         reviewed: z.boolean().optional(),
-        evalSource: z.enum(['SOLVER', 'COACH', 'SELF']).optional(),
         mistakeStreet: z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER']).optional(),
-        mistakeSeverity: z.number().min(0).max(3).optional(),
-        evDiffBb: z.number().optional(),
+        mistakeSeverity: z.number().optional(),
         tags: z.array(z.string()).optional(),
         lesson: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const { id, streetData, tags, ...updates } = input;
-        
-        const dbUpdates: any = updates;
-        if (streetData !== undefined) dbUpdates.streetDataJson = JSON.stringify(streetData);
-        if (tags !== undefined) dbUpdates.tagsJson = JSON.stringify(tags);
-        
-        await db.updateHand(id, dbUpdates);
-        return { success: true };
+        return db.updateHand(input.id, {
+          reviewed: input.reviewed,
+          mistakeStreet: input.mistakeStreet,
+          mistakeSeverity: input.mistakeSeverity,
+          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
+          lesson: input.lesson,
+        });
       }),
-    delete: protectedProcedure
+    getById: publicProcedure
       .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.deleteHand(input.id);
-        return { success: true };
+      .query(async ({ input }) => {
+        return db.getHandById(input.id);
       }),
-    linkLeak: protectedProcedure
-      .input(z.object({ handId: z.number(), leakId: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.linkHandToLeak(input.handId, input.leakId);
-        return { success: true };
+    getByUser: publicProcedure
+      .input(z.object({ limit: z.number().default(50) }))
+      .query(async ({ input }) => {
+        return db.getHandsByUser(HARDCODED_USER_ID, input.limit);
       }),
-    unlinkLeak: protectedProcedure
-      .input(z.object({ handId: z.number(), leakId: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.unlinkHandFromLeak(input.handId, input.leakId);
-        return { success: true };
-      }),
-    getLeaks: protectedProcedure
+    getLeaks: publicProcedure
       .input(z.object({ handId: z.number() }))
       .query(async ({ input }) => {
         return db.getLeaksForHand(input.handId);
+      }),
+    linkLeak: publicProcedure
+      .input(z.object({ handId: z.number(), leakId: z.number() }))
+      .mutation(async ({ input }) => {
+        return db.linkHandToLeak(input.handId, input.leakId);
+      }),
+    unlinkLeak: publicProcedure
+      .input(z.object({ handId: z.number(), leakId: z.number() }))
+      .mutation(async ({ input }) => {
+        return db.unlinkHandFromLeak(input.handId, input.leakId);
       }),
   }),
 
   // Leaks
   leaks: router({
-    create: protectedProcedure
+    create: publicProcedure
       .input(z.object({
         name: z.string(),
         category: z.enum(['PREFLOP', 'POSTFLOP', 'ICM', 'MENTAL', 'EXPLOIT']),
         description: z.string().optional(),
         status: z.enum(['ACTIVE', 'IMPROVING', 'FIXED']).default('ACTIVE'),
       }))
-      .mutation(async ({ ctx, input }) => {
+      .mutation(async ({ input }) => {
         return db.createLeak({
-          userId: ctx.user.id,
-          ...input,
+          userId: HARDCODED_USER_ID,
+          name: input.name,
+          category: input.category,
+          description: input.description,
+          status: input.status,
         });
       }),
-    list: protectedProcedure.query(async ({ ctx }) => {
-      return db.getUserLeaks(ctx.user.id);
-    }),
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return db.getLeakById(input.id);
-      }),
-    update: protectedProcedure
+    update: publicProcedure
       .input(z.object({
         id: z.number(),
         name: z.string().optional(),
         category: z.enum(['PREFLOP', 'POSTFLOP', 'ICM', 'MENTAL', 'EXPLOIT']).optional(),
         description: z.string().optional(),
         status: z.enum(['ACTIVE', 'IMPROVING', 'FIXED']).optional(),
-        lastSeenAt: z.date().optional(),
       }))
       .mutation(async ({ input }) => {
-        const { id, ...updates } = input;
-        await db.updateLeak(id, updates);
-        return { success: true };
+        return db.updateLeak(input.id, {
+          name: input.name,
+          category: input.category,
+          description: input.description,
+          status: input.status,
+        });
       }),
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.deleteLeak(input.id);
-        return { success: true };
-      }),
-    getTop: protectedProcedure
-      .input(z.object({ limit: z.number().default(5) }).optional())
-      .query(async ({ ctx, input }) => {
-        return db.getTopLeaks(ctx.user.id, input?.limit);
+    list: publicProcedure.query(async () => {
+      return db.getUserLeaks(HARDCODED_USER_ID);
+    }),
+    getTop: publicProcedure
+      .input(z.object({ limit: z.number().default(5) }))
+      .query(async ({ input }) => {
+        return db.getTopLeaks(HARDCODED_USER_ID, input.limit);
       }),
   }),
 
   // Dashboard
   dashboard: router({
-    getStats: protectedProcedure
+    getStats: publicProcedure
       .input(z.object({ weekId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        return db.getDashboardStats(ctx.user.id, input.weekId);
+      .query(async ({ input }) => {
+        return db.getDashboardStats(HARDCODED_USER_ID, input.weekId);
       }),
   }),
 });
