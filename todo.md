@@ -86,3 +86,6 @@
 - [x] Make entire hand card clickable (not just arrow)
 - [x] Add delete confirmation dialog
 - [x] Test delete and navigation functionality
+
+## Bug Fixes
+- [x] Fix missing key prop error in Dashboard component lists

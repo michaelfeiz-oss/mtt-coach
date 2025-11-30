@@ -122,10 +122,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
-              <>
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-              </>
+              <div className="space-y-4">
+                <Skeleton key="skeleton-1" className="h-16 w-full" />
+                <Skeleton key="skeleton-2" className="h-16 w-full" />
+              </div>
             ) : (
               <>
                 {/* Study Hours */}
@@ -245,9 +245,9 @@ export default function Dashboard() {
           <CardContent>
             {leaksLoading ? (
               <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
+                <Skeleton key="leak-skeleton-1" className="h-12 w-full" />
+                <Skeleton key="leak-skeleton-2" className="h-12 w-full" />
+                <Skeleton key="leak-skeleton-3" className="h-12 w-full" />
               </div>
             ) : !topLeaks || topLeaks.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-4">No leaks tracked yet</p>
