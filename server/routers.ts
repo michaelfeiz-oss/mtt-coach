@@ -276,6 +276,16 @@ export const appRouter = router({
     list: publicProcedure.query(async () => {
       return db.getUserLeaks(HARDCODED_USER_ID);
     }),
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return db.getLeakById(input.id);
+      }),
+    getLinkedHands: publicProcedure
+      .input(z.object({ leakId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getHandsForLeak(input.leakId);
+      }),
     getTop: publicProcedure
       .input(z.object({ limit: z.number().default(5) }))
       .query(async ({ input }) => {

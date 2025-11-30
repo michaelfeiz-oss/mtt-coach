@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { BookOpen, Trophy, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
+import { QuickLogTournament } from "@/components/QuickLogTournament";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -118,15 +119,17 @@ export default function Dashboard() {
             <BookOpen className="h-5 w-5" />
             <span>Log Study Session</span>
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-auto py-4 flex-col gap-2"
-            onClick={() => setLocation("/log-tournament")}
-          >
-            <Trophy className="h-5 w-5" />
-            <span>Log Tournament</span>
-          </Button>
+          <div className="flex flex-col gap-2">
+            <QuickLogTournament />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs"
+              onClick={() => setLocation("/log-tournament")}
+            >
+              Full Entry
+            </Button>
+          </div>
           <Button
             size="lg"
             variant="outline"

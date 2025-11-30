@@ -46,3 +46,8 @@
 
 ## Post-MVP Changes
 - [x] Remove login requirement - app works directly for Mike without authentication
+
+## Phase 1.5 - UX Refinement
+- [x] Quick Log Tournament button with minimal fields (buy-in, re-entries, position, prize, notes)
+- [x] Leak Detail Screen with linked hands list and filtering
+- [x] Mark leak as FIXED functionality

@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, weeks, studySessions, tournaments, hands, leaks, handLeaks, InsertWeek, InsertStudySession, InsertTournament, InsertHand, InsertLeak } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -99,71 +99,65 @@ export async function getOrCreateWeekForDate(userId: number, date: Date, timezon
 
   // Calculate week boundaries (Monday to Sunday) in user's timezone
   const dateInTz = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-  const dayOfWeek = dateInTz.getDay();
-  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so 6 days back to Monday
+  const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 1 = Monday, ...
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday-based
   
-  const monday = new Date(dateInTz);
-  monday.setDate(monday.getDate() - daysToMonday);
-  monday.setHours(0, 0, 0, 0);
+  const startDate = new Date(dateInTz);
+  startDate.setDate(startDate.getDate() - daysFromMonday);
+  startDate.setHours(0, 0, 0, 0);
   
-  const sunday = new Date(monday);
-  sunday.setDate(sunday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + 6);
+  endDate.setHours(23, 59, 59, 999);
 
   // Check if week exists
-  const [existingWeek] = await db
+  const existing = await db
     .select()
     .from(weeks)
     .where(
       and(
         eq(weeks.userId, userId),
-        gte(weeks.startDate, monday),
-        lte(weeks.startDate, sunday)
+        eq(weeks.startDate, startDate),
+        eq(weeks.endDate, endDate)
       )
     )
     .limit(1);
 
-  if (existingWeek) {
-    return existingWeek;
+  if (existing.length > 0) {
+    return existing[0];
   }
 
   // Create new week
   const [newWeek] = await db.insert(weeks).values({
     userId,
-    startDate: monday,
-    endDate: sunday,
-    targetStudyHours: 7,
-    targetSessions: 5,
-    targetTournaments: 1
+    startDate,
+    endDate,
   });
 
-  const [createdWeek] = await db.select().from(weeks).where(eq(weeks.id, newWeek.insertId)).limit(1);
-  return createdWeek!;
+  return (await db.select().from(weeks).where(eq(weeks.id, newWeek.insertId)).limit(1))[0];
 }
 
-// User profile helpers
 export async function getUserProfile(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  return user;
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateUserProfile(userId: number, updates: { timezone?: string; goalsJson?: string }) {
+export async function updateUserProfile(userId: number, updates: Partial<InsertUser>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   await db.update(users).set(updates).where(eq(users.id, userId));
 }
 
-// Week helpers
 export async function getWeekById(weekId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [week] = await db.select().from(weeks).where(eq(weeks.id, weekId)).limit(1);
-  return week;
+  const result = await db.select().from(weeks).where(eq(weeks.id, weekId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
 }
 
 export async function getUserWeeks(userId: number, limit: number = 10) {
@@ -187,14 +181,13 @@ export async function updateWeek(weekId: number, updates: Partial<InsertWeek>) {
   await db.update(weeks).set(updates).where(eq(weeks.id, weekId));
 }
 
-// Study session helpers
+// Study Sessions
 export async function createStudySession(session: InsertStudySession) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const [result] = await db.insert(studySessions).values(session);
-  const [created] = await db.select().from(studySessions).where(eq(studySessions.id, result.insertId)).limit(1);
-  return created!;
+  return (await db.select().from(studySessions).where(eq(studySessions.id, result.insertId)).limit(1))[0];
 }
 
 export async function getStudySessionsByWeek(weekId: number) {
@@ -202,14 +195,6 @@ export async function getStudySessionsByWeek(weekId: number) {
   if (!db) throw new Error("Database not available");
   
   return db.select().from(studySessions).where(eq(studySessions.weekId, weekId)).orderBy(desc(studySessions.date));
-}
-
-export async function getStudySessionById(sessionId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const [session] = await db.select().from(studySessions).where(eq(studySessions.id, sessionId)).limit(1);
-  return session;
 }
 
 export async function updateStudySession(sessionId: number, updates: Partial<InsertStudySession>) {
@@ -226,14 +211,13 @@ export async function deleteStudySession(sessionId: number) {
   await db.delete(studySessions).where(eq(studySessions.id, sessionId));
 }
 
-// Tournament helpers
+// Tournaments
 export async function createTournament(tournament: InsertTournament) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const [result] = await db.insert(tournaments).values(tournament);
-  const [created] = await db.select().from(tournaments).where(eq(tournaments.id, result.insertId)).limit(1);
-  return created!;
+  return (await db.select().from(tournaments).where(eq(tournaments.id, result.insertId)).limit(1))[0];
 }
 
 export async function getTournamentsByWeek(weekId: number) {
@@ -247,8 +231,8 @@ export async function getTournamentById(tournamentId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
-  return tournament;
+  const result = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
 }
 
 export async function updateTournament(tournamentId: number, updates: Partial<InsertTournament>) {
@@ -265,21 +249,21 @@ export async function deleteTournament(tournamentId: number) {
   await db.delete(tournaments).where(eq(tournaments.id, tournamentId));
 }
 
-// Hand helpers
+// Hands
 export async function createHand(hand: InsertHand) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const [result] = await db.insert(hands).values(hand);
-  const [created] = await db.select().from(hands).where(eq(hands.id, result.insertId)).limit(1);
-  return created!;
+  return (await db.select().from(hands).where(eq(hands.id, result.insertId)).limit(1))[0];
 }
 
-export async function getHandsByTournament(tournamentId: number) {
+export async function getHandById(handId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  return db.select().from(hands).where(eq(hands.tournamentId, tournamentId)).orderBy(desc(hands.createdAt));
+  const result = await db.select().from(hands).where(eq(hands.id, handId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
 }
 
 export async function getHandsByUser(userId: number, limit: number = 50) {
@@ -289,12 +273,11 @@ export async function getHandsByUser(userId: number, limit: number = 50) {
   return db.select().from(hands).where(eq(hands.userId, userId)).orderBy(desc(hands.createdAt)).limit(limit);
 }
 
-export async function getHandById(handId: number) {
+export async function getHandsByTournament(tournamentId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [hand] = await db.select().from(hands).where(eq(hands.id, handId)).limit(1);
-  return hand;
+  return db.select().from(hands).where(eq(hands.tournamentId, tournamentId)).orderBy(desc(hands.createdAt));
 }
 
 export async function updateHand(handId: number, updates: Partial<InsertHand>) {
@@ -311,14 +294,13 @@ export async function deleteHand(handId: number) {
   await db.delete(hands).where(eq(hands.id, handId));
 }
 
-// Leak helpers
+// Leaks
 export async function createLeak(leak: InsertLeak) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const [result] = await db.insert(leaks).values(leak);
-  const [created] = await db.select().from(leaks).where(eq(leaks.id, result.insertId)).limit(1);
-  return created!;
+  return (await db.select().from(leaks).where(eq(leaks.id, result.insertId)).limit(1))[0];
 }
 
 export async function getUserLeaks(userId: number) {
@@ -332,8 +314,8 @@ export async function getLeakById(leakId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [leak] = await db.select().from(leaks).where(eq(leaks.id, leakId)).limit(1);
-  return leak;
+  const result = await db.select().from(leaks).where(eq(leaks.id, leakId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
 }
 
 export async function updateLeak(leakId: number, updates: Partial<InsertLeak>) {
@@ -350,33 +332,30 @@ export async function deleteLeak(leakId: number) {
   await db.delete(leaks).where(eq(leaks.id, leakId));
 }
 
-// Hand-Leak linking
+// Hand-Leak Junction
 export async function linkHandToLeak(handId: number, leakId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.insert(handLeaks).values({ handId, leakId });
+  // Update leak's lastSeenAt
+  const hand = await getHandById(handId);
+  if (hand) {
+    await db.update(leaks).set({ lastSeenAt: hand.createdAt }).where(eq(leaks.id, leakId));
+  }
   
-  // Update leak's handsLinkedCount
-  await db.execute(sql`
-    UPDATE ${leaks}
-    SET handsLinkedCount = (SELECT COUNT(*) FROM ${handLeaks} WHERE leakId = ${leakId})
-    WHERE id = ${leakId}
-  `);
+  await db.insert(handLeaks).values({ handId, leakId });
 }
 
 export async function unlinkHandFromLeak(handId: number, leakId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.delete(handLeaks).where(and(eq(handLeaks.handId, handId), eq(handLeaks.leakId, leakId)));
-  
-  // Update leak's handsLinkedCount
-  await db.execute(sql`
-    UPDATE ${leaks}
-    SET handsLinkedCount = (SELECT COUNT(*) FROM ${handLeaks} WHERE leakId = ${leakId})
-    WHERE id = ${leakId}
-  `);
+  await db.delete(handLeaks).where(
+    and(
+      eq(handLeaks.handId, handId),
+      eq(handLeaks.leakId, leakId)
+    )
+  );
 }
 
 export async function getLeaksForHand(handId: number) {
@@ -390,6 +369,20 @@ export async function getLeaksForHand(handId: number) {
     .where(eq(handLeaks.handId, handId));
   
   return result.map(r => r.leak);
+}
+
+export async function getHandsForLeak(leakId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .select({ hand: hands })
+    .from(handLeaks)
+    .innerJoin(hands, eq(handLeaks.handId, hands.id))
+    .where(eq(handLeaks.leakId, leakId))
+    .orderBy(desc(hands.createdAt));
+  
+  return result.map(r => r.hand);
 }
 
 /**
@@ -418,39 +411,39 @@ export async function getTopLeaks(userId: number, limit: number = 5) {
     LIMIT ${limit}
   `);
   
-  return (result as any)[0] as any[];
+  return result as any[];
 }
 
-// Dashboard analytics
+/**
+ * Dashboard stats for a given week
+ */
 export async function getDashboardStats(userId: number, weekId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  // Get week data
-  const week = await getWeekById(weekId);
-  if (!week) throw new Error("Week not found");
+  // Get user goals
+  const user = await getUserProfile(userId);
+  const goals = user?.goalsJson ? JSON.parse(user.goalsJson) : {};
+  const studyHoursTarget = goals.weeklyStudyHours || 7;
+  const tournamentsTarget = goals.weeklyTournaments || 2;
   
-  // Study sessions stats
+  // Get study sessions for the week
   const sessions = await getStudySessionsByWeek(weekId);
-  const totalStudyMinutes = sessions.reduce((sum, s) => sum + s.durationMinutes, 0);
-  const totalStudyHours = totalStudyMinutes / 60;
+  const studyHours = sessions.reduce((sum, s) => sum + s.durationMinutes / 60, 0);
   
-  // Tournament stats
-  const tourneys = await getTournamentsByWeek(weekId);
-  const totalNetResult = tourneys.reduce((sum, t) => sum + t.netResult, 0);
+  // Get tournaments for the week
+  const tournamentsList = await getTournamentsByWeek(weekId);
+  const tournamentsCount = tournamentsList.length;
+  const netResult = tournamentsList.reduce((sum, t) => sum + t.netResult, 0);
   
-  // Hands reviewed
-  const totalHandsReviewed = sessions.reduce((sum, s) => sum + s.handsReviewedCount, 0);
+  const week = await getWeekById(weekId);
   
   return {
     week,
-    studyHours: totalStudyHours,
-    studyHoursTarget: week.targetStudyHours,
-    sessionsCount: sessions.length,
-    sessionsTarget: week.targetSessions,
-    tournamentsCount: tourneys.length,
-    tournamentsTarget: week.targetTournaments,
-    netResult: totalNetResult,
-    handsReviewed: totalHandsReviewed
+    studyHours,
+    studyHoursTarget,
+    tournamentsCount,
+    tournamentsTarget,
+    netResult,
   };
 }
