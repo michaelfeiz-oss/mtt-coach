@@ -1,0 +1,9 @@
+{
+  "query": "DROP TABLE IF EXISTS hands; DROP TABLE IF EXISTS leaks; DROP TABLE IF EXISTS studySessions; DROP TABLE IF EXISTS tournaments; DROP TABLE IF EXISTS weeks",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute DROP TABLE IF EXISTS hands; DROP TABLE IF EXISTS leaks; DROP TABLE IF EXISTS studySessions; DROP TABLE IF EXISTS tournaments; DROP TABLE IF EXISTS weeks",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3538
+}
