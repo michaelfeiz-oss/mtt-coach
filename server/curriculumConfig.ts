@@ -1,5 +1,7 @@
-/**
- * 12-Week Poker MTT Study Curriculum
+import { expandedWeeks } from "./curriculumWeeks5-12";
+
+/*
+ * 12-Week Poker MTT Study Curriculumm
  * 
  * Structure:
  * - 3 blocks of 4 weeks each
@@ -826,85 +828,11 @@ export const STUDY_CURRICULUM: StudyProgramBlock[] = [
           },
         ],
       },
-      // Weeks 6-8 placeholders (to be expanded)
-      {
-        weekIndex: 5,
-        weekNumber: 6,
-        themeCode: "3BET_OOP",
-        themeTitle: "3-Bet Pots OOP",
-        themeDescription: "Master out-of-position play in 3-bet pots.",
-        days: Array(7)
-          .fill(null)
-          .map((_, i) => ({
-            dayOfWeek: (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            planSlot: `DAY${i + 1}_${["RANGE", "HAND_REVIEW", "ICM", "EXPLOIT", "DEEP_DIVE", "MENTAL", "LIGHT_REVIEW"][i]}`,
-            studyType: ["RANGE_TRAINING", "HAND_REVIEW", "ICM", "EXPLOIT_LAB", "DEEP_DIVE", "MENTAL_GAME", "LIGHT_REVIEW"][
-              i
-            ] as StudyType,
-            focusTitle: "Week 6 Content",
-            focusDescription: "To be detailed",
-            drills: [
-              {
-                drillId: `W6D${i + 1}`,
-                title: "Drill",
-                primaryTool: "TBD",
-                instructions: "To be detailed",
-              },
-            ],
-          })),
-      },
-      {
-        weekIndex: 6,
-        weekNumber: 7,
-        themeCode: "TURN_BARRELS",
-        themeTitle: "Turn Barreling & Delayed C-Bets",
-        themeDescription: "Master turn aggression and delayed c-bet strategy.",
-        days: Array(7)
-          .fill(null)
-          .map((_, i) => ({
-            dayOfWeek: (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            planSlot: `DAY${i + 1}_${["RANGE", "HAND_REVIEW", "ICM", "EXPLOIT", "DEEP_DIVE", "MENTAL", "LIGHT_REVIEW"][i]}`,
-            studyType: ["RANGE_TRAINING", "HAND_REVIEW", "ICM", "EXPLOIT_LAB", "DEEP_DIVE", "MENTAL_GAME", "LIGHT_REVIEW"][
-              i
-            ] as StudyType,
-            focusTitle: "Week 7 Content",
-            focusDescription: "To be detailed",
-            drills: [
-              {
-                drillId: `W7D${i + 1}`,
-                title: "Drill",
-                primaryTool: "TBD",
-                instructions: "To be detailed",
-              },
-            ],
-          })),
-      },
-      {
-        weekIndex: 7,
-        weekNumber: 8,
-        themeCode: "RIVER_TRIPLE",
-        themeTitle: "River Value/Bluff & Triple Barrels",
-        themeDescription: "Master river strategy and aggressive multi-street lines.",
-        days: Array(7)
-          .fill(null)
-          .map((_, i) => ({
-            dayOfWeek: (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            planSlot: `DAY${i + 1}_${["RANGE", "HAND_REVIEW", "ICM", "EXPLOIT", "DEEP_DIVE", "MENTAL", "LIGHT_REVIEW"][i]}`,
-            studyType: ["RANGE_TRAINING", "HAND_REVIEW", "ICM", "EXPLOIT_LAB", "DEEP_DIVE", "MENTAL_GAME", "LIGHT_REVIEW"][
-              i
-            ] as StudyType,
-            focusTitle: "Week 8 Content",
-            focusDescription: "To be detailed",
-            drills: [
-              {
-                drillId: `W8D${i + 1}`,
-                title: "Drill",
-                primaryTool: "TBD",
-                instructions: "To be detailed",
-              },
-            ],
-          })),
-      },
+      // Weeks 5-8 with full details from expandedWeeks
+      expandedWeeks[0], // Week 5: 3-Bet Pots IP
+      expandedWeeks[1], // Week 6: 3-Bet Pots OOP
+      expandedWeeks[2], // Week 7: Turn Barreling
+      expandedWeeks[3], // Week 8: River Value/Bluff
     ],
   },
 
@@ -913,111 +841,10 @@ export const STUDY_CURRICULUM: StudyProgramBlock[] = [
     title: "Block 3: ICM, Endgame & Live Exploits",
     goal: "Master bubble play, final table strategy, and live field exploits",
     weeks: [
-      {
-        weekIndex: 8,
-        weekNumber: 9,
-        themeCode: "BUBBLE_ICM",
-        themeTitle: "Bubble ICM Fundamentals",
-        themeDescription: "Master ICM-heavy bubble play.",
-        days: Array(7)
-          .fill(null)
-          .map((_, i) => ({
-            dayOfWeek: (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            planSlot: `DAY${i + 1}_${["RANGE", "HAND_REVIEW", "ICM", "EXPLOIT", "DEEP_DIVE", "MENTAL", "LIGHT_REVIEW"][i]}`,
-            studyType: ["RANGE_TRAINING", "HAND_REVIEW", "ICM", "EXPLOIT_LAB", "DEEP_DIVE", "MENTAL_GAME", "LIGHT_REVIEW"][
-              i
-            ] as StudyType,
-            focusTitle: "Week 9 Content",
-            focusDescription: "To be detailed",
-            drills: [
-              {
-                drillId: `W9D${i + 1}`,
-                title: "Drill",
-                primaryTool: "TBD",
-                instructions: "To be detailed",
-              },
-            ],
-          })),
-      },
-      {
-        weekIndex: 9,
-        weekNumber: 10,
-        themeCode: "FINAL_TABLE",
-        themeTitle: "Final Table & Ladders",
-        themeDescription: "Master final table dynamics and chip ladder strategy.",
-        days: Array(7)
-          .fill(null)
-          .map((_, i) => ({
-            dayOfWeek: (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            planSlot: `DAY${i + 1}_${["RANGE", "HAND_REVIEW", "ICM", "EXPLOIT", "DEEP_DIVE", "MENTAL", "LIGHT_REVIEW"][i]}`,
-            studyType: ["RANGE_TRAINING", "HAND_REVIEW", "ICM", "EXPLOIT_LAB", "DEEP_DIVE", "MENTAL_GAME", "LIGHT_REVIEW"][
-              i
-            ] as StudyType,
-            focusTitle: "Week 10 Content",
-            focusDescription: "To be detailed",
-            drills: [
-              {
-                drillId: `W10D${i + 1}`,
-                title: "Drill",
-                primaryTool: "TBD",
-                instructions: "To be detailed",
-              },
-            ],
-          })),
-      },
-      {
-        weekIndex: 10,
-        weekNumber: 11,
-        themeCode: "LIVE_EXPLOITS",
-        themeTitle: "Live Exploits & Multiway",
-        themeDescription: "Master live field exploits and multiway pot play.",
-        days: Array(7)
-          .fill(null)
-          .map((_, i) => ({
-            dayOfWeek: (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            planSlot: `DAY${i + 1}_${["RANGE", "HAND_REVIEW", "ICM", "EXPLOIT", "DEEP_DIVE", "MENTAL", "LIGHT_REVIEW"][i]}`,
-            studyType: ["RANGE_TRAINING", "HAND_REVIEW", "ICM", "EXPLOIT_LAB", "DEEP_DIVE", "MENTAL_GAME", "LIGHT_REVIEW"][
-              i
-            ] as StudyType,
-            focusTitle: "Week 11 Content",
-            focusDescription: "To be detailed",
-            drills: [
-              {
-                drillId: `W11D${i + 1}`,
-                title: "Drill",
-                primaryTool: "TBD",
-                instructions: "To be detailed",
-              },
-            ],
-          })),
-      },
-      {
-        weekIndex: 11,
-        weekNumber: 12,
-        themeCode: "CONSOLIDATION",
-        themeTitle: "Consolidation Week",
-        themeDescription:
-          "Build written playbook from all prior weeks and review most frequent leaks.",
-        days: Array(7)
-          .fill(null)
-          .map((_, i) => ({
-            dayOfWeek: (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            planSlot: `DAY${i + 1}_${["RANGE", "HAND_REVIEW", "ICM", "EXPLOIT", "DEEP_DIVE", "MENTAL", "LIGHT_REVIEW"][i]}`,
-            studyType: ["RANGE_TRAINING", "HAND_REVIEW", "ICM", "EXPLOIT_LAB", "DEEP_DIVE", "MENTAL_GAME", "LIGHT_REVIEW"][
-              i
-            ] as StudyType,
-            focusTitle: "Week 12 Content",
-            focusDescription: "To be detailed",
-            drills: [
-              {
-                drillId: `W12D${i + 1}`,
-                title: "Drill",
-                primaryTool: "TBD",
-                instructions: "To be detailed",
-              },
-            ],
-          })),
-      },
+      expandedWeeks[4], // Week 9: Bubble ICM
+      expandedWeeks[5], // Week 10: Final Table
+      expandedWeeks[6], // Week 11: Live Exploits
+      expandedWeeks[7], // Week 12: Consolidation
     ],
   },
 ];

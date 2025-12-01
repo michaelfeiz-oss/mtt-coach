@@ -202,3 +202,17 @@
 - [ ] Integrate program_meta into study session creation
 - [ ] Test all 12 weeks of curriculum content
 - [ ] Verify cycle logic correctly maps dates to program weeks
+
+
+## Feature: Expand Curriculum Weeks 5-12
+- [x] Expand Week 5 (3-Bet Pots IP) with full drill details
+- [x] Expand Week 6 (3-Bet Pots OOP) with full drill details
+- [x] Expand Week 7 (Turn Barreling) with full drill details
+- [x] Expand Week 8 (River Value/Bluff) with full drill details
+- [x] Expand Week 9 (Bubble ICM) with full drill details
+- [x] Expand Week 10 (Final Table Play) with full drill details
+- [x] Expand Week 11 (Live Exploits) with full drill details
+- [x] Expand Week 12 (Consolidation) with full drill details
+- [x] Verify all 84 drills display correctly in Study Plan UI
+- [x] Test Guided Session with all weeks
+- [x] Verify cycle logic maps all weeks correctly
