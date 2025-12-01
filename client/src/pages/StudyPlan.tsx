@@ -1,19 +1,24 @@
-import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Circle, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Circle, ArrowLeft, ChevronDown } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 
 export default function StudyPlan() {
   const [, setLocation] = useLocation();
   const [selectedDate] = useState(new Date());
+  const [expandedDrills, setExpandedDrills] = useState<string | null>(null);
 
   const { data: weekPlan, isLoading } = trpc.studyPlan.getWeek.useQuery({
     date: selectedDate,
   });
   
   const { data: dailyFocus } = trpc.studyPlan.getDailyFocus.useQuery();
+  
+  const { data: curriculumWeek } = trpc.studyPlan.getCurriculumWeek.useQuery({
+    date: selectedDate,
+  });
 
   if (isLoading) {
     return (
@@ -73,6 +78,16 @@ export default function StudyPlan() {
         </div>
       </div>
 
+      {/* Week Theme Banner */}
+      {curriculumWeek && (
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-4">
+          <div className="container max-w-2xl">
+            <h2 className="text-xl font-bold">{curriculumWeek.themeTitle}</h2>
+            <p className="text-blue-100 text-sm mt-1">{curriculumWeek.themeDescription}</p>
+          </div>
+        </div>
+      )}
+
       {/* Daily Focus Section */}
       {dailyFocus && (
         <div className="container max-w-2xl px-4 pt-6">
@@ -122,6 +137,9 @@ export default function StudyPlan() {
           const isToday =
             dayDate.toDateString() === new Date().toDateString();
           const isPast = dayDate < new Date() && !isToday;
+          const curriculumDay = curriculumWeek?.days.find(
+            (d) => d.dayOfWeek === day.dayOfWeek
+          );
 
           return (
             <Card
@@ -166,6 +184,65 @@ export default function StudyPlan() {
               <CardContent className="space-y-3">
                 <p className="text-sm text-slate-700">{day.description}</p>
 
+                {/* Curriculum Drills Section */}
+                {curriculumDay && curriculumDay.drills.length > 0 && (
+                  <div className="border-t pt-3 mt-3">
+                    <button
+                      onClick={() =>
+                        setExpandedDrills(
+                          expandedDrills === day.planSlot ? null : day.planSlot
+                        )
+                      }
+                      className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                    >
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform ${
+                          expandedDrills === day.planSlot ? "rotate-180" : ""
+                        }`}
+                      />
+                      View Drills & Tools ({curriculumDay.drills.length})
+                    </button>
+
+                    {expandedDrills === day.planSlot && (
+                      <div className="mt-3 space-y-3 bg-slate-50 p-3 rounded-lg">
+                        {curriculumDay.drills.map((drill) => (
+                          <div
+                            key={drill.drillId}
+                            className="bg-white p-3 rounded border border-slate-200"
+                          >
+                            <h4 className="font-medium text-sm text-slate-900">
+                              {drill.title}
+                            </h4>
+                            <div className="mt-2 space-y-1 text-xs text-slate-600">
+                              <p>
+                                <span className="font-medium">Primary Tool:</span>{" "}
+                                {drill.primaryTool}
+                              </p>
+                              {drill.tools && drill.tools.length > 0 && (
+                                <p>
+                                  <span className="font-medium">Tools:</span>{" "}
+                                  {drill.tools.join(", ")}
+                                </p>
+                              )}
+                              <p>
+                                <span className="font-medium">Reps:</span> {drill.reps}
+                              </p>
+                              <p>
+                                <span className="font-medium">Instructions:</span>{" "}
+                                {drill.instructions}
+                              </p>
+                              <p>
+                                <span className="font-medium">Success Metric:</span>{" "}
+                                {drill.successMetric}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {day.completed ? (
                   <div className="flex items-center gap-2 text-sm text-green-700 bg-green-100 px-3 py-2 rounded-lg">
                     <CheckCircle2 className="w-4 h-4" />
@@ -174,7 +251,6 @@ export default function StudyPlan() {
                 ) : (
                   <Button
                     onClick={() => {
-                      // Navigate to log session with pre-filled data
                       const params = new URLSearchParams({
                         fromPlan: "true",
                         planSlot: day.planSlot,

@@ -193,11 +193,11 @@
 - [x] Implement cycle logic to map calendar week to program week (12-week repeating cycle)
 - [x] Build API endpoints: getCurriculumWeek, getCurriculumToday, getCurriculumBlock, getAllCurriculum
 - [x] Created curriculumConfig.ts with complete data structure
-- [ ] Add program_meta field to study_sessions table for tracking guided sessions
-- [ ] Enhance Study Plan UI to show week theme banner
-- [ ] Add collapsible drills section to each day card showing tools and drills
-- [ ] Build Guided Session page with drill stepper
-- [ ] Implement drill completion tracking with notes
+- [x] Enhance Study Plan UI to show week theme banner
+- [x] Add collapsible drills section to each day card showing tools and drills
+- [x] Build Guided Session page with drill stepper
+- [x] Implement drill completion tracking with notes
+- [ ] Expand Weeks 5-12 with full drill details (Turn Barreling, River Play, Bubble ICM, Final Table, Live Exploits, Consolidation)
 - [ ] Add Guided vs Quick Session choice on Start Session button
 - [ ] Integrate program_meta into study session creation
 - [ ] Test all 12 weeks of curriculum content

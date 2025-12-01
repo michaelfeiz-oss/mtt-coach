@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import LeakDetail from "@/pages/LeakDetail";
 import TournamentDetail from "@/pages/TournamentDetail";
 import StudyPlan from "@/pages/StudyPlan";
+import GuidedSession from "@/pages/GuidedSession";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/leaks/:id"} component={LeakDetail} />
       <Route path={"/tournaments/:id"} component={TournamentDetail} />
       <Route path={"/study-plan"} component={StudyPlan} />
+      <Route path={"/guided-session"} component={GuidedSession} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
