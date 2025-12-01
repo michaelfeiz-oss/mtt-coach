@@ -185,3 +185,20 @@
 - [ ] Build leak-to-study-plan recommendations engine
 - [ ] Test all 12-week plan features
 - [ ] Seed initial 12-week plan for users on first login
+
+
+## Feature: 12-Week Detailed Curriculum with Drills
+- [x] Redesign study plan data model to include drills array with tools, reps, success metrics
+- [x] Create 12-week curriculum config with all weeks and drills (Weeks 1-4 fully detailed, 5-12 outlined)
+- [x] Implement cycle logic to map calendar week to program week (12-week repeating cycle)
+- [x] Build API endpoints: getCurriculumWeek, getCurriculumToday, getCurriculumBlock, getAllCurriculum
+- [x] Created curriculumConfig.ts with complete data structure
+- [ ] Add program_meta field to study_sessions table for tracking guided sessions
+- [ ] Enhance Study Plan UI to show week theme banner
+- [ ] Add collapsible drills section to each day card showing tools and drills
+- [ ] Build Guided Session page with drill stepper
+- [ ] Implement drill completion tracking with notes
+- [ ] Add Guided vs Quick Session choice on Start Session button
+- [ ] Integrate program_meta into study session creation
+- [ ] Test all 12 weeks of curriculum content
+- [ ] Verify cycle logic correctly maps dates to program weeks

@@ -7,6 +7,7 @@ import * as db from "./db";
 import { generateWeekPlan, getTodayPlan } from "./studyPlan";
 import { getCompletedPlanSlots } from "./studyPlanDb";
 import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveTopic, type LeakData } from "./studyRecommendations";
+import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } from "./curriculumConfig";
 
 // Hardcoded user ID for single-user app
 const HARDCODED_USER_ID = 1;
@@ -389,6 +390,30 @@ export const appRouter = router({
       const todayPlan = getTodayPlan(today, completedSlots);
       
       return todayPlan;
+    }),
+    // 12-week curriculum endpoints
+    getCurriculumWeek: publicProcedure
+      .input(z.object({ date: z.date().optional() }))
+      .query(({ input }) => {
+        const targetDate = input.date || new Date();
+        const programStartDate = new Date(2025, 0, 1);
+        const week = getProgramWeekForDate(targetDate, programStartDate);
+        return week || null;
+      }),
+    getCurriculumToday: publicProcedure.query(() => {
+      const today = new Date();
+      const programStartDate = new Date(2025, 0, 1);
+      const drills = getTodayDrillsForProgram(today, programStartDate);
+      return drills || null;
+    }),
+    getCurriculumBlock: publicProcedure
+      .input(z.object({ blockNumber: z.number().min(1).max(3) }))
+      .query(({ input }) => {
+        const block = STUDY_CURRICULUM.find(b => b.blockNumber === input.blockNumber);
+        return block || null;
+      }),
+    getAllCurriculum: publicProcedure.query(() => {
+      return STUDY_CURRICULUM;
     }),
   }),
 
