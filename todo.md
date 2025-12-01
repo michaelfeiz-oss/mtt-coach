@@ -171,3 +171,17 @@
 - [x] DEFINITIVELY FIXED: Restructured conditional button rendering to use ternary with Fragments instead of && operator
 - [x] Root cause: Conditional rendering creating implicit array of buttons
 - [x] Solution: Changed to ternary operator with Fragment for incomplete state, single button for completed state
+
+
+## Feature: 12-Week Structured Study Plan
+- [x] Design database schema for 12-week plan (blocks, weeks, daily tasks)
+- [x] Add studyPlanBlocks, studyPlanWeeks, studyPlanTasks tables to schema
+- [x] Create 12-week study plan data structure (Blocks 1-4 with all daily tasks)
+- [ ] Create API endpoints for fetching 12-week plan
+- [ ] Build study plan editor UI for customizing plan
+- [ ] Create daily guidance page showing today's task with tools and focus
+- [ ] Integrate study sessions with 12-week plan tracking
+- [ ] Add weekly review summary showing progress vs plan
+- [ ] Build leak-to-study-plan recommendations engine
+- [ ] Test all 12-week plan features
+- [ ] Seed initial 12-week plan for users on first login

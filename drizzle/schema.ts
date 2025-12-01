@@ -194,3 +194,71 @@ export const handLeaks = mysqlTable("handLeaks", {
 
 export type HandLeak = typeof handLeaks.$inferSelect;
 export type InsertHandLeak = typeof handLeaks.$inferInsert;
+
+
+/**
+ * 12-Week Study Plan Block (Weeks 1-4, 5-8, 9-12)
+ */
+export const studyPlanBlocks = mysqlTable("studyPlanBlocks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  blockNumber: int("blockNumber").notNull(), // 1, 2, or 3
+  title: varchar("title", { length: 255 }).notNull(),
+  goal: text("goal"),
+  weekStart: int("weekStart").notNull(), // Week 1, 5, or 9
+  weekEnd: int("weekEnd").notNull(), // Week 4, 8, or 12
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userBlockIdx: index("user_block_idx").on(table.userId, table.blockNumber),
+}));
+
+export type StudyPlanBlock = typeof studyPlanBlocks.$inferSelect;
+export type InsertStudyPlanBlock = typeof studyPlanBlocks.$inferInsert;
+
+/**
+ * Weekly study plan with theme and focus
+ */
+export const studyPlanWeeks = mysqlTable("studyPlanWeeks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  blockId: int("blockId").notNull().references(() => studyPlanBlocks.id, { onDelete: "cascade" }),
+  weekNumber: int("weekNumber").notNull(), // 1-12
+  theme: varchar("theme", { length: 255 }).notNull(),
+  focusAreas: text("focusAreas"), // JSON array of focus areas
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userWeekIdx: index("user_week_idx").on(table.userId, table.weekNumber),
+}));
+
+export type StudyPlanWeek = typeof studyPlanWeeks.$inferSelect;
+export type InsertStudyPlanWeek = typeof studyPlanWeeks.$inferInsert;
+
+/**
+ * Daily study tasks within each week
+ */
+export const studyPlanTasks = mysqlTable("studyPlanTasks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  studyPlanWeekId: int("studyPlanWeekId").notNull().references(() => studyPlanWeeks.id, { onDelete: "cascade" }),
+  dayOfWeek: int("dayOfWeek").notNull(), // 1-7 (Monday-Sunday)
+  studyType: mysqlEnum("studyType", [
+    "RANGE_TRAINING",
+    "HAND_REVIEW",
+    "ICM",
+    "EXPLOIT_LAB",
+    "DEEP_DIVE",
+    "MENTAL_GAME",
+    "LIGHT_REVIEW"
+  ]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  tools: text("tools"), // JSON array: ["Preflop+", "PokerCruncher", ...]
+  focusPoints: text("focusPoints"), // JSON array of specific focus areas
+  durationMinutes: int("durationMinutes").default(45).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  weekTaskIdx: index("week_task_idx").on(table.studyPlanWeekId, table.dayOfWeek),
+}));
+
+export type StudyPlanTask = typeof studyPlanTasks.$inferSelect;
+export type InsertStudyPlanTask = typeof studyPlanTasks.$inferInsert;
