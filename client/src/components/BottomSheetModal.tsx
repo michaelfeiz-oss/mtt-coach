@@ -31,45 +31,47 @@ export function BottomSheetModal({
         onClick={onClose}
       />
 
-      {/* Bottom Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-border px-4 py-4 flex items-center justify-between rounded-t-2xl flex-shrink-0">
-          <h2 className="text-lg font-bold">{title}</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="px-4 py-6 space-y-4 overflow-y-auto flex-1">
-          {children}
-        </div>
-
-        {/* Footer */}
-        {onSubmit && (
-          <div className="bg-white border-t border-border px-4 py-4 flex gap-2 flex-shrink-0">
+      {/* Centered Modal Dialog */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col">
+          {/* Header */}
+          <div className="border-b border-border px-6 py-4 flex items-center justify-between flex-shrink-0">
+            <h2 className="text-lg font-bold">{title}</h2>
             <Button
-              variant="outline"
-              className="flex-1"
+              variant="ghost"
+              size="sm"
               onClick={onClose}
+              className="h-8 w-8 p-0"
             >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1 bg-orange-600 hover:bg-orange-700"
-              onClick={onSubmit}
-              disabled={isLoading}
-            >
-              {isLoading ? "Saving..." : submitLabel}
+              <X className="h-5 w-5" />
             </Button>
           </div>
-        )}
+
+          {/* Content - scrollable */}
+          <div className="px-6 py-4 space-y-3 overflow-y-auto flex-1 min-h-0">
+            {children}
+          </div>
+
+          {/* Footer - always visible */}
+          {onSubmit && (
+            <div className="border-t border-border px-6 py-4 flex gap-3 flex-shrink-0">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                onClick={onSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? "Saving..." : submitLabel}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
