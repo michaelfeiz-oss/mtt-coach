@@ -32,9 +32,9 @@ export function BottomSheetModal({
       />
 
       {/* Bottom Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-border px-4 py-4 flex items-center justify-between rounded-t-2xl">
+        <div className="sticky top-0 bg-white border-b border-border px-4 py-4 flex items-center justify-between rounded-t-2xl flex-shrink-0">
           <h2 className="text-lg font-bold">{title}</h2>
           <Button
             variant="ghost"
@@ -47,13 +47,13 @@ export function BottomSheetModal({
         </div>
 
         {/* Content */}
-        <div className="px-4 py-6 space-y-4">
+        <div className="px-4 py-6 space-y-4 overflow-y-auto flex-1">
           {children}
         </div>
 
         {/* Footer */}
         {onSubmit && (
-          <div className="sticky bottom-0 bg-white border-t border-border px-4 py-4 flex gap-2">
+          <div className="bg-white border-t border-border px-4 py-4 flex gap-2 flex-shrink-0">
             <Button
               variant="outline"
               className="flex-1"

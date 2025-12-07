@@ -269,3 +269,10 @@
 - [x] Create edit tournament modal component
 - [x] Wire edit modal to tRPC mutation endpoint
 - [x] Test edit functionality end-to-end
+
+
+## Bug Fix - Missing Save/Cancel Buttons in Log Tournament Modal
+- [x] Fix BottomSheetModal layout to ensure buttons are always visible
+- [x] Change container from overflow-y-auto to flex layout with scrollable content
+- [x] Test form submission with buttons visible
+- [x] Verify buttons don't scroll away when scrolling through form
