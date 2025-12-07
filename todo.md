@@ -304,3 +304,13 @@
 - [x] Redesign LogHandModal with clean visual UI
 - [x] Test all visual selection features end-to-end
 - [x] Ensure fast, intuitive, error-free hand logging
+
+
+## Bug Fix - Missing Next Button in Hand Logging
+- [x] Check LogHandModal for missing Next button in navigation
+- [x] Fix street navigation button layout
+- [x] Test navigation from Preflop to Flop/Turn/River
+- [x] Verify all 4 streets are accessible
+- [x] Changed modal from bottom sheet to centered dialog layout
+- [x] All navigation buttons now visible and functional
+- [x] Tested full flow: Preflop → Flop → Turn → River

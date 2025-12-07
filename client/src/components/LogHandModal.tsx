@@ -131,10 +131,10 @@ export function LogHandModal({ isOpen, onClose }: LogHandModalProps) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-      <div className="bg-white w-full max-h-[90vh] rounded-t-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
+        <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <div>
             <h2 className="text-lg font-semibold">Log Hand</h2>
             <p className="text-sm text-gray-500">
@@ -143,14 +143,14 @@ export function LogHandModal({ isOpen, onClose }: LogHandModalProps) {
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 text-xl"
           >
             ✕
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Content - scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
           {street === 0 && (
             <>
               {/* Preflop Section */}
@@ -367,8 +367,8 @@ export function LogHandModal({ isOpen, onClose }: LogHandModalProps) {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="border-t p-4 bg-white flex gap-2 justify-between sticky bottom-0">
+        {/* Footer - always visible */}
+        <div className="border-t p-6 bg-white flex gap-2 justify-between flex-shrink-0">
           <div className="flex gap-2">
             <Button
               variant="outline"
