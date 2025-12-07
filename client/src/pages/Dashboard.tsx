@@ -68,7 +68,7 @@ export default function Dashboard() {
                       weekday: "long",
                       month: "short",
                       day: "numeric",
-                    })}
+                    } as Intl.DateTimeFormatOptions)}
                   </CardDescription>
                 </div>
                 {todayPlan.completed && (
@@ -106,10 +106,17 @@ export default function Dashboard() {
                 </>
               )}
               <div className="flex gap-2">
-                {!todayPlan.completed ? (
+                {todayPlan.completed ? (
+                  <Button
+                    onClick={() => setLocation("/study-plan")}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    View Full Plan
+                  </Button>
+                ) : (
                   <>
                     <Button
-                      key="start-session"
                       onClick={() => {
                         const params = new URLSearchParams({
                           fromPlan: "true",
@@ -124,7 +131,6 @@ export default function Dashboard() {
                       Start Session
                     </Button>
                     <Button
-                      key="view-plan"
                       onClick={() => setLocation("/study-plan")}
                       variant="outline"
                       className="flex-1"
@@ -132,15 +138,6 @@ export default function Dashboard() {
                       View Full Plan
                     </Button>
                   </>
-                ) : (
-                  <Button
-                    key="view-plan-only"
-                    onClick={() => setLocation("/study-plan")}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    View Full Plan
-                  </Button>
                 )}
               </div>
             </CardContent>
