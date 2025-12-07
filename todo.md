@@ -256,3 +256,9 @@
 - [x] Build Add Note modal form
 - [x] Integrate all modals into Log.tsx
 - [x] Test all modal submissions
+
+
+## Bug Fix - Curriculum Sync Between Dashboard and Study
+- [x] Update Dashboard to use new 12-week curriculum instead of old study plan
+- [x] Verify Dashboard shows same week as Study page
+- [x] Test curriculum consistency across both pages

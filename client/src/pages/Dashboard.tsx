@@ -1,16 +1,45 @@
-import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap, Clock, Zap as ZapIcon } from "lucide-react";
+import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap, Clock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { PROGRAM_WEEKS } from "@/lib/curriculum";
+import { useState, useEffect } from "react";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const { data: todayPlan } = trpc.studyPlan.getToday.useQuery();
   const { data: dashboardStats } = trpc.dashboard.getStats.useQuery({ weekId: 1 });
+  const [currentWeek, setCurrentWeek] = useState(1);
+  const [todayDrill, setTodayDrill] = useState<any>(null);
 
+  // Calculate current week based on calendar
+  useEffect(() => {
+    const today = new Date();
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const weekNumber = Math.ceil(dayOfYear / 7);
+    const cycleWeek = ((weekNumber - 1) % 12) + 1;
+    setCurrentWeek(cycleWeek);
+
+    // Get today's drill
+    const weekData = PROGRAM_WEEKS[cycleWeek - 1];
+    if (weekData) {
+      const dayOfWeek = today.getDay();
+      const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to 0-6 (Mon-Sun)
+      const day = weekData.days[dayIndex];
+      if (day) {
+        setTodayDrill({
+          title: day.label,
+          description: day.description,
+          tool: day.drills[0]?.tool || "Poker Trainer",
+          week: cycleWeek,
+          dayName: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][dayIndex],
+        });
+      }
+    }
+  }, []);
+
+  const weekData = PROGRAM_WEEKS[currentWeek - 1];
   const studyProgress = dashboardStats ? (dashboardStats.studyHours / dashboardStats.studyHoursTarget) * 100 : 0;
   const tournamentsProgress = dashboardStats ? (dashboardStats.tournamentsCount / dashboardStats.tournamentsTarget) * 100 : 0;
 
@@ -33,23 +62,23 @@ export default function Dashboard() {
 
       <div className="container py-6 space-y-6">
         {/* TODAY'S TRAINING */}
-        {todayPlan && (
+        {todayDrill && (
           <Card className="border-l-4 border-l-primary bg-gradient-to-r from-primary/5 to-transparent">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Today's Training</CardTitle>
               <CardDescription className="text-xs">
-                Week {Math.ceil(new Date().getDate() / 7)} • {new Date().toLocaleDateString("en-US", { weekday: "long" })}
+                Week {currentWeek} • {todayDrill.dayName}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-sm font-bold">{todayPlan.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">Focus: {todayPlan.description}</p>
-                <p className="text-xs text-muted-foreground mt-1">Tool: Advanced Poker Training</p>
+                <p className="text-sm font-bold">{todayDrill.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">Focus: {todayDrill.description}</p>
+                <p className="text-xs text-muted-foreground mt-1">Tool: {todayDrill.tool}</p>
               </div>
               <Button
-                className="w-full"
-                onClick={() => setLocation("/log-session")}
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={() => setLocation("/study")}
               >
                 Start Session
               </Button>
@@ -65,7 +94,7 @@ export default function Dashboard() {
               variant="outline"
               size="lg"
               className="h-auto flex flex-col gap-1 py-3"
-              onClick={() => setLocation("/log-tournament")}
+              onClick={() => setLocation("/log")}
             >
               <Trophy className="h-5 w-5 text-orange-500" />
               <span className="text-xs font-medium">Log Tournament</span>
@@ -74,7 +103,7 @@ export default function Dashboard() {
               variant="outline"
               size="lg"
               className="h-auto flex flex-col gap-1 py-3"
-              onClick={() => setLocation("/hands")}
+              onClick={() => setLocation("/log")}
             >
               <Hand className="h-5 w-5 text-primary" />
               <span className="text-xs font-medium">Log Hand</span>
@@ -83,7 +112,7 @@ export default function Dashboard() {
               variant="outline"
               size="lg"
               className="h-auto flex flex-col gap-1 py-3"
-              onClick={() => setLocation("/hands")}
+              onClick={() => setLocation("/log")}
             >
               <FileText className="h-5 w-5 text-slate-500" />
               <span className="text-xs font-medium">My Notes</span>
@@ -104,16 +133,16 @@ export default function Dashboard() {
             </Card>
             <Card className="bg-gradient-to-br from-orange-50 to-transparent border-orange-200">
               <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold text-orange-600">{dashboardStats?.tournamentsCount || "0"}</p>
+                <p className="text-2xl font-bold text-orange-600">0</p>
                 <p className="text-xs text-muted-foreground mt-1">Solver Drills</p>
-                <Progress value={tournamentsProgress} className="h-1 mt-2" />
+                <Progress value={50} className="h-1 mt-2" />
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-green-50 to-transparent border-green-200">
               <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold text-green-600">12</p>
+                <p className="text-2xl font-bold text-green-600">{dashboardStats?.tournamentsCount || "0"}</p>
                 <p className="text-xs text-muted-foreground mt-1">APT Sessions</p>
-                <Progress value={60} className="h-1 mt-2" />
+                <Progress value={tournamentsProgress} className="h-1 mt-2" />
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-purple-50 to-transparent border-purple-200">
@@ -133,10 +162,10 @@ export default function Dashboard() {
             {recentActivity.map((activity, idx) => (
               <Card key={idx} className="hover:bg-muted/50 transition-colors cursor-pointer">
                 <CardContent className="pt-4 flex items-start gap-3">
-                  <span className="text-lg">{activity.emoji}</span>
+                  <span className="text-xl">{activity.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{activity.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                    <p className="text-xs text-muted-foreground">{activity.time}</p>
                   </div>
                 </CardContent>
               </Card>
