@@ -285,3 +285,13 @@
 - [x] Implement board progression tracking (Flop → Turn → River)
 - [x] Test full hand history logging end-to-end
 - [x] Keep dropdown prefill feature for quick entry
+
+
+## Feature: Redesign Hand History Logging (Proper Poker Notation)
+- [x] Update hand schema to capture table size, positions, action sequences
+- [x] Redesign preflop section: table size, hero position, hero cards, action sequence, villain tracking
+- [x] Redesign flop/turn/river: board, action sequence, result only if hand ended
+- [x] Create action sequence builder UI for easy entry
+- [x] Add villain position and estimated range fields
+- [x] Test new hand history logging with proper poker notation
+- [x] Verify action sequences are captured correctly

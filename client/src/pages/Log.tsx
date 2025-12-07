@@ -148,8 +148,6 @@ export default function Log() {
       <LogHandModal
         isOpen={showLogHandModal}
         onClose={() => setShowLogHandModal(false)}
-        onSubmit={handleLogHand}
-        isLoading={isCreatingHand}
       />
 
       <LogTournamentModal
