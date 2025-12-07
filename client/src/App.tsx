@@ -13,21 +13,26 @@ import LogStudySession from "./pages/LogStudySession";
 import LogTournament from "./pages/LogTournament";
 import HandsList from "./pages/HandsList";
 import HandDetail from "./pages/HandDetail";
+import BottomNav from "./components/BottomNav";
+import Log from "./pages/Log";
+import Study from "./pages/Study";
 
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Dashboard} />
-      <Route path={"/log-session"} component={LogStudySession} />
-      <Route path={"/log-tournament"} component={LogTournament} />
-      <Route path={"/hands"} component={HandsList} />
-      <Route path={"/hands/:id"} component={HandDetail} />
-      <Route path={"/leaks/:id"} component={LeakDetail} />
-      <Route path={"/tournaments/:id"} component={TournamentDetail} />
-      <Route path={"/study-plan"} component={StudyPlan} />
-      <Route path={"/guided-session"} component={GuidedSession} />
-      <Route path={"/404"} component={NotFound} />
-      <Route component={NotFound} />
+      <Route key="home" path={"/"} component={Dashboard} />
+      <Route key="log" path={"/log"} component={Log} />
+      <Route key="study" path={"/study"} component={Study} />
+      <Route key="log-session" path={"/log-session"} component={LogStudySession} />
+      <Route key="log-tournament" path={"/log-tournament"} component={LogTournament} />
+      <Route key="hands" path={"/hands"} component={HandsList} />
+      <Route key="hands-detail" path={"/hands/:id"} component={HandDetail} />
+      <Route key="leak-detail" path={"/leaks/:id"} component={LeakDetail} />
+      <Route key="tournament-detail" path={"/tournaments/:id"} component={TournamentDetail} />
+      <Route key="study-plan" path={"/study-plan"} component={StudyPlan} />
+      <Route key="guided-session" path={"/guided-session"} component={GuidedSession} />
+      <Route key="not-found-404" path={"/404"} component={NotFound} />
+      <Route key="not-found-default" component={NotFound} />
     </Switch>
   );
 }
@@ -39,6 +44,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <BottomNav />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
