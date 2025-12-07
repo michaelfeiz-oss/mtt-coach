@@ -205,7 +205,6 @@ export default function Dashboard() {
         {/* Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button
-            key="log-session-btn"
             size="lg"
             className="h-auto py-4 flex-col gap-2"
             onClick={() => setLocation("/log-session")}
@@ -213,10 +212,9 @@ export default function Dashboard() {
             <BookOpen className="h-5 w-5" />
             <span>Log Study Session</span>
           </Button>
-          <div key="tournament-actions" className="flex flex-col gap-2">
-            <QuickLogTournament key="quick-log" />
+          <div className="flex flex-col gap-2">
+            <QuickLogTournament />
             <Button
-              key="full-entry"
               size="sm"
               variant="ghost"
               className="h-8 text-xs"
@@ -226,7 +224,6 @@ export default function Dashboard() {
             </Button>
           </div>
           <Button
-            key="review-hands-btn"
             size="lg"
             variant="outline"
             className="h-auto py-4 flex-col gap-2"
