@@ -314,3 +314,20 @@
 - [x] Changed modal from bottom sheet to centered dialog layout
 - [x] All navigation buttons now visible and functional
 - [x] Tested full flow: Preflop → Flop → Turn → River
+
+
+## Feature: Hand Logging UI Redesign (Horizontal Stepper Pattern)
+- [x] Research best practices for multi-step forms and hand logging UX
+- [x] Analyze current LogHandModal issues and limitations
+- [x] Design new horizontal stepper interface
+- [x] Create visual progress indicator component (Stepper.tsx)
+- [x] Refactor LogHandModal to use stepper pattern
+- [x] Reorganize fields to show only relevant fields per street
+- [x] Add visual board state display at top of modal (BoardDisplay.tsx)
+- [x] Implement helpful context boxes for each street
+- [x] Test navigation and field validation
+- [x] Verify all 4 streets accessible and functional
+- [x] Test end-to-end hand logging flow
+- [x] Horizontal stepper shows all streets with clear progress
+- [x] Previous/Next buttons always visible and functional
+- [x] Field validation prevents advancing without required data
