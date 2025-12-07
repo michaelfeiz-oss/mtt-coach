@@ -233,3 +233,16 @@
 - [x] Phase 5: Rebuild Study tab with week-based course layout
 - [x] Phase 6: Add tone improvements (dark mode, animations, caching)
 - [x] Phase 7: Test and verify all features
+
+
+## Study Plan Redesign - Complete Implementation
+- [x] Phase 1: Redesign Dashboard with Today's Training card, Quick Actions (3 buttons), Weekly Progress (4 stat tiles), Activity Feed
+- [x] Phase 2: Rebuild Log tab with bottom sheet modals for Log Hand, Log Tournament, Log Leak, Add Note
+- [x] Phase 3: Enhance Study tab with daily drill cards showing Title, Tool, Duration, Steps, Deliverable
+- [x] Phase 4: Create 12-week program JSON structure with drill templates A-F
+- [x] Phase 5: Implement drill completion tracking and weekly progress calculation
+- [x] Phase 6: Add "Add Rules" modal for storing heuristics/exploits to Notes
+- [x] Phase 7: Add weekly review automation showing leaks, notes, study volume, drill compliance
+- [x] Phase 8: Implement guided session flow with step-by-step instructions
+- [x] Phase 9: Add week navigation (Prev Week / Next Week buttons)
+- [x] Phase 10: Test all features and verify 12-week program works end-to-end

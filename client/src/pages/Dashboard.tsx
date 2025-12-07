@@ -3,16 +3,23 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap } from "lucide-react";
+import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap, Clock, Zap as ZapIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { data: todayPlan } = trpc.studyPlan.getToday.useQuery();
-  const { data: dashboardStats, isLoading: statsLoading } = trpc.dashboard.getStats.useQuery({ weekId: 1 });
+  const { data: dashboardStats } = trpc.dashboard.getStats.useQuery({ weekId: 1 });
 
   const studyProgress = dashboardStats ? (dashboardStats.studyHours / dashboardStats.studyHoursTarget) * 100 : 0;
   const tournamentsProgress = dashboardStats ? (dashboardStats.tournamentsCount / dashboardStats.tournamentsTarget) * 100 : 0;
+
+  // Mock activity feed data
+  const recentActivity = [
+    { emoji: "🃏", title: "Hand Review — AQo vs CO", time: "2h ago" },
+    { emoji: "📘", title: "Study Session — 35m", time: "Yesterday" },
+    { emoji: "🏆", title: "Tournament — Kings 350 — +$850", time: "3 days ago" },
+  ];
 
   return (
     <div className="pb-24">
@@ -25,122 +32,115 @@ export default function Dashboard() {
       </div>
 
       <div className="container py-6 space-y-6">
-        {/* Today's Plan - Compact */}
+        {/* TODAY'S TRAINING */}
         {todayPlan && (
           <Card className="border-l-4 border-l-primary bg-gradient-to-r from-primary/5 to-transparent">
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">Today's Plan</CardTitle>
-                  <CardDescription className="text-xs mt-1">
-                    {new Date(todayPlan.date).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </CardDescription>
-                </div>
-                {todayPlan.completed && <span className="text-green-600 text-sm font-medium">✓ Done</span>}
-              </div>
+              <CardTitle className="text-lg">Today's Training</CardTitle>
+              <CardDescription className="text-xs">
+                Week {Math.ceil(new Date().getDate() / 7)} • {new Date().toLocaleDateString("en-US", { weekday: "long" })}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm font-medium">{todayPlan.label}</p>
-              <p className="text-sm text-muted-foreground">{todayPlan.description}</p>
-              <div className="flex gap-2 pt-2">
-                {!todayPlan.completed && (
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => setLocation("/log-session")}
-                  >
-                    Start Session
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setLocation("/study-plan")}
-                >
-                  View Plan
-                </Button>
+              <div>
+                <p className="text-sm font-bold">{todayPlan.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">Focus: {todayPlan.description}</p>
+                <p className="text-xs text-muted-foreground mt-1">Tool: Advanced Poker Training</p>
               </div>
+              <Button
+                className="w-full"
+                onClick={() => setLocation("/log-session")}
+              >
+                Start Session
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Quick Action Buttons - 6 Icon Grid */}
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={() => setLocation("/hands")}
-            className="p-4 bg-card rounded-lg border border-border hover:bg-muted transition-colors flex flex-col items-center gap-2"
-          >
-            <Hand className="h-6 w-6 text-primary" />
-            <span className="text-xs font-medium text-center">Log Hand</span>
-          </button>
-          <button
-            onClick={() => setLocation("/log-tournament")}
-            className="p-4 bg-card rounded-lg border border-border hover:bg-muted transition-colors flex flex-col items-center gap-2"
-          >
-            <Trophy className="h-6 w-6 text-orange-500" />
-            <span className="text-xs font-medium text-center">Log Tournament</span>
-          </button>
-          <button
-            onClick={() => setLocation("/hands")}
-            className="p-4 bg-card rounded-lg border border-border hover:bg-muted transition-colors flex flex-col items-center gap-2"
-          >
-            <Zap className="h-6 w-6 text-red-500" />
-            <span className="text-xs font-medium text-center">Add Leak</span>
-          </button>
-          <button
-            onClick={() => setLocation("/log-session")}
-            className="p-4 bg-card rounded-lg border border-border hover:bg-muted transition-colors flex flex-col items-center gap-2"
-          >
-            <BookOpen className="h-6 w-6 text-blue-500" />
-            <span className="text-xs font-medium text-center">Add Study</span>
-          </button>
-          <button
-            onClick={() => setLocation("/hands")}
-            className="p-4 bg-card rounded-lg border border-border hover:bg-muted transition-colors flex flex-col items-center gap-2"
-          >
-            <TrendingUp className="h-6 w-6 text-green-500" />
-            <span className="text-xs font-medium text-center">Review Hands</span>
-          </button>
-          <button
-            onClick={() => setLocation("/study-plan")}
-            className="p-4 bg-card rounded-lg border border-border hover:bg-muted transition-colors flex flex-col items-center gap-2"
-          >
-            <FileText className="h-6 w-6 text-slate-500" />
-            <span className="text-xs font-medium text-center">My Notes</span>
-          </button>
+        {/* QUICK ACTIONS - 3 Buttons */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Quick Actions</h3>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-auto flex flex-col gap-1 py-3"
+              onClick={() => setLocation("/log-tournament")}
+            >
+              <Trophy className="h-5 w-5 text-orange-500" />
+              <span className="text-xs font-medium">Log Tournament</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-auto flex flex-col gap-1 py-3"
+              onClick={() => setLocation("/hands")}
+            >
+              <Hand className="h-5 w-5 text-primary" />
+              <span className="text-xs font-medium">Log Hand</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-auto flex flex-col gap-1 py-3"
+              onClick={() => setLocation("/hands")}
+            >
+              <FileText className="h-5 w-5 text-slate-500" />
+              <span className="text-xs font-medium">My Notes</span>
+            </Button>
+          </div>
         </div>
 
-        {/* Weekly Progress - 4 Stat Cards */}
-        <div>
-          <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-3">This Week</h3>
+        {/* THIS WEEK'S PROGRESS - 4 Stat Tiles */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">This Week's Progress</h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-4 bg-card rounded-lg border border-border text-center">
-              <p className="text-2xl font-bold text-primary">{dashboardStats?.studyHours.toFixed(1) || "0"}</p>
-              <p className="text-xs text-muted-foreground mt-1">Hours Studied</p>
-              <Progress value={studyProgress} className="h-1 mt-2" />
-              <p className="text-xs text-muted-foreground mt-1">{dashboardStats?.studyHoursTarget}h target</p>
-            </div>
-            <div className="p-4 bg-card rounded-lg border border-border text-center">
-              <p className="text-2xl font-bold text-orange-500">{dashboardStats?.tournamentsCount || "0"}</p>
-              <p className="text-xs text-muted-foreground mt-1">Tournaments</p>
-              <Progress value={tournamentsProgress} className="h-1 mt-2" />
-              <p className="text-xs text-muted-foreground mt-1">{dashboardStats?.tournamentsTarget} target</p>
-            </div>
-            <div className="p-4 bg-card rounded-lg border border-border text-center">
-              <p className="text-2xl font-bold text-slate-600">0</p>
-              <p className="text-xs text-muted-foreground mt-1">Hands Logged</p>
-              <p className="text-xs text-muted-foreground mt-2">50+ recommended</p>
-            </div>
-            <div className="p-4 bg-card rounded-lg border border-border text-center">
-              <p className="text-2xl font-bold text-green-600">${dashboardStats?.netResult.toFixed(0) || "0"}</p>
-              <p className="text-xs text-muted-foreground mt-1">Net Result</p>
-              <p className="text-xs text-muted-foreground mt-2">This week</p>
-            </div>
+            <Card className="bg-gradient-to-br from-blue-50 to-transparent border-blue-200">
+              <CardContent className="pt-4 text-center">
+                <p className="text-2xl font-bold text-blue-600">{dashboardStats?.studyHours.toFixed(0) || "0"}</p>
+                <p className="text-xs text-muted-foreground mt-1">Hours Studied</p>
+                <Progress value={studyProgress} className="h-1 mt-2" />
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-orange-50 to-transparent border-orange-200">
+              <CardContent className="pt-4 text-center">
+                <p className="text-2xl font-bold text-orange-600">{dashboardStats?.tournamentsCount || "0"}</p>
+                <p className="text-xs text-muted-foreground mt-1">Solver Drills</p>
+                <Progress value={tournamentsProgress} className="h-1 mt-2" />
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-green-50 to-transparent border-green-200">
+              <CardContent className="pt-4 text-center">
+                <p className="text-2xl font-bold text-green-600">12</p>
+                <p className="text-xs text-muted-foreground mt-1">APT Sessions</p>
+                <Progress value={60} className="h-1 mt-2" />
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-purple-50 to-transparent border-purple-200">
+              <CardContent className="pt-4 text-center">
+                <p className="text-2xl font-bold text-purple-600">18</p>
+                <p className="text-xs text-muted-foreground mt-1">ICM Spots</p>
+                <Progress value={75} className="h-1 mt-2" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* RECENT ACTIVITY FEED */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Recent Activity</h3>
+          <div className="space-y-2">
+            {recentActivity.map((activity, idx) => (
+              <Card key={idx} className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="pt-4 flex items-start gap-3">
+                  <span className="text-lg">{activity.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{activity.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
