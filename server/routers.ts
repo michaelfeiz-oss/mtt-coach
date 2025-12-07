@@ -153,6 +153,32 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return db.getTournamentById(input.id);
       }),
+    update: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        buyIn: z.number().optional(),
+        reEntries: z.number().optional(),
+        startingStack: z.number().optional(),
+        finalPosition: z.number().optional(),
+        prize: z.number().optional(),
+        venue: z.string().optional(),
+        notesOverall: z.string().optional(),
+        netResult: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...updates } = input;
+        if (updates.buyIn !== undefined || updates.reEntries !== undefined || updates.prize !== undefined) {
+          const tournament = await db.getTournamentById(id);
+          if (tournament) {
+            const buyIn = updates.buyIn ?? tournament.buyIn;
+            const reEntries = updates.reEntries ?? tournament.reEntries;
+            const prize = updates.prize ?? tournament.prize;
+            updates.netResult = prize - (buyIn * (1 + reEntries));
+          }
+        }
+        await db.updateTournament(id, updates);
+        return db.getTournamentById(id);
+      }),
   }),
 
   // Hands

@@ -262,3 +262,10 @@
 - [x] Update Dashboard to use new 12-week curriculum instead of old study plan
 - [x] Verify Dashboard shows same week as Study page
 - [x] Test curriculum consistency across both pages
+
+
+## Feature: Edit Tournament Entries
+- [x] Add edit button to tournament entries in Recent Activity
+- [x] Create edit tournament modal component
+- [x] Wire edit modal to tRPC mutation endpoint
+- [x] Test edit functionality end-to-end

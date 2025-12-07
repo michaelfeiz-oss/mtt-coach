@@ -2,16 +2,28 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap, Clock } from "lucide-react";
+import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap, Clock, Edit2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PROGRAM_WEEKS } from "@/lib/curriculum";
 import { useState, useEffect } from "react";
+import { EditTournamentModal } from "@/components/EditTournamentModal";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const { data: dashboardStats } = trpc.dashboard.getStats.useQuery({ weekId: 1 });
   const [currentWeek, setCurrentWeek] = useState(1);
+  const { data: dashboardStats } = trpc.dashboard.getStats.useQuery({ weekId: currentWeek });
+  const { data: tournaments } = trpc.tournaments.getByWeek.useQuery({ weekId: currentWeek });
   const [todayDrill, setTodayDrill] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState<any>(null);
+  
+  const { mutate: updateTournament, isPending: isUpdatingTournament } =
+    trpc.tournaments.update.useMutation({
+      onSuccess: () => {
+        setShowEditModal(false);
+        setSelectedTournament(null);
+      },
+    });
 
   // Calculate current week based on calendar
   useEffect(() => {
@@ -43,12 +55,28 @@ export default function Dashboard() {
   const studyProgress = dashboardStats ? (dashboardStats.studyHours / dashboardStats.studyHoursTarget) * 100 : 0;
   const tournamentsProgress = dashboardStats ? (dashboardStats.tournamentsCount / dashboardStats.tournamentsTarget) * 100 : 0;
 
-  // Mock activity feed data
-  const recentActivity = [
-    { emoji: "🃏", title: "Hand Review — AQo vs CO", time: "2h ago" },
-    { emoji: "📘", title: "Study Session — 35m", time: "Yesterday" },
-    { emoji: "🏆", title: "Tournament — Kings 350 — +$850", time: "3 days ago" },
-  ];
+  // Build activity feed from real tournament data
+  const recentActivity = tournaments?.map((t: any) => ({
+    id: t.id,
+    emoji: "🏆",
+    title: `Tournament — ${t.venue || "Tournament"} ${t.buyIn > 0 ? "$" + t.buyIn : ""} — ${t.netResult >= 0 ? "+" : ""}$${Math.abs(t.netResult).toFixed(0)}`,
+    time: new Date(t.date).toLocaleDateString(),
+    tournament: t,
+  })) || [];
+
+  const handleEditTournament = (data: any) => {
+    if (!selectedTournament) return;
+    updateTournament({
+      id: selectedTournament.id,
+      buyIn: parseFloat(data.buyIn),
+      reEntries: parseInt(data.reEntries) || 0,
+      startingStack: parseInt(data.startingStack) || 0,
+      finalPosition: data.finalPosition,
+      prize: parseFloat(data.prize) || 0,
+      venue: data.venue || "",
+      notesOverall: data.notes || "",
+    });
+  };
 
   return (
     <div className="pb-24">
@@ -159,20 +187,43 @@ export default function Dashboard() {
         <div className="space-y-2">
           <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Recent Activity</h3>
           <div className="space-y-2">
-            {recentActivity.map((activity, idx) => (
-              <Card key={idx} className="hover:bg-muted/50 transition-colors cursor-pointer">
-                <CardContent className="pt-4 flex items-start gap-3">
-                  <span className="text-xl">{activity.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{activity.title}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+            {recentActivity.map((activity) => (
+              <Card key={activity.id} className="hover:bg-muted/50 transition-colors">
+                <CardContent className="pt-4 flex items-start gap-3 justify-between">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <span className="text-xl">{activity.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{activity.title}</p>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    </div>
                   </div>
+                  {activity.tournament && (
+                    <button
+                      onClick={() => {
+                        setSelectedTournament(activity.tournament);
+                        setShowEditModal(true);
+                      }}
+                      className="ml-2 p-1 hover:bg-muted rounded transition-colors flex-shrink-0"
+                      title="Edit tournament"
+                    >
+                      <Edit2 className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
       </div>
+
+      {/* EDIT TOURNAMENT MODAL */}
+      <EditTournamentModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleEditTournament}
+        isLoading={isUpdatingTournament}
+        tournament={selectedTournament}
+      />
     </div>
   );
 }
