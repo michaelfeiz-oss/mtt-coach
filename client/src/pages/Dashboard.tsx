@@ -53,7 +53,7 @@ export default function Dashboard() {
 
       <main className="container py-6 space-y-6">
         {/* Today's Study Card */}
-        {todayPlan && (
+        {todayPlan ? (
           <Card className={`${
             todayPlan.completed
               ? "border-green-200 bg-green-50"
@@ -142,7 +142,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         {/* Week Overview */}
         <Card>
