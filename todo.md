@@ -246,3 +246,13 @@
 - [x] Phase 8: Implement guided session flow with step-by-step instructions
 - [x] Phase 9: Add week navigation (Prev Week / Next Week buttons)
 - [x] Phase 10: Test all features and verify 12-week program works end-to-end
+
+
+## Bottom Sheet Modals Implementation
+- [x] Create reusable BottomSheet component with open/close state
+- [x] Build Log Hand modal form
+- [x] Build Log Tournament modal form
+- [x] Build Add Leak modal form
+- [x] Build Add Note modal form
+- [x] Integrate all modals into Log.tsx
+- [x] Test all modal submissions

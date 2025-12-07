@@ -1,208 +1,179 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { BottomSheet } from "@/components/BottomSheet";
-import { Hand, Trophy, Target, FileText } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
+import { LogHandModal } from "@/components/LogHandModal";
+import { LogTournamentModal } from "@/components/LogTournamentModal";
+import { AddLeakModal } from "@/components/AddLeakModal";
+import { AddNoteModal } from "@/components/AddNoteModal";
+import { Card } from "@/components/ui/card";
+import { Zap, Trophy, AlertCircle, FileText } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 export default function Log() {
-  const [activeSheet, setActiveSheet] = useState<string | null>(null);
+  const [showLogHandModal, setShowLogHandModal] = useState(false);
+  const [showLogTournamentModal, setShowLogTournamentModal] = useState(false);
+  const [showAddLeakModal, setShowAddLeakModal] = useState(false);
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
+
+  const { mutate: createHand, isPending: isCreatingHand } =
+    trpc.hands.create.useMutation({
+      onSuccess: () => {
+        setShowLogHandModal(false);
+      },
+    });
+
+  const { mutate: createTournament, isPending: isCreatingTournament } =
+    trpc.tournaments.create.useMutation({
+      onSuccess: () => {
+        setShowLogTournamentModal(false);
+      },
+    });
+
+  const { mutate: createLeak, isPending: isCreatingLeak } =
+    trpc.leaks.create.useMutation({
+      onSuccess: () => {
+        setShowAddLeakModal(false);
+      },
+    });
+
+  const handleLogHand = (data: any) => {
+    createHand({
+      heroPosition: data.position,
+      effectiveStackBb: parseInt(data.stackSize),
+      boardRunout: data.board || "",
+    });
+  };
+
+  const handleLogTournament = (data: any) => {
+    createTournament({
+      date: new Date(),
+      buyIn: parseFloat(data.buyIn),
+      reEntries: parseInt(data.reEntries) || 0,
+      startingStack: parseInt(data.startingStack) || 0,
+      finalPosition: data.finalPosition,
+      prize: parseFloat(data.prize) || 0,
+      venue: data.venue || "",
+      notesOverall: data.notes || "",
+    });
+  };
+
+  const handleAddLeak = (data: any) => {
+    createLeak({
+      name: data.leakType,
+      category: (data.leakType || "PREFLOP").toUpperCase() as any,
+      description: data.notes || "",
+      status: "ACTIVE",
+    });
+  };
+
+  const handleAddNote = (data: any) => {
+    console.log("Note saved:", data);
+  };
 
   return (
-    <div className="pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-6 border-b border-border">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold">Log Activity</h1>
-          <p className="text-sm text-muted-foreground mt-1">Quick entry for hands, tournaments, and study</p>
-        </div>
+      <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200 px-4 py-6">
+        <h1 className="text-2xl font-bold text-gray-900">Log</h1>
+        <p className="text-sm text-gray-600">Quick entry for hands, tournaments, leaks, and notes</p>
       </div>
 
-      <div className="container py-6 space-y-3">
-        {/* LOG OPTIONS - 4 Buttons */}
-        <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Log Options</h3>
-
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full h-auto flex items-center justify-start gap-3 py-4 px-4"
-          onClick={() => setActiveSheet("hand")}
+      {/* Content */}
+      <div className="px-4 py-6 space-y-4 max-w-2xl mx-auto">
+        {/* Log Hand */}
+        <Card
+          className="p-4 border-l-4 border-l-orange-600 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowLogHandModal(true)}
         >
-          <Hand className="h-6 w-6 text-primary" />
-          <div className="text-left">
-            <p className="font-semibold">Log Hand</p>
-            <p className="text-xs text-muted-foreground">Quick entry for a single hand</p>
+          <div className="flex items-start gap-3">
+            <div className="bg-orange-100 p-3 rounded-lg">
+              <Zap className="h-6 w-6 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Log Hand</h3>
+              <p className="text-sm text-gray-600">Record a hand you played</p>
+            </div>
           </div>
-        </Button>
+        </Card>
 
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full h-auto flex items-center justify-start gap-3 py-4 px-4"
-          onClick={() => setActiveSheet("tournament")}
+        {/* Log Tournament */}
+        <Card
+          className="p-4 border-l-4 border-l-orange-600 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowLogTournamentModal(true)}
         >
-          <Trophy className="h-6 w-6 text-orange-500" />
-          <div className="text-left">
-            <p className="font-semibold">Log Tournament</p>
-            <p className="text-xs text-muted-foreground">Record tournament results</p>
+          <div className="flex items-start gap-3">
+            <div className="bg-orange-100 p-3 rounded-lg">
+              <Trophy className="h-6 w-6 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Log Tournament</h3>
+              <p className="text-sm text-gray-600">Record tournament results</p>
+            </div>
           </div>
-        </Button>
+        </Card>
 
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full h-auto flex items-center justify-start gap-3 py-4 px-4"
-          onClick={() => setActiveSheet("leak")}
+        {/* Add Leak */}
+        <Card
+          className="p-4 border-l-4 border-l-orange-600 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowAddLeakModal(true)}
         >
-          <Target className="h-6 w-6 text-red-500" />
-          <div className="text-left">
-            <p className="font-semibold">Add Leak</p>
-            <p className="text-xs text-muted-foreground">Track a new leak to focus on</p>
+          <div className="flex items-start gap-3">
+            <div className="bg-orange-100 p-3 rounded-lg">
+              <AlertCircle className="h-6 w-6 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Add Leak</h3>
+              <p className="text-sm text-gray-600">Identify a weakness in your game</p>
+            </div>
           </div>
-        </Button>
+        </Card>
 
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full h-auto flex items-center justify-start gap-3 py-4 px-4"
-          onClick={() => setActiveSheet("note")}
+        {/* Add Note */}
+        <Card
+          className="p-4 border-l-4 border-l-orange-600 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowAddNoteModal(true)}
         >
-          <FileText className="h-6 w-6 text-slate-500" />
-          <div className="text-left">
-            <p className="font-semibold">Add Note</p>
-            <p className="text-xs text-muted-foreground">Quick note or observation</p>
+          <div className="flex items-start gap-3">
+            <div className="bg-orange-100 p-3 rounded-lg">
+              <FileText className="h-6 w-6 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">Add Note</h3>
+              <p className="text-sm text-gray-600">Save observations or strategy ideas</p>
+            </div>
           </div>
-        </Button>
+        </Card>
       </div>
 
-      {/* LOG HAND SHEET */}
-      <BottomSheet
-        isOpen={activeSheet === "hand"}
-        onClose={() => setActiveSheet(null)}
-        title="Log Hand"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Board</label>
-            <Input placeholder="e.g., T♠ 8♥ 7♦" className="mt-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Stage</label>
-            <div className="flex gap-2 mt-2">
-              {["Preflop", "Flop", "Turn", "River"].map((stage) => (
-                <Button key={stage} variant="outline" size="sm" className="flex-1">
-                  {stage}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Mistake?</label>
-            <div className="flex gap-2 mt-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                Yes
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1">
-                No
-              </Button>
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Notes</label>
-            <Textarea placeholder="What happened?" className="mt-2 min-h-24" />
-          </div>
-          <Button className="w-full">Save Hand</Button>
-        </div>
-      </BottomSheet>
+      {/* Modals */}
+      <LogHandModal
+        isOpen={showLogHandModal}
+        onClose={() => setShowLogHandModal(false)}
+        onSubmit={handleLogHand}
+        isLoading={isCreatingHand}
+      />
 
-      {/* LOG TOURNAMENT SHEET */}
-      <BottomSheet
-        isOpen={activeSheet === "tournament"}
-        onClose={() => setActiveSheet(null)}
-        title="Log Tournament"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Tournament Name</label>
-            <Input placeholder="e.g., Kings 350" className="mt-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Buy-in</label>
-            <Input placeholder="$" type="number" className="mt-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Prize</label>
-            <Input placeholder="$" type="number" className="mt-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Finish Position</label>
-            <Input placeholder="e.g., 5th" className="mt-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Notes</label>
-            <Textarea placeholder="How did you play?" className="mt-2 min-h-24" />
-          </div>
-          <Button className="w-full">Save Tournament</Button>
-        </div>
-      </BottomSheet>
+      <LogTournamentModal
+        isOpen={showLogTournamentModal}
+        onClose={() => setShowLogTournamentModal(false)}
+        onSubmit={handleLogTournament}
+        isLoading={isCreatingTournament}
+      />
 
-      {/* ADD LEAK SHEET */}
-      <BottomSheet
-        isOpen={activeSheet === "leak"}
-        onClose={() => setActiveSheet(null)}
-        title="Add Leak"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Leak Name</label>
-            <Input placeholder="e.g., Overfolding to 3-bets" className="mt-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Category</label>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {["Preflop", "Flop", "Turn", "River", "ICM"].map((cat) => (
-                <Button key={cat} variant="outline" size="sm">
-                  {cat}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Severity</label>
-            <div className="flex gap-2 mt-2">
-              {["Low", "Medium", "High"].map((sev) => (
-                <Button key={sev} variant="outline" size="sm" className="flex-1">
-                  {sev}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Description</label>
-            <Textarea placeholder="Describe the leak..." className="mt-2 min-h-24" />
-          </div>
-          <Button className="w-full">Save Leak</Button>
-        </div>
-      </BottomSheet>
+      <AddLeakModal
+        isOpen={showAddLeakModal}
+        onClose={() => setShowAddLeakModal(false)}
+        onSubmit={handleAddLeak}
+        isLoading={isCreatingLeak}
+      />
 
-      {/* ADD NOTE SHEET */}
-      <BottomSheet
-        isOpen={activeSheet === "note"}
-        onClose={() => setActiveSheet(null)}
-        title="Add Note"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Note Title</label>
-            <Input placeholder="e.g., Key insight" className="mt-2" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Content</label>
-            <Textarea placeholder="Your note..." className="mt-2 min-h-32" />
-          </div>
-          <Button className="w-full">Save Note</Button>
-        </div>
-      </BottomSheet>
+      <AddNoteModal
+        isOpen={showAddNoteModal}
+        onClose={() => setShowAddNoteModal(false)}
+        onSubmit={handleAddNote}
+      />
+
+      {/* Bottom Navigation */}
+      <BottomNav />
     </div>
   );
 }
