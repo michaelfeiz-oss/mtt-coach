@@ -295,3 +295,12 @@
 - [x] Add villain position and estimated range fields
 - [x] Test new hand history logging with proper poker notation
 - [x] Verify action sequences are captured correctly
+
+
+## Feature: Hand Logging UI Redesign (Visual Selection)
+- [x] Create visual hand picker component (52-card grid)
+- [x] Create preflop action builder (click-to-add actions)
+- [x] Create board picker component (visual card selection)
+- [x] Redesign LogHandModal with clean visual UI
+- [x] Test all visual selection features end-to-end
+- [x] Ensure fast, intuitive, error-free hand logging
