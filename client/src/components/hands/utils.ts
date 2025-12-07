@@ -200,3 +200,87 @@ export function buildStreetDataJson({
     overallNotes: notes || null,
   };
 }
+
+
+/**
+ * Generate board & action preview text for collapsed accordion
+ */
+export function generateBoardSummary(
+  flopBoard: string,
+  turnCard: string,
+  riverCard: string,
+  streetAction: StreetAction | null
+): string {
+  const parts: string[] = [];
+
+  if (flopBoard) {
+    parts.push(`Flop: ${flopBoard}`);
+  }
+  if (turnCard) {
+    parts.push(`Turn: ${turnCard[0]}`);
+  }
+  if (riverCard) {
+    parts.push(`River: ${riverCard[0]}`);
+  }
+
+  if (streetAction) {
+    const actionStr = generateActionSummary(streetAction);
+    if (actionStr) parts.push(actionStr);
+  }
+
+  return parts.length > 0 ? parts.join(", ") : "No board or actions";
+}
+
+/**
+ * Generate villain & context preview text for collapsed accordion
+ */
+export function generateVillainSummary(
+  villainType: VillainType | "" | undefined,
+  villainRangeType: VillainRangeType | "" | undefined,
+  gameType: string | undefined,
+  tournamentPhase: string | undefined,
+  isPko: boolean
+): string {
+  const parts: string[] = [];
+
+  if (villainType) {
+    parts.push(villainType);
+  }
+  if (villainRangeType) {
+    parts.push(villainRangeType);
+  }
+  if (gameType) {
+    parts.push(gameType);
+  }
+  if (tournamentPhase) {
+    parts.push(tournamentPhase);
+  }
+  if (isPko) {
+    parts.push("PKO");
+  }
+
+  return parts.length > 0 ? parts.join(", ") : "No villain or context info";
+}
+
+/**
+ * Generate outcome & notes preview text for collapsed accordion
+ */
+export function generateOutcomeSummary(
+  result: HandResult | "" | undefined,
+  evLossBb: number,
+  notes: string
+): string {
+  const parts: string[] = [];
+
+  if (result) {
+    parts.push(result);
+  }
+  if (evLossBb > 0) {
+    parts.push(`EV loss ~${evLossBb}bb`);
+  }
+  if (notes) {
+    parts.push(notes.substring(0, 30) + (notes.length > 30 ? "..." : ""));
+  }
+
+  return parts.length > 0 ? parts.join(", ") : "No outcome or notes";
+}

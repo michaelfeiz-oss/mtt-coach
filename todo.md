@@ -376,3 +376,23 @@
 - [x] Only 4 required fields for fast logging (~20 seconds)
 - [x] All optional sections available (board, actions, villain, outcome, notes)
 - [x] Successfully logged test hand: SRP-IP, BTN, AsKs, 50BB
+
+
+## Feature: Hand Logger v2.1 - UX Cleanup & Logic Fix
+- [x] Refactor LogHandModalV2 layout: Essential section (Spot Type, Hero Info) always open
+- [x] Create 3 accordions: Board & Actions, Villain & Context, Outcome & Notes
+- [x] All accordions collapsed by default on first open
+- [x] Remove coloured summary blocks (green, blue, purple, yellow boxes)
+- [x] Add grey preview lines under collapsed accordion titles
+- [x] Refactor BoardForm: visual card slots for Flop (3), Turn (1), River (1)
+- [x] Keep board runout string internal, never expose raw string to user
+- [x] Add Context fields: Game Type (Live/Online), Tournament Phase, PKO (Yes/No)
+- [x] Store context in streetDataJson.meta.context
+- [x] Verify only 4 fields required: Spot type, Position, Hand, Stack
+- [x] All other fields must be optional and never block Save
+- [x] Keep Action Section: Key Street, Villain Action, Villain Size, Hero Action, Hero Size
+- [x] Auto-generate action summary string (internal only, in accordion preview)
+- [x] Increase modal width on desktop, reduce vertical spacing
+- [x] Shorten labels and limit help text to 1 line max
+- [x] Test full UX flow with accordions
+- [x] Verify data persistence with new context fields
