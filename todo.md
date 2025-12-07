@@ -331,3 +331,48 @@
 - [x] Horizontal stepper shows all streets with clear progress
 - [x] Previous/Next buttons always visible and functional
 - [x] Field validation prevents advancing without required data
+
+
+## Feature: LogHandModalV2 - Fast Spot Logger
+- [ ] Create hands/ subdirectory structure
+- [ ] Implement SpotTypeSelector component (pill buttons for 8 spot types)
+- [ ] Implement HeroInfoForm component (position, hand, effective stack)
+- [ ] Implement BoardForm component (flop/turn/river card pickers)
+- [ ] Implement PlayerActionsForm component (structured street actions)
+- [ ] Implement VillainProfileForm component (villain type + range type)
+- [ ] Implement OutcomeForm component (result + EV loss slider)
+- [ ] Implement NotesForm component (textarea for notes)
+- [ ] Create utils.ts with mapping and builder functions
+- [ ] Create LogHandModalV2.tsx main container
+- [ ] Build boardRunout concatenation logic
+- [ ] Build streetDataJson structure builder
+- [ ] Implement validation logic (required fields only)
+- [ ] Integrate with trpc.hands.create mutation
+- [ ] Test basic hand logging (4 required fields)
+- [ ] Test optional fields (board, actions, villain, outcome, notes)
+- [ ] Test save button enable/disable logic
+- [ ] Verify backward compatibility with old hands
+- [ ] Add LogHandModalV2 to Log page (replace or alongside LogHandModal)
+
+
+## COMPLETED: LogHandModalV2 - Fast Spot Logger
+- [x] Create hands/ subdirectory structure
+- [x] Implement SpotTypeSelector component (pill buttons for 8 spot types)
+- [x] Implement HeroInfoForm component (position, hand, effective stack)
+- [x] Implement BoardForm component (flop/turn/river card pickers)
+- [x] Implement PlayerActionsForm component (structured street actions)
+- [x] Implement VillainProfileForm component (villain type + range type)
+- [x] Implement OutcomeForm component (result + EV loss slider)
+- [x] Implement NotesForm component (textarea for notes)
+- [x] Create utils.ts with mapping and builder functions
+- [x] Create LogHandModalV2.tsx main container
+- [x] Build boardRunout concatenation logic
+- [x] Build streetDataJson structure builder
+- [x] Integrate LogHandModalV2 into Log page
+- [x] Test full hand logging flow (Spot Type -> Position -> Hand -> Stack)
+- [x] Verify backend integration and data persistence
+- [x] Modal closes successfully after saving
+- [x] Single-page scrollable interface (no multi-step stepper)
+- [x] Only 4 required fields for fast logging (~20 seconds)
+- [x] All optional sections available (board, actions, villain, outcome, notes)
+- [x] Successfully logged test hand: SRP-IP, BTN, AsKs, 50BB

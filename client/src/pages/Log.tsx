@@ -1,6 +1,6 @@
 import { useState } from "react";
 import BottomNav from "@/components/BottomNav";
-import { LogHandModal } from "@/components/LogHandModal";
+import { LogHandModalV2 } from "@/components/hands/LogHandModalV2";
 import { LogTournamentModal } from "@/components/LogTournamentModal";
 import { AddLeakModal } from "@/components/AddLeakModal";
 import { AddNoteModal } from "@/components/AddNoteModal";
@@ -145,7 +145,7 @@ export default function Log() {
       </div>
 
       {/* Modals */}
-      <LogHandModal
+      <LogHandModalV2
         isOpen={showLogHandModal}
         onClose={() => setShowLogHandModal(false)}
       />

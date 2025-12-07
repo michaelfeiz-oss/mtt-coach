@@ -1,0 +1,202 @@
+import { SpotType } from "./SpotTypeSelector";
+import { StreetAction, SizeBucket } from "./PlayerActionsForm";
+import { VillainType, VillainRangeType } from "./VillainProfileForm";
+import { HandResult } from "./OutcomeForm";
+
+/**
+ * Map UI SpotType to database spotType enum
+ */
+export function mapUiSpotTypeToDb(
+  uiSpotType: SpotType
+): "SINGLE_RAISED_POT" | "3BET_POT" | "BvB" | "ICM_SPOT" | "LIMPED_POT" {
+  switch (uiSpotType) {
+    case "SINGLE_RAISED_POT_IP":
+    case "SINGLE_RAISED_POT_OOP":
+      return "SINGLE_RAISED_POT";
+    case "THREE_BET_POT_IP":
+    case "THREE_BET_POT_OOP":
+    case "FOUR_BET_POT":
+      return "3BET_POT";
+    case "BLINDS_VS_BLIND":
+      return "BvB";
+    case "ICM_SPOT":
+      return "ICM_SPOT";
+    case "LIMPED_POT":
+      return "LIMPED_POT";
+  }
+}
+
+/**
+ * Extract spot position (IP/OOP) from UI SpotType
+ */
+export function extractSpotPosition(
+  uiSpotType: SpotType
+): "IP" | "OOP" | undefined {
+  if (uiSpotType.endsWith("_IP")) return "IP";
+  if (uiSpotType.endsWith("_OOP")) return "OOP";
+  return undefined;
+}
+
+/**
+ * Extract spot subtype (e.g., "4BP") from UI SpotType
+ */
+export function extractSpotSubtype(uiSpotType: SpotType): string | undefined {
+  if (uiSpotType === "FOUR_BET_POT") return "4BP";
+  return undefined;
+}
+
+/**
+ * Build board runout string from flop, turn, river cards
+ */
+export function buildBoardRunout(
+  flopBoard: string,
+  turnCard: string,
+  riverCard: string
+): string | undefined {
+  let runout = flopBoard || "";
+  if (turnCard) {
+    const turnRank = turnCard[0];
+    const turnSuitCode = parseInt(turnCard.substring(1));
+    const turnSuit = String.fromCharCode(turnSuitCode);
+    runout += turnRank + turnSuit;
+  }
+  if (riverCard) {
+    const riverRank = riverCard[0];
+    const riverSuitCode = parseInt(riverCard.substring(1));
+    const riverSuit = String.fromCharCode(riverSuitCode);
+    runout += riverRank + riverSuit;
+  }
+  return runout || undefined;
+}
+
+/**
+ * Generate action summary string from StreetAction
+ */
+export function generateActionSummary(action: StreetAction | null): string {
+  if (!action) return "";
+
+  const parts: string[] = [];
+
+  if (action.villainAction) {
+    const villainPart = `Villain ${action.villainAction.type.toLowerCase()}${
+      action.villainAction.sizeBucket
+        ? ` ${action.villainAction.sizeBucket.toLowerCase()}`
+        : ""
+    }`;
+    parts.push(villainPart);
+  }
+
+  if (action.heroAction) {
+    const heroPart = `Hero ${action.heroAction.type.toLowerCase()}${
+      action.heroAction.sizeBucket
+        ? ` ${action.heroAction.sizeBucket.toLowerCase()}`
+        : ""
+    }`;
+    parts.push(heroPart);
+  }
+
+  return parts.length > 0 ? `${action.street}: ${parts.join(", ")}` : "";
+}
+
+/**
+ * Map EV loss slider value to mistakeSeverity (0-3)
+ */
+export function mapEvLossToSeverity(evLossBb: number): number {
+  if (evLossBb <= 1) return 0;
+  if (evLossBb <= 2.5) return 1;
+  if (evLossBb <= 4) return 2;
+  return 3;
+}
+
+/**
+ * Derive hero decision from street action
+ */
+export function deriveHeroDecision(action: StreetAction | null): string | undefined {
+  if (!action?.heroAction) return undefined;
+  return action.heroAction.type;
+}
+
+/**
+ * Build streetDataJson structure
+ */
+export function buildStreetDataJson({
+  spotType,
+  spotPosition,
+  spotSubtype,
+  heroPosition,
+  heroHand,
+  effectiveStackBb,
+  flopBoard,
+  turnCard,
+  riverCard,
+  streetAction,
+  villainType,
+  villainRangeType,
+  result,
+  evLossBb,
+  notes,
+}: {
+  spotType: SpotType;
+  spotPosition?: "IP" | "OOP";
+  spotSubtype?: string;
+  heroPosition: string;
+  heroHand: string;
+  effectiveStackBb: number;
+  flopBoard?: string;
+  turnCard?: string;
+  riverCard?: string;
+  streetAction?: StreetAction | null;
+  villainType?: VillainType | "";
+  villainRangeType?: VillainRangeType | "";
+  result?: HandResult | "";
+  evLossBb?: number;
+  notes?: string;
+}): Record<string, any> {
+  const boardTurn = turnCard
+    ? turnCard[0] + String.fromCharCode(parseInt(turnCard.substring(1)))
+    : null;
+  const boardRiver = riverCard
+    ? riverCard[0] + String.fromCharCode(parseInt(riverCard.substring(1)))
+    : null;
+
+  return {
+    meta: {
+      spotType,
+      spotPosition,
+      spotSubtype,
+      villain:
+        villainType || villainRangeType
+          ? {
+              type: villainType || undefined,
+              rangeType: villainRangeType || undefined,
+            }
+          : undefined,
+      keyStreet: streetAction?.street,
+      result: result || undefined,
+      evLossEstimateBb: evLossBb && evLossBb > 0 ? evLossBb : undefined,
+      actionsSummary: generateActionSummary(streetAction || null),
+    },
+    board: {
+      flop: flopBoard || null,
+      turn: boardTurn,
+      river: boardRiver,
+    },
+    preflop: {
+      actions: streetAction?.street === "PREFLOP" ? generateActionSummary(streetAction) : null,
+      notes: null,
+    },
+    flop: {
+      actions: streetAction?.street === "FLOP" ? generateActionSummary(streetAction) : null,
+      notes: null,
+    },
+    turn: {
+      actions: streetAction?.street === "TURN" ? generateActionSummary(streetAction) : null,
+      notes: null,
+    },
+    river: {
+      actions: streetAction?.street === "RIVER" ? generateActionSummary(streetAction) : null,
+      notes: null,
+    },
+    overallNotes: notes || null,
+  };
+}
