@@ -185,6 +185,10 @@ export const appRouter = router({
   hands: router({
     create: publicProcedure
       .input(z.object({
+        position: z.string().optional(),
+        stackSize: z.number().optional(),
+        streetDataJson: z.string().optional(),
+        notes: z.string().optional(),
         tournamentId: z.number().optional(),
         heroPosition: z.string().optional(),
         heroHand: z.string().optional(),
@@ -207,7 +211,7 @@ export const appRouter = router({
         const hand = await db.createHand({
           userId: HARDCODED_USER_ID,
           tournamentId: input.tournamentId,
-          heroPosition: input.heroPosition,
+          heroPosition: input.position || input.heroPosition,
           heroHand: input.heroHand,
           boardRunout: input.boardRunout,
           effectiveStackBb: input.effectiveStackBb,
@@ -222,6 +226,7 @@ export const appRouter = router({
           mistakeSeverity: input.mistakeSeverity,
           tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
           lesson: input.lesson,
+          streetDataJson: input.streetDataJson,
         });
 
         // Link leaks if provided

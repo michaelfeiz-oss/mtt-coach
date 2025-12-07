@@ -276,3 +276,12 @@
 - [x] Change container from overflow-y-auto to flex layout with scrollable content
 - [x] Test form submission with buttons visible
 - [x] Verify buttons don't scroll away when scrolling through form
+
+
+## Feature: Full Hand History Logging (Flop, Turn, River)
+- [x] Update hand schema to support street-by-street data (preflop, flop, turn, river)
+- [x] Create enhanced LogHandModal with street tabs/sections
+- [x] Add action dropdowns with prefilled common actions for each street
+- [x] Implement board progression tracking (Flop → Turn → River)
+- [x] Test full hand history logging end-to-end
+- [x] Keep dropdown prefill feature for quick entry
