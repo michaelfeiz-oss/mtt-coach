@@ -8,6 +8,7 @@ import { generateWeekPlan, getTodayPlan } from "./studyPlan";
 import { getCompletedPlanSlots } from "./studyPlanDb";
 import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveTopic, type LeakData } from "./studyRecommendations";
 import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } from "./curriculumConfig";
+import { strategyRouter } from "./strategy/router";
 
 // Hardcoded user ID for single-user app
 const HARDCODED_USER_ID = 1;
@@ -447,6 +448,9 @@ export const appRouter = router({
       return STUDY_CURRICULUM;
     }),
   }),
+
+  // Strategy module
+  strategy: strategyRouter,
 
   // Dashboard
   dashboard: router({

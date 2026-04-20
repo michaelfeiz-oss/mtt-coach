@@ -262,3 +262,81 @@ export const studyPlanTasks = mysqlTable("studyPlanTasks", {
 
 export type StudyPlanTask = typeof studyPlanTasks.$inferSelect;
 export type InsertStudyPlanTask = typeof studyPlanTasks.$inferInsert;
+
+/**
+ * Strategy module: Range charts (one chart = one spot at one stack depth)
+ */
+export const rangeCharts = mysqlTable("rangeCharts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").references(() => users.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  stackDepth: int("stackDepth").notNull(), // 15 | 20 | 25 | 40
+  spotGroup: mysqlEnum("spotGroup", [
+    "RFI",
+    "VS_UTG_RFI",
+    "VS_MP_RFI",
+    "VS_LP_RFI",
+    "VS_3BET",
+    "BVB",
+  ]).notNull(),
+  spotKey: varchar("spotKey", { length: 100 }).notNull(), // e.g. "BTN_RFI", "BB_vs_BTN"
+  heroPosition: varchar("heroPosition", { length: 10 }).notNull(),
+  villainPosition: varchar("villainPosition", { length: 10 }),
+  sourceLabel: varchar("sourceLabel", { length: 255 }),
+  notesJson: text("notesJson"), // JSON array of note strings
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  spotIdx: index("spot_idx").on(table.stackDepth, table.spotGroup, table.spotKey),
+  userIdx: index("range_user_idx").on(table.userId),
+}));
+
+export type RangeChart = typeof rangeCharts.$inferSelect;
+export type InsertRangeChart = typeof rangeCharts.$inferInsert;
+
+/**
+ * Strategy module: Individual hand actions within a range chart
+ */
+export const rangeChartActions = mysqlTable("rangeChartActions", {
+  id: int("id").autoincrement().primaryKey(),
+  chartId: int("chartId").notNull().references(() => rangeCharts.id, { onDelete: "cascade" }),
+  handCode: varchar("handCode", { length: 4 }).notNull(), // e.g. "AKs", "76o", "TT"
+  primaryAction: mysqlEnum("primaryAction", [
+    "FOLD",
+    "RAISE",
+    "CALL",
+    "THREE_BET",
+    "JAM",
+    "LIMP",
+    "CHECK",
+  ]).notNull(),
+  mixJson: text("mixJson"), // JSON: [{action, frequency}] for mixed strategies
+  weightPercent: float("weightPercent"), // primary action frequency 0-100
+  colorToken: varchar("colorToken", { length: 30 }),
+  note: text("note"),
+}, (table) => ({
+  chartHandIdx: index("chart_hand_idx").on(table.chartId, table.handCode),
+}));
+
+export type RangeChartAction = typeof rangeChartActions.$inferSelect;
+export type InsertRangeChartAction = typeof rangeChartActions.$inferInsert;
+
+/**
+ * Strategy module: Trainer attempt log
+ */
+export const trainerAttempts = mysqlTable("trainerAttempts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  chartId: int("chartId").notNull().references(() => rangeCharts.id, { onDelete: "cascade" }),
+  handCode: varchar("handCode", { length: 4 }).notNull(),
+  selectedAction: varchar("selectedAction", { length: 20 }).notNull(),
+  correctAction: varchar("correctAction", { length: 20 }).notNull(),
+  isCorrect: boolean("isCorrect").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userCreatedIdx: index("trainer_user_created_idx").on(table.userId, table.createdAt),
+  chartCreatedIdx: index("trainer_chart_created_idx").on(table.chartId, table.createdAt),
+}));
+
+export type TrainerAttempt = typeof trainerAttempts.$inferSelect;
+export type InsertTrainerAttempt = typeof trainerAttempts.$inferInsert;

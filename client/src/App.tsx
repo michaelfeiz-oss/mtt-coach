@@ -16,6 +16,9 @@ import HandDetail from "./pages/HandDetail";
 import BottomNav from "./components/BottomNav";
 import Log from "./pages/Log";
 import Study from "./pages/Study";
+import StudyHub from "./pages/strategy/StudyHub";
+import StrategyLibrary from "./pages/strategy/StrategyLibrary";
+import RangeTrainer from "./pages/strategy/RangeTrainer";
 
 function Router() {
   return (
@@ -31,6 +34,9 @@ function Router() {
       <Route key="tournament-detail" path={"/tournaments/:id"} component={TournamentDetail} />
       <Route key="study-plan" path={"/study-plan"} component={StudyPlan} />
       <Route key="guided-session" path={"/guided-session"} component={GuidedSession} />
+      <Route key="strategy" path={"/strategy"} component={StudyHub} />
+      <Route key="strategy-library" path={"/strategy/library"} component={StrategyLibrary} />
+      <Route key="strategy-trainer" path={"/strategy/trainer"} component={RangeTrainer} />
       <Route key="not-found-404" path={"/404"} component={NotFound} />
       <Route key="not-found-default" component={NotFound} />
     </Switch>
