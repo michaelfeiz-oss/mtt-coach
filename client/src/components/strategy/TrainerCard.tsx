@@ -32,7 +32,7 @@
  */
 
 import React, { useState } from "react";
-import { ACTIONS, ACTION_LABELS, ACTION_COLORS } from "../../../../shared/strategy";
+import { ACTIONS, ACTION_LABELS } from "../../../../shared/strategy";
 import type { Action } from "../../../../shared/strategy";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +43,7 @@ interface TrainerCardProps {
   handCode: string;
   spotLabel: string;
   correctAction: Action;
+  choices?: Action[];
   onAnswer: (selectedAction: Action, isCorrect: boolean) => void;
   onSkip: () => void;
   className?: string;
@@ -53,12 +54,14 @@ export function TrainerCard({
   handCode,
   spotLabel,
   correctAction,
+  choices = [...ACTIONS],
   onAnswer,
   onSkip,
   className = "",
 }: TrainerCardProps) {
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const isRevealed = selectedAction !== null;
+  const answerChoices = choices.length > 0 ? choices : [...ACTIONS];
 
   function handleAnswer(action: Action) {
     if (isRevealed) return;
@@ -72,7 +75,6 @@ export function TrainerCard({
     onSkip();
   }
 
-  // TODO: Implement full styled card with suit colours, animations, etc.
   return (
     <Card className={`bg-zinc-900 border-zinc-700 ${className}`}>
       <CardContent className="p-6 space-y-6">
@@ -86,14 +88,17 @@ export function TrainerCard({
 
         {/* Action buttons */}
         <div className="grid grid-cols-2 gap-2">
-          {ACTIONS.map((action) => {
+          {answerChoices.map(action => {
             let variant: "default" | "outline" | "destructive" = "outline";
             let extraClass = "";
 
             if (isRevealed) {
               if (action === correctAction) {
                 extraClass = "border-green-500 bg-green-500/20 text-green-400";
-              } else if (action === selectedAction && action !== correctAction) {
+              } else if (
+                action === selectedAction &&
+                action !== correctAction
+              ) {
                 extraClass = "border-red-500 bg-red-500/20 text-red-400";
               } else {
                 extraClass = "opacity-40";
@@ -117,8 +122,12 @@ export function TrainerCard({
         {/* Reveal / next */}
         {isRevealed && (
           <div className="space-y-3">
-            <p className={`text-center text-sm font-medium ${selectedAction === correctAction ? "text-green-400" : "text-red-400"}`}>
-              {selectedAction === correctAction ? "✓ Correct!" : `✗ Correct answer: ${ACTION_LABELS[correctAction]}`}
+            <p
+              className={`text-center text-sm font-medium ${selectedAction === correctAction ? "text-green-400" : "text-red-400"}`}
+            >
+              {selectedAction === correctAction
+                ? "✓ Correct!"
+                : `✗ Correct answer: ${ACTION_LABELS[correctAction]}`}
             </p>
             <Button
               className="w-full bg-orange-500 hover:bg-orange-600 text-white"

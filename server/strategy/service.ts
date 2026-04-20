@@ -1,19 +1,4 @@
-/**
- * server/strategy/service.ts
- * ─────────────────────────────────────────────────────────────────────────────
- * Database query helpers for the strategy module.
- * All functions return raw Drizzle rows — no business logic here.
- *
- * CODEX TASK: Implement each function body using the Drizzle ORM.
- * Import db from "../db" (already configured).
- * Import schema tables from "../../drizzle/schema".
- *
- * Pattern used elsewhere in this project (see server/db.ts for reference):
- *   import { db } from "../db";
- *   import { rangeCharts, rangeChartActions, trainerAttempts } from "../../drizzle/schema";
- *   import { eq, and, desc } from "drizzle-orm";
- */
-
+import { and, asc, desc, eq, type SQL } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   rangeCharts,
@@ -22,25 +7,161 @@ import {
   type InsertRangeChart,
   type InsertRangeChartAction,
   type InsertTrainerAttempt,
+  type RangeChart,
+  type RangeChartAction,
 } from "../../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
-import type { SpotGroup, RangeChartWithActions, TrainerStats, Action } from "../../shared/strategy";
+import {
+  ACTIONS,
+  ALL_HANDS,
+  type Action,
+  type HandAction,
+  type RangeChartWithActions,
+  type SpotGroup,
+  type TrainerQuestion,
+  type TrainerStats,
+} from "../../shared/strategy";
 
-// ─── Range chart queries ──────────────────────────────────────────────────────
+export interface ListSpotsFilters {
+  stackDepth?: number;
+  spotGroup?: SpotGroup;
+}
 
-/**
- * Get all active charts for a given stack depth and spot group.
- * Returns chart rows only (no actions).
- *
- * CODEX TASK: Implement using db.select().from(rangeCharts).where(...)
- */
+export interface TrainerSpotFilters extends ListSpotsFilters {
+  chartId?: number;
+}
+
+export interface ChartSummary {
+  id: number;
+  title: string;
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  spotKey: string;
+  heroPosition: string;
+  villainPosition: string | null;
+  sourceLabel: string | null;
+}
+
+export interface TrainerQuestionWithChart extends TrainerQuestion {
+  chart: ChartSummary;
+}
+
+export interface TrainerAttemptResult {
+  success: true;
+  isCorrect: boolean;
+  correctAction: Action;
+}
+
+const HAND_ORDER = new Map(ALL_HANDS.map((hand, index) => [hand, index]));
+const TRAINER_ACTION_ORDER: Action[] = [
+  "RAISE",
+  "CALL",
+  "THREE_BET",
+  "JAM",
+  "LIMP",
+  "CHECK",
+  "FOLD",
+];
+
+async function requireDb() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  return db;
+}
+
+function compareHandCode(a: string, b: string): number {
+  const aIndex = HAND_ORDER.get(a) ?? Number.MAX_SAFE_INTEGER;
+  const bIndex = HAND_ORDER.get(b) ?? Number.MAX_SAFE_INTEGER;
+
+  if (aIndex !== bIndex) return aIndex - bIndex;
+  return a.localeCompare(b);
+}
+
+function mapAction(row: RangeChartAction): HandAction {
+  return {
+    handCode: row.handCode,
+    primaryAction: row.primaryAction,
+    weightPercent: row.weightPercent,
+    mixJson: row.mixJson,
+    colorToken: row.colorToken,
+    note: row.note,
+  };
+}
+
+function mapChartSummary(chart: RangeChart): ChartSummary {
+  return {
+    id: chart.id,
+    title: chart.title,
+    stackDepth: chart.stackDepth,
+    spotGroup: chart.spotGroup,
+    spotKey: chart.spotKey,
+    heroPosition: chart.heroPosition,
+    villainPosition: chart.villainPosition,
+    sourceLabel: chart.sourceLabel,
+  };
+}
+
+function mapChartWithActions(
+  chart: RangeChart,
+  actions: RangeChartAction[]
+): RangeChartWithActions {
+  return {
+    id: chart.id,
+    title: chart.title,
+    stackDepth: chart.stackDepth,
+    spotGroup: chart.spotGroup,
+    spotKey: chart.spotKey,
+    heroPosition: chart.heroPosition,
+    villainPosition: chart.villainPosition,
+    sourceLabel: chart.sourceLabel,
+    notesJson: chart.notesJson,
+    actions: [...actions]
+      .sort((a, b) => compareHandCode(a.handCode, b.handCode))
+      .map(mapAction),
+  };
+}
+
+function buildChartConditions(filters: ListSpotsFilters): SQL[] {
+  const conditions: SQL[] = [eq(rangeCharts.isActive, true)];
+
+  if (filters.stackDepth !== undefined) {
+    conditions.push(eq(rangeCharts.stackDepth, filters.stackDepth));
+  }
+
+  if (filters.spotGroup !== undefined) {
+    conditions.push(eq(rangeCharts.spotGroup, filters.spotGroup));
+  }
+
+  return conditions;
+}
+
+function buildTrainerChoices(correctAction: Action): Action[] {
+  const choices = [
+    correctAction,
+    ...TRAINER_ACTION_ORDER.filter(action => action !== correctAction),
+  ];
+
+  return choices.slice(0, 4);
+}
+
+function createEmptyActionStats(): TrainerStats["byAction"] {
+  return ACTIONS.reduce<TrainerStats["byAction"]>(
+    (stats, action) => {
+      stats[action] = { total: 0, correct: 0 };
+      return stats;
+    },
+    {} as TrainerStats["byAction"]
+  );
+}
+
 export async function getChartsBySpot(
   stackDepth: number,
   spotGroup: SpotGroup,
   spotKey: string
 ) {
-  const db = await getDb();
-  if (!db) return [];
+  const db = await requireDb();
+
   return db
     .select()
     .from(rangeCharts)
@@ -51,23 +172,18 @@ export async function getChartsBySpot(
         eq(rangeCharts.spotKey, spotKey),
         eq(rangeCharts.isActive, true)
       )
-    );
+    )
+    .orderBy(asc(rangeCharts.stackDepth), asc(rangeCharts.title));
 }
 
-/**
- * Get a single chart with all its hand actions.
- * Returns null if not found.
- *
- * CODEX TASK: Implement — fetch chart row, then fetch all actions for that chartId.
- * Combine into RangeChartWithActions shape.
- */
-export async function getChartWithActions(chartId: number): Promise<RangeChartWithActions | null> {
-  const db = await getDb();
-  if (!db) return null;
+export async function getChartWithActions(
+  chartId: number
+): Promise<RangeChartWithActions | null> {
+  const db = await requireDb();
   const [chart] = await db
     .select()
     .from(rangeCharts)
-    .where(eq(rangeCharts.id, chartId))
+    .where(and(eq(rangeCharts.id, chartId), eq(rangeCharts.isActive, true)))
     .limit(1);
 
   if (!chart) return null;
@@ -77,122 +193,186 @@ export async function getChartWithActions(chartId: number): Promise<RangeChartWi
     .from(rangeChartActions)
     .where(eq(rangeChartActions.chartId, chartId));
 
-  return {
-    ...chart,
-    spotGroup: chart.spotGroup as SpotGroup,
-    villainPosition: chart.villainPosition ?? undefined,
-    sourceLabel: chart.sourceLabel ?? undefined,
-    notesJson: chart.notesJson ?? undefined,
-    actions: actions.map((a) => ({
-      handCode: a.handCode,
-      primaryAction: a.primaryAction as Action,
-      weightPercent: a.weightPercent ?? undefined,
-      mixJson: a.mixJson ?? undefined,
-      colorToken: a.colorToken ?? undefined,
-      note: a.note ?? undefined,
-    })),
-  };
+  return mapChartWithActions(chart, actions);
 }
 
-/**
- * List all available spots (distinct stackDepth + spotGroup + spotKey combos).
- * Used to populate the sidebar navigation.
- *
- * CODEX TASK: Implement using db.selectDistinct() or a group-by query.
- */
-export async function listAvailableSpots() {
-  const db = await getDb();
-  if (!db) return [];
+export async function getChartBySpotSelector(
+  stackDepth: number,
+  spotGroup: SpotGroup,
+  spotKey: string
+): Promise<RangeChartWithActions | null> {
+  const [chart] = await getChartsBySpot(stackDepth, spotGroup, spotKey);
+  if (!chart) return null;
+  return getChartWithActions(chart.id);
+}
+
+export async function listAvailableSpots(filters: ListSpotsFilters = {}) {
+  const db = await requireDb();
+  const conditions = buildChartConditions(filters);
+
   return db
-    .selectDistinct({
+    .select({
+      id: rangeCharts.id,
+      title: rangeCharts.title,
       stackDepth: rangeCharts.stackDepth,
       spotGroup: rangeCharts.spotGroup,
       spotKey: rangeCharts.spotKey,
       heroPosition: rangeCharts.heroPosition,
       villainPosition: rangeCharts.villainPosition,
-      title: rangeCharts.title,
-      id: rangeCharts.id,
+      sourceLabel: rangeCharts.sourceLabel,
     })
     .from(rangeCharts)
-    .where(eq(rangeCharts.isActive, true));
+    .where(and(...conditions))
+    .orderBy(
+      asc(rangeCharts.stackDepth),
+      asc(rangeCharts.spotGroup),
+      asc(rangeCharts.title)
+    );
 }
 
-// ─── Chart mutations ──────────────────────────────────────────────────────────
-
-/**
- * Insert a new range chart and return the inserted id.
- *
- * CODEX TASK: Implement using db.insert(rangeCharts).values(data)
- */
 export async function createChart(data: InsertRangeChart): Promise<number> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(rangeCharts).values(data);
-  return (result as any).insertId as number;
+  const db = await requireDb();
+  const [result] = await db.insert(rangeCharts).values(data);
+  return result.insertId;
 }
 
-/**
- * Bulk-insert hand actions for a chart.
- *
- * CODEX TASK: Implement using db.insert(rangeChartActions).values(rows)
- */
-export async function bulkInsertActions(rows: InsertRangeChartAction[]): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+export async function bulkInsertActions(
+  rows: InsertRangeChartAction[]
+): Promise<void> {
   if (rows.length === 0) return;
+
+  const db = await requireDb();
   await db.insert(rangeChartActions).values(rows);
 }
 
-// ─── Trainer queries ──────────────────────────────────────────────────────────
+export async function getTrainerSpot(
+  filters: TrainerSpotFilters = {}
+): Promise<TrainerQuestionWithChart | null> {
+  const db = await requireDb();
+  const conditions = buildChartConditions(filters);
 
-/**
- * Log a single trainer attempt.
- *
- * CODEX TASK: Implement using db.insert(trainerAttempts).values(data)
- */
-export async function logTrainerAttempt(data: InsertTrainerAttempt): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (filters.chartId !== undefined) {
+    conditions.push(eq(rangeCharts.id, filters.chartId));
+  }
+
+  const rows = await db
+    .select({
+      chart: rangeCharts,
+      action: rangeChartActions,
+    })
+    .from(rangeChartActions)
+    .innerJoin(rangeCharts, eq(rangeChartActions.chartId, rangeCharts.id))
+    .where(and(...conditions))
+    .orderBy(
+      asc(rangeCharts.stackDepth),
+      asc(rangeCharts.spotGroup),
+      asc(rangeCharts.title),
+      asc(rangeChartActions.handCode)
+    );
+
+  const trainableRows = rows
+    .filter(
+      ({ action }) =>
+        action.handCode.length > 0 && action.primaryAction !== "FOLD"
+    )
+    .sort((a, b) => compareHandCode(a.action.handCode, b.action.handCode));
+
+  if (trainableRows.length === 0) return null;
+
+  const selected =
+    trainableRows[Math.floor(Math.random() * trainableRows.length)];
+  const correctAction = selected.action.primaryAction;
+
+  return {
+    chartId: selected.chart.id,
+    handCode: selected.action.handCode,
+    correctAction,
+    choices: buildTrainerChoices(correctAction),
+    chart: mapChartSummary(selected.chart),
+  };
+}
+
+export async function submitTrainerAttempt(
+  userId: number,
+  input: {
+    chartId: number;
+    handCode: string;
+    selectedAction: Action;
+  }
+): Promise<TrainerAttemptResult | null> {
+  const db = await requireDb();
+
+  const [row] = await db
+    .select({
+      action: rangeChartActions,
+    })
+    .from(rangeChartActions)
+    .innerJoin(rangeCharts, eq(rangeChartActions.chartId, rangeCharts.id))
+    .where(
+      and(
+        eq(rangeCharts.id, input.chartId),
+        eq(rangeCharts.isActive, true),
+        eq(rangeChartActions.handCode, input.handCode)
+      )
+    )
+    .limit(1);
+
+  if (!row) return null;
+
+  const correctAction = row.action.primaryAction;
+  const isCorrect = input.selectedAction === correctAction;
+
+  await logTrainerAttempt({
+    userId,
+    chartId: input.chartId,
+    handCode: input.handCode,
+    selectedAction: input.selectedAction,
+    correctAction,
+    isCorrect,
+  });
+
+  return {
+    success: true,
+    isCorrect,
+    correctAction,
+  };
+}
+
+export async function logTrainerAttempt(
+  data: InsertTrainerAttempt
+): Promise<void> {
+  const db = await requireDb();
   await db.insert(trainerAttempts).values(data);
 }
 
-/**
- * Get trainer stats for a user (overall accuracy + per-action breakdown).
- *
- * CODEX TASK: Implement — query trainerAttempts for userId, aggregate counts.
- * Return TrainerStats shape from shared/strategy.ts.
- */
 export async function getTrainerStats(userId: number): Promise<TrainerStats> {
-  const db = await getDb();
-  if (!db) return { total: 0, correct: 0, accuracy: 0, byAction: {} as TrainerStats["byAction"] };
+  const db = await requireDb();
   const rows = await db
     .select()
     .from(trainerAttempts)
     .where(eq(trainerAttempts.userId, userId));
 
   const total = rows.length;
-  const correct = rows.filter((r: typeof rows[number]) => r.isCorrect).length;
+  const correct = rows.filter(row => row.isCorrect).length;
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const byAction = createEmptyActionStats();
 
-  const byAction: TrainerStats["byAction"] = {} as TrainerStats["byAction"];
   for (const row of rows) {
-    const a = row.correctAction as Action;
-    if (!byAction[a]) byAction[a] = { total: 0, correct: 0 };
-    byAction[a].total++;
-    if (row.isCorrect) byAction[a].correct++;
+    const action = ACTIONS.find(candidate => candidate === row.correctAction);
+    if (!action) continue;
+
+    byAction[action].total += 1;
+    if (row.isCorrect) {
+      byAction[action].correct += 1;
+    }
   }
 
   return { total, correct, accuracy, byAction };
 }
 
-/**
- * Get recent trainer attempts for a user (last N).
- *
- * CODEX TASK: Implement using db.select().from(trainerAttempts).where(userId).orderBy(desc).limit(n)
- */
 export async function getRecentAttempts(userId: number, limit = 50) {
-  const db = await getDb();
-  if (!db) return [];
+  const db = await requireDb();
+
   return db
     .select()
     .from(trainerAttempts)

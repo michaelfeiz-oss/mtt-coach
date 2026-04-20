@@ -32,19 +32,24 @@
 import React from "react";
 import { Link } from "wouter";
 import { BookOpen, Target, TrendingUp, ChevronRight } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { calcAccuracy } from "@/components/strategy/utils";
 import { ACTION_LABELS } from "../../../../shared/strategy";
 import type { Action } from "../../../../shared/strategy";
 import { toast } from "sonner";
 
 export default function StudyHub() {
   const { data: stats } = trpc.strategy.getStats.useQuery();
-  const { data: recentAttempts } = trpc.strategy.getRecentAttempts.useQuery({ limit: 5 });
+  const { data: recentAttempts } = trpc.strategy.getRecentAttempts.useQuery({
+    limit: 5,
+  });
 
-  // TODO: Implement full page with proper styling and animations
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -89,7 +94,9 @@ export default function StudyHub() {
 
         <Card
           className="cursor-pointer hover:border-orange-500/50 transition-colors group opacity-60"
-          onClick={() => toast("Coming soon — Progress tracking is in development.")}
+          onClick={() =>
+            toast("Coming soon — Progress tracking is in development.")
+          }
         >
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -109,19 +116,27 @@ export default function StudyHub() {
         <div className="grid grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-4 pb-3 text-center">
-              <p className="text-2xl font-bold text-orange-500">{stats.total}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Total Attempts</p>
+              <p className="text-2xl font-bold text-orange-500">
+                {stats.total}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Total Attempts
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3 text-center">
-              <p className="text-2xl font-bold text-orange-500">{stats.accuracy}%</p>
+              <p className="text-2xl font-bold text-orange-500">
+                {stats.accuracy}%
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">Accuracy</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3 text-center">
-              <p className="text-2xl font-bold text-orange-500">{stats.correct}</p>
+              <p className="text-2xl font-bold text-orange-500">
+                {stats.correct}
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">Correct</p>
             </CardContent>
           </Card>
@@ -136,10 +151,18 @@ export default function StudyHub() {
           </CardHeader>
           <CardContent className="space-y-2">
             {recentAttempts.map((attempt, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <span className="font-mono font-medium">{attempt.handCode}</span>
-                <span className={`text-xs ${attempt.isCorrect ? "text-green-500" : "text-red-500"}`}>
-                  {attempt.isCorrect ? "✓" : "✗"} {ACTION_LABELS[attempt.correctAction as Action]}
+              <div
+                key={i}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="font-mono font-medium">
+                  {attempt.handCode}
+                </span>
+                <span
+                  className={`text-xs ${attempt.isCorrect ? "text-green-500" : "text-red-500"}`}
+                >
+                  {attempt.isCorrect ? "✓" : "✗"}{" "}
+                  {ACTION_LABELS[attempt.correctAction as Action]}
                 </span>
               </div>
             ))}
