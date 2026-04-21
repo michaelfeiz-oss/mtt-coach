@@ -61,6 +61,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { TrainerCard } from "@/components/strategy/TrainerCard";
+import { TrainerResultReveal } from "@/components/strategy/TrainerResultReveal";
 import { calcAccuracy } from "@/components/strategy/utils";
 import {
   SPOT_GROUP_LABELS,
@@ -75,6 +76,15 @@ interface SessionStats {
   total: number;
   correct: number;
   streak: number;
+}
+
+interface AnswerRevealState {
+  chartId: number;
+  handCode: string;
+  selectedAction: Action;
+  correctAction: Action;
+  isCorrect: boolean;
+  explanation?: string | null;
 }
 
 export default function RangeTrainer() {
@@ -98,6 +108,10 @@ export default function RangeTrainer() {
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
+  const [answerReveal, setAnswerReveal] = useState<AnswerRevealState | null>(
+    null
+  );
+  const [questionVersion, setQuestionVersion] = useState(0);
 
   const { data: spots = [], isLoading: spotsLoading } =
     trpc.strategy.listSpots.useQuery({ stackDepth, spotGroup });
@@ -112,6 +126,14 @@ export default function RangeTrainer() {
     error: trainerSpotError,
     refetch: refetchTrainerSpot,
   } = trpc.strategy.getTrainerSpot.useQuery(
+    { chartId: selectedChartId! },
+    { enabled: selectedChartId !== undefined }
+  );
+  const {
+    data: revealChart,
+    isLoading: revealChartLoading,
+    isFetching: revealChartFetching,
+  } = trpc.strategy.getChart.useQuery(
     { chartId: selectedChartId! },
     { enabled: selectedChartId !== undefined }
   );
@@ -161,7 +183,13 @@ export default function RangeTrainer() {
 
   useEffect(() => {
     setSessionStats({ total: 0, correct: 0, streak: 0 });
+    setAnswerReveal(null);
+    setQuestionVersion(0);
   }, [selectedChartId]);
+
+  useEffect(() => {
+    setAnswerReveal(null);
+  }, [trainerSpot?.chartId, trainerSpot?.handCode]);
 
   useEffect(() => {
     if (selectedChartId !== undefined || spots.length === 0) return;
@@ -177,6 +205,15 @@ export default function RangeTrainer() {
   function handleAnswer(selectedAction: Action, isCorrect: boolean) {
     if (!trainerSpot) return;
 
+    setAnswerReveal({
+      chartId: trainerSpot.chartId,
+      handCode: trainerSpot.handCode,
+      selectedAction,
+      correctAction: trainerSpot.correctAction,
+      isCorrect,
+      explanation: trainerSpot.correctNote,
+    });
+
     submitAttempt.mutate({
       chartId: trainerSpot.chartId,
       handCode: trainerSpot.handCode,
@@ -191,10 +228,13 @@ export default function RangeTrainer() {
   }
 
   function handleNext() {
+    setAnswerReveal(null);
+    setQuestionVersion(version => version + 1);
     void refetchTrainerSpot();
   }
 
   function selectSpot(chartId: number) {
+    setAnswerReveal(null);
     setSelectedChartId(chartId);
   }
 
@@ -202,11 +242,12 @@ export default function RangeTrainer() {
     const pool = filteredSpots.length > 0 ? filteredSpots : spots;
     if (pool.length === 0) return;
     const selected = pool[Math.floor(Math.random() * pool.length)];
+    setAnswerReveal(null);
     setSelectedChartId(selected.id);
   }
 
   return (
-    <div className="h-[calc(100dvh-4rem)] overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(255,111,0,0.08),transparent_32rem),linear-gradient(180deg,#fffaf4_0%,#ffffff_36%,#f8fafc_100%)]">
+    <div className="h-[calc(100dvh-4rem)] bg-[radial-gradient(circle_at_top_left,rgba(255,111,0,0.08),transparent_32rem),linear-gradient(180deg,#fffaf4_0%,#ffffff_36%,#f8fafc_100%)]">
       <div className="grid h-full grid-cols-1 md:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="flex min-h-0 flex-col border-b border-border/80 bg-white/90 backdrop-blur md:border-b-0 md:border-r">
           <div className="space-y-4 border-b border-border/80 p-4">
@@ -437,7 +478,7 @@ export default function RangeTrainer() {
         </aside>
 
         <main className="min-h-0 overflow-y-auto p-4 md:p-6 xl:p-8">
-          <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-5">
+          <div className="mx-auto flex max-w-4xl flex-col gap-5 pb-8">
             <Card className="overflow-hidden border-0 bg-zinc-950 text-white shadow-xl shadow-orange-950/10">
               <CardContent className="p-5 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -500,7 +541,7 @@ export default function RangeTrainer() {
               </CardContent>
             </Card>
 
-            <div className="flex flex-1 items-center justify-center">
+            <div className="flex items-start justify-center">
               {!selectedChartId && !spotsLoading && (
                 <Card className="w-full max-w-lg border-dashed bg-white/90">
                   <CardContent className="space-y-4 p-8 text-center">
@@ -533,23 +574,42 @@ export default function RangeTrainer() {
                 )}
 
               {trainerSpot && (
-                <TrainerCard
-                  key={`${trainerSpot.chartId}-${trainerSpot.handCode}`}
-                  chartId={trainerSpot.chartId}
-                  handCode={trainerSpot.handCode}
-                  spotLabel={trainerSpot.chart.title}
-                  spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
-                  stackDepth={trainerSpot.chart.stackDepth}
-                  heroPosition={trainerSpot.chart.heroPosition}
-                  villainPosition={trainerSpot.chart.villainPosition}
-                  correctAction={trainerSpot.correctAction}
-                  explanation={trainerSpot.correctNote}
-                  isPersisted={isAuthenticated}
-                  choices={trainerSpot.choices}
-                  onAnswer={handleAnswer}
-                  onSkip={handleNext}
-                  className="w-full max-w-xl"
-                />
+                <div className="w-full max-w-3xl space-y-4">
+                  <TrainerCard
+                    key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
+                    chartId={trainerSpot.chartId}
+                    handCode={trainerSpot.handCode}
+                    spotLabel={trainerSpot.chart.title}
+                    spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
+                    stackDepth={trainerSpot.chart.stackDepth}
+                    heroPosition={trainerSpot.chart.heroPosition}
+                    villainPosition={trainerSpot.chart.villainPosition}
+                    correctAction={trainerSpot.correctAction}
+                    explanation={trainerSpot.correctNote}
+                    isPersisted={isAuthenticated}
+                    choices={trainerSpot.choices}
+                    showInlineResult={false}
+                    onAnswer={handleAnswer}
+                    onSkip={handleNext}
+                    className="mx-auto w-full max-w-xl"
+                  />
+
+                  {answerReveal && (
+                    <TrainerResultReveal
+                      chart={revealChart}
+                      isLoadingChart={
+                        revealChartLoading || revealChartFetching
+                      }
+                      chartId={answerReveal.chartId}
+                      handCode={answerReveal.handCode}
+                      selectedAction={answerReveal.selectedAction}
+                      correctAction={answerReveal.correctAction}
+                      isCorrect={answerReveal.isCorrect}
+                      explanation={answerReveal.explanation}
+                      onNext={handleNext}
+                    />
+                  )}
+                </div>
               )}
 
               {selectedChartId && !trainerSpotLoading && !trainerSpot && (

@@ -51,6 +51,7 @@ interface TrainerCardProps {
   explanation?: string | null;
   isPersisted?: boolean;
   choices?: Action[];
+  showInlineResult?: boolean;
   onAnswer: (selectedAction: Action, isCorrect: boolean) => void;
   onSkip: () => void;
   className?: string;
@@ -68,6 +69,7 @@ export function TrainerCard({
   explanation,
   isPersisted = false,
   choices = [...ACTIONS],
+  showInlineResult = true,
   onAnswer,
   onSkip,
   className = "",
@@ -87,6 +89,10 @@ export function TrainerCard({
     setSelectedAction(null);
     onSkip();
   }
+
+  useEffect(() => {
+    setSelectedAction(null);
+  }, [chartId, handCode]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -192,7 +198,7 @@ export function TrainerCard({
         </div>
 
         {/* Reveal / next */}
-        {isRevealed && (
+        {isRevealed && showInlineResult && (
           <div className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4">
             <div className="text-center">
               <p
