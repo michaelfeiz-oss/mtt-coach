@@ -8,10 +8,14 @@ export type MatrixSize = "sm" | "md" | "lg";
 
 interface RangeMatrixProps {
   actions: Record<string, HandAction> | HandAction[];
+  compact?: boolean;
   highlightHand?: string;
+  highlightedHand?: string | null;
   onCellClick?: (handCode: string) => void;
   onSelectHand?: (handCode: string) => void;
   readOnly?: boolean;
+  readonly?: boolean;
+  showCellLabels?: boolean;
   size?: MatrixSize;
   className?: string;
 }
@@ -24,6 +28,8 @@ const SIZE_CONFIG: Record<
   md: { minCell: 22, maxCell: 38, font: 10 },
   lg: { minCell: 28, maxCell: 48, font: 12 },
 };
+
+const COMPACT_SIZE_CONFIG = { minCell: 18, maxCell: 29, font: 9 };
 
 const DEFAULT_ACTION: Action = "FOLD";
 
@@ -55,10 +61,14 @@ function getActionLabel(action: HandAction | undefined): string {
 
 export function RangeMatrix({
   actions,
+  compact = false,
   highlightHand,
+  highlightedHand,
   onCellClick,
   onSelectHand,
   readOnly = false,
+  readonly: readOnlyAlias,
+  showCellLabels = true,
   size = "md",
   className = "",
 }: RangeMatrixProps) {
@@ -67,9 +77,13 @@ export function RangeMatrix({
     () => buildRangeActionLookup(actions),
     [actions]
   );
-  const { minCell, maxCell, font } = SIZE_CONFIG[size];
+  const { minCell, maxCell, font } = compact
+    ? COMPACT_SIZE_CONFIG
+    : SIZE_CONFIG[size];
+  const selectedHand = highlightedHand ?? highlightHand ?? null;
+  const isReadOnly = readOnly || readOnlyAlias === true;
   const isInteractive =
-    !readOnly && (onCellClick !== undefined || onSelectHand !== undefined);
+    !isReadOnly && (onCellClick !== undefined || onSelectHand !== undefined);
 
   function selectHand(handCode: string) {
     if (!isInteractive) return;
@@ -80,7 +94,10 @@ export function RangeMatrix({
   return (
     <div className={cn("w-full", className)}>
       <div
-        className="mx-auto grid gap-[2px] rounded-lg bg-border/80 p-1 shadow-sm"
+        className={cn(
+          "mx-auto grid rounded-lg bg-border/80 shadow-sm",
+          compact ? "gap-px p-0.5" : "gap-[2px] p-1"
+        )}
         style={{
           gridTemplateColumns: "repeat(13, minmax(0, 1fr))",
           minWidth: minCell * 13,
@@ -95,7 +112,7 @@ export function RangeMatrix({
           const action = getActionForHand(actionLookup, handCode);
           const actionName = action?.primaryAction ?? DEFAULT_ACTION;
           const style = ACTION_CELL_STYLES[actionName];
-          const isHighlighted = handCode === highlightHand;
+          const isHighlighted = handCode === selectedHand;
           const label = getActionLabel(action);
           const frequency = action?.weightPercent;
           const title = `${handCode}: ${label}${frequency ? ` (${frequency}%)` : ""}`;
@@ -111,12 +128,13 @@ export function RangeMatrix({
               title={title}
               onClick={() => selectHand(handCode)}
               className={cn(
-                "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden rounded-[4px] border border-black/10 font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] transition",
+                "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden border border-black/10 font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] transition",
+                compact ? "rounded-[3px]" : "rounded-[4px]",
                 isInteractive
                   ? "cursor-pointer active:scale-[0.97] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
                   : "cursor-default",
                 isHighlighted &&
-                  "z-10 scale-[1.04] ring-2 ring-orange-500 ring-offset-2 ring-offset-background"
+                  "z-10 scale-[1.08] border-white/80 shadow-[0_0_0_2px_rgba(249,115,22,0.95),0_0_18px_rgba(249,115,22,0.55),inset_0_0_0_1px_rgba(255,255,255,0.28)] ring-2 ring-orange-500 ring-offset-2 ring-offset-background"
               )}
               style={{
                 backgroundColor: style.backgroundColor,
@@ -125,7 +143,9 @@ export function RangeMatrix({
                 lineHeight: 1,
               }}
             >
-              <span className="select-none drop-shadow-sm">{handCode}</span>
+              {showCellLabels && (
+                <span className="select-none drop-shadow-sm">{handCode}</span>
+              )}
             </button>
           );
         })}
