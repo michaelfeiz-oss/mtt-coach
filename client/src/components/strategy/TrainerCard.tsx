@@ -4,8 +4,8 @@ import type { Action } from "../../../../shared/strategy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { HandCards } from "@/components/cards/HandCards";
 import { cn } from "@/lib/utils";
-import { formatHandWithSuits } from "./utils";
 
 interface TrainerCardProps {
   chartId: number;
@@ -122,9 +122,7 @@ export function TrainerCard({
           </div>
 
           <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-5 shadow-inner">
-            <div className="text-6xl font-black tracking-tight text-white sm:text-7xl">
-              {formatHandWithSuits(handCode)}
-            </div>
+            <HandCards handCode={handCode} size="lg" showLabel />
             <p className="mt-4 text-sm font-semibold text-zinc-100">
               {spotLabel}
             </p>
