@@ -40,15 +40,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { ACTION_LABELS } from "../../../../shared/strategy";
 import type { Action } from "../../../../shared/strategy";
 import { toast } from "sonner";
 
 export default function StudyHub() {
-  const { data: stats } = trpc.strategy.getStats.useQuery();
-  const { data: recentAttempts } = trpc.strategy.getRecentAttempts.useQuery({
-    limit: 5,
+  const { isAuthenticated } = useAuth();
+  // Only fire these protected queries when the user is logged in.
+  // Without the guard, an unauthenticated visit would trigger the global
+  // UNAUTHORIZED redirect even though the rest of the page is public.
+  const { data: stats } = trpc.strategy.getStats.useQuery(undefined, {
+    enabled: isAuthenticated,
   });
+  const { data: recentAttempts } = trpc.strategy.getRecentAttempts.useQuery(
+    { limit: 5 },
+    { enabled: isAuthenticated }
+  );
 
   return (
     <div className="space-y-6 p-6">
