@@ -25,7 +25,7 @@ export function ActionLegend({
   return (
     <div
       className={cn(
-        "flex gap-x-3 gap-y-2 text-xs text-muted-foreground",
+        "flex gap-x-2 gap-y-2 text-xs text-muted-foreground",
         layout === "vertical" ? "flex-col" : "flex-row flex-wrap",
         className
       )}
@@ -35,13 +35,18 @@ export function ActionLegend({
         const style = ACTION_CELL_STYLES[action];
 
         return (
-          <div key={action} className="flex min-h-6 items-center gap-1.5">
+          <div
+            key={action}
+            className="flex min-h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/85 px-2.5 py-1 shadow-sm shadow-slate-950/5"
+          >
             <span
-              className="h-3.5 w-3.5 shrink-0 rounded-[3px] border border-border/70"
+              className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]"
               style={{ backgroundColor: style.backgroundColor }}
               aria-hidden="true"
             />
-            <span className="font-medium leading-none">{style.label}</span>
+            <span className="font-semibold leading-none text-slate-700">
+              {style.label}
+            </span>
           </div>
         );
       })}

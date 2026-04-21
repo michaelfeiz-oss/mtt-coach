@@ -1,5 +1,4 @@
 import {
-  ACTION_COLORS,
   ACTION_LABELS,
   ACTIONS,
   type Action,
@@ -24,37 +23,37 @@ export const ACTION_CELL_STYLES: Record<
   }
 > = {
   FOLD: {
-    backgroundColor: ACTION_COLORS.FOLD,
-    color: "#52525b",
+    backgroundColor: "#eef2f7",
+    color: "#64748b",
     label: ACTION_LABELS.FOLD,
   },
   RAISE: {
-    backgroundColor: ACTION_COLORS.RAISE,
+    backgroundColor: "#dc2626",
     color: "#ffffff",
     label: ACTION_LABELS.RAISE,
   },
   CALL: {
-    backgroundColor: ACTION_COLORS.CALL,
-    color: "#052e16",
+    backgroundColor: "#15803d",
+    color: "#ffffff",
     label: ACTION_LABELS.CALL,
   },
   THREE_BET: {
-    backgroundColor: ACTION_COLORS.THREE_BET,
+    backgroundColor: "#2563eb",
     color: "#ffffff",
     label: ACTION_LABELS.THREE_BET,
   },
   JAM: {
-    backgroundColor: ACTION_COLORS.JAM,
+    backgroundColor: "#ea580c",
     color: "#ffffff",
     label: ACTION_LABELS.JAM,
   },
   LIMP: {
-    backgroundColor: ACTION_COLORS.LIMP,
-    color: "#18181b",
+    backgroundColor: "#ca8a04",
+    color: "#ffffff",
     label: ACTION_LABELS.LIMP,
   },
   CHECK: {
-    backgroundColor: ACTION_COLORS.CHECK,
+    backgroundColor: "#52525b",
     color: "#ffffff",
     label: ACTION_LABELS.CHECK,
   },

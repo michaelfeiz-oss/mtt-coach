@@ -293,13 +293,18 @@ export default function Study() {
   };
 
   return (
-    <div className="pb-24">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.09),transparent_28rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#f1f5f9_100%)] pb-24">
       {/* Header with Week Info */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold">Week {currentWeek.week}</h1>
-          <p className="text-lg font-semibold mt-1">{currentWeek.name}</p>
-          <p className="text-blue-100 text-sm mt-2">{currentWeek.focus}</p>
+      <div className="px-4 py-5">
+        <div className="mx-auto max-w-6xl rounded-[1.75rem] bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_18rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-white shadow-2xl shadow-slate-950/20">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300">
+            Weekly Study Plan
+          </p>
+          <h1 className="text-3xl font-black tracking-tight">
+            Week {currentWeek.week}
+          </h1>
+          <p className="mt-1 text-lg font-semibold">{currentWeek.name}</p>
+          <p className="mt-2 text-sm text-zinc-400">{currentWeek.focus}</p>
 
           {/* Progress Bar */}
           <div className="mt-4">
@@ -317,7 +322,7 @@ export default function Study() {
             <Button
               variant="outline"
               size="sm"
-              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+              className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20"
               onClick={goToPreviousWeek}
               disabled={currentWeekIdx === 0}
             >
@@ -327,7 +332,7 @@ export default function Study() {
             <Button
               variant="outline"
               size="sm"
-              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+              className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20"
               onClick={goToNextWeek}
               disabled={currentWeekIdx === PROGRAM_WEEKS.length - 1}
             >
@@ -339,23 +344,31 @@ export default function Study() {
       </div>
 
       {/* Daily Drills */}
-      <div className="container py-6 space-y-4">
-        <Card className="border-orange-500/30 bg-orange-500/5">
+      <div className="container max-w-6xl space-y-4 py-2">
+        <Card className="rounded-[1.5rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
           <CardHeader>
-            <CardTitle className="text-base">Preflop Study</CardTitle>
+            <CardTitle className="text-base font-black">
+              Preflop Study
+            </CardTitle>
             <CardDescription>
               Ranges and drills for preflop study
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Link href="/strategy/library">
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start gap-2 rounded-2xl border-slate-200 bg-white font-semibold shadow-sm"
+              >
                 <BookOpen className="h-4 w-4 text-orange-500" />
                 Hand Ranges
               </Button>
             </Link>
             <Link href="/strategy/trainer">
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start gap-2 rounded-2xl border-slate-200 bg-white font-semibold shadow-sm"
+              >
                 <Target className="h-4 w-4 text-orange-500" />
                 Range Trainer
               </Button>
@@ -363,16 +376,19 @@ export default function Study() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-300 bg-white">
+        <Card className="rounded-[1.5rem] border-slate-200/80 bg-white/95 shadow-sm shadow-slate-950/5">
           <CardHeader>
-            <CardTitle className="text-base">ICM Packs</CardTitle>
+            <CardTitle className="text-base font-black">ICM Packs</CardTitle>
             <CardDescription>
               Advanced payout-pressure study
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/study/icm">
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start gap-2 rounded-2xl border-slate-200 bg-white font-semibold shadow-sm"
+              >
                 <Trophy className="h-4 w-4 text-orange-500" />
                 Final Table ICM Essentials
               </Button>
@@ -380,7 +396,7 @@ export default function Study() {
           </CardContent>
         </Card>
 
-        <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
           Daily Drills
         </h3>
 
@@ -399,13 +415,13 @@ export default function Study() {
         </div>
 
         {/* Weekly Review Card */}
-        <Card className="border-l-4 border-l-purple-500 mt-6">
+        <Card className="mt-6 rounded-[1.5rem] border-slate-200/80 bg-white/95 shadow-sm shadow-slate-950/5">
           <CardHeader>
             <CardTitle className="text-base">Weekly Review</CardTitle>
             <CardDescription>Complete your week's review</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline">
+            <Button className="h-11 w-full rounded-2xl" variant="outline">
               Start Weekly Review
             </Button>
           </CardContent>
