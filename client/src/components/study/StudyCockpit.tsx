@@ -1,0 +1,591 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link } from "wouter";
+import {
+  AlertCircle,
+  BookOpen,
+  Brain,
+  ChevronRight,
+  ClipboardList,
+  FileText,
+  History,
+  Layers,
+  Plus,
+  Target,
+  Trophy,
+  Zap,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  loadRecentStrategySpots,
+  type RecentStrategySpot,
+} from "@/lib/strategyRecentSpots";
+import { StudyModuleCard } from "./StudyModuleCard";
+import {
+  ACTION_LABELS,
+  SPOT_GROUP_LABELS,
+  type Action,
+} from "@shared/strategy";
+
+function formatSpotMeta(spot: RecentStrategySpot) {
+  const positions = spot.villainPosition
+    ? `${spot.heroPosition} vs ${spot.villainPosition}`
+    : spot.heroPosition;
+
+  return `${spot.stackDepth}bb - ${positions}`;
+}
+
+function formatHandMeta(hand: {
+  heroPosition?: string | null;
+  effectiveStackBb?: number | null;
+  spotType?: string | null;
+}) {
+  const parts = [
+    hand.heroPosition,
+    hand.effectiveStackBb ? `${Math.round(hand.effectiveStackBb)}bb` : null,
+    hand.spotType ? hand.spotType.replace(/_/g, " ") : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.length > 0 ? parts.join(" - ") : "Captured for review";
+}
+
+function SectionHeader({
+  label,
+  title,
+  helper,
+  action,
+}: {
+  label?: string;
+  title: string;
+  helper?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        {label && (
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-600">
+            {label}
+          </p>
+        )}
+        <h2 className="text-lg font-black tracking-tight text-slate-950">
+          {title}
+        </h2>
+        {helper && (
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+            {helper}
+          </p>
+        )}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  helper,
+  ctaHref,
+  ctaLabel,
+}: {
+  title: string;
+  helper: string;
+  ctaHref: string;
+  ctaLabel: string;
+}) {
+  return (
+    <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white/80 p-5 text-center shadow-sm shadow-slate-950/5">
+      <p className="text-sm font-bold text-slate-950">{title}</p>
+      <p className="mt-1 text-sm leading-relaxed text-slate-600">{helper}</p>
+      <Link href={ctaHref}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-4 h-9 rounded-full border-slate-200 bg-white px-4 text-xs font-bold"
+        >
+          {ctaLabel}
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+export function StudyCockpit() {
+  const { isAuthenticated } = useAuth();
+  const [recentSpots, setRecentSpots] = useState<RecentStrategySpot[]>([]);
+
+  const { data: spots = [], isLoading: spotsLoading } =
+    trpc.strategy.listSpots.useQuery({});
+  const { data: icmPacks = [] } = trpc.icm.listPacks.useQuery();
+  const { data: hands = [], isLoading: handsLoading } =
+    trpc.hands.getByUser.useQuery({ limit: 5 });
+  const { data: topLeaks = [] } = trpc.leaks.getTop.useQuery({ limit: 4 });
+  const { data: stats } = trpc.strategy.getStats.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: progress } = trpc.strategy.getProgress.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: recentAttempts = [] } =
+    trpc.strategy.getRecentAttempts.useQuery(
+      { limit: 4 },
+      { enabled: isAuthenticated }
+    );
+
+  useEffect(() => {
+    setRecentSpots(loadRecentStrategySpots());
+  }, []);
+
+  const recentSpot = recentSpots[0];
+  const continueHref = recentSpot
+    ? `/strategy/trainer?chartId=${recentSpot.id}`
+    : "/strategy/trainer";
+  const continueTitle = recentSpot
+    ? "Resume Last Study Spot"
+    : "Continue Training";
+  const continueHelper = recentSpot
+    ? `${recentSpot.title} - ${formatSpotMeta(recentSpot)}`
+    : "Jump into Range Trainer and build reps from the current range pool.";
+  const chartCount = spots.length;
+  const icmSpotCount = icmPacks.reduce(
+    (total, pack) => total + pack.spotCount,
+    0
+  );
+  const pendingHands = useMemo(
+    () => hands.filter(hand => !hand.reviewed).length,
+    [hands]
+  );
+  const weakSpots = progress?.weakSpots ?? [];
+  const missedHands = progress?.missedHands ?? [];
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.11),transparent_26rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef2f7_100%)] pb-24">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:py-7">
+        <section className="overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.22),transparent_20rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-white shadow-2xl shadow-slate-950/20 sm:p-7">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-orange-300">
+                Training Cockpit
+              </p>
+              <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+                Study
+              </h1>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                Train ranges, review leaks, and capture hands while the
+                decision is still fresh.
+              </p>
+            </div>
+
+            <div className="grid gap-2 sm:min-w-[20rem]">
+              <Link href={continueHref}>
+                <Button className="h-12 w-full justify-between rounded-2xl bg-orange-500 px-4 text-sm font-black text-white shadow-lg shadow-orange-950/25 hover:bg-orange-600">
+                  <span className="flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    {continueTitle}
+                  </span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/log">
+                <Button
+                  variant="outline"
+                  className="h-11 w-full justify-between rounded-2xl border-white/15 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/15"
+                >
+                  <span className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Log a Hand
+                  </span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+              Next action
+            </p>
+            <p className="mt-1 text-sm font-semibold text-zinc-100">
+              {continueHelper}
+            </p>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StudyModuleCard
+            href="/strategy/library"
+            icon={BookOpen}
+            title="Hand Ranges"
+            subtitle="Browse structured preflop charts by stack and spot."
+            meta={
+              spotsLoading ? "Loading charts" : `${chartCount} charts available`
+            }
+            tone="zinc"
+          />
+          <StudyModuleCard
+            href="/strategy/trainer"
+            icon={Zap}
+            title="Range Trainer"
+            subtitle="Fast flashcards with visual chart reveal after answers."
+            meta={
+              stats
+                ? `${stats.accuracy}% saved accuracy`
+                : "Practice without setup"
+            }
+            tone="orange"
+          />
+          <StudyModuleCard
+            href="/study/icm"
+            icon={Trophy}
+            title="ICM Packs"
+            subtitle="Advanced final-table and payout-pressure spots."
+            meta={
+              icmSpotCount > 0
+                ? `${icmSpotCount} curated spots`
+                : "Advanced pack"
+            }
+            tone="blue"
+          />
+          <StudyModuleCard
+            href="/hands"
+            icon={Brain}
+            title="Leak Review"
+            subtitle="Revisit mistakes and turn missed hands into drills."
+            meta={
+              pendingHands > 0
+                ? `${pendingHands} hands to review`
+                : "Review logged hands"
+            }
+            tone="green"
+          />
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <div className="space-y-4">
+            <SectionHeader
+              label="Continue"
+              title="Recent Study"
+              helper="Pick up from actual study and hand-review activity."
+              action={
+                <Link href="/hands">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-full text-xs font-bold text-slate-600 hover:text-slate-950"
+                  >
+                    View all
+                  </Button>
+                </Link>
+              }
+            />
+
+            <Card className="rounded-[1.75rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
+              <CardContent className="space-y-4 p-4 sm:p-5">
+                {recentSpots.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                      <History className="h-3.5 w-3.5" />
+                      Recently Viewed Ranges
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {recentSpots.slice(0, 4).map(spot => (
+                        <Link
+                          key={spot.id}
+                          href={`/strategy/library?chartId=${spot.id}`}
+                        >
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50/60 hover:shadow-md">
+                            <p className="truncate text-sm font-bold text-slate-950">
+                              {spot.title}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <Badge className="rounded-full bg-orange-500 text-white">
+                                {spot.stackDepth}bb
+                              </Badge>
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-slate-200 bg-white text-[11px]"
+                              >
+                                {SPOT_GROUP_LABELS[spot.spotGroup]}
+                              </Badge>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No recent ranges yet"
+                    helper="Open a chart once and it will appear here for quick return."
+                    ctaHref="/strategy/library"
+                    ctaLabel="Browse ranges"
+                  />
+                )}
+
+                <div className="h-px bg-slate-200/80" />
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Recently Logged Hands
+                  </div>
+
+                  {handsLoading && (
+                    <div className="space-y-2">
+                      {[1, 2, 3].map(index => (
+                        <Skeleton
+                          key={index}
+                          className="h-14 w-full rounded-2xl"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {!handsLoading && hands.length === 0 && (
+                    <EmptyState
+                      title="No logged hands yet"
+                      helper="Use quick hand capture after a session, then review it here."
+                      ctaHref="/log"
+                      ctaLabel="Log first hand"
+                    />
+                  )}
+
+                  {!handsLoading &&
+                    hands.slice(0, 3).map(hand => (
+                      <Link key={hand.id} href={`/hands/${hand.id}`}>
+                        <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:-translate-y-0.5 hover:border-orange-200 hover:bg-white hover:shadow-md">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-slate-950">
+                              {hand.heroHand || "Hand captured"}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-slate-600">
+                              {formatHandMeta(hand)}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={hand.reviewed ? "secondary" : "outline"}
+                            className="shrink-0 rounded-full"
+                          >
+                            {hand.reviewed ? "Reviewed" : "To review"}
+                          </Badge>
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <SectionHeader
+              label="Weak Spots"
+              title="What Needs Reps"
+              helper="Saved trainer history and leak data drive this area."
+            />
+
+            <Card className="rounded-[1.75rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
+              <CardContent className="space-y-4 p-4 sm:p-5">
+                {isAuthenticated && weakSpots.length > 0 && (
+                  <div className="space-y-2">
+                    {weakSpots.slice(0, 4).map(spot => (
+                      <div
+                        key={spot.chartId}
+                        className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-slate-950">
+                              {spot.chartTitle}
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-600">
+                              {spot.accuracy}% over {spot.attempts} attempts
+                            </p>
+                          </div>
+                          <Link href={`/strategy/trainer?chartId=${spot.chartId}`}>
+                            <Button
+                              size="sm"
+                              className="h-8 shrink-0 rounded-full bg-orange-500 px-3 text-xs font-bold text-white hover:bg-orange-600"
+                            >
+                              Train
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {(!isAuthenticated || weakSpots.length === 0) &&
+                  topLeaks.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        Active Leaks
+                      </div>
+                      {topLeaks.map(leak => (
+                        <Link key={leak.id} href={`/leaks/${leak.id}`}>
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:border-orange-200 hover:bg-white">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-slate-950">
+                                  {leak.name}
+                                </p>
+                                <p className="mt-0.5 text-xs text-slate-600">
+                                  {leak.category} - {leak.handCount} linked hands
+                                </p>
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-slate-400" />
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                {isAuthenticated && missedHands.length > 0 && (
+                  <>
+                    <div className="h-px bg-slate-200/80" />
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        Most Missed Hands
+                      </div>
+                      {missedHands.slice(0, 3).map(hand => (
+                        <div
+                          key={`${hand.chartId}-${hand.handCode}`}
+                          className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                        >
+                          <div>
+                            <p className="font-mono text-base font-black text-slate-950">
+                              {hand.handCode}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              Correct: {ACTION_LABELS[hand.correctAction]}
+                            </p>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="rounded-full border-red-200 bg-red-50 text-red-700"
+                          >
+                            Missed {hand.missed}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {(!isAuthenticated || weakSpots.length === 0) &&
+                  topLeaks.length === 0 && (
+                    <EmptyState
+                      title="No weak spots yet"
+                      helper="Train ranges or log mistakes and this will become your next-study queue."
+                      ctaHref="/strategy/trainer"
+                      ctaLabel="Start trainer"
+                    />
+                  )}
+
+                {!isAuthenticated && (
+                  <p className="rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
+                    Range practice works while logged out. Saved weak spots
+                    appear here for authenticated users.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <SectionHeader
+            label="Tools"
+            title="Study Utilities"
+            helper="Secondary workflows stay close, without competing with training."
+          />
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                href: "/study-plan",
+                icon: Layers,
+                title: "Study Plan",
+                helper: "Weekly structure and planned work.",
+              },
+              {
+                href: "/guided-session",
+                icon: Target,
+                title: "Guided Session",
+                helper: "Run a focused study block.",
+              },
+              {
+                href: "/hands",
+                icon: FileText,
+                title: "Hand Review",
+                helper: "Review saved hand history.",
+              },
+              {
+                href: "/log",
+                icon: Plus,
+                title: "Quick Capture",
+                helper: "Log a hand, leak, note, or tournament.",
+              },
+            ].map(item => (
+              <Link key={item.href} href={item.href}>
+                <div className="group rounded-[1.35rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm shadow-slate-950/5 transition hover:-translate-y-0.5 hover:border-orange-200 hover:bg-white hover:shadow-md">
+                  <item.icon className="h-5 w-5 text-orange-500" />
+                  <p className="mt-3 text-sm font-black text-slate-950">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    {item.helper}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {isAuthenticated && recentAttempts.length > 0 && (
+          <section className="space-y-4">
+            <SectionHeader
+              label="Trainer"
+              title="Recent Answers"
+              helper="Your last saved trainer decisions."
+            />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {recentAttempts.map(attempt => (
+                <div
+                  key={attempt.id}
+                  className="rounded-[1.25rem] border border-slate-200 bg-white/90 p-3 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-mono text-base font-black text-slate-950">
+                      {attempt.handCode}
+                    </p>
+                    <Badge
+                      className={
+                        attempt.isCorrect
+                          ? "rounded-full bg-emerald-500 text-white"
+                          : "rounded-full bg-red-500 text-white"
+                      }
+                    >
+                      {attempt.isCorrect ? "Hit" : "Miss"}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Correct:{" "}
+                    {ACTION_LABELS[attempt.correctAction as Action] ??
+                      attempt.correctAction}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
+  );
+}

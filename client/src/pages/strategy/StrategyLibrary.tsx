@@ -48,6 +48,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import {
+  addRecentStrategySpot,
+  loadRecentStrategySpots,
+  saveRecentStrategySpots,
+  type RecentStrategySpot,
+} from "@/lib/strategyRecentSpots";
 import { SpotFilters } from "@/components/strategy/SpotFilters";
 import { RangeMatrix } from "@/components/strategy/RangeMatrix";
 import { ActionLegend } from "@/components/strategy/ActionLegend";
@@ -60,19 +66,6 @@ import {
   type SpotGroup,
 } from "../../../../shared/strategy";
 
-const RECENT_SPOTS_KEY = "mtt.strategy.recentSpots";
-const RECENT_SPOTS_LIMIT = 6;
-
-interface RecentSpot {
-  id: number;
-  title: string;
-  stackDepth: number;
-  spotGroup: SpotGroup;
-  spotKey: string;
-  heroPosition: string;
-  villainPosition?: string | null;
-}
-
 function parseChartNotes(notesJson?: string | null): string[] {
   if (!notesJson) return [];
 
@@ -83,43 +76,6 @@ function parseChartNotes(notesJson?: string | null): string[] {
       : [];
   } catch {
     return [];
-  }
-}
-
-function loadRecentSpots(): RecentSpot[] {
-  try {
-    const raw = window.localStorage.getItem(RECENT_SPOTS_KEY);
-    if (!raw) return [];
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .filter((spot): spot is RecentSpot => {
-        return (
-          spot &&
-          typeof spot.id === "number" &&
-          typeof spot.title === "string" &&
-          typeof spot.stackDepth === "number" &&
-          typeof spot.spotGroup === "string" &&
-          typeof spot.spotKey === "string" &&
-          typeof spot.heroPosition === "string"
-        );
-      })
-      .slice(0, RECENT_SPOTS_LIMIT);
-  } catch {
-    return [];
-  }
-}
-
-function saveRecentSpots(spots: RecentSpot[]) {
-  try {
-    window.localStorage.setItem(
-      RECENT_SPOTS_KEY,
-      JSON.stringify(spots.slice(0, RECENT_SPOTS_LIMIT))
-    );
-  } catch {
-    // Recently viewed is a convenience only.
   }
 }
 
@@ -136,7 +92,7 @@ export default function StrategyLibrary() {
   const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
     initialChartId
   );
-  const [recentSpots, setRecentSpots] = useState<RecentSpot[]>([]);
+  const [recentSpots, setRecentSpots] = useState<RecentStrategySpot[]>([]);
 
   const {
     data: spots = [],
@@ -186,13 +142,13 @@ export default function StrategyLibrary() {
   );
 
   useEffect(() => {
-    setRecentSpots(loadRecentSpots());
+    setRecentSpots(loadRecentStrategySpots());
   }, []);
 
   useEffect(() => {
     if (!chart) return;
 
-    const nextSpot: RecentSpot = {
+    const nextSpot: RecentStrategySpot = {
       id: chart.id,
       title: chart.title,
       stackDepth: chart.stackDepth,
@@ -203,11 +159,8 @@ export default function StrategyLibrary() {
     };
 
     setRecentSpots(previous => {
-      const next = [
-        nextSpot,
-        ...previous.filter(spot => spot.id !== nextSpot.id),
-      ].slice(0, RECENT_SPOTS_LIMIT);
-      saveRecentSpots(next);
+      const next = addRecentStrategySpot(previous, nextSpot);
+      saveRecentStrategySpots(next);
       return next;
     });
   }, [chart?.id]);
