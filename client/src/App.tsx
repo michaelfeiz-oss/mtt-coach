@@ -19,6 +19,9 @@ import Study from "./pages/Study";
 import StudyHub from "./pages/strategy/StudyHub";
 import StrategyLibrary from "./pages/strategy/StrategyLibrary";
 import RangeTrainer from "./pages/strategy/RangeTrainer";
+import IcmPacks from "./pages/icm/IcmPacks";
+import IcmPackDetail from "./pages/icm/IcmPackDetail";
+import IcmSpotDetail from "./pages/icm/IcmSpotDetail";
 
 function Router() {
   return (
@@ -34,6 +37,9 @@ function Router() {
       <Route key="tournament-detail" path={"/tournaments/:id"} component={TournamentDetail} />
       <Route key="study-plan" path={"/study-plan"} component={StudyPlan} />
       <Route key="guided-session" path={"/guided-session"} component={GuidedSession} />
+      <Route key="icm-spot" path={"/study/icm/spot/:spotId"} component={IcmSpotDetail} />
+      <Route key="icm-pack" path={"/study/icm/:packSlug"} component={IcmPackDetail} />
+      <Route key="icm-packs" path={"/study/icm"} component={IcmPacks} />
       <Route key="strategy" path={"/strategy"} component={StudyHub} />
       <Route key="strategy-library" path={"/strategy/library"} component={StrategyLibrary} />
       <Route key="strategy-trainer" path={"/strategy/trainer"} component={RangeTrainer} />

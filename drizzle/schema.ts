@@ -340,3 +340,52 @@ export const trainerAttempts = mysqlTable("trainerAttempts", {
 
 export type TrainerAttempt = typeof trainerAttempts.$inferSelect;
 export type InsertTrainerAttempt = typeof trainerAttempts.$inferInsert;
+
+/**
+ * ICM Study Pack module: high-pressure final-table content packs.
+ */
+export const icmPacks = mysqlTable("icmPacks", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  activeIdx: index("icm_pack_active_idx").on(table.isActive),
+}));
+
+export type IcmPack = typeof icmPacks.$inferSelect;
+export type InsertIcmPack = typeof icmPacks.$inferInsert;
+
+/**
+ * ICM Study Pack module: one curated scenario/source file inside a pack.
+ */
+export const icmSpots = mysqlTable("icmSpots", {
+  id: int("id").autoincrement().primaryKey(),
+  packId: int("packId").notNull().references(() => icmPacks.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  sourcePath: varchar("sourcePath", { length: 500 }).notNull(),
+  playerCount: int("playerCount").notNull(),
+  primaryCategory: varchar("primaryCategory", { length: 80 }).notNull(),
+  heroPosition: varchar("heroPosition", { length: 10 }),
+  villainPosition: varchar("villainPosition", { length: 10 }),
+  heroStackBb: float("heroStackBb"),
+  villainStackBb: float("villainStackBb"),
+  stackSummaryJson: text("stackSummaryJson"),
+  tagsJson: text("tagsJson"),
+  actionHint: varchar("actionHint", { length: 80 }),
+  rawMetadataJson: text("rawMetadataJson"),
+  contentJson: text("contentJson"),
+  isCurated: boolean("isCurated").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  packIdx: index("icm_spot_pack_idx").on(table.packId),
+  playerCountIdx: index("icm_spot_player_count_idx").on(table.playerCount),
+  categoryIdx: index("icm_spot_category_idx").on(table.primaryCategory),
+  curatedIdx: index("icm_spot_curated_idx").on(table.isCurated),
+}));
+
+export type IcmSpot = typeof icmSpots.$inferSelect;
+export type InsertIcmSpot = typeof icmSpots.$inferInsert;

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, ChevronLeft, ChevronRight, Target } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Target, Trophy } from "lucide-react";
 import { DrillCard } from "@/components/DrillCard";
 import { Link } from "wouter";
 
@@ -358,6 +358,23 @@ export default function Study() {
               <Button variant="outline" className="w-full justify-start gap-2">
                 <Target className="h-4 w-4 text-orange-500" />
                 Range Trainer
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-300 bg-white">
+          <CardHeader>
+            <CardTitle className="text-base">ICM Packs</CardTitle>
+            <CardDescription>
+              Advanced payout-pressure study
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/study/icm">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Trophy className="h-4 w-4 text-orange-500" />
+                Final Table ICM Essentials
               </Button>
             </Link>
           </CardContent>

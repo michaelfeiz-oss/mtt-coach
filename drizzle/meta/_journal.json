@@ -36,6 +36,13 @@
       "when": 1776727605612,
       "tag": "0004_blushing_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1776728619000,
+      "tag": "0005_icm_study_packs",
+      "breakpoints": true
     }
   ]
 }
