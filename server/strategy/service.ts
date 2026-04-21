@@ -293,7 +293,7 @@ export async function getTrainerSpot(
 }
 
 export async function submitTrainerAttempt(
-  userId: number,
+  userId: number | null,
   input: {
     chartId: number;
     handCode: string;
@@ -322,14 +322,17 @@ export async function submitTrainerAttempt(
   const correctAction = row.action.primaryAction;
   const isCorrect = input.selectedAction === correctAction;
 
-  await logTrainerAttempt({
-    userId,
-    chartId: input.chartId,
-    handCode: input.handCode,
-    selectedAction: input.selectedAction,
-    correctAction,
-    isCorrect,
-  });
+  // Only persist the attempt when a user is authenticated
+  if (userId !== null) {
+    await logTrainerAttempt({
+      userId,
+      chartId: input.chartId,
+      handCode: input.handCode,
+      selectedAction: input.selectedAction,
+      correctAction,
+      isCorrect,
+    });
+  }
 
   return {
     success: true,

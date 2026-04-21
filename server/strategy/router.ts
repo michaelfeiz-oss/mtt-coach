@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import {
   getChartBySpotSelector,
   getChartWithActions,
@@ -61,23 +61,25 @@ function notFound(message: string): never {
 }
 
 export const strategyRouter = router({
-  listSpots: protectedProcedure.input(ListSpotsInput).query(({ input }) => {
-    return listAvailableSpots(input);
+  // Public read-only queries — no login required
+  listSpots: publicProcedure.input(ListSpotsInput).query(async ({ input }) => {
+    const result = await listAvailableSpots(input);
+    return result;
   }),
 
-  getChart: protectedProcedure.input(GetChartInput).query(async ({ input }) => {
+  getChart: publicProcedure.input(GetChartInput).query(async ({ input }) => {
     const chart = await getChartWithActions(input.chartId);
     if (!chart) notFound("Chart not found");
     return chart;
   }),
 
-  getChartsBySpot: protectedProcedure
+  getChartsBySpot: publicProcedure
     .input(GetChartBySpotInput)
     .query(({ input }) => {
       return getChartsBySpot(input.stackDepth, input.spotGroup, input.spotKey);
     }),
 
-  getChartBySpot: protectedProcedure
+  getChartBySpot: publicProcedure
     .input(GetChartBySpotInput)
     .query(async ({ input }) => {
       const chart = await getChartBySpotSelector(
@@ -90,7 +92,7 @@ export const strategyRouter = router({
       return chart;
     }),
 
-  getTrainerSpot: protectedProcedure
+  getTrainerSpot: publicProcedure
     .input(GetTrainerSpotInput)
     .query(async ({ input }) => {
       const spot = await getTrainerSpot(input);
@@ -98,18 +100,21 @@ export const strategyRouter = router({
       return spot;
     }),
 
-  submitTrainerAttempt: protectedProcedure
+  // Trainer write operations — work without login; attempts are only persisted when authenticated
+  submitTrainerAttempt: publicProcedure
     .input(SubmitAttemptInput)
     .mutation(async ({ ctx, input }) => {
-      const result = await submitTrainerAttempt(ctx.user.id, input);
+      const userId = ctx.user?.id ?? null;
+      const result = await submitTrainerAttempt(userId, input);
       if (!result) notFound("Trainer hand not found");
       return result;
     }),
 
-  logAttempt: protectedProcedure
+  logAttempt: publicProcedure
     .input(LogAttemptInput)
     .mutation(async ({ ctx, input }) => {
-      const result = await submitTrainerAttempt(ctx.user.id, {
+      const userId = ctx.user?.id ?? null;
+      const result = await submitTrainerAttempt(userId, {
         chartId: input.chartId,
         handCode: input.handCode,
         selectedAction: input.selectedAction,
@@ -119,6 +124,7 @@ export const strategyRouter = router({
       return result;
     }),
 
+  // Stats and history — require login (user-specific data)
   getStats: protectedProcedure.query(({ ctx }) => {
     return getTrainerStats(ctx.user.id);
   }),
