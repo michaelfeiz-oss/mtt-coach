@@ -46,8 +46,9 @@ async function seedTestChart() {
 
   await bulkInsertActions([
     { chartId, handCode: "AA", primaryAction: "RAISE", weightPercent: 100, mixJson: null, colorToken: null, note: null },
-    { chartId, handCode: "KK", primaryAction: "RAISE", weightPercent: 100, mixJson: null, colorToken: null, note: null },
-    { chartId, handCode: "72o", primaryAction: "FOLD", weightPercent: 100, mixJson: null, colorToken: null, note: null },
+    { chartId, handCode: "AKo", primaryAction: "CALL", weightPercent: 100, mixJson: null, colorToken: null, note: null },
+    { chartId, handCode: "AJo", primaryAction: "FOLD", weightPercent: 100, mixJson: null, colorToken: null, note: null },
+    { chartId, handCode: "T2o", primaryAction: "FOLD", weightPercent: 100, mixJson: null, colorToken: null, note: null },
   ]);
 
   return chartId;
@@ -88,7 +89,7 @@ describe("Strategy Module", () => {
       const chart = await getChartWithActions(testChartId);
       expect(chart).not.toBeNull();
       expect(chart!.title).toBe("Test BTN RFI @ 20bb");
-      expect(chart!.actions.length).toBe(3);
+      expect(chart!.actions.length).toBe(4);
       const aaPrimary = chart!.actions.find(a => a.handCode === "AA")?.primaryAction;
       expect(aaPrimary).toBe("RAISE");
     });
@@ -103,19 +104,31 @@ describe("Strategy Module", () => {
     it("returns a trainer hand from the chart", async () => {
       const spot = await getTrainerSpot({ chartId: testChartId });
       expect(spot).not.toBeNull();
-      expect(["AA", "KK", "72o"]).toContain(spot!.handCode);
-      expect(["RAISE", "FOLD"]).toContain(spot!.correctAction);
+      expect(["AA", "AKo", "AJo"]).toContain(spot!.handCode);
+      expect(["RAISE", "CALL", "FOLD"]).toContain(spot!.correctAction);
     });
 
-    it("can include fold reps when continue hands are in recent history", async () => {
+    it("can include marginal fold reps when continue hands are in recent history", async () => {
       const spot = await getTrainerSpot({
         chartId: testChartId,
-        recentHandKeys: [`${testChartId}:AA`, `${testChartId}:KK`],
+        recentHandKeys: [`${testChartId}:AA`, `${testChartId}:AKo`],
       });
 
       expect(spot).not.toBeNull();
-      expect(spot!.handCode).toBe("72o");
+      expect(spot!.handCode).toBe("AJo");
       expect(spot!.correctAction).toBe("FOLD");
+    });
+
+    it("excludes garbage folds far from the continue boundary", async () => {
+      for (let index = 0; index < 12; index += 1) {
+        const spot = await getTrainerSpot({
+          chartId: testChartId,
+          recentHandKeys: [`${testChartId}:AA`, `${testChartId}:AKo`],
+        });
+
+        expect(spot).not.toBeNull();
+        expect(spot!.handCode).not.toBe("T2o");
+      }
     });
 
     it("includes chart metadata", async () => {
