@@ -34,7 +34,7 @@ import {
   type SpotGroup,
 } from "../../../../shared/strategy";
 
-type TrainerMode = "random" | "stack" | "family" | "exact";
+type TrainerMode = "exact_chart" | "family" | "stack" | "full_pool";
 
 interface SessionStats {
   total: number;
@@ -74,10 +74,10 @@ function dedupePush<T>(items: T[], next: T, limit: number): T[] {
   return [next, ...items.filter(item => item !== next)].slice(0, limit);
 }
 
-function nextMode(stackDepth?: number, spotGroup?: SpotGroup): TrainerMode {
+function modeForFilters(stackDepth?: number, spotGroup?: SpotGroup): TrainerMode {
   if (spotGroup) return "family";
   if (stackDepth !== undefined) return "stack";
-  return "random";
+  return "full_pool";
 }
 
 function searchTextForSpot(spot: SpotSummary) {
@@ -114,8 +114,8 @@ function formatModeLabel(
   stackDepth: number | undefined,
   spotGroup: SpotGroup | undefined
 ) {
-  if (mode === "exact" && selectedSpot) {
-    return `Exact Chart - ${selectedSpot.title}`;
+  if (mode === "exact_chart") {
+    return selectedSpot ? `Exact Chart - ${selectedSpot.title}` : "Exact Chart";
   }
 
   if (mode === "family" && spotGroup) {
@@ -125,10 +125,10 @@ function formatModeLabel(
   }
 
   if (mode === "stack" && stackDepth) {
-    return `${stackDepth}bb Mode - All families`;
+    return `${stackDepth}bb - All Families`;
   }
 
-  return "Random Mode - Full pool";
+  return "Full Pool";
 }
 
 function filterSummary(
@@ -136,7 +136,7 @@ function filterSummary(
   stackDepth: number | undefined,
   spotGroup: SpotGroup | undefined
 ) {
-  if (mode === "exact") return "Stays inside the selected chart.";
+  if (mode === "exact_chart") return "Stays inside the selected chart.";
   if (spotGroup && stackDepth) {
     return `Rotating ${SPOT_GROUP_LABELS[spotGroup]} charts at ${stackDepth}bb.`;
   }
@@ -157,20 +157,28 @@ function scrollElementIntoComfortView(element: HTMLElement | null) {
   element.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function replaceTrainerUrl(chartId: number | null) {
+  if (typeof window === "undefined") return;
+
+  const nextUrl =
+    chartId === null ? "/strategy/trainer" : `/strategy/trainer?chartId=${chartId}`;
+  window.history.replaceState(window.history.state, "", nextUrl);
+}
+
 export default function RangeTrainer() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
   const params = new URLSearchParams(search);
   const chartIdParamRaw = params.get("chartId");
   const chartIdParam = chartIdParamRaw ? Number(chartIdParamRaw) : undefined;
-  const initialChartId = Number.isFinite(chartIdParam)
+  const initialChartId = chartIdParam !== undefined && Number.isFinite(chartIdParam)
     ? chartIdParam
-    : undefined;
+    : null;
 
   const [mode, setMode] = useState<TrainerMode>(
-    initialChartId ? "exact" : "random"
+    initialChartId !== null ? "exact_chart" : "full_pool"
   );
-  const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
+  const [selectedChartId, setSelectedChartId] = useState<number | null>(
     initialChartId
   );
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
@@ -217,17 +225,23 @@ export default function RangeTrainer() {
       recentHandKeys,
     };
 
-    if (mode === "exact" && selectedChartId !== undefined) {
-      input.chartId = selectedChartId;
-      return input;
+    switch (mode) {
+      case "exact_chart":
+        if (selectedChartId !== null) input.chartId = selectedChartId;
+        return input;
+      case "family":
+        if (spotGroup !== undefined) input.spotGroup = spotGroup;
+        if (stackDepth !== undefined) input.stackDepth = stackDepth;
+        return input;
+      case "stack":
+        if (stackDepth !== undefined) input.stackDepth = stackDepth;
+        return input;
+      case "full_pool":
+        return input;
     }
-
-    if (stackDepth !== undefined) input.stackDepth = stackDepth;
-    if (spotGroup !== undefined) input.spotGroup = spotGroup;
-    return input;
   }, [mode, recentChartIds, recentHandKeys, selectedChartId, stackDepth, spotGroup]);
 
-  const trainerEnabled = mode !== "exact" || selectedChartId !== undefined;
+  const trainerEnabled = mode !== "exact_chart" || selectedChartId !== null;
   const {
     data: trainerSpot,
     isLoading: trainerSpotLoading,
@@ -313,35 +327,40 @@ export default function RangeTrainer() {
 
   function setStackFilter(nextStackDepth: number | undefined) {
     setStackDepth(nextStackDepth);
-    setSelectedChartId(undefined);
-    setMode(nextMode(nextStackDepth, spotGroup));
+    setSelectedChartId(null);
+    setMode(modeForFilters(nextStackDepth, spotGroup));
+    replaceTrainerUrl(null);
     resetSessionState();
   }
 
   function setFamilyFilter(nextSpotGroup: SpotGroup | undefined) {
     setSpotGroup(nextSpotGroup);
-    setSelectedChartId(undefined);
-    setMode(nextMode(stackDepth, nextSpotGroup));
+    setSelectedChartId(null);
+    setMode(modeForFilters(stackDepth, nextSpotGroup));
+    replaceTrainerUrl(null);
     resetSessionState();
   }
 
   function selectExactChart(chartId: number) {
     setSelectedChartId(chartId);
-    setMode("exact");
+    setMode("exact_chart");
+    replaceTrainerUrl(chartId);
     resetSessionState();
   }
 
   function startFullRandom() {
     setStackDepth(undefined);
     setSpotGroup(undefined);
-    setSelectedChartId(undefined);
-    setMode("random");
+    setSelectedChartId(null);
+    setMode("full_pool");
+    replaceTrainerUrl(null);
     resetSessionState();
   }
 
   function mixCurrentFilters() {
-    setSelectedChartId(undefined);
-    setMode(nextMode(stackDepth, spotGroup));
+    setSelectedChartId(null);
+    setMode(modeForFilters(stackDepth, spotGroup));
+    replaceTrainerUrl(null);
     resetSessionState();
   }
 
@@ -403,7 +422,7 @@ export default function RangeTrainer() {
     rememberQuestionForRepeatGuard();
     setAnswerReveal(null);
     setQuestionVersion(version => version + 1);
-    void refetchTrainerSpot();
+    if (!trainerSpot) void refetchTrainerSpot();
   }
 
   function resetDrill() {
@@ -414,7 +433,7 @@ export default function RangeTrainer() {
   function groupIsOpen(group: SpotGroup) {
     if (searchTerm.trim()) return true;
     if (spotGroup) return group === spotGroup;
-    if (selectedSpot?.spotGroup === group) return true;
+    if (mode === "exact_chart" && selectedSpot?.spotGroup === group) return true;
     return openGroups[group] ?? group === "RFI";
   }
 
@@ -465,11 +484,11 @@ export default function RangeTrainer() {
                 size="sm"
                 className={cn(
                   "h-9 rounded-2xl text-xs font-black",
-                  mode === "random"
+                  mode === "full_pool"
                     ? "bg-zinc-950 text-white hover:bg-zinc-900"
                     : "border-slate-200 bg-white text-slate-700 hover:bg-orange-50"
                 )}
-                variant={mode === "random" ? "default" : "outline"}
+                variant={mode === "full_pool" ? "default" : "outline"}
                 onClick={startFullRandom}
               >
                 Full pool
@@ -479,7 +498,12 @@ export default function RangeTrainer() {
                 className="h-9 gap-1 rounded-2xl border-slate-200 bg-white text-xs font-black text-slate-700 hover:bg-orange-50"
                 variant="outline"
                 onClick={mixCurrentFilters}
-                disabled={!selectedChartId && mode !== "exact"}
+                disabled={
+                  selectedChartId === null &&
+                  stackDepth === undefined &&
+                  spotGroup === undefined &&
+                  mode !== "exact_chart"
+                }
               >
                 <ChevronsUpDown className="h-3.5 w-3.5" />
                 Mix filters
@@ -663,7 +687,8 @@ export default function RangeTrainer() {
                     {open && (
                       <div className="space-y-1 border-t border-slate-100 p-2">
                         {section.spots.map(spot => {
-                          const active = selectedChartId === spot.id;
+                          const active =
+                            mode === "exact_chart" && selectedChartId === spot.id;
 
                           return (
                             <button
@@ -786,13 +811,13 @@ export default function RangeTrainer() {
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-300">
                       <Badge className="rounded-full bg-orange-500 text-white">
-                        {mode === "exact"
+                        {mode === "exact_chart"
                           ? "Exact Chart"
                           : mode === "family"
                             ? "Family Mode"
                             : mode === "stack"
                               ? "Stack Mode"
-                              : "Random Mode"}
+                              : "Full Pool"}
                       </Badge>
                       {stackDepth !== undefined && (
                         <Badge
