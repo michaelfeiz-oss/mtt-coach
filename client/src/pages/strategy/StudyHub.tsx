@@ -39,11 +39,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ACTION_LABELS } from "../../../../shared/strategy";
 import type { Action } from "../../../../shared/strategy";
-import { toast } from "sonner";
 
 export default function StudyHub() {
   const { isAuthenticated } = useAuth();
@@ -57,6 +57,9 @@ export default function StudyHub() {
     { limit: 5 },
     { enabled: isAuthenticated }
   );
+  const { data: progress } = trpc.strategy.getProgress.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   return (
     <div className="space-y-6 p-6">
@@ -100,20 +103,14 @@ export default function StudyHub() {
           </Card>
         </Link>
 
-        <Card
-          className="cursor-pointer hover:border-orange-500/50 transition-colors group opacity-60"
-          onClick={() =>
-            toast("Coming soon — Progress tracking is in development.")
-          }
-        >
+        <Card className="border-orange-500/20 bg-orange-500/5">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <TrendingUp className="h-6 w-6 text-orange-500" />
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-orange-500 transition-colors" />
             </div>
             <CardTitle className="text-base mt-2">Progress</CardTitle>
             <CardDescription className="text-xs">
-              Track your accuracy over time — coming soon
+              Review saved accuracy, weak spots, and missed hands
             </CardDescription>
           </CardHeader>
         </Card>
@@ -143,12 +140,148 @@ export default function StudyHub() {
           <Card>
             <CardContent className="pt-4 pb-3 text-center">
               <p className="text-2xl font-bold text-orange-500">
-                {stats.correct}
+                {progress?.bySpot.length ?? 0}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">Correct</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Spots Studied
+              </p>
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Progress loop */}
+      {!isAuthenticated && (
+        <Card className="border-dashed">
+          <CardContent className="py-4">
+            <p className="text-sm font-medium">Saved progress is login-only</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You can browse charts and train while logged out, but history,
+              weak spots, and missed hands are only saved for authenticated
+              users.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAuthenticated && progress && progress.bySpot.length > 0 && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Weak Spots</CardTitle>
+                <CardDescription className="text-xs">
+                  Lowest saved trainer accuracy first
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {progress.weakSpots.slice(0, 4).map(spot => (
+                  <div
+                    key={spot.chartId}
+                    className="flex items-center justify-between gap-3 rounded-md border p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {spot.chartTitle}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {spot.accuracy}% accuracy over {spot.attempts} attempts
+                      </p>
+                    </div>
+                    <Link href={`/strategy/trainer?chartId=${spot.chartId}`}>
+                      <Button size="sm" variant="outline">
+                        Train
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Most Missed Hands</CardTitle>
+                <CardDescription className="text-xs">
+                  Hands you have answered incorrectly most often
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {progress.missedHands.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    No missed hands saved yet.
+                  </p>
+                ) : (
+                  progress.missedHands.slice(0, 5).map(hand => (
+                    <div
+                      key={`${hand.chartId}-${hand.handCode}`}
+                      className="flex items-center justify-between gap-3 rounded-md border p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-mono text-base font-bold">
+                          {hand.handCode}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {hand.chartTitle}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-medium text-red-500">
+                          Missed {hand.missed}/{hand.attempts}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {ACTION_LABELS[hand.correctAction]}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Trainer History by Spot</CardTitle>
+              <CardDescription className="text-xs">
+                Saved attempts grouped by chart
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              {progress.bySpot.slice(0, 6).map(spot => (
+                <div
+                  key={spot.chartId}
+                  className="flex items-center justify-between gap-3 rounded-md border p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {spot.chartTitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {spot.attempts} attempts - {spot.accuracy}% accuracy
+                    </p>
+                  </div>
+                  <Link href={`/strategy/trainer?chartId=${spot.chartId}`}>
+                    <Button size="sm" variant="ghost">
+                      Train
+                    </Button>
+                  </Link>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {isAuthenticated && progress && progress.bySpot.length === 0 && (
+        <Card>
+          <CardContent className="py-4 text-center">
+            <p className="text-sm font-medium">No saved trainer attempts yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Run a few Range Trainer hands while logged in to populate weak
+              spots and missed-hand feedback.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Recent activity */}

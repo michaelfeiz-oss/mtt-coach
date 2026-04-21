@@ -20,9 +20,9 @@ const SIZE_CONFIG: Record<
   MatrixSize,
   { minCell: number; maxCell: number; font: number }
 > = {
-  sm: { minCell: 22, maxCell: 24, font: 9 },
-  md: { minCell: 30, maxCell: 36, font: 10 },
-  lg: { minCell: 38, maxCell: 48, font: 12 },
+  sm: { minCell: 20, maxCell: 26, font: 9 },
+  md: { minCell: 22, maxCell: 38, font: 10 },
+  lg: { minCell: 28, maxCell: 48, font: 12 },
 };
 
 const DEFAULT_ACTION: Action = "FOLD";
@@ -78,14 +78,15 @@ export function RangeMatrix({
   }
 
   return (
-    <div className={cn("w-full overflow-x-auto pb-1", className)}>
+    <div className={cn("w-full", className)}>
       <div
-        className="grid gap-px rounded-md bg-border/70 p-px"
+        className="mx-auto grid gap-[2px] rounded-lg bg-border/80 p-1 shadow-sm"
         style={{
-          gridTemplateColumns: `repeat(13, minmax(${minCell}px, 1fr))`,
+          gridTemplateColumns: "repeat(13, minmax(0, 1fr))",
           minWidth: minCell * 13,
           maxWidth: maxCell * 13,
           width: "100%",
+          boxSizing: "border-box",
         }}
         role="grid"
         aria-label="Preflop range matrix"
@@ -110,12 +111,12 @@ export function RangeMatrix({
               title={title}
               onClick={() => selectHand(handCode)}
               className={cn(
-                "relative flex aspect-square items-center justify-center overflow-hidden rounded-[3px] border border-black/10 font-semibold transition",
+                "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden rounded-[4px] border border-black/10 font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] transition",
                 isInteractive
-                  ? "cursor-pointer hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+                  ? "cursor-pointer active:scale-[0.97] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
                   : "cursor-default",
                 isHighlighted &&
-                  "z-10 ring-2 ring-orange-400 ring-offset-1 ring-offset-background"
+                  "z-10 scale-[1.04] ring-2 ring-orange-500 ring-offset-2 ring-offset-background"
               )}
               style={{
                 backgroundColor: style.backgroundColor,
