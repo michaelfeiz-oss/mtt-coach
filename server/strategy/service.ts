@@ -38,6 +38,8 @@ export interface ListSpotsFilters {
 
 export interface TrainerSpotFilters extends ListSpotsFilters {
   chartId?: number;
+  recentChartIds?: number[];
+  recentHandKeys?: string[];
 }
 
 export interface ChartSummary {
@@ -74,6 +76,9 @@ const TRAINER_ACTION_ORDER: Action[] = [
 ];
 const VALID_POSITIONS = new Set<string>(POSITIONS);
 const VALID_HANDS = new Set<string>(ALL_HANDS);
+const RECENT_CHART_GUARD_LIMIT = 8;
+const RECENT_HAND_GUARD_LIMIT = 20;
+const FOLD_SAMPLE_TARGET = 0.32;
 
 type JsonObject = Record<string, unknown>;
 
@@ -89,6 +94,11 @@ interface HandStatsAccumulator {
   attempts: number;
   missed: number;
   correctAction: Action;
+}
+
+interface TrainerSelectionRow {
+  chart: RangeChart;
+  action: RangeChartAction;
 }
 
 async function requireDb() {
@@ -182,6 +192,175 @@ function createEmptyActionStats(): TrainerStats["byAction"] {
     },
     {} as TrainerStats["byAction"]
   );
+}
+
+function handHistoryKey(chartId: number, handCode: string): string {
+  return `${chartId}:${handCode}`;
+}
+
+function randomItem<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function pickWeighted<T>(
+  items: T[],
+  weightForItem: (item: T) => number
+): T {
+  const weighted = items.map(item => ({
+    item,
+    weight: Math.max(0, weightForItem(item)),
+  }));
+  const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
+
+  if (totalWeight <= 0) return randomItem(items);
+
+  let cursor = Math.random() * totalWeight;
+  for (const entry of weighted) {
+    cursor -= entry.weight;
+    if (cursor <= 0) return entry.item;
+  }
+
+  return weighted[weighted.length - 1].item;
+}
+
+function uniqueCharts(rows: TrainerSelectionRow[]): RangeChart[] {
+  const byId = new Map<number, RangeChart>();
+
+  for (const row of rows) {
+    byId.set(row.chart.id, row.chart);
+  }
+
+  return Array.from(byId.values()).sort(
+    (a, b) =>
+      a.stackDepth - b.stackDepth ||
+      a.spotGroup.localeCompare(b.spotGroup) ||
+      a.title.localeCompare(b.title)
+  );
+}
+
+function recentChartSet(filters: TrainerSpotFilters, chartCount: number) {
+  if (chartCount <= 1) return new Set<number>();
+
+  const guardSize = Math.min(
+    RECENT_CHART_GUARD_LIMIT,
+    Math.max(0, chartCount - 1)
+  );
+
+  return new Set((filters.recentChartIds ?? []).slice(0, guardSize));
+}
+
+function chartBucketKey(chart: RangeChart, filters: TrainerSpotFilters) {
+  if (filters.spotGroup !== undefined && filters.stackDepth === undefined) {
+    return `${chart.stackDepth}`;
+  }
+
+  if (filters.stackDepth !== undefined && filters.spotGroup === undefined) {
+    return chart.spotGroup;
+  }
+
+  return `${chart.spotGroup}:${chart.stackDepth}`;
+}
+
+function pickChartForTrainer(
+  rows: TrainerSelectionRow[],
+  filters: TrainerSpotFilters
+): RangeChart | null {
+  const charts = uniqueCharts(rows);
+  if (charts.length === 0) return null;
+
+  if (filters.chartId !== undefined) {
+    return charts.find(chart => chart.id === filters.chartId) ?? null;
+  }
+
+  const recentIds = recentChartSet(filters, charts.length);
+  const repeatSafeCharts = charts.filter(chart => !recentIds.has(chart.id));
+  const eligibleCharts = repeatSafeCharts.length > 0 ? repeatSafeCharts : charts;
+
+  const buckets = new Map<string, RangeChart[]>();
+  for (const chart of eligibleCharts) {
+    const key = chartBucketKey(chart, filters);
+    const bucket = buckets.get(key) ?? [];
+    bucket.push(chart);
+    buckets.set(key, bucket);
+  }
+
+  const selectedBucket = randomItem(Array.from(buckets.values()));
+  return randomItem(selectedBucket);
+}
+
+function actionBucketWeight(action: Action): number {
+  switch (action) {
+    case "THREE_BET":
+    case "JAM":
+      return 1.15;
+    case "RAISE":
+    case "CALL":
+      return 1;
+    case "LIMP":
+    case "CHECK":
+      return 0.8;
+    case "FOLD":
+      return 0.7;
+  }
+}
+
+function groupRowsByAction(rows: RangeChartAction[]) {
+  const byAction = new Map<Action, RangeChartAction[]>();
+
+  for (const row of rows) {
+    if (!isAction(row.primaryAction) || row.handCode.length === 0) continue;
+    const bucket = byAction.get(row.primaryAction) ?? [];
+    bucket.push(row);
+    byAction.set(row.primaryAction, bucket);
+  }
+
+  return byAction;
+}
+
+function pickActionBucket(byAction: Map<Action, RangeChartAction[]>): Action {
+  const foldRows = byAction.get("FOLD") ?? [];
+  const continueActions = ACTIONS.filter(
+    action => action !== "FOLD" && (byAction.get(action)?.length ?? 0) > 0
+  );
+
+  if (foldRows.length > 0 && continueActions.length > 0) {
+    if (Math.random() < FOLD_SAMPLE_TARGET) return "FOLD";
+    return pickWeighted(continueActions, actionBucketWeight);
+  }
+
+  const availableActions = ACTIONS.filter(
+    action => (byAction.get(action)?.length ?? 0) > 0
+  );
+
+  return pickWeighted(availableActions, actionBucketWeight);
+}
+
+function pickHandForTrainer(
+  chart: RangeChart,
+  rows: TrainerSelectionRow[],
+  filters: TrainerSpotFilters
+): RangeChartAction | null {
+  const chartActions = rows
+    .filter(row => row.chart.id === chart.id)
+    .map(row => row.action)
+    .filter(action => action.handCode.length > 0 && isAction(action.primaryAction))
+    .sort((a, b) => compareHandCode(a.handCode, b.handCode));
+
+  if (chartActions.length === 0) return null;
+
+  const recentHands = new Set(
+    (filters.recentHandKeys ?? []).slice(0, RECENT_HAND_GUARD_LIMIT)
+  );
+  const repeatSafeActions = chartActions.filter(
+    action => !recentHands.has(handHistoryKey(chart.id, action.handCode))
+  );
+  const actionPool =
+    repeatSafeActions.length > 0 ? repeatSafeActions : chartActions;
+  const byAction = groupRowsByAction(actionPool);
+  const selectedAction = pickActionBucket(byAction);
+  const selectedActionRows = byAction.get(selectedAction) ?? actionPool;
+
+  return randomItem(selectedActionRows);
 }
 
 function calcAccuracy(correct: number, total: number): number {
@@ -546,14 +725,23 @@ export async function getTrainerSpot(
   const trainableRows = rows
     .filter(
       ({ action }) =>
-        action.handCode.length > 0 && action.primaryAction !== "FOLD"
+        action.handCode.length > 0 && isAction(action.primaryAction)
     )
     .sort((a, b) => compareHandCode(a.action.handCode, b.action.handCode));
 
   if (trainableRows.length === 0) return null;
 
-  const selected =
-    trainableRows[Math.floor(Math.random() * trainableRows.length)];
+  const selectedChart = pickChartForTrainer(trainableRows, filters);
+  if (!selectedChart) return null;
+
+  const selectedAction = pickHandForTrainer(
+    selectedChart,
+    trainableRows,
+    filters
+  );
+  if (!selectedAction) return null;
+
+  const selected = { chart: selectedChart, action: selectedAction };
   const correctAction = selected.action.primaryAction;
 
   return {
