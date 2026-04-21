@@ -834,7 +834,7 @@ export default function RangeTrainer() {
               </CardContent>
             </Card>
 
-            <div className="flex flex-1 items-start justify-center">
+            <div className="flex items-start justify-center">
               {trainerEnabled &&
                 (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
                   <Skeleton className="h-[440px] w-full max-w-xl rounded-3xl" />
