@@ -1,27 +1,32 @@
-import React, { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Check, ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc";
-import { SpotTypeSelector, type SpotType } from "./SpotTypeSelector";
-import { HeroInfoForm } from "./HeroInfoForm";
-import { BoardFormV2 } from "./BoardFormV2";
-import { PlayerActionsForm, type StreetAction } from "./PlayerActionsForm";
-import { VillainProfileForm, type VillainType, type VillainRangeType } from "./VillainProfileForm";
-import { OutcomeForm, type HandResult } from "./OutcomeForm";
-import { NotesForm } from "./NotesForm";
-import { AccordionSection } from "./AccordionSection";
-import { ContextForm, type GameType, type TournamentPhase } from "./ContextForm";
+import { Badge } from "@/components/ui/badge";
 import {
-  mapUiSpotTypeToDb,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
+import { HandPicker } from "../HandPicker";
+import type { SpotType } from "./SpotTypeSelector";
+import type { StreetAction, SizeBucket } from "./PlayerActionsForm";
+import type { VillainRangeType, VillainType } from "./VillainProfileForm";
+import type { GameType, TournamentPhase } from "./ContextForm";
+import type { HandResult } from "./OutcomeForm";
+import {
+  buildStreetDataJson,
+  deriveHeroDecision,
   extractSpotPosition,
   extractSpotSubtype,
-  buildBoardRunout,
-  mapEvLossToSeverity,
-  deriveHeroDecision,
-  buildStreetDataJson,
-  generateActionSummary,
-  generateBoardSummary,
-  generateVillainSummary,
-  generateOutcomeSummary,
+  mapUiSpotTypeToDb,
 } from "./utils";
 
 interface LogHandModalV2_1Props {
@@ -29,256 +34,1043 @@ interface LogHandModalV2_1Props {
   onClose: () => void;
 }
 
+type EntryMode = "QUICK" | "FULL";
+type StepIndex = 0 | 1 | 2 | 3;
+type HeroActionType = NonNullable<StreetAction["heroAction"]>["type"];
+type VillainActionType = NonNullable<StreetAction["villainAction"]>["type"];
+
+const STEPS = ["Context", "Action", "Review", "Save"] as const;
+
+const SPOT_OPTIONS: Array<{
+  id: SpotType;
+  label: string;
+  helper: string;
+}> = [
+  {
+    id: "SINGLE_RAISED_POT_IP",
+    label: "SRP IP",
+    helper: "Single-raised pot, in position",
+  },
+  {
+    id: "SINGLE_RAISED_POT_OOP",
+    label: "SRP OOP",
+    helper: "Single-raised pot, out of position",
+  },
+  { id: "THREE_BET_POT_IP", label: "3BP IP", helper: "3-bet pot, IP" },
+  { id: "THREE_BET_POT_OOP", label: "3BP OOP", helper: "3-bet pot, OOP" },
+  { id: "BLINDS_VS_BLIND", label: "BvB", helper: "Blind versus blind" },
+  { id: "LIMPED_POT", label: "Limped", helper: "Limped pot" },
+  { id: "FOUR_BET_POT", label: "4BP", helper: "4-bet pot" },
+  { id: "ICM_SPOT", label: "ICM", helper: "Payout-pressure spot" },
+];
+
+const POSITIONS = ["UTG", "UTG+1", "MP", "HJ", "CO", "BTN", "SB", "BB"];
+const STACK_PRESETS = ["12", "15", "20", "25", "30", "40", "60"];
+const STREETS: StreetAction["street"][] = ["PREFLOP", "FLOP", "TURN", "RIVER"];
+const HERO_ACTIONS: HeroActionType[] = [
+  "CHECK",
+  "CALL",
+  "BET",
+  "RAISE",
+  "JAM",
+  "FOLD",
+];
+const VILLAIN_ACTIONS: VillainActionType[] = ["CHECK", "BET", "RAISE", "JAM"];
+const SIZE_BUCKETS: SizeBucket[] = ["SMALL", "MEDIUM", "BIG", "OVERBET"];
+const VILLAIN_TYPES: Array<{ id: VillainType; label: string }> = [
+  { id: "UNKNOWN", label: "Unknown" },
+  { id: "REC", label: "Rec" },
+  { id: "GOOD_REG", label: "Good reg" },
+  { id: "AGGRO_REG", label: "Aggro" },
+  { id: "NIT", label: "Nit" },
+  { id: "MANIAC", label: "Maniac" },
+];
+const RANGE_TYPES: Array<{ id: VillainRangeType; label: string }> = [
+  { id: "WIDE", label: "Wide" },
+  { id: "STANDARD", label: "Standard" },
+  { id: "TIGHT", label: "Tight" },
+  { id: "NUTS_WEIGHTED", label: "Nuts-heavy" },
+];
+const RESULTS: Array<{ id: HandResult; label: string }> = [
+  { id: "WON", label: "Won" },
+  { id: "LOST", label: "Lost" },
+  { id: "CHOPPED", label: "Chopped" },
+  { id: "UNKNOWN", label: "Unknown" },
+];
+const GAME_TYPES: Array<{ id: GameType; label: string }> = [
+  { id: "LIVE", label: "Live" },
+  { id: "ONLINE", label: "Online" },
+];
+const PHASES: Array<{ id: TournamentPhase; label: string }> = [
+  { id: "EARLY", label: "Early" },
+  { id: "MID", label: "Mid" },
+  { id: "LATE", label: "Late" },
+  { id: "BUBBLE", label: "Bubble" },
+  { id: "ITM", label: "ITM" },
+  { id: "FINAL_TABLE", label: "Final table" },
+];
+const TAG_OPTIONS = [
+  "PREFLOP",
+  "ICM",
+  "BLIND_DEFENSE",
+  "3BET_POT",
+  "OVERFOLD",
+  "SPEW",
+];
+
+function needsSize(action?: HeroActionType | VillainActionType) {
+  return action === "BET" || action === "RAISE";
+}
+
+function normalizeHandInput(value: string) {
+  const clean = value.trim().replace(/\s+/g, "");
+
+  if (clean.length === 3) {
+    return `${clean.slice(0, 2).toUpperCase()}${clean[2].toLowerCase()}`;
+  }
+
+  if (clean.length === 4) {
+    return `${clean[0].toUpperCase()}${clean[1].toLowerCase()}${clean[2].toUpperCase()}${clean[3].toLowerCase()}`;
+  }
+
+  return clean.toUpperCase();
+}
+
+function ChipButton({
+  active,
+  children,
+  onClick,
+  className,
+}: {
+  active: boolean;
+  children: ReactNode;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-2xl border px-3 py-2 text-left text-xs font-bold transition active:scale-[0.99]",
+        active
+          ? "border-zinc-950 bg-zinc-950 text-white shadow-lg shadow-zinc-950/10"
+          : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StepIndicator({ currentStep }: { currentStep: StepIndex }) {
+  return (
+    <div className="grid grid-cols-4 gap-1.5">
+      {STEPS.map((step, index) => {
+        const active = index === currentStep;
+        const done = index < currentStep;
+
+        return (
+          <div
+            key={step}
+            className={cn(
+              "rounded-full border px-2 py-1.5 text-center text-[10px] font-black uppercase tracking-[0.12em]",
+              active
+                ? "border-orange-500 bg-orange-500 text-white"
+                : done
+                  ? "border-zinc-950 bg-zinc-950 text-white"
+                  : "border-slate-200 bg-slate-50 text-slate-500"
+            )}
+          >
+            {step}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+      <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </span>
+      <span className="text-right text-sm font-semibold text-slate-950">
+        {value}
+      </span>
+    </div>
+  );
+}
+
 export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
-  // Required fields (Essential section)
+  const [entryMode, setEntryMode] = useState<EntryMode>("QUICK");
+  const [currentStep, setCurrentStep] = useState<StepIndex>(0);
+
   const [spotType, setSpotType] = useState<SpotType | "">("");
   const [heroPosition, setHeroPosition] = useState("");
   const [heroHand, setHeroHand] = useState("");
   const [effectiveStackBb, setEffectiveStackBb] = useState("");
 
-  // Board & Actions accordion
-  const [flopBoard, setFlopBoard] = useState("");
-  const [turnCard, setTurnCard] = useState("");
-  const [riverCard, setRiverCard] = useState("");
-  const [streetAction, setStreetAction] = useState<StreetAction | null>(null);
+  const [streetAction, setStreetAction] = useState<StreetAction | null>({
+    street: "PREFLOP",
+  });
+  const [boardRunout, setBoardRunout] = useState("");
+  const [showActionDetails, setShowActionDetails] = useState(false);
 
-  // Villain & Context accordion
-  const [villainType, setVillainType] = useState<VillainType | "">();
-  const [villainRangeType, setVillainRangeType] = useState<VillainRangeType | "">();
-  const [gameType, setGameType] = useState<GameType | "">();
-  const [tournamentPhase, setTournamentPhase] = useState<TournamentPhase | "">();
+  const [villainType, setVillainType] = useState<VillainType | "">("");
+  const [villainRangeType, setVillainRangeType] =
+    useState<VillainRangeType | "">("");
+  const [gameType, setGameType] = useState<GameType | "">("");
+  const [tournamentPhase, setTournamentPhase] =
+    useState<TournamentPhase | "">("");
   const [isPko, setIsPko] = useState(false);
 
-  // Outcome & Notes accordion
-  const [result, setResult] = useState<HandResult | "">();
-  const [evLossEstimateBb, setEvLossEstimateBb] = useState(0);
+  const [reviewed, setReviewed] = useState(false);
+  const [mistakeStreet, setMistakeStreet] =
+    useState<StreetAction["street"]>("PREFLOP");
+  const [mistakeSeverity, setMistakeSeverity] = useState(0);
+  const [result, setResult] = useState<HandResult | "">("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
+  const utils = trpc.useUtils();
   const createHand = trpc.hands.create.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      toast.success("Hand saved");
+      await utils.hands.getByUser.invalidate();
       resetForm();
       onClose();
     },
-    onError: (error) => {
-      alert(`Error saving hand: ${error.message}`);
+    onError: error => {
+      toast.error(`Error saving hand: ${error.message}`);
     },
   });
 
-  const resetForm = () => {
+  const stackNumber = Number.parseFloat(effectiveStackBb);
+  const isStackValid = Number.isFinite(stackNumber) && stackNumber > 0;
+  const isContextValid = Boolean(
+    spotType && heroPosition && heroHand && isStackValid
+  );
+  const isActionValid = Boolean(streetAction?.street && streetAction.heroAction);
+  const canAdvance =
+    currentStep === 0 ? isContextValid : currentStep === 1 ? isActionValid : true;
+  const isValid = isContextValid && isActionValid;
+  const fullDetailsVisible = entryMode === "FULL" || showActionDetails;
+
+  const selectedSpotLabel = useMemo(
+    () => SPOT_OPTIONS.find(option => option.id === spotType)?.label ?? "Not set",
+    [spotType]
+  );
+
+  function resetForm() {
+    setEntryMode("QUICK");
+    setCurrentStep(0);
     setSpotType("");
     setHeroPosition("");
     setHeroHand("");
     setEffectiveStackBb("");
-    setFlopBoard("");
-    setTurnCard("");
-    setRiverCard("");
-    setStreetAction(null);
+    setStreetAction({ street: "PREFLOP" });
+    setBoardRunout("");
+    setShowActionDetails(false);
     setVillainType("");
     setVillainRangeType("");
     setGameType("");
     setTournamentPhase("");
     setIsPko(false);
+    setReviewed(false);
+    setMistakeStreet("PREFLOP");
+    setMistakeSeverity(0);
     setResult("");
-    setEvLossEstimateBb(0);
+    setSelectedTags([]);
     setNotes("");
-  };
+  }
 
-  const isValid = () => {
-    return (
-      spotType &&
-      heroPosition &&
-      heroHand &&
-      effectiveStackBb &&
-      parseInt(effectiveStackBb) > 0
+  function closeModal() {
+    resetForm();
+    onClose();
+  }
+
+  function updateStreet(street: StreetAction["street"]) {
+    setStreetAction(previous => ({
+      street,
+      villainAction: previous?.villainAction,
+      heroAction: previous?.heroAction,
+    }));
+    setMistakeStreet(street);
+  }
+
+  function updateHeroAction(action: HeroActionType) {
+    setStreetAction(previous => ({
+      street: previous?.street ?? "PREFLOP",
+      villainAction: previous?.villainAction,
+      heroAction: {
+        type: action,
+        sizeBucket: needsSize(action) ? "MEDIUM" : undefined,
+      },
+    }));
+  }
+
+  function updateHeroSize(sizeBucket: SizeBucket) {
+    setStreetAction(previous => {
+      if (!previous?.heroAction) return previous;
+      return {
+        ...previous,
+        heroAction: {
+          ...previous.heroAction,
+          sizeBucket,
+        },
+      };
+    });
+  }
+
+  function updateVillainAction(action: VillainActionType) {
+    setStreetAction(previous => ({
+      street: previous?.street ?? "PREFLOP",
+      heroAction: previous?.heroAction,
+      villainAction: {
+        type: action,
+        sizeBucket: needsSize(action) ? "MEDIUM" : undefined,
+      },
+    }));
+  }
+
+  function updateVillainSize(sizeBucket: SizeBucket) {
+    setStreetAction(previous => {
+      if (!previous?.villainAction) return previous;
+      return {
+        ...previous,
+        villainAction: {
+          ...previous.villainAction,
+          sizeBucket,
+        },
+      };
+    });
+  }
+
+  function toggleTag(tag: string) {
+    setSelectedTags(previous =>
+      previous.includes(tag)
+        ? previous.filter(existing => existing !== tag)
+        : [...previous, tag]
     );
-  };
+  }
 
-  // Generate preview texts for collapsed accordions
-  const boardActionPreview = generateBoardSummary(
-    flopBoard,
-    turnCard,
-    riverCard,
-    streetAction
-  );
-  const villainContextPreview = generateVillainSummary(
-    villainType,
-    villainRangeType,
-    gameType,
-    tournamentPhase,
-    isPko
-  );
-  const outcomeNotesPreview = generateOutcomeSummary(result, evLossEstimateBb, notes);
-
-  const handleSave = () => {
-    if (!isValid()) {
-      alert("Please fill in all required fields");
+  function goNext() {
+    if (!canAdvance) {
+      toast.error(
+        currentStep === 0
+          ? "Add spot type, position, hand, and stack first."
+          : "Select the key street and hero decision first."
+      );
       return;
     }
 
-    const boardRunout = buildBoardRunout(flopBoard, turnCard, riverCard);
-    const dbSpotType = mapUiSpotTypeToDb(spotType as SpotType);
-    const spotPosition = extractSpotPosition(spotType as SpotType);
-    const spotSubtype = extractSpotSubtype(spotType as SpotType);
+    setCurrentStep(step => Math.min(3, step + 1) as StepIndex);
+  }
+
+  function goBack() {
+    setCurrentStep(step => Math.max(0, step - 1) as StepIndex);
+  }
+
+  function handleSave() {
+    if (!isValid || !spotType || !streetAction) {
+      toast.error("Complete context and key decision before saving.");
+      return;
+    }
+
+    const dbSpotType = mapUiSpotTypeToDb(spotType);
+    const spotPosition = extractSpotPosition(spotType);
+    const spotSubtype = extractSpotSubtype(spotType);
+    const heroDecision = deriveHeroDecision(streetAction);
+    const cleanNotes = notes.trim();
+    const cleanBoard = boardRunout.trim().toUpperCase();
 
     const streetDataJson = buildStreetDataJson({
-      spotType: spotType as SpotType,
+      spotType,
       spotPosition,
       spotSubtype,
       heroPosition,
-      heroHand,
-      effectiveStackBb: parseInt(effectiveStackBb),
-      flopBoard,
-      turnCard,
-      riverCard,
+      heroHand: normalizeHandInput(heroHand),
+      effectiveStackBb: stackNumber,
+      flopBoard: cleanBoard,
+      turnCard: "",
+      riverCard: "",
       streetAction,
       villainType,
       villainRangeType,
       result,
-      evLossBb: evLossEstimateBb,
-      notes,
+      evLossBb: mistakeSeverity,
+      notes: cleanNotes,
     });
 
-    // Add context to streetDataJson.meta
     if (streetDataJson.meta) {
       streetDataJson.meta.context = {
         gameType: gameType || undefined,
         tournamentPhase: tournamentPhase || undefined,
         isPko,
+        entryMode,
       };
     }
 
-    const mistakeSeverity = evLossEstimateBb > 0 ? mapEvLossToSeverity(evLossEstimateBb) : undefined;
-    const heroDecision = deriveHeroDecision(streetAction);
-
     createHand.mutate({
       heroPosition,
-      heroHand,
-      boardRunout,
-      effectiveStackBb: parseInt(effectiveStackBb),
+      heroHand: normalizeHandInput(heroHand),
+      boardRunout: cleanBoard || undefined,
+      effectiveStackBb: stackNumber,
       spotType: dbSpotType,
       streetDataJson: JSON.stringify(streetDataJson),
-      lesson: notes || undefined,
+      reviewed,
+      mistakeStreet:
+        mistakeSeverity > 0 ? mistakeStreet || streetAction.street : undefined,
       mistakeSeverity,
-      heroDecisionPreflop: streetAction?.street === "PREFLOP" ? heroDecision : undefined,
-      heroDecisionFlop: streetAction?.street === "FLOP" ? heroDecision : undefined,
-      heroDecisionTurn: streetAction?.street === "TURN" ? heroDecision : undefined,
-      heroDecisionRiver: streetAction?.street === "RIVER" ? heroDecision : undefined,
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      lesson: cleanNotes || undefined,
+      heroDecisionPreflop:
+        streetAction.street === "PREFLOP" ? heroDecision : undefined,
+      heroDecisionFlop:
+        streetAction.street === "FLOP" ? heroDecision : undefined,
+      heroDecisionTurn:
+        streetAction.street === "TURN" ? heroDecision : undefined,
+      heroDecisionRiver:
+        streetAction.street === "RIVER" ? heroDecision : undefined,
     });
-  };
-
-  if (!isOpen) return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Log Hand</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-light"
+    <Dialog open={isOpen} onOpenChange={open => !open && closeModal()}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden rounded-[2rem] border-slate-200 bg-white p-0 shadow-2xl sm:max-h-[88dvh]"
+      >
+        <DialogHeader className="border-b border-slate-200 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_17rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-left text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-300">
+                Fast Hand Capture
+              </p>
+              <DialogTitle className="text-2xl font-black tracking-tight">
+                Log Hand
+              </DialogTitle>
+              <DialogDescription className="mt-2 text-sm leading-relaxed text-zinc-400">
+                Capture the spot now. Add deep review detail only when it helps.
+              </DialogDescription>
+            </div>
+            <Button
+              type="button"
+              aria-label="Close hand entry"
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 rounded-full p-0 text-zinc-400 hover:bg-white/10 hover:text-white"
+              onClick={closeModal}
             >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Content - scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-          {/* ESSENTIAL SECTION - Always Open */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900">Essential Info</h3>
-
-            {/* Spot Type */}
-            <SpotTypeSelector value={spotType} onChange={setSpotType} />
-
-            {/* Hero Info */}
-            <HeroInfoForm
-              heroPosition={heroPosition}
-              onPositionChange={setHeroPosition}
-              heroHand={heroHand}
-              onHandChange={setHeroHand}
-              effectiveStackBb={effectiveStackBb}
-              onStackChange={setEffectiveStackBb}
-            />
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
-          {/* ACCORDION 1: Board & Actions */}
-          <AccordionSection
-            title="Board & Actions"
-            previewText={boardActionPreview}
-            defaultOpen={false}
-          >
-            <BoardFormV2
-              flopBoard={flopBoard}
-              onFlopChange={setFlopBoard}
-              turnCard={turnCard}
-              onTurnChange={setTurnCard}
-              riverCard={riverCard}
-              onRiverChange={setRiverCard}
-            />
+          <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.06] p-1.5">
+            {(["QUICK", "FULL"] as EntryMode[]).map(mode => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setEntryMode(mode)}
+                className={cn(
+                  "rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.16em] transition",
+                  entryMode === mode
+                    ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+                    : "text-zinc-400 hover:bg-white/10 hover:text-white"
+                )}
+              >
+                {mode === "QUICK" ? "Quick Log" : "Full Review"}
+              </button>
+            ))}
+          </div>
+        </DialogHeader>
 
-            <PlayerActionsForm
-              streetAction={streetAction}
-              onChange={setStreetAction}
-            />
-          </AccordionSection>
-
-          {/* ACCORDION 2: Villain & Context */}
-          <AccordionSection
-            title="Villain & Context"
-            previewText={villainContextPreview}
-            defaultOpen={false}
-          >
-            <VillainProfileForm
-              villainType={villainType || ""}
-              onVillainTypeChange={setVillainType}
-              villainRangeType={villainRangeType || ""}
-              onVillainRangeTypeChange={setVillainRangeType}
-            />
-
-            <ContextForm
-              gameType={gameType || ""}
-              onGameTypeChange={setGameType}
-              tournamentPhase={tournamentPhase || ""}
-              onTournamentPhaseChange={setTournamentPhase}
-              isPko={isPko}
-              onPkoChange={setIsPko}
-            />
-          </AccordionSection>
-
-          {/* ACCORDION 3: Outcome & Notes */}
-          <AccordionSection
-            title="Outcome & Notes"
-            previewText={outcomeNotesPreview}
-            defaultOpen={false}
-          >
-            <OutcomeForm
-              result={result || ""}
-              onResultChange={setResult}
-              evLossEstimateBb={evLossEstimateBb}
-              onEvLossChange={setEvLossEstimateBb}
-            />
-
-            <NotesForm notes={notes} onNotesChange={setNotes} />
-          </AccordionSection>
+        <div className="border-b border-slate-200 bg-white px-5 py-3">
+          <StepIndicator currentStep={currentStep} />
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t flex-shrink-0 flex justify-between gap-3">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          {currentStep === 0 && (
+            <div className="space-y-6">
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-black text-slate-950">
+                      Context
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Required: spot type, position, hand, and effective stack.
+                    </p>
+                  </div>
+                  <Badge className="rounded-full bg-orange-500 text-white">
+                    Required
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {SPOT_OPTIONS.map(option => (
+                    <ChipButton
+                      key={option.id}
+                      active={spotType === option.id}
+                      onClick={() => setSpotType(option.id)}
+                      className="min-h-[4.5rem]"
+                    >
+                      <span className="block text-sm">{option.label}</span>
+                      <span
+                        className={cn(
+                          "mt-1 block text-[11px] font-medium leading-tight",
+                          spotType === option.id
+                            ? "text-zinc-300"
+                            : "text-slate-500"
+                        )}
+                      >
+                        {option.helper}
+                      </span>
+                    </ChipButton>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+                  <Label className="text-sm font-black text-slate-950">
+                    Hero Hand
+                  </Label>
+                  <div className="mt-2">
+                    <HandPicker value={heroHand} onChange={setHeroHand} />
+                  </div>
+                  <Input
+                    value={heroHand}
+                    onChange={event =>
+                      setHeroHand(normalizeHandInput(event.target.value))
+                    }
+                    placeholder="Or type AKs, QQ, AhKh"
+                    className="mt-2 h-11 rounded-2xl border-slate-200 bg-white"
+                  />
+                </div>
+
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+                  <Label
+                    htmlFor="effective-stack"
+                    className="text-sm font-black text-slate-950"
+                  >
+                    Effective Stack
+                  </Label>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input
+                      id="effective-stack"
+                      type="number"
+                      min="1"
+                      max="500"
+                      value={effectiveStackBb}
+                      onChange={event => setEffectiveStackBb(event.target.value)}
+                      placeholder="25"
+                      className="h-11 rounded-2xl border-slate-200 bg-white"
+                    />
+                    <span className="text-sm font-black text-slate-500">bb</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {STACK_PRESETS.map(stack => (
+                      <Button
+                        key={stack}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className={cn(
+                          "h-8 rounded-full border-slate-200 px-3 text-xs font-bold",
+                          effectiveStackBb === stack &&
+                            "border-zinc-950 bg-zinc-950 text-white"
+                        )}
+                        onClick={() => setEffectiveStackBb(stack)}
+                      >
+                        {stack}bb
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-black text-slate-950">
+                  Hero Position
+                </Label>
+                <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-8">
+                  {POSITIONS.map(position => (
+                    <ChipButton
+                      key={position}
+                      active={heroPosition === position}
+                      onClick={() => setHeroPosition(position)}
+                      className="text-center"
+                    >
+                      {position}
+                    </ChipButton>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-black text-slate-950">
+                      Key Action
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Capture the street and hero decision. Villain action is
+                      optional.
+                    </p>
+                  </div>
+                  <Badge className="rounded-full bg-zinc-950 text-white">
+                    Required
+                  </Badge>
+                </div>
+
+                <div className="mt-4">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    Decision Street
+                  </Label>
+                  <div className="mt-2 grid grid-cols-4 gap-2">
+                    {STREETS.map(street => (
+                      <ChipButton
+                        key={street}
+                        active={streetAction?.street === street}
+                        onClick={() => updateStreet(street)}
+                        className="text-center"
+                      >
+                        {street}
+                      </ChipButton>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    Hero Decision
+                  </Label>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {HERO_ACTIONS.map(action => (
+                      <ChipButton
+                        key={action}
+                        active={streetAction?.heroAction?.type === action}
+                        onClick={() => updateHeroAction(action)}
+                        className="text-center"
+                      >
+                        {action}
+                      </ChipButton>
+                    ))}
+                  </div>
+                  {needsSize(streetAction?.heroAction?.type) && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {SIZE_BUCKETS.map(size => (
+                        <ChipButton
+                          key={size}
+                          active={streetAction?.heroAction?.sizeBucket === size}
+                          onClick={() => updateHeroSize(size)}
+                          className="px-3 py-1.5"
+                        >
+                          {size}
+                        </ChipButton>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                  onClick={() => setShowActionDetails(value => !value)}
+                >
+                  <div>
+                    <p className="text-sm font-black text-slate-950">
+                      Optional action detail
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      Add board, villain action, and profile when useful.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                    {fullDetailsVisible ? "Hide" : "Add"}
+                  </span>
+                </button>
+
+                {fullDetailsVisible && (
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <Label
+                        htmlFor="board-runout"
+                        className="text-sm font-bold text-slate-950"
+                      >
+                        Board Runout
+                      </Label>
+                      <Input
+                        id="board-runout"
+                        value={boardRunout}
+                        onChange={event =>
+                          setBoardRunout(event.target.value.toUpperCase())
+                        }
+                        placeholder="Ah Kd 7s 2c Jh"
+                        className="mt-2 h-11 rounded-2xl border-slate-200"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        Villain Action
+                      </Label>
+                      <div className="mt-2 grid grid-cols-4 gap-2">
+                        {VILLAIN_ACTIONS.map(action => (
+                          <ChipButton
+                            key={action}
+                            active={
+                              streetAction?.villainAction?.type === action
+                            }
+                            onClick={() => updateVillainAction(action)}
+                            className="text-center"
+                          >
+                            {action}
+                          </ChipButton>
+                        ))}
+                      </div>
+                      {needsSize(streetAction?.villainAction?.type) && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {SIZE_BUCKETS.map(size => (
+                            <ChipButton
+                              key={size}
+                              active={
+                                streetAction?.villainAction?.sizeBucket === size
+                              }
+                              onClick={() => updateVillainSize(size)}
+                              className="px-3 py-1.5"
+                            >
+                              {size}
+                            </ChipButton>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                          Villain Type
+                        </Label>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {VILLAIN_TYPES.map(type => (
+                            <ChipButton
+                              key={type.id}
+                              active={villainType === type.id}
+                              onClick={() => setVillainType(type.id)}
+                              className="px-3 py-1.5"
+                            >
+                              {type.label}
+                            </ChipButton>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                          Range Read
+                        </Label>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {RANGE_TYPES.map(type => (
+                            <ChipButton
+                              key={type.id}
+                              active={villainRangeType === type.id}
+                              onClick={() => setVillainRangeType(type.id)}
+                              className="px-3 py-1.5"
+                            >
+                              {type.label}
+                            </ChipButton>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+                <h3 className="text-base font-black text-slate-950">
+                  Review Signal
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Keep this light. Mark the mistake and write one takeaway if
+                  there is one.
+                </p>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <ChipButton
+                    active={!reviewed}
+                    onClick={() => setReviewed(false)}
+                    className="text-center"
+                  >
+                    Review Later
+                  </ChipButton>
+                  <ChipButton
+                    active={reviewed}
+                    onClick={() => setReviewed(true)}
+                    className="text-center"
+                  >
+                    Reviewed Now
+                  </ChipButton>
+                </div>
+
+                <div className="mt-4">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    Mistake Severity
+                  </Label>
+                  <div className="mt-2 grid grid-cols-4 gap-2">
+                    {[
+                      { value: 0, label: "None" },
+                      { value: 1, label: "Minor" },
+                      { value: 2, label: "Medium" },
+                      { value: 3, label: "Major" },
+                    ].map(option => (
+                      <ChipButton
+                        key={option.value}
+                        active={mistakeSeverity === option.value}
+                        onClick={() => setMistakeSeverity(option.value)}
+                        className="text-center"
+                      >
+                        {option.label}
+                      </ChipButton>
+                    ))}
+                  </div>
+                </div>
+
+                {mistakeSeverity > 0 && (
+                  <div className="mt-4">
+                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      Mistake Street
+                    </Label>
+                    <div className="mt-2 grid grid-cols-4 gap-2">
+                      {STREETS.map(street => (
+                        <ChipButton
+                          key={street}
+                          active={mistakeStreet === street}
+                          onClick={() => setMistakeStreet(street)}
+                          className="text-center"
+                        >
+                          {street}
+                        </ChipButton>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                <Label
+                  htmlFor="lesson"
+                  className="text-sm font-black text-slate-950"
+                >
+                  Lesson / Takeaway
+                </Label>
+                <Textarea
+                  id="lesson"
+                  value={notes}
+                  onChange={event => setNotes(event.target.value.slice(0, 300))}
+                  placeholder="One sentence about what to study or do differently next time."
+                  className="mt-2 min-h-24 resize-none rounded-2xl border-slate-200"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {300 - notes.length} characters remaining
+                </p>
+              </div>
+
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                <p className="text-sm font-black text-slate-950">
+                  Optional Tags
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {TAG_OPTIONS.map(tag => (
+                    <ChipButton
+                      key={tag}
+                      active={selectedTags.includes(tag)}
+                      onClick={() => toggleTag(tag)}
+                      className="px-3 py-1.5"
+                    >
+                      {tag.replace(/_/g, " ")}
+                    </ChipButton>
+                  ))}
+                </div>
+              </div>
+
+              {entryMode === "FULL" && (
+                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-black text-slate-950">
+                    Tournament Context
+                  </p>
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        Result
+                      </Label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {RESULTS.map(item => (
+                          <ChipButton
+                            key={item.id}
+                            active={result === item.id}
+                            onClick={() => setResult(item.id)}
+                            className="px-3 py-1.5"
+                          >
+                            {item.label}
+                          </ChipButton>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        Game Type
+                      </Label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {GAME_TYPES.map(item => (
+                          <ChipButton
+                            key={item.id}
+                            active={gameType === item.id}
+                            onClick={() => setGameType(item.id)}
+                            className="px-3 py-1.5"
+                          >
+                            {item.label}
+                          </ChipButton>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      Tournament Phase
+                    </Label>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {PHASES.map(phase => (
+                        <ChipButton
+                          key={phase.id}
+                          active={tournamentPhase === phase.id}
+                          onClick={() => setTournamentPhase(phase.id)}
+                          className="px-3 py-1.5"
+                        >
+                          {phase.label}
+                        </ChipButton>
+                      ))}
+                      <ChipButton
+                        active={isPko}
+                        onClick={() => setIsPko(value => !value)}
+                        className="px-3 py-1.5"
+                      >
+                        PKO
+                      </ChipButton>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="space-y-5">
+              <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/15">
+                    <Sparkles className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-950">
+                      Ready to save
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Quick capture is complete. You can review or edit it
+                      later from Hand Review.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <SummaryRow label="Spot" value={selectedSpotLabel} />
+                <SummaryRow label="Hero" value={`${heroHand || "-"} in ${heroPosition || "-"}`} />
+                <SummaryRow
+                  label="Stack"
+                  value={isStackValid ? `${stackNumber}bb` : "Not set"}
+                />
+                <SummaryRow
+                  label="Decision"
+                  value={`${streetAction?.street ?? "-"} - ${
+                    streetAction?.heroAction?.type ?? "-"
+                  }`}
+                />
+                <SummaryRow
+                  label="Review"
+                  value={
+                    mistakeSeverity > 0
+                      ? `${mistakeStreet} mistake, severity ${mistakeSeverity}/3`
+                      : reviewed
+                        ? "Reviewed, no mistake marked"
+                        : "Queued for review"
+                  }
+                />
+                {notes.trim() && (
+                  <SummaryRow label="Lesson" value={notes.trim()} />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-white p-4">
           <Button
-            onClick={handleSave}
-            disabled={!isValid() || createHand.isPending}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
+            type="button"
+            variant="ghost"
+            className="rounded-2xl text-slate-500 hover:text-slate-950"
+            onClick={currentStep === 0 ? closeModal : goBack}
           >
-            {createHand.isPending ? "Saving..." : "Save Hand"}
+            {currentStep === 0 ? (
+              "Cancel"
+            ) : (
+              <>
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Back
+              </>
+            )}
           </Button>
+
+          {currentStep < 3 ? (
+            <Button
+              type="button"
+              className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
+              onClick={goNext}
+              disabled={!canAdvance}
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
+              onClick={handleSave}
+              disabled={!isValid || createHand.isPending}
+            >
+              {createHand.isPending ? "Saving..." : "Save Hand"}
+              {!createHand.isPending && <Check className="ml-1 h-4 w-4" />}
+            </Button>
+          )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
