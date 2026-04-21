@@ -35,7 +35,6 @@ export function TrainerCard({
   villainPosition,
   correctAction,
   explanation,
-  isPersisted = false,
   choices = [...ACTIONS],
   showInlineResult = true,
   onAnswer,
@@ -45,6 +44,8 @@ export function TrainerCard({
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const isRevealed = selectedAction !== null;
   const answerChoices = choices.length > 0 ? choices : [...ACTIONS];
+  const answerGridClass =
+    answerChoices.length === 1 ? "grid-cols-1" : "grid-cols-2";
 
   function handleAnswer(action: Action) {
     if (isRevealed) return;
@@ -101,7 +102,7 @@ export function TrainerCard({
         className
       )}
     >
-      <CardContent className="space-y-6 p-5 sm:p-7">
+      <CardContent className="space-y-5 p-5 sm:p-7">
         <div className="space-y-4 text-center">
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             {stackDepth !== undefined && (
@@ -120,7 +121,7 @@ export function TrainerCard({
             )}
           </div>
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-6 shadow-inner">
+          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-5 shadow-inner">
             <div className="text-6xl font-black tracking-tight text-white sm:text-7xl">
               {formatHandWithSuits(handCode)}
             </div>
@@ -133,15 +134,9 @@ export function TrainerCard({
               </p>
             )}
           </div>
-
-          <div className="mx-auto max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs leading-relaxed text-zinc-400">
-            {isPersisted
-              ? "Your answers are saved to trainer history."
-              : "Practice works now; saved history requires login."}
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        <div className={cn("grid gap-2", answerGridClass)}>
           {answerChoices.map((action, index) => {
             let extraClass = "";
 
@@ -165,15 +160,17 @@ export function TrainerCard({
                 key={action}
                 variant="outline"
                 className={cn(
-                  "h-14 rounded-2xl border-zinc-700/80 bg-zinc-900/75 px-4 text-sm font-bold text-zinc-100 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-zinc-800 active:translate-y-0",
+                  "h-11 rounded-2xl border-zinc-700/80 bg-zinc-900/75 px-3 text-xs font-bold text-zinc-100 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-zinc-800 active:translate-y-0 sm:h-12 sm:px-4 sm:text-sm",
                   "justify-between",
                   extraClass
                 )}
                 onClick={() => handleAnswer(action)}
                 disabled={isRevealed}
               >
-                <span>{ACTION_LABELS[action]}</span>
-                <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-zinc-400">
+                <span className="min-w-0 truncate">
+                  {ACTION_LABELS[action]}
+                </span>
+                <span className="ml-2 shrink-0 rounded-lg border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-400 sm:px-2 sm:text-[11px]">
                   {index + 1}
                 </span>
               </Button>
