@@ -8,6 +8,7 @@ import { generateWeekPlan, getTodayPlan } from "./studyPlan";
 import { getCompletedPlanSlots } from "./studyPlanDb";
 import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveTopic, type LeakData } from "./studyRecommendations";
 import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } from "./curriculumConfig";
+import { icmRouter } from "./icm/router";
 import { strategyRouter } from "./strategy/router";
 
 // Hardcoded user ID for single-user app
@@ -451,6 +452,9 @@ export const appRouter = router({
 
   // Strategy module
   strategy: strategyRouter,
+
+  // ICM study packs
+  icm: icmRouter,
 
   // Dashboard
   dashboard: router({
