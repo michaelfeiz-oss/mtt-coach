@@ -41,6 +41,8 @@ const GetTrainerSpotInput = z.object({
   chartId: z.number().int().positive().optional(),
   stackDepth: StackDepthInput.optional(),
   spotGroup: z.enum(SPOT_GROUPS).optional(),
+  recentChartIds: z.array(z.number().int().positive()).max(20).optional(),
+  recentHandKeys: z.array(z.string().min(1).max(24)).max(60).optional(),
 });
 
 const SubmitAttemptInput = z.object({

@@ -100,11 +100,22 @@ describe("Strategy Module", () => {
   });
 
   describe("getTrainerSpot", () => {
-    it("returns a non-FOLD hand from the chart", async () => {
+    it("returns a trainer hand from the chart", async () => {
       const spot = await getTrainerSpot({ chartId: testChartId });
       expect(spot).not.toBeNull();
-      expect(spot!.correctAction).not.toBe("FOLD");
-      expect(["AA", "KK"]).toContain(spot!.handCode);
+      expect(["AA", "KK", "72o"]).toContain(spot!.handCode);
+      expect(["RAISE", "FOLD"]).toContain(spot!.correctAction);
+    });
+
+    it("can include fold reps when continue hands are in recent history", async () => {
+      const spot = await getTrainerSpot({
+        chartId: testChartId,
+        recentHandKeys: [`${testChartId}:AA`, `${testChartId}:KK`],
+      });
+
+      expect(spot).not.toBeNull();
+      expect(spot!.handCode).toBe("72o");
+      expect(spot!.correctAction).toBe("FOLD");
     });
 
     it("includes chart metadata", async () => {
