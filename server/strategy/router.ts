@@ -5,7 +5,9 @@ import {
   getChartBySpotSelector,
   getChartWithActions,
   getChartsBySpot,
+  getHandStrategyRecommendation,
   getRecentAttempts,
+  getTrainerProgress,
   getTrainerSpot,
   getTrainerStats,
   listAvailableSpots,
@@ -54,6 +56,10 @@ const LogAttemptInput = SubmitAttemptInput.extend({
 
 const GetRecentAttemptsInput = z.object({
   limit: z.number().int().min(1).max(200).default(50),
+});
+
+const GetHandRecommendationInput = z.object({
+  handId: z.number().int().positive(),
 });
 
 function notFound(message: string): never {
@@ -133,5 +139,15 @@ export const strategyRouter = router({
     .input(GetRecentAttemptsInput)
     .query(({ ctx, input }) => {
       return getRecentAttempts(ctx.user.id, input.limit);
+    }),
+
+  getProgress: protectedProcedure.query(({ ctx }) => {
+    return getTrainerProgress(ctx.user.id);
+  }),
+
+  getHandRecommendation: publicProcedure
+    .input(GetHandRecommendationInput)
+    .query(({ input }) => {
+      return getHandStrategyRecommendation(input.handId);
     }),
 });

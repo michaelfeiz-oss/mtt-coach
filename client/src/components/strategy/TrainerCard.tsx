@@ -36,13 +36,20 @@ import { ACTIONS, ACTION_LABELS } from "../../../../shared/strategy";
 import type { Action } from "../../../../shared/strategy";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatHandWithSuits } from "./utils";
 
 interface TrainerCardProps {
   chartId: number;
   handCode: string;
   spotLabel: string;
+  spotContext?: string;
+  stackDepth?: number;
+  heroPosition?: string;
+  villainPosition?: string | null;
   correctAction: Action;
+  explanation?: string | null;
+  isPersisted?: boolean;
   choices?: Action[];
   onAnswer: (selectedAction: Action, isCorrect: boolean) => void;
   onSkip: () => void;
@@ -53,7 +60,13 @@ export function TrainerCard({
   chartId,
   handCode,
   spotLabel,
+  spotContext,
+  stackDepth,
+  heroPosition,
+  villainPosition,
   correctAction,
+  explanation,
+  isPersisted = false,
   choices = [...ACTIONS],
   onAnswer,
   onSkip,
@@ -76,20 +89,43 @@ export function TrainerCard({
   }
 
   return (
-    <Card className={`bg-zinc-900 border-zinc-700 ${className}`}>
-      <CardContent className="p-6 space-y-6">
+    <Card
+      data-chart-id={chartId}
+      className={`bg-zinc-900 border-zinc-700 ${className}`}
+    >
+      <CardContent className="p-5 space-y-5 sm:p-6">
         {/* Hand display */}
-        <div className="text-center space-y-1">
+        <div className="text-center space-y-3">
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {stackDepth !== undefined && (
+              <Badge className="bg-orange-500 text-white">{stackDepth}bb</Badge>
+            )}
+            {heroPosition && (
+              <Badge variant="outline" className="border-zinc-600 text-zinc-200">
+                {heroPosition}
+                {villainPosition ? ` vs ${villainPosition}` : ""}
+              </Badge>
+            )}
+          </div>
           <div className="text-5xl font-bold tracking-tight text-white">
             {formatHandWithSuits(handCode)}
           </div>
-          <p className="text-sm text-zinc-400">{spotLabel}</p>
+          <div>
+            <p className="text-sm font-medium text-zinc-200">{spotLabel}</p>
+            {spotContext && (
+              <p className="mt-1 text-xs text-zinc-400">{spotContext}</p>
+            )}
+          </div>
+          {!isPersisted && (
+            <p className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-400">
+              Session stats are local until you log in.
+            </p>
+          )}
         </div>
 
         {/* Action buttons */}
         <div className="grid grid-cols-2 gap-2">
           {answerChoices.map(action => {
-            let variant: "default" | "outline" | "destructive" = "outline";
             let extraClass = "";
 
             if (isRevealed) {
@@ -109,7 +145,7 @@ export function TrainerCard({
               <Button
                 key={action}
                 variant="outline"
-                className={`h-10 text-sm font-semibold border-zinc-600 text-zinc-300 hover:bg-zinc-700 ${extraClass}`}
+                className={`h-12 text-sm font-semibold border-zinc-600 text-zinc-300 hover:bg-zinc-700 ${extraClass}`}
                 onClick={() => handleAnswer(action)}
                 disabled={isRevealed}
               >
@@ -121,19 +157,30 @@ export function TrainerCard({
 
         {/* Reveal / next */}
         {isRevealed && (
-          <div className="space-y-3">
-            <p
-              className={`text-center text-sm font-medium ${selectedAction === correctAction ? "text-green-400" : "text-red-400"}`}
-            >
-              {selectedAction === correctAction
-                ? "✓ Correct!"
-                : `✗ Correct answer: ${ACTION_LABELS[correctAction]}`}
-            </p>
+          <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-800/80 p-3">
+            <div className="text-center">
+              <p
+                className={`text-base font-bold ${selectedAction === correctAction ? "text-green-400" : "text-red-400"}`}
+              >
+                {selectedAction === correctAction ? "Correct" : "Incorrect"}
+              </p>
+              <p className="mt-1 text-sm text-zinc-300">
+                Correct action:{" "}
+                <span className="font-semibold text-white">
+                  {ACTION_LABELS[correctAction]}
+                </span>
+              </p>
+              {explanation && (
+                <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+                  {explanation}
+                </p>
+              )}
+            </div>
             <Button
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              className="h-12 w-full bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
               onClick={handleNext}
             >
-              Next hand →
+              Next Hand
             </Button>
           </div>
         )}

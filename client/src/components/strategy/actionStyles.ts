@@ -25,7 +25,7 @@ export const ACTION_CELL_STYLES: Record<
 > = {
   FOLD: {
     backgroundColor: ACTION_COLORS.FOLD,
-    color: "#ffffff",
+    color: "#52525b",
     label: ACTION_LABELS.FOLD,
   },
   RAISE: {

@@ -28,7 +28,7 @@ export const ACTION_COLORS: Record<Action, string> = {
   CALL: "#22c55e", // green-500
   LIMP: "#eab308", // yellow-500
   CHECK: "#71717a", // zinc-500
-  FOLD: "#3f3f46", // zinc-700
+  FOLD: "#e4e4e7", // zinc-200
 };
 
 export const ACTION_LABELS: Record<Action, string> = {
@@ -60,6 +60,15 @@ export const SPOT_GROUP_LABELS: Record<SpotGroup, string> = {
   VS_LP_RFI: "vs LP RFI",
   VS_3BET: "vs 3-Bet",
   BVB: "BvB",
+};
+
+export const SPOT_GROUP_SUBTITLES: Record<SpotGroup, string> = {
+  RFI: "Open ranges by position",
+  VS_UTG_RFI: "Continue versus early-position opens",
+  VS_MP_RFI: "Continue versus middle-position opens",
+  VS_LP_RFI: "Defend versus late-position opens",
+  VS_3BET: "Continue after facing a 3-bet",
+  BVB: "Blind versus blind decisions",
 };
 
 // ─── Stack depths ─────────────────────────────────────────────────────────────
@@ -300,6 +309,7 @@ export interface TrainerQuestion {
   chartId: number;
   handCode: string;
   correctAction: Action;
+  correctNote?: string | null;
   /** Subset of actions to show as answer choices (always includes correct + 2-3 distractors) */
   choices: Action[];
 }
@@ -309,4 +319,46 @@ export interface TrainerStats {
   correct: number;
   accuracy: number; // 0-100
   byAction: Record<Action, { total: number; correct: number }>;
+}
+
+export interface StrategySpotProgress {
+  chartId: number;
+  chartTitle: string;
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  spotKey: string;
+  attempts: number;
+  correct: number;
+  accuracy: number;
+}
+
+export interface StrategyMissedHand {
+  chartId: number;
+  chartTitle: string;
+  handCode: string;
+  missed: number;
+  attempts: number;
+  correctAction: Action;
+}
+
+export interface StrategyProgressSummary {
+  bySpot: StrategySpotProgress[];
+  weakSpots: StrategySpotProgress[];
+  missedHands: StrategyMissedHand[];
+}
+
+export interface StrategyRecommendation {
+  chart: {
+    id: number;
+    title: string;
+    stackDepth: number;
+    spotGroup: SpotGroup;
+    spotKey: string;
+    heroPosition: string;
+    villainPosition?: string | null;
+  };
+  handCode?: string | null;
+  recommendedAction?: Action | null;
+  reason: string;
+  confidence: "exact" | "nearest";
 }

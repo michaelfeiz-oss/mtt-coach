@@ -7,10 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Target } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
+import { ACTION_LABELS } from "../../../shared/strategy";
 
 export default function HandDetail() {
   const { id } = useParams();
@@ -27,6 +28,11 @@ export default function HandDetail() {
     { handId: parseInt(id!) },
     { enabled: !!id }
   );
+  const { data: strategyRecommendation } =
+    trpc.strategy.getHandRecommendation.useQuery(
+      { handId: parseInt(id!) },
+      { enabled: !!id }
+    );
 
   const [formData, setFormData] = useState({
     reviewed: false,
@@ -235,6 +241,63 @@ export default function HandDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Strategy Recommendation */}
+        {strategyRecommendation && (
+          <Card className="border-orange-200 bg-orange-50/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-4 w-4 text-orange-600" />
+                Recommended Preflop Study
+              </CardTitle>
+              <CardDescription>
+                {strategyRecommendation.reason}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border bg-white p-3">
+                <p className="text-sm font-semibold">
+                  {strategyRecommendation.chart.title}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {strategyRecommendation.chart.heroPosition}
+                  {strategyRecommendation.chart.villainPosition
+                    ? ` vs ${strategyRecommendation.chart.villainPosition}`
+                    : ""}{" "}
+                  • {strategyRecommendation.chart.stackDepth}bb
+                  {strategyRecommendation.handCode
+                    ? ` • ${strategyRecommendation.handCode}`
+                    : ""}
+                  {strategyRecommendation.recommendedAction
+                    ? ` • ${ACTION_LABELS[strategyRecommendation.recommendedAction]}`
+                    : ""}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
+                  className="bg-orange-500 text-white hover:bg-orange-600"
+                  onClick={() =>
+                    setLocation(
+                      `/strategy/trainer?chartId=${strategyRecommendation.chart.id}`
+                    )
+                  }
+                >
+                  Train this leak
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setLocation(
+                      `/strategy/library?chartId=${strategyRecommendation.chart.id}`
+                    )
+                  }
+                >
+                  View chart
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Edit Form */}
         <Card>

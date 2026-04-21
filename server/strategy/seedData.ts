@@ -1,25 +1,23 @@
 /**
- * server/strategy/seedData.ts
- * ─────────────────────────────────────────────────────────────────────────────
- * Seed data for the strategy module.
- * Each entry maps to one rangeCharts row + N rangeChartActions rows.
+ * Structured seed data for the strategy module.
  *
- * CODEX TASK:
- *   1. Expand SEED_CHARTS with real GTO ranges for each spot/stack combo.
- *   2. Keep the structure identical — only add more entries to the array.
- *   3. The seed script (seedStrategy.mjs) iterates this array and inserts rows.
- *
- * Hand code format:
- *   Pairs:   "AA", "KK", ... "22"
- *   Suited:  "AKs", "AQs", ... "32s"
- *   Offsuit: "AKo", "AQo", ... "32o"
- *
- * Actions: FOLD | RAISE | CALL | THREE_BET | JAM | LIMP | CHECK
- * weightPercent: 0-100 (primary action frequency; null = 100%)
- * mixJson: JSON string of [{action, frequency}] for mixed strategies
+ * These are MTT Coach baseline preflop ranges: compact, deterministic charts
+ * intended for daily study and leak repair. Future chart work should only add
+ * or adjust seed definitions here; the DB/data contract stays unchanged.
  */
 
-import type { Action } from "../../shared/strategy";
+import {
+  ACTIONS,
+  ALL_HANDS,
+  POSITIONS,
+  RANKS,
+  SPOT_DEFINITIONS,
+  STACK_DEPTHS,
+  type Action,
+  type Position,
+  type SpotDefinition,
+  type SpotGroup,
+} from "../../shared/strategy";
 
 export interface SeedHandAction {
   handCode: string;
@@ -33,7 +31,7 @@ export interface SeedHandAction {
 export interface SeedChart {
   title: string;
   stackDepth: number;
-  spotGroup: "RFI" | "VS_UTG_RFI" | "VS_MP_RFI" | "VS_LP_RFI" | "VS_3BET" | "BVB";
+  spotGroup: SpotGroup;
   spotKey: string;
   heroPosition: string;
   villainPosition?: string;
@@ -42,89 +40,630 @@ export interface SeedChart {
   actions: SeedHandAction[];
 }
 
-// ─── Helper: build a simple all-raise range ──────────────────────────────────
-// CODEX TASK: Replace these placeholder ranges with real solver data.
-
-function allRaise(hands: string[]): SeedHandAction[] {
-  return hands.map((h) => ({ handCode: h, primaryAction: "RAISE" as Action }));
+interface ParsedHand {
+  code: string;
+  high: string;
+  low: string;
+  isPair: boolean;
+  isSuited: boolean;
+  isOffsuit: boolean;
+  distance: number;
 }
 
-function allFold(hands: string[]): SeedHandAction[] {
-  return hands.map((h) => ({ handCode: h, primaryAction: "FOLD" as Action }));
+interface ActionRule {
+  action: Action;
+  note?: string;
+  matches: (hand: ParsedHand) => boolean;
 }
 
-// ─── BTN RFI @ 20bb (placeholder — replace with real data) ──────────────────
+const SOURCE_LABEL = "MTT Coach structured baseline";
+const VALID_HANDS = new Set(ALL_HANDS);
+const VALID_ACTIONS = new Set<Action>(ACTIONS);
+const VALID_STACKS = new Set<number>(STACK_DEPTHS);
+const VALID_POSITIONS = new Set<string>(POSITIONS);
 
-const BTN_RFI_20BB_RAISE = [
-  "AA","KK","QQ","JJ","TT","99","88","77","66","55","44","33","22",
-  "AKs","AQs","AJs","ATs","A9s","A8s","A7s","A6s","A5s","A4s","A3s","A2s",
-  "AKo","AQo","AJo","ATo","A9o","A8o","A7o",
-  "KQs","KJs","KTs","K9s","K8s","K7s","K6s","K5s","K4s","K3s","K2s",
-  "KQo","KJo","KTo","K9o",
-  "QJs","QTs","Q9s","Q8s","Q7s","Q6s","Q5s",
-  "QJo","QTo","Q9o",
-  "JTs","J9s","J8s","J7s","J6s",
-  "JTo","J9o",
-  "T9s","T8s","T7s","T6s",
-  "T9o",
-  "98s","97s","96s","95s",
-  "87s","86s","85s",
-  "76s","75s","74s",
-  "65s","64s",
-  "54s","53s",
-  "43s",
-];
+const SEEDED_SPOT_KEYS = [
+  "UTG_RFI",
+  "UTG1_RFI",
+  "MP_RFI",
+  "HJ_RFI",
+  "CO_RFI",
+  "BTN_RFI",
+  "SB_RFI",
+  "BB_vs_BTN",
+  "BB_vs_CO",
+  "SB_vs_BTN",
+  "BTN_vs_CO",
+  "SB_vs_BB_limp",
+  "BB_vs_SB_limp",
+  "BB_vs_UTG",
+  "HJ_vs_UTG",
+  "CO_vs_UTG",
+  "BTN_vs_UTG",
+  "BB_vs_MP",
+  "CO_vs_MP",
+  "BTN_vs_MP",
+  "BTN_vs_BB_3bet",
+  "CO_vs_BB_3bet",
+  "BTN_vs_SB_3bet",
+] as const;
 
-const BTN_RFI_20BB_FOLD = [
-  "A6o","A5o","A4o","A3o","A2o",
-  "K8o","K7o","K6o","K5o","K4o","K3o","K2o",
-  "Q8o","Q7o","Q6o","Q5o","Q4o","Q3o","Q2o",
-  "J8o","J7o","J6o","J5o","J4o","J3o","J2o",
-  "T8o","T7o","T6o","T5o","T4o","T3o","T2o",
-  "98o","97o","96o","95o","94o","93o","92o",
-  "87o","86o","85o","84o","83o","82o",
-  "76o","75o","74o","73o","72o",
-  "65o","64o","63o","62o",
-  "54o","53o","52o",
-  "43o","42o",
-  "32s","32o",
-];
+const BASE_OPEN_LEVEL: Record<Position, number> = {
+  UTG: 1,
+  UTG1: 2,
+  MP: 3,
+  HJ: 4,
+  CO: 5,
+  BTN: 7,
+  SB: 6,
+  BB: 1,
+};
 
-// ─── Exported seed data ───────────────────────────────────────────────────────
+const PAIR_MIN_BY_LEVEL = ["77", "66", "55", "44", "33", "22", "22", "22"];
+const SUITED_ACE_MIN_BY_LEVEL = ["T", "9", "7", "5", "2", "2", "2", "2"];
+const OFFSUIT_ACE_MIN_BY_LEVEL = ["Q", "J", "T", "T", "8", "7", "5", "2"];
+const SUITED_KING_MIN_BY_LEVEL = ["Q", "J", "T", "T", "8", "6", "2", "2"];
+const OFFSUIT_KING_MIN_BY_LEVEL = ["Q", "Q", "J", "T", "T", "9", "8", "5"];
+const SUITED_QUEEN_MIN_BY_LEVEL = ["J", "T", "T", "9", "8", "7", "5", "2"];
+const OFFSUIT_QUEEN_MIN_BY_LEVEL = ["J", "J", "J", "T", "T", "9", "8", "7"];
+const SUITED_JACK_MIN_BY_LEVEL = ["T", "T", "9", "9", "8", "7", "6", "4"];
+const OFFSUIT_JACK_MIN_BY_LEVEL = ["T", "T", "T", "T", "9", "9", "8", "7"];
 
-export const SEED_CHARTS: SeedChart[] = [
-  {
-    title: "BTN RFI @ 20bb",
-    stackDepth: 20,
-    spotGroup: "RFI",
-    spotKey: "BTN_RFI",
-    heroPosition: "BTN",
-    sourceLabel: "GTO Wizard (placeholder)",
-    notes: [
-      "Wide open from BTN at 20bb — jam/raise most playable hands.",
-      "Fold weak offsuit broadways and low offsuit connectors.",
-    ],
-    actions: [
-      ...allRaise(BTN_RFI_20BB_RAISE),
-      ...allFold(BTN_RFI_20BB_FOLD),
-    ],
-  },
+function rankIndex(rank: string): number {
+  return RANKS.findIndex(candidate => candidate === rank);
+}
 
-  // ─── CODEX TASK: Add more spots below in the same format ────────────────
-  // Example structure:
-  // {
-  //   title: "BB vs BTN @ 20bb",
-  //   stackDepth: 20,
-  //   spotGroup: "VS_LP_RFI",
-  //   spotKey: "BB_vs_BTN",
-  //   heroPosition: "BB",
-  //   villainPosition: "BTN",
-  //   sourceLabel: "GTO Wizard",
-  //   notes: ["Defend wide vs BTN open."],
-  //   actions: [
-  //     { handCode: "AA", primaryAction: "THREE_BET" },
-  //     { handCode: "KK", primaryAction: "THREE_BET" },
-  //     // ... etc
-  //   ],
-  // },
-];
+function rankStrength(rank: string): number {
+  const index = rankIndex(rank);
+  return index >= 0 ? RANKS.length - index : 0;
+}
+
+function rankAtLeast(rank: string, minimum: string): boolean {
+  return rankStrength(rank) >= rankStrength(minimum);
+}
+
+function rankAtMost(rank: string, maximum: string): boolean {
+  return rankStrength(rank) <= rankStrength(maximum);
+}
+
+function clampLevel(level: number): number {
+  return Math.max(1, Math.min(8, level));
+}
+
+function levelIndex(level: number): number {
+  return clampLevel(level) - 1;
+}
+
+function parseHand(code: string): ParsedHand {
+  const high = code[0] ?? "";
+  const low = code[1] ?? "";
+  const suffix = code[2];
+
+  return {
+    code,
+    high,
+    low,
+    isPair: high === low,
+    isSuited: suffix === "s",
+    isOffsuit: suffix === "o",
+    distance: rankIndex(low) - rankIndex(high),
+  };
+}
+
+function isPairAtLeast(hand: ParsedHand, minimumPair: string): boolean {
+  return hand.isPair && rankAtLeast(hand.high, minimumPair[0] ?? "A");
+}
+
+function isPairBetween(
+  hand: ParsedHand,
+  minimumPair: string,
+  maximumPair: string
+): boolean {
+  return (
+    hand.isPair &&
+    rankAtLeast(hand.high, minimumPair[0] ?? "2") &&
+    rankAtMost(hand.high, maximumPair[0] ?? "A")
+  );
+}
+
+function isSuitedAce(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isSuited && hand.high === "A" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isOffsuitAce(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isOffsuit && hand.high === "A" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isSuitedKing(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isSuited && hand.high === "K" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isOffsuitKing(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isOffsuit && hand.high === "K" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isSuitedQueen(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isSuited && hand.high === "Q" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isOffsuitQueen(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isOffsuit && hand.high === "Q" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isSuitedJack(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isSuited && hand.high === "J" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isOffsuitJack(hand: ParsedHand, minimumLow: string): boolean {
+  return hand.isOffsuit && hand.high === "J" && rankAtLeast(hand.low, minimumLow);
+}
+
+function isSuitedBroadway(hand: ParsedHand): boolean {
+  return hand.isSuited && rankAtLeast(hand.low, "T");
+}
+
+function isOffsuitBroadway(hand: ParsedHand): boolean {
+  return hand.isOffsuit && rankAtLeast(hand.low, "T");
+}
+
+function isSuitedConnector(hand: ParsedHand, minimumLow: string): boolean {
+  return (
+    hand.isSuited &&
+    hand.distance === 1 &&
+    rankAtLeast(hand.low, minimumLow) &&
+    !hand.isPair
+  );
+}
+
+function isSuitedOneGapper(hand: ParsedHand, minimumLow: string): boolean {
+  return (
+    hand.isSuited &&
+    hand.distance === 2 &&
+    rankAtLeast(hand.low, minimumLow) &&
+    !hand.isPair
+  );
+}
+
+function isOffsuitConnector(hand: ParsedHand, minimumLow: string): boolean {
+  return (
+    hand.isOffsuit &&
+    hand.distance === 1 &&
+    rankAtLeast(hand.low, minimumLow)
+  );
+}
+
+function isWheelAce(hand: ParsedHand): boolean {
+  return hand.high === "A" && ["5", "4", "3", "2"].includes(hand.low);
+}
+
+function isPremium(hand: ParsedHand): boolean {
+  return (
+    isPairAtLeast(hand, "QQ") ||
+    ["AKs", "AKo", "AQs"].includes(hand.code)
+  );
+}
+
+function isStrongBroadway(hand: ParsedHand): boolean {
+  return ["AKs", "AKo", "AQs", "AQo", "AJs", "KQs"].includes(hand.code);
+}
+
+function stackLevelAdjustment(stackDepth: number): number {
+  if (stackDepth <= 15) return -1;
+  if (stackDepth >= 40) return 1;
+  return 0;
+}
+
+function buildActions(rules: ActionRule[]): SeedHandAction[] {
+  return ALL_HANDS.map(handCode => {
+    const hand = parseHand(handCode);
+    const rule = rules.find(candidate => candidate.matches(hand));
+
+    return {
+      handCode,
+      primaryAction: rule?.action ?? "FOLD",
+      weightPercent: 100,
+      note: rule?.note,
+    };
+  });
+}
+
+function isRfiOpen(hand: ParsedHand, position: Position, stackDepth: number): boolean {
+  const level = clampLevel(BASE_OPEN_LEVEL[position] + stackLevelAdjustment(stackDepth));
+  const index = levelIndex(level);
+
+  return (
+    isPairAtLeast(hand, PAIR_MIN_BY_LEVEL[index] ?? "77") ||
+    isSuitedAce(hand, SUITED_ACE_MIN_BY_LEVEL[index] ?? "T") ||
+    isOffsuitAce(hand, OFFSUIT_ACE_MIN_BY_LEVEL[index] ?? "Q") ||
+    isSuitedKing(hand, SUITED_KING_MIN_BY_LEVEL[index] ?? "Q") ||
+    isOffsuitKing(hand, OFFSUIT_KING_MIN_BY_LEVEL[index] ?? "Q") ||
+    isSuitedQueen(hand, SUITED_QUEEN_MIN_BY_LEVEL[index] ?? "J") ||
+    isOffsuitQueen(hand, OFFSUIT_QUEEN_MIN_BY_LEVEL[index] ?? "J") ||
+    isSuitedJack(hand, SUITED_JACK_MIN_BY_LEVEL[index] ?? "T") ||
+    isOffsuitJack(hand, OFFSUIT_JACK_MIN_BY_LEVEL[index] ?? "T") ||
+    isSuitedConnector(hand, level >= 6 ? "3" : level >= 4 ? "5" : "8") ||
+    (level >= 5 && isSuitedOneGapper(hand, level >= 7 ? "4" : "6")) ||
+    (level >= 7 && isOffsuitConnector(hand, "7")) ||
+    (level >= 6 && hand.isSuited && hand.high === "T" && rankAtLeast(hand.low, "6")) ||
+    (level >= 7 && hand.isSuited && hand.high === "9" && rankAtLeast(hand.low, "5"))
+  );
+}
+
+function isShallowRfiJam(
+  hand: ParsedHand,
+  position: Position,
+  stackDepth: number
+): boolean {
+  const level = BASE_OPEN_LEVEL[position];
+  if (stackDepth > 20 || level < 5) return false;
+
+  return (
+    (stackDepth <= 15 && isPairBetween(hand, "22", "55")) ||
+    (stackDepth <= 15 && hand.isSuited && isWheelAce(hand)) ||
+    (position === "SB" && stackDepth <= 20 && isPairBetween(hand, "22", "66")) ||
+    (position === "SB" && stackDepth <= 20 && hand.isOffsuit && isWheelAce(hand))
+  );
+}
+
+function isSbLimp(hand: ParsedHand, stackDepth: number): boolean {
+  if (stackDepth <= 15) return false;
+
+  return (
+    isPairBetween(hand, "22", "55") ||
+    (hand.isSuited && hand.high === "A") ||
+    (hand.isSuited && ["K", "Q", "J", "T", "9"].includes(hand.high)) ||
+    isSuitedConnector(hand, "2") ||
+    isSuitedOneGapper(hand, "4") ||
+    isOffsuitAce(hand, "2") ||
+    isOffsuitKing(hand, "7") ||
+    isOffsuitQueen(hand, "8") ||
+    isOffsuitConnector(hand, "7")
+  );
+}
+
+function buildRfiActions(position: Position, stackDepth: number): SeedHandAction[] {
+  return buildActions([
+    {
+      action: "JAM",
+      note: "At shallow stacks, small pairs and wheel aces gain value as direct jams.",
+      matches: hand => isShallowRfiJam(hand, position, stackDepth),
+    },
+    {
+      action: "RAISE",
+      note: "Open playable hands by position; widen as you get closer to the button.",
+      matches: hand => isRfiOpen(hand, position, stackDepth),
+    },
+    {
+      action: "LIMP",
+      note: "Complete marginal small-blind hands that prefer realizing equity cheaply.",
+      matches: hand => position === "SB" && isSbLimp(hand, stackDepth),
+    },
+  ]);
+}
+
+function defenseLevel(
+  heroPosition: Position,
+  villainPosition: Position | undefined,
+  stackDepth: number
+): number {
+  const opener = villainPosition ?? "UTG";
+  let level = 2;
+
+  if (heroPosition === "BB" && opener === "BTN") level = 8;
+  else if (heroPosition === "BB" && opener === "CO") level = 6;
+  else if (heroPosition === "SB" && opener === "BTN") level = 4;
+  else if (heroPosition === "BTN" && opener === "CO") level = 5;
+  else if (opener === "MP") level = heroPosition === "BB" ? 4 : 3;
+  else if (opener === "UTG") level = heroPosition === "BB" ? 3 : 2;
+
+  return clampLevel(level + stackLevelAdjustment(stackDepth));
+}
+
+function isJamVsOpen(hand: ParsedHand, level: number, stackDepth: number): boolean {
+  if (stackDepth > 20) return false;
+
+  if (isPremium(hand)) return true;
+  if (level >= 3 && (isPairAtLeast(hand, "88") || isStrongBroadway(hand))) return true;
+  if (level >= 5 && (isPairAtLeast(hand, "66") || hand.code === "A5s" || hand.code === "A4s")) return true;
+  if (level >= 7 && stackDepth <= 15 && (isPairAtLeast(hand, "55") || hand.code === "ATs" || hand.code === "AJo")) return true;
+
+  return false;
+}
+
+function isThreeBetVsOpen(hand: ParsedHand, level: number, stackDepth: number): boolean {
+  if (stackDepth <= 20 && isJamVsOpen(hand, level, stackDepth)) return false;
+
+  return (
+    isPremium(hand) ||
+    (level >= 3 && ["JJ", "TT", "AKs", "AKo", "AQs", "AQo", "KQs"].includes(hand.code)) ||
+    (level >= 5 && ["99", "AJs", "ATs", "KJs", "A5s", "A4s"].includes(hand.code)) ||
+    (level >= 7 && ["88", "KTs", "QJs", "A3s"].includes(hand.code))
+  );
+}
+
+function isCallVsOpen(hand: ParsedHand, level: number, stackDepth: number): boolean {
+  const minimumPair = level >= 7 ? "22" : level >= 5 ? "33" : level >= 3 ? "55" : "77";
+
+  return (
+    isPairAtLeast(hand, minimumPair) ||
+    isSuitedAce(hand, level >= 5 ? "2" : level >= 3 ? "5" : "T") ||
+    isOffsuitAce(hand, level >= 7 ? "8" : level >= 5 ? "T" : "Q") ||
+    isSuitedKing(hand, level >= 7 ? "2" : level >= 5 ? "7" : "T") ||
+    isOffsuitKing(hand, level >= 7 ? "9" : "J") ||
+    isSuitedQueen(hand, level >= 7 ? "5" : level >= 5 ? "8" : "T") ||
+    isOffsuitQueen(hand, level >= 7 ? "9" : "J") ||
+    isSuitedJack(hand, level >= 7 ? "6" : level >= 5 ? "8" : "T") ||
+    (level >= 5 && isOffsuitJack(hand, "T")) ||
+    isSuitedConnector(hand, level >= 7 ? "2" : level >= 5 ? "4" : "7") ||
+    (level >= 5 && isSuitedOneGapper(hand, level >= 7 ? "3" : "6")) ||
+    (level >= 7 && isOffsuitConnector(hand, "8")) ||
+    (stackDepth >= 40 && level >= 4 && isSuitedBroadway(hand))
+  );
+}
+
+function buildVsRfiActions(
+  heroPosition: Position,
+  villainPosition: Position | undefined,
+  stackDepth: number
+): SeedHandAction[] {
+  const level = defenseLevel(heroPosition, villainPosition, stackDepth);
+
+  return buildActions([
+    {
+      action: "JAM",
+      note: "Shallow stacks push strong pairs, broadways, and good blocker hands into jam territory.",
+      matches: hand => isJamVsOpen(hand, level, stackDepth),
+    },
+    {
+      action: "THREE_BET",
+      note: "Use premiums and selected suited blockers as aggressive continues.",
+      matches: hand => isThreeBetVsOpen(hand, level, stackDepth),
+    },
+    {
+      action: "CALL",
+      note:
+        heroPosition === "BB"
+          ? "BB defends wider because closing action and price improve realization."
+          : "Continue hands with clear playability; fold dominated offsuit holdings.",
+      matches: hand => isCallVsOpen(hand, level, stackDepth),
+    },
+  ]);
+}
+
+function isJamVsThreeBet(hand: ParsedHand, stackDepth: number): boolean {
+  if (stackDepth <= 15) {
+    return (
+      isPairAtLeast(hand, "55") ||
+      ["AKs", "AKo", "AQs", "AQo", "AJs", "AJo", "ATs", "KQs"].includes(hand.code)
+    );
+  }
+
+  if (stackDepth <= 20) {
+    return isPairAtLeast(hand, "77") || ["AKs", "AKo", "AQs", "AQo", "AJs", "KQs"].includes(hand.code);
+  }
+
+  return isPremium(hand) || ["JJ", "TT", "AKo"].includes(hand.code);
+}
+
+function isCallVsThreeBet(hand: ParsedHand, stackDepth: number): boolean {
+  if (stackDepth <= 15) return false;
+
+  return (
+    isPairAtLeast(hand, stackDepth >= 40 ? "55" : "77") ||
+    ["AQs", "AQo", "AJs", "ATs", "KQs", "KJs", "QJs", "JTs", "T9s"].includes(hand.code) ||
+    (stackDepth >= 40 && (isSuitedConnector(hand, "7") || ["A5s", "A4s", "KTs", "QTs"].includes(hand.code)))
+  );
+}
+
+function buildVsThreeBetActions(stackDepth: number): SeedHandAction[] {
+  return buildActions([
+    {
+      action: "JAM",
+      note: "Versus 3-bets, shallow stack continues become direct all-in decisions.",
+      matches: hand => isJamVsThreeBet(hand, stackDepth),
+    },
+    {
+      action: "CALL",
+      note: "At deeper stacks, continue hands that retain equity and playability in position.",
+      matches: hand => isCallVsThreeBet(hand, stackDepth),
+    },
+  ]);
+}
+
+function isSbBvbRaise(hand: ParsedHand, stackDepth: number): boolean {
+  return (
+    isPremium(hand) ||
+    isPairAtLeast(hand, stackDepth <= 20 ? "77" : "88") ||
+    isStrongBroadway(hand) ||
+    ["AJs", "ATs", "KJs", "KTs", "QJs"].includes(hand.code)
+  );
+}
+
+function isBbVsSbRaise(hand: ParsedHand, stackDepth: number): boolean {
+  return (
+    isPremium(hand) ||
+    isPairAtLeast(hand, stackDepth <= 20 ? "66" : "88") ||
+    isStrongBroadway(hand) ||
+    ["AJs", "ATs", "KJs", "QJs", "JTs"].includes(hand.code)
+  );
+}
+
+function buildBvbActions(definition: SpotDefinition, stackDepth: number): SeedHandAction[] {
+  if (definition.key === "BB_vs_SB_limp") {
+    return buildActions([
+      {
+        action: "JAM",
+        note: "Attack limp ranges directly at shallow stacks with hands that benefit from fold equity.",
+        matches: hand => stackDepth <= 20 && isJamVsOpen(hand, 7, stackDepth),
+      },
+      {
+        action: "RAISE",
+        note: "Raise strong and high-realization hands over the small blind limp.",
+        matches: hand => isBbVsSbRaise(hand, stackDepth),
+      },
+      {
+        action: "CHECK",
+        note: "Check playable hands that prefer realizing equity without building the pot.",
+        matches: hand => isCallVsOpen(hand, 7, stackDepth) || isSbLimp(hand, Math.max(stackDepth, 20)),
+      },
+    ]);
+  }
+
+  return buildActions([
+    {
+      action: "JAM",
+      note: "Small pairs become more aggressive jam candidates at shallower depths.",
+      matches: hand => stackDepth <= 20 && isShallowRfiJam(hand, "SB", stackDepth),
+    },
+    {
+      action: "RAISE",
+      note: "Raise hands that are happy to play a bigger pot out of the small blind.",
+      matches: hand => isSbBvbRaise(hand, stackDepth),
+    },
+    {
+      action: "LIMP",
+      note: "Limp the playable middle of range to realize equity and avoid bloating the pot.",
+      matches: hand => isSbLimp(hand, stackDepth) || isRfiOpen(hand, "SB", stackDepth),
+    },
+  ]);
+}
+
+function chartNotes(definition: SpotDefinition, stackDepth: number): string[] {
+  if (definition.group === "RFI") {
+    return [
+      "Open tighter from early positions and widen sharply near the button.",
+      stackDepth <= 20
+        ? "Short stacks make blocker hands and small pairs better direct jam candidates."
+        : "Deeper stacks reward suited playability and connected hands more often.",
+    ];
+  }
+
+  if (definition.group === "VS_LP_RFI") {
+    return [
+      "Defend wider versus late-position opens because the opener's range is wider.",
+      definition.heroPosition === "BB"
+        ? "BB defends wide vs BTN because closing action and price improve realization."
+        : "Out of position without closing action, keep offsuit continues tighter.",
+    ];
+  }
+
+  if (definition.group === "VS_UTG_RFI" || definition.group === "VS_MP_RFI") {
+    return [
+      "Early and middle-position opens are stronger, so dominated offsuit hands continue less often.",
+      "Axo mixes less versus earlier positions; continue mainly with suited wheel aces and strong broadways.",
+    ];
+  }
+
+  if (definition.group === "VS_3BET") {
+    return [
+      "Shallow stacks simplify versus 3-bets: continue mostly by jamming strong equity.",
+      "At 40bb, suited broadways and some pairs can continue without committing the stack.",
+    ];
+  }
+
+  return [
+    "Blind-versus-blind ranges are wide, but position and stack depth still decide aggression.",
+    "Small pairs and ace blockers gain fold equity as stacks get shallower.",
+  ];
+}
+
+function buildChartActions(
+  definition: SpotDefinition,
+  stackDepth: number
+): SeedHandAction[] {
+  if (definition.group === "RFI") {
+    return buildRfiActions(definition.heroPosition, stackDepth);
+  }
+
+  if (definition.group === "VS_3BET") {
+    return buildVsThreeBetActions(stackDepth);
+  }
+
+  if (definition.group === "BVB") {
+    return buildBvbActions(definition, stackDepth);
+  }
+
+  return buildVsRfiActions(
+    definition.heroPosition,
+    definition.villainPosition,
+    stackDepth
+  );
+}
+
+function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedChart {
+  return {
+    title: `${definition.label} @ ${stackDepth}bb`,
+    stackDepth,
+    spotGroup: definition.group,
+    spotKey: definition.key,
+    heroPosition: definition.heroPosition,
+    villainPosition: definition.villainPosition,
+    sourceLabel: SOURCE_LABEL,
+    notes: chartNotes(definition, stackDepth),
+    actions: buildChartActions(definition, stackDepth),
+  };
+}
+
+function getSeedSpotDefinitions(): SpotDefinition[] {
+  return SEEDED_SPOT_KEYS.map(key => {
+    const definition = SPOT_DEFINITIONS.find(spot => spot.key === key);
+    if (!definition) {
+      throw new Error(`Missing spot definition for ${key}`);
+    }
+    return definition;
+  });
+}
+
+export function validateSeedCharts(charts: SeedChart[] = SEED_CHARTS): void {
+  const chartKeys = new Set<string>();
+
+  for (const chart of charts) {
+    const chartKey = `${chart.stackDepth}:${chart.spotGroup}:${chart.spotKey}`;
+    if (chartKeys.has(chartKey)) {
+      throw new Error(`Duplicate seed chart selector: ${chartKey}`);
+    }
+    chartKeys.add(chartKey);
+
+    if (!VALID_STACKS.has(chart.stackDepth)) {
+      throw new Error(`Invalid stack depth in ${chart.title}: ${chart.stackDepth}`);
+    }
+
+    if (!VALID_POSITIONS.has(chart.heroPosition)) {
+      throw new Error(`Invalid hero position in ${chart.title}: ${chart.heroPosition}`);
+    }
+
+    if (chart.villainPosition && !VALID_POSITIONS.has(chart.villainPosition)) {
+      throw new Error(`Invalid villain position in ${chart.title}: ${chart.villainPosition}`);
+    }
+
+    const actionHands = new Set<string>();
+
+    for (const action of chart.actions) {
+      if (!VALID_HANDS.has(action.handCode)) {
+        throw new Error(`Invalid hand code in ${chart.title}: ${action.handCode}`);
+      }
+
+      if (!VALID_ACTIONS.has(action.primaryAction)) {
+        throw new Error(`Invalid action in ${chart.title}: ${action.primaryAction}`);
+      }
+
+      if (actionHands.has(action.handCode)) {
+        throw new Error(`Duplicate hand action in ${chart.title}: ${action.handCode}`);
+      }
+
+      actionHands.add(action.handCode);
+    }
+
+    if (actionHands.size !== ALL_HANDS.length) {
+      throw new Error(
+        `Seed chart ${chart.title} must contain ${ALL_HANDS.length} hand actions; found ${actionHands.size}`
+      );
+    }
+  }
+}
+
+export const SEED_CHARTS: SeedChart[] = STACK_DEPTHS.flatMap(stackDepth =>
+  getSeedSpotDefinitions().map(definition => buildSeedChart(definition, stackDepth))
+);
+
+validateSeedCharts(SEED_CHARTS);

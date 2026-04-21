@@ -24,6 +24,7 @@ import React from "react";
 import {
   STACK_DEPTHS,
   SPOT_GROUP_LABELS,
+  SPOT_GROUP_SUBTITLES,
   SPOT_GROUPS,
 } from "../../../../shared/strategy";
 import type { SpotGroup } from "../../../../shared/strategy";
@@ -34,6 +35,7 @@ interface SpotFiltersProps {
   spotGroup?: SpotGroup;
   onStackChange: (depth: number | undefined) => void;
   onGroupChange: (group: SpotGroup | undefined) => void;
+  groupCounts?: Partial<Record<SpotGroup, number>>;
   className?: string;
 }
 
@@ -42,20 +44,26 @@ export function SpotFilters({
   spotGroup,
   onStackChange,
   onGroupChange,
+  groupCounts = {},
   className = "",
 }: SpotFiltersProps) {
+  const totalCount = SPOT_GROUPS.reduce(
+    (sum, group) => sum + (groupCounts[group] ?? 0),
+    0
+  );
+
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {/* Stack depth filter */}
       <div>
-        <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">
+        <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">
           Stack Depth
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="grid grid-cols-5 gap-1.5">
           <Button
             size="sm"
             variant={stackDepth === undefined ? "default" : "outline"}
-            className="h-7 text-xs"
+            className="h-9 px-2 text-xs"
             onClick={() => onStackChange(undefined)}
           >
             All
@@ -65,7 +73,7 @@ export function SpotFilters({
               key={d}
               size="sm"
               variant={stackDepth === d ? "default" : "outline"}
-              className="h-7 text-xs"
+              className="h-9 px-2 text-xs"
               onClick={() => onStackChange(d)}
             >
               {d}bb
@@ -76,27 +84,38 @@ export function SpotFilters({
 
       {/* Spot group filter */}
       <div>
-        <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">
+        <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">
           Spot Type
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="space-y-1.5">
           <Button
             size="sm"
             variant={spotGroup === undefined ? "default" : "outline"}
-            className="h-7 text-xs"
+            className="h-auto min-h-10 w-full justify-between px-3 py-2 text-left text-xs"
             onClick={() => onGroupChange(undefined)}
           >
-            All
+            <span>All spots</span>
+            {totalCount > 0 && <span className="font-mono">{totalCount}</span>}
           </Button>
           {SPOT_GROUPS.map(g => (
             <Button
               key={g}
               size="sm"
               variant={spotGroup === g ? "default" : "outline"}
-              className="h-7 text-xs"
+              className="h-auto min-h-12 w-full justify-start px-3 py-2 text-left"
               onClick={() => onGroupChange(g)}
             >
-              {SPOT_GROUP_LABELS[g]}
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-xs font-semibold leading-tight">
+                  {SPOT_GROUP_LABELS[g]}
+                </span>
+                <span className="mt-0.5 text-[11px] font-normal leading-tight opacity-75">
+                  {SPOT_GROUP_SUBTITLES[g]}
+                </span>
+              </span>
+              {(groupCounts[g] ?? 0) > 0 && (
+                <span className="ml-2 font-mono text-xs">{groupCounts[g]}</span>
+              )}
             </Button>
           ))}
         </div>
