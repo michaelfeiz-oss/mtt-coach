@@ -31,7 +31,7 @@
  *   - Wrong selection highlighted in red after reveal
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ACTIONS, ACTION_LABELS } from "../../../../shared/strategy";
 import type { Action } from "../../../../shared/strategy";
 import { Button } from "@/components/ui/button";
@@ -88,14 +88,45 @@ export function TrainerCard({
     onSkip();
   }
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const isTyping =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable;
+
+      if (isTyping) return;
+
+      if (!isRevealed) {
+        const index = Number(event.key) - 1;
+        const action = Number.isInteger(index) ? answerChoices[index] : null;
+        if (!action) return;
+
+        event.preventDefault();
+        handleAnswer(action);
+        return;
+      }
+
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleNext();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [answerChoices, isRevealed]);
+
   return (
     <Card
       data-chart-id={chartId}
-      className={`bg-zinc-900 border-zinc-700 ${className}`}
+      className={`overflow-hidden border-zinc-800 bg-zinc-950 text-white shadow-2xl shadow-zinc-950/20 ${className}`}
     >
-      <CardContent className="p-5 space-y-5 sm:p-6">
+      <CardContent className="space-y-6 p-5 sm:p-7">
         {/* Hand display */}
-        <div className="text-center space-y-3">
+        <div className="space-y-4 text-center">
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             {stackDepth !== undefined && (
               <Badge className="bg-orange-500 text-white">{stackDepth}bb</Badge>
@@ -116,26 +147,28 @@ export function TrainerCard({
               <p className="mt-1 text-xs text-zinc-400">{spotContext}</p>
             )}
           </div>
-          {!isPersisted && (
-            <p className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-400">
-              Session stats are local until you log in.
-            </p>
-          )}
+          <div className="mx-auto max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900/80 px-4 py-3 text-xs text-zinc-400">
+            {isPersisted
+              ? "Your answers are saved to trainer history."
+              : "Practice is available now; saved history requires login."}
+          </div>
         </div>
 
         {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-2">
-          {answerChoices.map(action => {
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {answerChoices.map((action, index) => {
             let extraClass = "";
 
             if (isRevealed) {
               if (action === correctAction) {
-                extraClass = "border-green-500 bg-green-500/20 text-green-400";
+                extraClass =
+                  "border-green-500 bg-green-500/20 text-green-300 shadow-[0_0_0_1px_rgba(34,197,94,0.35)]";
               } else if (
                 action === selectedAction &&
                 action !== correctAction
               ) {
-                extraClass = "border-red-500 bg-red-500/20 text-red-400";
+                extraClass =
+                  "border-red-500 bg-red-500/20 text-red-300 shadow-[0_0_0_1px_rgba(239,68,68,0.35)]";
               } else {
                 extraClass = "opacity-40";
               }
@@ -145,11 +178,14 @@ export function TrainerCard({
               <Button
                 key={action}
                 variant="outline"
-                className={`h-12 text-sm font-semibold border-zinc-600 text-zinc-300 hover:bg-zinc-700 ${extraClass}`}
+                className={`h-14 justify-between border-zinc-700 bg-zinc-900/70 px-4 text-sm font-semibold text-zinc-200 hover:border-orange-400 hover:bg-zinc-800 ${extraClass}`}
                 onClick={() => handleAnswer(action)}
                 disabled={isRevealed}
               >
-                {ACTION_LABELS[action]}
+                <span>{ACTION_LABELS[action]}</span>
+                <span className="rounded-md border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-400">
+                  {index + 1}
+                </span>
               </Button>
             );
           })}
@@ -157,7 +193,7 @@ export function TrainerCard({
 
         {/* Reveal / next */}
         {isRevealed && (
-          <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-800/80 p-3">
+          <div className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4">
             <div className="text-center">
               <p
                 className={`text-base font-bold ${selectedAction === correctAction ? "text-green-400" : "text-red-400"}`}
@@ -181,6 +217,9 @@ export function TrainerCard({
               onClick={handleNext}
             >
               Next Hand
+              <span className="ml-2 rounded-md bg-white/15 px-2 py-0.5 text-xs">
+                Enter
+              </span>
             </Button>
           </div>
         )}
@@ -189,7 +228,7 @@ export function TrainerCard({
         {!isRevealed && (
           <Button
             variant="ghost"
-            className="w-full text-zinc-500 hover:text-zinc-300 text-xs"
+            className="w-full text-xs text-zinc-500 hover:text-zinc-300"
             onClick={onSkip}
           >
             Skip

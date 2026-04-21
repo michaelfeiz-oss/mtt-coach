@@ -43,18 +43,32 @@
  *   - Smooth transitions between hands
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSearch } from "wouter";
-import { Target, RotateCcw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  CheckCircle2,
+  Flame,
+  RotateCcw,
+  Search,
+  Shuffle,
+  Target,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { TrainerCard } from "@/components/strategy/TrainerCard";
 import { calcAccuracy } from "@/components/strategy/utils";
-import { SPOT_GROUP_LABELS, type Action } from "../../../../shared/strategy";
+import {
+  SPOT_GROUP_LABELS,
+  SPOT_GROUPS,
+  STACK_DEPTHS,
+  type Action,
+  type SpotGroup,
+} from "../../../../shared/strategy";
 import { toast } from "sonner";
 
 interface SessionStats {
@@ -81,9 +95,15 @@ export default function RangeTrainer() {
     correct: 0,
     streak: 0,
   });
+  const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
+  const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { data: spots = [], isLoading: spotsLoading } =
-    trpc.strategy.listSpots.useQuery({});
+    trpc.strategy.listSpots.useQuery({ stackDepth, spotGroup });
+  const { data: groupCountSpots = [] } = trpc.strategy.listSpots.useQuery({
+    stackDepth,
+  });
 
   const {
     data: trainerSpot,
@@ -103,10 +123,56 @@ export default function RangeTrainer() {
   });
 
   const accuracy = calcAccuracy(sessionStats.correct, sessionStats.total);
+  const filteredSpots = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return spots;
+
+    return spots.filter(spot => {
+      const searchable = [
+        spot.title,
+        spot.heroPosition,
+        spot.villainPosition ?? "",
+        SPOT_GROUP_LABELS[spot.spotGroup],
+        `${spot.stackDepth}bb`,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
+  }, [searchTerm, spots]);
+
+  const groupCounts = useMemo(
+    () =>
+      groupCountSpots.reduce<Partial<Record<SpotGroup, number>>>(
+        (counts, spot) => {
+          counts[spot.spotGroup] = (counts[spot.spotGroup] ?? 0) + 1;
+          return counts;
+        },
+        {}
+      ),
+    [groupCountSpots]
+  );
+
+  const selectedSpot = useMemo(
+    () => spots.find(spot => spot.id === selectedChartId),
+    [selectedChartId, spots]
+  );
 
   useEffect(() => {
     setSessionStats({ total: 0, correct: 0, streak: 0 });
   }, [selectedChartId]);
+
+  useEffect(() => {
+    if (selectedChartId !== undefined || spots.length === 0) return;
+    setSelectedChartId(spots[0].id);
+  }, [selectedChartId, spots]);
+
+  useEffect(() => {
+    if (selectedChartId === undefined || spots.length === 0) return;
+    if (spots.some(spot => spot.id === selectedChartId)) return;
+    setSelectedChartId(spots[0].id);
+  }, [selectedChartId, spots, stackDepth, spotGroup]);
 
   function handleAnswer(selectedAction: Action, isCorrect: boolean) {
     if (!trainerSpot) return;
@@ -128,151 +194,381 @@ export default function RangeTrainer() {
     void refetchTrainerSpot();
   }
 
+  function selectSpot(chartId: number) {
+    setSelectedChartId(chartId);
+  }
+
+  function selectRandomSpot() {
+    const pool = filteredSpots.length > 0 ? filteredSpots : spots;
+    if (pool.length === 0) return;
+    const selected = pool[Math.floor(Math.random() * pool.length)];
+    setSelectedChartId(selected.id);
+  }
+
   return (
-    <div className="flex min-h-screen flex-col gap-0 pb-20 md:flex-row md:pb-0">
-      {/* Left panel: chart selector + stats */}
-      <div className="flex max-h-[45vh] w-full flex-shrink-0 flex-col border-b border-border md:max-h-none md:w-80 md:border-b-0 md:border-r">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Target className="h-4 w-4 text-orange-500" />
-            Range Trainer
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Choose one chart and drill live hand decisions.
-          </p>
-        </div>
-
-        {/* Chart list */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {spotsLoading && (
-            <div className="space-y-2 p-2">
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          )}
-
-          {!spotsLoading && spots.length === 0 && (
-            <div className="p-4 text-center text-xs text-muted-foreground">
-              No charts available. Run the seed script to add ranges.
-            </div>
-          )}
-
-          {spots.map(spot => (
-            <button
-              key={spot.id}
-              className={`w-full rounded-md border px-3 py-2.5 text-left text-sm transition-colors ${
-                selectedChartId === spot.id
-                  ? "border-orange-500/40 bg-orange-500/15 text-orange-600"
-                  : "border-transparent hover:border-border hover:bg-muted text-foreground"
-              }`}
-              onClick={() => setSelectedChartId(spot.id)}
-            >
-              <div className="font-medium truncate">{spot.title}</div>
-              <div className="mt-1 flex items-center gap-1.5">
-                <Badge variant="outline" className="text-xs h-5 px-1.5">
-                  {spot.stackDepth}bb
-                </Badge>
-                <span className="truncate text-xs text-muted-foreground">
-                  {SPOT_GROUP_LABELS[spot.spotGroup]}
-                </span>
+    <div className="h-[calc(100dvh-4rem)] overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(255,111,0,0.08),transparent_32rem),linear-gradient(180deg,#fffaf4_0%,#ffffff_36%,#f8fafc_100%)]">
+      <div className="grid h-full grid-cols-1 md:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+        <aside className="flex min-h-0 flex-col border-b border-border/80 bg-white/90 backdrop-blur md:border-b-0 md:border-r">
+          <div className="space-y-4 border-b border-border/80 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="flex items-center gap-2 text-base font-bold text-foreground">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500 text-white shadow-sm">
+                    <Target className="h-4 w-4" />
+                  </span>
+                  Range Trainer
+                </h1>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Pick a spot, answer hands, and keep the drill moving.
+                </p>
               </div>
-            </button>
-          ))}
-        </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={selectRandomSpot}
+                disabled={spots.length === 0}
+              >
+                <Shuffle className="h-3.5 w-3.5" />
+                Random
+              </Button>
+            </div>
 
-        {/* Session stats */}
-        {selectedChartId && (
-          <div className="p-4 border-t border-border space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Local Session
+            <div className="space-y-3">
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Stack
+                </p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  <Button
+                    size="sm"
+                    variant={stackDepth === undefined ? "default" : "outline"}
+                    className="h-8 px-2 text-xs"
+                    onClick={() => setStackDepth(undefined)}
+                  >
+                    All
+                  </Button>
+                  {STACK_DEPTHS.map(depth => (
+                    <Button
+                      key={depth}
+                      size="sm"
+                      variant={stackDepth === depth ? "default" : "outline"}
+                      className="h-8 px-2 text-xs"
+                      onClick={() => setStackDepth(depth)}
+                    >
+                      {depth}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Spot Type
+                </p>
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  <Button
+                    size="sm"
+                    variant={spotGroup === undefined ? "default" : "outline"}
+                    className="h-8 shrink-0 px-3 text-xs"
+                    onClick={() => setSpotGroup(undefined)}
+                  >
+                    All
+                  </Button>
+                  {SPOT_GROUPS.map(group => (
+                    <Button
+                      key={group}
+                      size="sm"
+                      variant={spotGroup === group ? "default" : "outline"}
+                      className="h-8 shrink-0 gap-1.5 px-3 text-xs"
+                      onClick={() => setSpotGroup(group)}
+                    >
+                      {SPOT_GROUP_LABELS[group].replace(" (Open Raise)", "")}
+                      {(groupCounts[group] ?? 0) > 0 && (
+                        <span className="rounded-full bg-background/70 px-1.5 text-[10px] text-muted-foreground">
+                          {groupCounts[group]}
+                        </span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={event => setSearchTerm(event.target.value)}
+                  placeholder="Search BTN, BB, 20bb..."
+                  className="h-10 bg-white pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Drills
+              </p>
+              <Badge variant="secondary" className="h-5 text-[11px]">
+                {filteredSpots.length}
+              </Badge>
+            </div>
+
+            {spotsLoading && (
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                ))}
+              </div>
+            )}
+
+            {!spotsLoading && spots.length === 0 && (
+              <Card className="border-dashed">
+                <CardContent className="p-4 text-center text-sm text-muted-foreground">
+                  No charts available. Run the seed script to add ranges.
+                </CardContent>
+              </Card>
+            )}
+
+            {!spotsLoading && spots.length > 0 && filteredSpots.length === 0 && (
+              <Card className="border-dashed">
+                <CardContent className="p-4 text-center text-sm text-muted-foreground">
+                  No drills match this search. Clear the search or change the
+                  filters.
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="space-y-2">
+              {filteredSpots.map(spot => {
+                const active = selectedChartId === spot.id;
+
+                return (
+                  <button
+                    key={spot.id}
+                    className={`group w-full rounded-2xl border p-3 text-left shadow-sm transition ${
+                      active
+                        ? "border-orange-400 bg-orange-50 text-orange-950 shadow-orange-500/10"
+                        : "border-border bg-white hover:border-orange-200 hover:bg-orange-50/40"
+                    }`}
+                    onClick={() => selectSpot(spot.id)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {spot.title}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          {SPOT_GROUP_LABELS[spot.spotGroup]}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={active ? "default" : "outline"}
+                        className="h-6 shrink-0"
+                      >
+                        {spot.stackDepth}bb
+                      </Badge>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="rounded-full bg-background px-2 py-0.5">
+                        {spot.heroPosition}
+                        {spot.villainPosition ? ` vs ${spot.villainPosition}` : ""}
+                      </span>
+                      {active && (
+                        <span className="font-medium text-orange-600">
+                          Training now
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="border-t border-border/80 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                This Session
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   setSessionStats({ total: 0, correct: 0, streak: 0 });
                   void refetchTrainerSpot();
                 }}
+                disabled={!selectedChartId}
               >
-                <RotateCcw className="h-3 w-3 mr-1" />
+                <RotateCcw className="h-3.5 w-3.5" />
                 Reset
               </Button>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-md border bg-card px-2 py-2">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl border bg-slate-50 p-2 text-center">
                 <p className="text-lg font-bold text-foreground">
                   {sessionStats.total}
                 </p>
-                <p className="text-xs text-muted-foreground">Attempts</p>
+                <p className="text-[11px] text-muted-foreground">Hands</p>
               </div>
-              <div className="rounded-md border bg-card px-2 py-2">
-                <p className="text-lg font-bold text-orange-500">
+              <div className="rounded-xl border bg-orange-50 p-2 text-center">
+                <p className="text-lg font-bold text-orange-600">
                   {accuracy}%
                 </p>
-                <p className="text-xs text-muted-foreground">Accuracy</p>
+                <p className="text-[11px] text-muted-foreground">Accuracy</p>
               </div>
-              <div className="rounded-md border bg-card px-2 py-2">
-                <p className="text-lg font-bold text-green-500">
+              <div className="rounded-xl border bg-green-50 p-2 text-center">
+                <p className="text-lg font-bold text-green-600">
                   {sessionStats.streak}
                 </p>
-                <p className="text-xs text-muted-foreground">Streak</p>
+                <p className="text-[11px] text-muted-foreground">Streak</p>
               </div>
             </div>
             {!isAuthenticated && (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Log in to save trainer history. This session stays local.
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                Practice works now. Log in when you want saved history and weak
+                spot tracking.
               </p>
             )}
           </div>
-        )}
-      </div>
+        </aside>
 
-      {/* Main content: trainer card */}
-      <div className="flex-1 flex items-center justify-center p-4 md:p-6">
-        {!selectedChartId && (
-          <div className="text-center space-y-2">
-            <Target className="h-12 w-12 text-muted-foreground mx-auto opacity-30" />
-            <p className="text-sm text-muted-foreground">
-              Select a chart from the left to start drilling.
-            </p>
+        <main className="min-h-0 overflow-y-auto p-4 md:p-6 xl:p-8">
+          <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-5">
+            <Card className="overflow-hidden border-0 bg-zinc-950 text-white shadow-xl shadow-orange-950/10">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-300">
+                      Current Drill
+                    </p>
+                    <h2 className="truncate text-2xl font-bold">
+                      {trainerSpot?.chart.title ??
+                        selectedSpot?.title ??
+                        "Choose a range spot"}
+                    </h2>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-300">
+                      {(trainerSpot?.chart.stackDepth ??
+                        selectedSpot?.stackDepth) && (
+                        <Badge className="bg-orange-500 text-white">
+                          {trainerSpot?.chart.stackDepth ??
+                            selectedSpot?.stackDepth}
+                          bb
+                        </Badge>
+                      )}
+                      {(trainerSpot?.chart.spotGroup ??
+                        selectedSpot?.spotGroup) && (
+                        <Badge
+                          variant="outline"
+                          className="border-zinc-700 text-zinc-200"
+                        >
+                          {
+                            SPOT_GROUP_LABELS[
+                              trainerSpot?.chart.spotGroup ??
+                                selectedSpot!.spotGroup
+                            ]
+                          }
+                        </Badge>
+                      )}
+                      <span className="text-zinc-400">
+                        Answer with buttons or keyboard 1-4.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 sm:w-72">
+                    <div className="rounded-2xl bg-white/8 p-3 text-center">
+                      <CheckCircle2 className="mx-auto mb-1 h-4 w-4 text-green-400" />
+                      <p className="text-lg font-bold">{sessionStats.correct}</p>
+                      <p className="text-[11px] text-zinc-400">Correct</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/8 p-3 text-center">
+                      <Target className="mx-auto mb-1 h-4 w-4 text-orange-300" />
+                      <p className="text-lg font-bold">{accuracy}%</p>
+                      <p className="text-[11px] text-zinc-400">Accuracy</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/8 p-3 text-center">
+                      <Flame className="mx-auto mb-1 h-4 w-4 text-amber-300" />
+                      <p className="text-lg font-bold">{sessionStats.streak}</p>
+                      <p className="text-[11px] text-zinc-400">Streak</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex flex-1 items-center justify-center">
+              {!selectedChartId && !spotsLoading && (
+                <Card className="w-full max-w-lg border-dashed bg-white/90">
+                  <CardContent className="space-y-4 p-8 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+                      <Target className="h-7 w-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        Start with one focused drill
+                      </h3>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Pick a spot on the left or use Random to jump straight
+                        into practice.
+                      </p>
+                    </div>
+                    <Button
+                      className="bg-orange-500 text-white hover:bg-orange-600"
+                      onClick={selectRandomSpot}
+                      disabled={spots.length === 0}
+                    >
+                      Start random drill
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {selectedChartId &&
+                (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
+                  <Skeleton className="h-[440px] w-full max-w-xl rounded-3xl" />
+                )}
+
+              {trainerSpot && (
+                <TrainerCard
+                  key={`${trainerSpot.chartId}-${trainerSpot.handCode}`}
+                  chartId={trainerSpot.chartId}
+                  handCode={trainerSpot.handCode}
+                  spotLabel={trainerSpot.chart.title}
+                  spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
+                  stackDepth={trainerSpot.chart.stackDepth}
+                  heroPosition={trainerSpot.chart.heroPosition}
+                  villainPosition={trainerSpot.chart.villainPosition}
+                  correctAction={trainerSpot.correctAction}
+                  explanation={trainerSpot.correctNote}
+                  isPersisted={isAuthenticated}
+                  choices={trainerSpot.choices}
+                  onAnswer={handleAnswer}
+                  onSkip={handleNext}
+                  className="w-full max-w-xl"
+                />
+              )}
+
+              {selectedChartId && !trainerSpotLoading && !trainerSpot && (
+                <Card className="w-full max-w-lg border-dashed bg-white/90">
+                  <CardContent className="space-y-3 p-8 text-center">
+                    <Target className="mx-auto h-10 w-10 text-muted-foreground opacity-40" />
+                    <p className="text-sm text-muted-foreground">
+                      {trainerSpotError?.message ??
+                        "No trainable hands in this chart."}
+                    </p>
+                    <Button variant="outline" onClick={selectRandomSpot}>
+                      Try another drill
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
-        )}
-
-        {selectedChartId &&
-          (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
-            <Skeleton className="w-80 h-96" />
-          )}
-
-        {trainerSpot && (
-          <TrainerCard
-            key={`${trainerSpot.chartId}-${trainerSpot.handCode}`}
-            chartId={trainerSpot.chartId}
-            handCode={trainerSpot.handCode}
-            spotLabel={trainerSpot.chart.title}
-            spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
-            stackDepth={trainerSpot.chart.stackDepth}
-            heroPosition={trainerSpot.chart.heroPosition}
-            villainPosition={trainerSpot.chart.villainPosition}
-            correctAction={trainerSpot.correctAction}
-            explanation={trainerSpot.correctNote}
-            isPersisted={isAuthenticated}
-            choices={trainerSpot.choices}
-            onAnswer={handleAnswer}
-            onSkip={handleNext}
-            className="w-full max-w-md"
-          />
-        )}
-
-        {selectedChartId && !trainerSpotLoading && !trainerSpot && (
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              {trainerSpotError?.message ?? "No trainable hands in this chart."}
-            </p>
-          </div>
-        )}
+        </main>
       </div>
     </div>
   );
