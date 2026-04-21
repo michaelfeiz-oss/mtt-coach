@@ -21,7 +21,11 @@
  */
 
 import React from "react";
-import { STACK_DEPTHS, SPOT_GROUP_LABELS, SPOT_GROUPS } from "../../../../shared/strategy";
+import {
+  STACK_DEPTHS,
+  SPOT_GROUP_LABELS,
+  SPOT_GROUPS,
+} from "../../../../shared/strategy";
 import type { SpotGroup } from "../../../../shared/strategy";
 import { Button } from "@/components/ui/button";
 
@@ -40,12 +44,13 @@ export function SpotFilters({
   onGroupChange,
   className = "",
 }: SpotFiltersProps) {
-  // TODO: Implement with proper pill button styling
   return (
     <div className={`space-y-3 ${className}`}>
       {/* Stack depth filter */}
       <div>
-        <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Stack Depth</p>
+        <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">
+          Stack Depth
+        </p>
         <div className="flex flex-wrap gap-1.5">
           <Button
             size="sm"
@@ -55,7 +60,7 @@ export function SpotFilters({
           >
             All
           </Button>
-          {STACK_DEPTHS.map((d) => (
+          {STACK_DEPTHS.map(d => (
             <Button
               key={d}
               size="sm"
@@ -71,7 +76,9 @@ export function SpotFilters({
 
       {/* Spot group filter */}
       <div>
-        <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Spot Type</p>
+        <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">
+          Spot Type
+        </p>
         <div className="flex flex-wrap gap-1.5">
           <Button
             size="sm"
@@ -81,7 +88,7 @@ export function SpotFilters({
           >
             All
           </Button>
-          {SPOT_GROUPS.map((g) => (
+          {SPOT_GROUPS.map(g => (
             <Button
               key={g}
               size="sm"

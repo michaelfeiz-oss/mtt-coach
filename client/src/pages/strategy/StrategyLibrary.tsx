@@ -52,29 +52,58 @@ import { SpotFilters } from "@/components/strategy/SpotFilters";
 import { RangeMatrix } from "@/components/strategy/RangeMatrix";
 import { ActionLegend } from "@/components/strategy/ActionLegend";
 import { buildActionMap } from "@/components/strategy/utils";
-import type { SpotGroup } from "../../../../shared/strategy";
+import type { Action, SpotGroup } from "../../../../shared/strategy";
+
+function parseChartNotes(notesJson?: string | null): string[] {
+  if (!notesJson) return [];
+
+  try {
+    const parsed = JSON.parse(notesJson);
+    return Array.isArray(parsed)
+      ? parsed.filter((note): note is string => typeof note === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function StrategyLibrary() {
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
-  const [selectedChartId, setSelectedChartId] = useState<number | undefined>(undefined);
+  const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
+    undefined
+  );
 
-  const { data: spots = [], isLoading: spotsLoading } = trpc.strategy.listSpots.useQuery({
+  const {
+    data: spots = [],
+    isLoading: spotsLoading,
+    error: spotsError,
+  } = trpc.strategy.listSpots.useQuery({
     stackDepth,
     spotGroup,
   });
 
-  const { data: chart, isLoading: chartLoading } = trpc.strategy.getChart.useQuery(
+  const {
+    data: chart,
+    isLoading: chartLoading,
+    error: chartError,
+  } = trpc.strategy.getChart.useQuery(
     { chartId: selectedChartId! },
     { enabled: selectedChartId !== undefined }
   );
 
   const actionMap = chart ? buildActionMap(chart.actions) : {};
+  const chartNotes = parseChartNotes(chart?.notesJson);
+  const visibleActions = chart
+    ? (Array.from(
+        new Set(chart.actions.map(action => action.primaryAction))
+      ) as Action[])
+    : undefined;
 
   return (
-    <div className="flex h-full gap-0">
+    <div className="flex h-full flex-col gap-0 pb-20 md:flex-row md:pb-0">
       {/* Left sidebar */}
-      <div className="w-60 flex-shrink-0 border-r border-border flex flex-col">
+      <div className="flex max-h-[48vh] w-full flex-shrink-0 flex-col border-b border-border md:max-h-none md:w-60 md:border-b-0 md:border-r">
         <div className="p-4 border-b border-border">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-orange-500" />
@@ -94,17 +123,20 @@ export default function StrategyLibrary() {
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {spotsLoading && (
             <div className="space-y-2 p-2">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
             </div>
           )}
 
           {!spotsLoading && spots.length === 0 && (
             <div className="p-4 text-center text-xs text-muted-foreground">
-              No charts available. Run the seed script to add ranges.
+              {spotsError?.message ??
+                "No charts available. Run the seed script to add ranges."}
             </div>
           )}
 
-          {spots.map((spot) => (
+          {spots.map(spot => (
             <button
               key={spot.id}
               className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
@@ -119,7 +151,9 @@ export default function StrategyLibrary() {
                 <Badge variant="outline" className="text-xs h-4 px-1">
                   {spot.stackDepth}bb
                 </Badge>
-                <span className="text-xs text-muted-foreground truncate">{spot.heroPosition}</span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {spot.heroPosition}
+                </span>
               </div>
             </button>
           ))}
@@ -127,12 +161,14 @@ export default function StrategyLibrary() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
         {!selectedChartId && (
           <div className="h-full flex items-center justify-center text-center">
             <div className="space-y-2">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto opacity-30" />
-              <p className="text-sm text-muted-foreground">Select a spot from the left to view its range chart.</p>
+              <p className="text-sm text-muted-foreground">
+                Select a spot from the left to view its range chart.
+              </p>
             </div>
           </div>
         )}
@@ -144,18 +180,33 @@ export default function StrategyLibrary() {
           </div>
         )}
 
+        {selectedChartId && chartError && (
+          <div className="h-full flex items-center justify-center text-center">
+            <p className="text-sm text-muted-foreground">
+              {chartError.message}
+            </p>
+          </div>
+        )}
+
         {chart && (
           <div className="space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-xl font-bold text-foreground">{chart.title}</h1>
+                <h1 className="text-xl font-bold text-foreground">
+                  {chart.title}
+                </h1>
                 {chart.sourceLabel && (
-                  <p className="text-xs text-muted-foreground mt-0.5">Source: {chart.sourceLabel}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Source: {chart.sourceLabel}
+                  </p>
                 )}
               </div>
               <Link href={`/strategy/trainer?chartId=${chart.id}`}>
-                <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white gap-1">
+                <Button
+                  size="sm"
+                  className="bg-orange-500 hover:bg-orange-600 text-white gap-1"
+                >
                   <Play className="h-3 w-3" />
                   Train this spot
                 </Button>
@@ -163,12 +214,15 @@ export default function StrategyLibrary() {
             </div>
 
             {/* Notes */}
-            {chart.notesJson && (
+            {chartNotes.length > 0 && (
               <Card className="bg-muted/30">
                 <CardContent className="pt-3 pb-3">
                   <ul className="space-y-1">
-                    {(JSON.parse(chart.notesJson) as string[]).map((note, i) => (
-                      <li key={i} className="text-xs text-muted-foreground flex gap-2">
+                    {chartNotes.map((note, i) => (
+                      <li
+                        key={i}
+                        className="text-xs text-muted-foreground flex gap-2"
+                      >
                         <span className="text-orange-500 flex-shrink-0">•</span>
                         {note}
                       </li>
@@ -181,7 +235,7 @@ export default function StrategyLibrary() {
             {/* Range matrix */}
             <div className="space-y-3">
               <RangeMatrix actions={actionMap} size="md" />
-              <ActionLegend />
+              <ActionLegend actions={visibleActions} />
             </div>
           </div>
         )}

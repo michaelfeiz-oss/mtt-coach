@@ -43,7 +43,7 @@
  *   - Smooth transitions between hands
  */
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearch } from "wouter";
 import { Target, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +52,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { TrainerCard } from "@/components/strategy/TrainerCard";
-import { pickRandomHand, calcAccuracy } from "@/components/strategy/utils";
+import { calcAccuracy } from "@/components/strategy/utils";
 import type { Action } from "../../../../shared/strategy";
 
 interface SessionStats {
@@ -64,55 +64,49 @@ interface SessionStats {
 export default function RangeTrainer() {
   const search = useSearch();
   const params = new URLSearchParams(search);
-  const initialChartId = params.get("chartId") ? Number(params.get("chartId")) : undefined;
+  const initialChartId = params.get("chartId")
+    ? Number(params.get("chartId"))
+    : undefined;
 
-  const [selectedChartId, setSelectedChartId] = useState<number | undefined>(initialChartId);
-  const [currentHand, setCurrentHand] = useState<{ handCode: string; correctAction: Action } | null>(null);
-  const [sessionStats, setSessionStats] = useState<SessionStats>({ total: 0, correct: 0, streak: 0 });
+  const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
+    initialChartId
+  );
+  const [sessionStats, setSessionStats] = useState<SessionStats>({
+    total: 0,
+    correct: 0,
+    streak: 0,
+  });
 
-  const { data: spots = [], isLoading: spotsLoading } = trpc.strategy.listSpots.useQuery({});
+  const { data: spots = [], isLoading: spotsLoading } =
+    trpc.strategy.listSpots.useQuery({});
 
-  const { data: chart, isLoading: chartLoading } = trpc.strategy.getChart.useQuery(
+  const {
+    data: trainerSpot,
+    isLoading: trainerSpotLoading,
+    isFetching: trainerSpotFetching,
+    error: trainerSpotError,
+    refetch: refetchTrainerSpot,
+  } = trpc.strategy.getTrainerSpot.useQuery(
     { chartId: selectedChartId! },
     { enabled: selectedChartId !== undefined }
   );
 
-  const logAttempt = trpc.strategy.logAttempt.useMutation();
+  const submitAttempt = trpc.strategy.submitTrainerAttempt.useMutation();
 
-  // Pick a new random hand from the chart
-  const pickNextHand = useCallback(() => {
-    if (!chart?.actions) return;
-    const hand = pickRandomHand(chart.actions);
-    if (hand) {
-      setCurrentHand({
-        handCode: hand.handCode,
-        correctAction: hand.primaryAction as Action,
-      });
-    }
-  }, [chart]);
-
-  // When chart loads, pick first hand
   useEffect(() => {
-    if (chart) {
-      setSessionStats({ total: 0, correct: 0, streak: 0 });
-      pickNextHand();
-    }
-  }, [chart?.id]);
+    setSessionStats({ total: 0, correct: 0, streak: 0 });
+  }, [selectedChartId]);
 
   function handleAnswer(selectedAction: Action, isCorrect: boolean) {
-    if (!chart || !currentHand) return;
+    if (!trainerSpot) return;
 
-    // Log to server
-    logAttempt.mutate({
-      chartId: chart.id,
-      handCode: currentHand.handCode,
+    submitAttempt.mutate({
+      chartId: trainerSpot.chartId,
+      handCode: trainerSpot.handCode,
       selectedAction,
-      correctAction: currentHand.correctAction,
-      isCorrect,
     });
 
-    // Update session stats
-    setSessionStats((prev) => ({
+    setSessionStats(prev => ({
       total: prev.total + 1,
       correct: prev.correct + (isCorrect ? 1 : 0),
       streak: isCorrect ? prev.streak + 1 : 0,
@@ -120,7 +114,7 @@ export default function RangeTrainer() {
   }
 
   function handleNext() {
-    pickNextHand();
+    void refetchTrainerSpot();
   }
 
   return (
@@ -138,7 +132,9 @@ export default function RangeTrainer() {
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {spotsLoading && (
             <div className="space-y-2 p-2">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
             </div>
           )}
 
@@ -148,7 +144,7 @@ export default function RangeTrainer() {
             </div>
           )}
 
-          {spots.map((spot) => (
+          {spots.map(spot => (
             <button
               key={spot.id}
               className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
@@ -177,7 +173,7 @@ export default function RangeTrainer() {
                 className="h-6 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   setSessionStats({ total: 0, correct: 0, streak: 0 });
-                  pickNextHand();
+                  void refetchTrainerSpot();
                 }}
               >
                 <RotateCcw className="h-3 w-3 mr-1" />
@@ -186,7 +182,9 @@ export default function RangeTrainer() {
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-lg font-bold text-foreground">{sessionStats.total}</p>
+                <p className="text-lg font-bold text-foreground">
+                  {sessionStats.total}
+                </p>
                 <p className="text-xs text-muted-foreground">Hands</p>
               </div>
               <div>
@@ -196,7 +194,9 @@ export default function RangeTrainer() {
                 <p className="text-xs text-muted-foreground">Accuracy</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-green-500">{sessionStats.streak}</p>
+                <p className="text-lg font-bold text-green-500">
+                  {sessionStats.streak}
+                </p>
                 <p className="text-xs text-muted-foreground">Streak</p>
               </div>
             </div>
@@ -209,29 +209,36 @@ export default function RangeTrainer() {
         {!selectedChartId && (
           <div className="text-center space-y-2">
             <Target className="h-12 w-12 text-muted-foreground mx-auto opacity-30" />
-            <p className="text-sm text-muted-foreground">Select a chart from the left to start drilling.</p>
+            <p className="text-sm text-muted-foreground">
+              Select a chart from the left to start drilling.
+            </p>
           </div>
         )}
 
-        {selectedChartId && chartLoading && (
-          <Skeleton className="w-80 h-96" />
-        )}
+        {selectedChartId &&
+          (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
+            <Skeleton className="w-80 h-96" />
+          )}
 
-        {chart && currentHand && (
+        {trainerSpot && (
           <TrainerCard
-            chartId={chart.id}
-            handCode={currentHand.handCode}
-            spotLabel={chart.title}
-            correctAction={currentHand.correctAction}
+            key={`${trainerSpot.chartId}-${trainerSpot.handCode}`}
+            chartId={trainerSpot.chartId}
+            handCode={trainerSpot.handCode}
+            spotLabel={trainerSpot.chart.title}
+            correctAction={trainerSpot.correctAction}
+            choices={trainerSpot.choices}
             onAnswer={handleAnswer}
             onSkip={handleNext}
             className="w-full max-w-sm"
           />
         )}
 
-        {chart && !currentHand && (
+        {selectedChartId && !trainerSpotLoading && !trainerSpot && (
           <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">No trainable hands in this chart.</p>
+            <p className="text-sm text-muted-foreground">
+              {trainerSpotError?.message ?? "No trainable hands in this chart."}
+            </p>
           </div>
         )}
       </div>

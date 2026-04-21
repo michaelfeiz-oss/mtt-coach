@@ -1,39 +1,27 @@
-/**
- * server/strategy/router.ts
- * ─────────────────────────────────────────────────────────────────────────────
- * tRPC router for the MTT Strategy Module.
- * Wired into the main router in server/routers.ts as `strategy`.
- *
- * CODEX TASK:
- *   - All procedure stubs are defined with correct input/output types.
- *   - Implement the body of each procedure by calling service functions.
- *   - Use `protectedProcedure` for all endpoints (auth required).
- *   - Throw TRPCError({ code: "NOT_FOUND" }) when a resource is missing.
- *
- * Usage in client:
- *   trpc.strategy.listSpots.useQuery({ stackDepth: 20 })
- *   trpc.strategy.getChart.useQuery({ chartId: 1 })
- *   trpc.strategy.logAttempt.useMutation()
- *   trpc.strategy.getStats.useQuery()
- */
-
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../_core/trpc";
+import { z } from "zod";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import {
-  listAvailableSpots,
+  getChartBySpotSelector,
   getChartWithActions,
   getChartsBySpot,
-  logTrainerAttempt,
-  getTrainerStats,
   getRecentAttempts,
+  getTrainerSpot,
+  getTrainerStats,
+  listAvailableSpots,
+  submitTrainerAttempt,
 } from "./service";
-import { SPOT_GROUPS, STACK_DEPTHS, ACTIONS } from "../../shared/strategy";
+import { ACTIONS, SPOT_GROUPS, STACK_DEPTHS } from "../../shared/strategy";
 
-// ─── Input schemas ────────────────────────────────────────────────────────────
+const StackDepthInput = z
+  .number()
+  .int()
+  .refine(depth => (STACK_DEPTHS as readonly number[]).includes(depth), {
+    message: "Unsupported stack depth",
+  });
 
 const ListSpotsInput = z.object({
-  stackDepth: z.number().optional(),
+  stackDepth: StackDepthInput.optional(),
   spotGroup: z.enum(SPOT_GROUPS).optional(),
 });
 
@@ -42,15 +30,24 @@ const GetChartInput = z.object({
 });
 
 const GetChartBySpotInput = z.object({
-  stackDepth: z.number().int(),
+  stackDepth: StackDepthInput,
   spotGroup: z.enum(SPOT_GROUPS),
-  spotKey: z.string(),
+  spotKey: z.string().min(1),
 });
 
-const LogAttemptInput = z.object({
+const GetTrainerSpotInput = z.object({
+  chartId: z.number().int().positive().optional(),
+  stackDepth: StackDepthInput.optional(),
+  spotGroup: z.enum(SPOT_GROUPS).optional(),
+});
+
+const SubmitAttemptInput = z.object({
   chartId: z.number().int().positive(),
   handCode: z.string().min(2).max(4),
   selectedAction: z.enum(ACTIONS),
+});
+
+const LogAttemptInput = SubmitAttemptInput.extend({
   correctAction: z.enum(ACTIONS),
   isCorrect: z.boolean(),
 });
@@ -59,92 +56,82 @@ const GetRecentAttemptsInput = z.object({
   limit: z.number().int().min(1).max(200).default(50),
 });
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+function notFound(message: string): never {
+  throw new TRPCError({ code: "NOT_FOUND", message });
+}
 
 export const strategyRouter = router({
-  /**
-   * List all available spots (distinct stack + group + key combos).
-   * Optionally filter by stackDepth and/or spotGroup.
-   *
-   * CODEX TASK: Call listAvailableSpots(), then filter in-memory if inputs provided.
-   */
-  listSpots: protectedProcedure
-    .input(ListSpotsInput)
-    .query(async ({ input }) => {
-      const spots = await listAvailableSpots();
-      let filtered = spots;
-      if (input.stackDepth !== undefined) {
-        filtered = filtered.filter((s) => s.stackDepth === input.stackDepth);
-      }
-      if (input.spotGroup !== undefined) {
-        filtered = filtered.filter((s) => s.spotGroup === input.spotGroup);
-      }
-      return filtered;
-    }),
+  // Public read-only queries — no login required
+  listSpots: publicProcedure.input(ListSpotsInput).query(async ({ input }) => {
+    const result = await listAvailableSpots(input);
+    return result;
+  }),
 
-  /**
-   * Get a single chart with all hand actions by chartId.
-   *
-   * CODEX TASK: Call getChartWithActions(chartId). Throw NOT_FOUND if null.
-   */
-  getChart: protectedProcedure
-    .input(GetChartInput)
-    .query(async ({ input }) => {
-      const chart = await getChartWithActions(input.chartId);
-      if (!chart) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Chart not found" });
-      }
-      return chart;
-    }),
+  getChart: publicProcedure.input(GetChartInput).query(async ({ input }) => {
+    const chart = await getChartWithActions(input.chartId);
+    if (!chart) notFound("Chart not found");
+    return chart;
+  }),
 
-  /**
-   * Get charts for a specific spot (may return multiple charts for same spot).
-   *
-   * CODEX TASK: Call getChartsBySpot(stackDepth, spotGroup, spotKey).
-   */
-  getChartBySpot: protectedProcedure
+  getChartsBySpot: publicProcedure
     .input(GetChartBySpotInput)
-    .query(async ({ input }) => {
+    .query(({ input }) => {
       return getChartsBySpot(input.stackDepth, input.spotGroup, input.spotKey);
     }),
 
-  /**
-   * Log a trainer attempt for the current user.
-   *
-   * CODEX TASK: Call logTrainerAttempt({ userId: ctx.user.id, ...input }).
-   */
-  logAttempt: protectedProcedure
+  getChartBySpot: publicProcedure
+    .input(GetChartBySpotInput)
+    .query(async ({ input }) => {
+      const chart = await getChartBySpotSelector(
+        input.stackDepth,
+        input.spotGroup,
+        input.spotKey
+      );
+
+      if (!chart) notFound("Chart not found for spot");
+      return chart;
+    }),
+
+  getTrainerSpot: publicProcedure
+    .input(GetTrainerSpotInput)
+    .query(async ({ input }) => {
+      const spot = await getTrainerSpot(input);
+      if (!spot) notFound("No trainable hands found for these filters");
+      return spot;
+    }),
+
+  // Trainer write operations — work without login; attempts are only persisted when authenticated
+  submitTrainerAttempt: publicProcedure
+    .input(SubmitAttemptInput)
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user?.id ?? null;
+      const result = await submitTrainerAttempt(userId, input);
+      if (!result) notFound("Trainer hand not found");
+      return result;
+    }),
+
+  logAttempt: publicProcedure
     .input(LogAttemptInput)
     .mutation(async ({ ctx, input }) => {
-      await logTrainerAttempt({
-        userId: ctx.user.id,
+      const userId = ctx.user?.id ?? null;
+      const result = await submitTrainerAttempt(userId, {
         chartId: input.chartId,
         handCode: input.handCode,
         selectedAction: input.selectedAction,
-        correctAction: input.correctAction,
-        isCorrect: input.isCorrect,
       });
-      return { success: true };
+
+      if (!result) notFound("Trainer hand not found");
+      return result;
     }),
 
-  /**
-   * Get trainer stats for the current user.
-   *
-   * CODEX TASK: Call getTrainerStats(ctx.user.id).
-   */
-  getStats: protectedProcedure
-    .query(async ({ ctx }) => {
-      return getTrainerStats(ctx.user.id);
-    }),
+  // Stats and history — require login (user-specific data)
+  getStats: protectedProcedure.query(({ ctx }) => {
+    return getTrainerStats(ctx.user.id);
+  }),
 
-  /**
-   * Get recent trainer attempts for the current user.
-   *
-   * CODEX TASK: Call getRecentAttempts(ctx.user.id, input.limit).
-   */
   getRecentAttempts: protectedProcedure
     .input(GetRecentAttemptsInput)
-    .query(async ({ ctx, input }) => {
+    .query(({ ctx, input }) => {
       return getRecentAttempts(ctx.user.id, input.limit);
     }),
 });
