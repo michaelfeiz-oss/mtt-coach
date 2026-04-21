@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap, Clock, Edit2 } from "lucide-react";
+import { BookOpen, Hand, TrendingUp, Trophy, Plus, FileText, Zap, Clock, Edit2, Layers, Target } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PROGRAM_WEEKS } from "@/lib/curriculum";
 import { useState, useEffect } from "react";
@@ -113,6 +113,41 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* STRATEGY SHORTCUTS — prominent entry point below Today's Training */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Preflop Study</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <Card
+              className="cursor-pointer border-orange-200 bg-gradient-to-br from-orange-50 to-transparent hover:border-orange-400 transition-colors group"
+              onClick={() => setLocation("/strategy/library")}
+            >
+              <CardContent className="pt-4 pb-3 flex items-center gap-3">
+                <div className="rounded-lg bg-orange-100 p-2 group-hover:bg-orange-200 transition-colors">
+                  <Layers className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold leading-tight">Hand Ranges</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">Preflop charts by stack &amp; spot</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card
+              className="cursor-pointer border-blue-200 bg-gradient-to-br from-blue-50 to-transparent hover:border-blue-400 transition-colors group"
+              onClick={() => setLocation("/strategy/trainer")}
+            >
+              <CardContent className="pt-4 pb-3 flex items-center gap-3">
+                <div className="rounded-lg bg-blue-100 p-2 group-hover:bg-blue-200 transition-colors">
+                  <Target className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold leading-tight">Range Trainer</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">Drill hands with flashcards</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* QUICK ACTIONS - 3 Buttons */}
         <div className="space-y-2">

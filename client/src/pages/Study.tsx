@@ -342,7 +342,7 @@ export default function Study() {
       <div className="container py-6 space-y-4">
         <Card className="border-orange-500/30 bg-orange-500/5">
           <CardHeader>
-            <CardTitle className="text-base">Strategy</CardTitle>
+            <CardTitle className="text-base">Preflop Study</CardTitle>
             <CardDescription>
               Ranges and drills for preflop study
             </CardDescription>
@@ -351,7 +351,7 @@ export default function Study() {
             <Link href="/strategy/library">
               <Button variant="outline" className="w-full justify-start gap-2">
                 <BookOpen className="h-4 w-4 text-orange-500" />
-                Strategy Library
+                Hand Ranges
               </Button>
             </Link>
             <Link href="/strategy/trainer">
