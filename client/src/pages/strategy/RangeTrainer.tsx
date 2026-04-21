@@ -247,7 +247,7 @@ export default function RangeTrainer() {
   }
 
   return (
-    <div className="h-[calc(100dvh-4rem)] overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(255,111,0,0.08),transparent_32rem),linear-gradient(180deg,#fffaf4_0%,#ffffff_36%,#f8fafc_100%)]">
+    <div className="h-[calc(100dvh-4rem)] bg-[radial-gradient(circle_at_top_left,rgba(255,111,0,0.08),transparent_32rem),linear-gradient(180deg,#fffaf4_0%,#ffffff_36%,#f8fafc_100%)]">
       <div className="grid h-full grid-cols-1 md:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="flex min-h-0 flex-col border-b border-border/80 bg-white/90 backdrop-blur md:border-b-0 md:border-r">
           <div className="space-y-4 border-b border-border/80 p-4">
@@ -478,7 +478,7 @@ export default function RangeTrainer() {
         </aside>
 
         <main className="min-h-0 overflow-y-auto p-4 md:p-6 xl:p-8">
-          <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-5">
+          <div className="mx-auto flex max-w-4xl flex-col gap-5 pb-8">
             <Card className="overflow-hidden border-0 bg-zinc-950 text-white shadow-xl shadow-orange-950/10">
               <CardContent className="p-5 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -541,7 +541,7 @@ export default function RangeTrainer() {
               </CardContent>
             </Card>
 
-            <div className="flex flex-1 items-start justify-center">
+            <div className="flex items-start justify-center">
               {!selectedChartId && !spotsLoading && (
                 <Card className="w-full max-w-lg border-dashed bg-white/90">
                   <CardContent className="space-y-4 p-8 text-center">
