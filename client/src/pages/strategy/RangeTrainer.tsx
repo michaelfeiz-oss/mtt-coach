@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "wouter";
 import {
   CheckCircle2,
@@ -145,6 +145,18 @@ function filterSummary(
   return "Rotating across all eligible stacks and families.";
 }
 
+function scrollElementIntoComfortView(element: HTMLElement | null) {
+  if (!element) return;
+
+  const rect = element.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const isComfortablyVisible = rect.top >= 72 && rect.top <= viewportHeight * 0.45;
+
+  if (isComfortablyVisible) return;
+
+  element.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export default function RangeTrainer() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
@@ -180,6 +192,8 @@ export default function RangeTrainer() {
     null
   );
   const [questionVersion, setQuestionVersion] = useState(0);
+  const questionCardRef = useRef<HTMLDivElement | null>(null);
+  const resultRevealRef = useRef<HTMLDivElement | null>(null);
 
   const { data: spots = [], isLoading: spotsLoading } =
     trpc.strategy.listSpots.useQuery({ stackDepth, spotGroup });
@@ -277,6 +291,16 @@ export default function RangeTrainer() {
   const modeLabel = formatModeLabel(mode, activeSpot, stackDepth, spotGroup);
   const modeHelper = filterSummary(mode, stackDepth, spotGroup);
 
+  useEffect(() => {
+    if (!answerReveal) return;
+
+    const timeout = window.setTimeout(() => {
+      scrollElementIntoComfortView(resultRevealRef.current);
+    }, 80);
+
+    return () => window.clearTimeout(timeout);
+  }, [answerReveal]);
+
   function resetSessionState() {
     setSessionStats({ total: 0, correct: 0, streak: 0 });
     setRecentChartIds([]);
@@ -370,6 +394,9 @@ export default function RangeTrainer() {
     rememberQuestionForRepeatGuard();
     setAnswerReveal(null);
     setQuestionVersion(version => version + 1);
+    window.setTimeout(() => {
+      scrollElementIntoComfortView(questionCardRef.current);
+    }, 80);
   }
 
   function handleShuffle() {
@@ -815,39 +842,43 @@ export default function RangeTrainer() {
 
               {trainerSpot && (
                 <div className="w-full max-w-3xl space-y-4">
-                  <TrainerCard
-                    key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
-                    chartId={trainerSpot.chartId}
-                    handCode={trainerSpot.handCode}
-                    spotLabel={trainerSpot.chart.title}
-                    spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
-                    stackDepth={trainerSpot.chart.stackDepth}
-                    heroPosition={trainerSpot.chart.heroPosition}
-                    villainPosition={trainerSpot.chart.villainPosition}
-                    correctAction={trainerSpot.correctAction}
-                    explanation={trainerSpot.correctNote}
-                    isPersisted={isAuthenticated}
-                    choices={trainerSpot.choices}
-                    showInlineResult={false}
-                    onAnswer={handleAnswer}
-                    onSkip={handleNext}
-                    className="mx-auto w-full max-w-xl"
-                  />
+                  <div ref={questionCardRef}>
+                    <TrainerCard
+                      key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
+                      chartId={trainerSpot.chartId}
+                      handCode={trainerSpot.handCode}
+                      spotLabel={trainerSpot.chart.title}
+                      spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
+                      stackDepth={trainerSpot.chart.stackDepth}
+                      heroPosition={trainerSpot.chart.heroPosition}
+                      villainPosition={trainerSpot.chart.villainPosition}
+                      correctAction={trainerSpot.correctAction}
+                      explanation={trainerSpot.correctNote}
+                      isPersisted={isAuthenticated}
+                      choices={trainerSpot.choices}
+                      showInlineResult={false}
+                      onAnswer={handleAnswer}
+                      onSkip={handleNext}
+                      className="mx-auto w-full max-w-xl"
+                    />
+                  </div>
 
                   {answerReveal && (
-                    <TrainerResultReveal
-                      chart={revealChart}
-                      isLoadingChart={
-                        revealChartLoading || revealChartFetching
-                      }
-                      chartId={answerReveal.chartId}
-                      handCode={answerReveal.handCode}
-                      selectedAction={answerReveal.selectedAction}
-                      correctAction={answerReveal.correctAction}
-                      isCorrect={answerReveal.isCorrect}
-                      explanation={answerReveal.explanation}
-                      onNext={handleNext}
-                    />
+                    <div ref={resultRevealRef} className="scroll-mt-4 md:scroll-mt-6">
+                      <TrainerResultReveal
+                        chart={revealChart}
+                        isLoadingChart={
+                          revealChartLoading || revealChartFetching
+                        }
+                        chartId={answerReveal.chartId}
+                        handCode={answerReveal.handCode}
+                        selectedAction={answerReveal.selectedAction}
+                        correctAction={answerReveal.correctAction}
+                        isCorrect={answerReveal.isCorrect}
+                        explanation={answerReveal.explanation}
+                        onNext={handleNext}
+                      />
+                    </div>
                   )}
                 </div>
               )}

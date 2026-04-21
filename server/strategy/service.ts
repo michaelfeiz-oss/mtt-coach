@@ -79,6 +79,10 @@ const VALID_HANDS = new Set<string>(ALL_HANDS);
 const RECENT_CHART_GUARD_LIMIT = 8;
 const RECENT_HAND_GUARD_LIMIT = 20;
 const FOLD_SAMPLE_TARGET = 0.32;
+const MARGINAL_FOLD_DISTANCE = 2;
+const RANK_INDEX: Map<string, number> = new Map(
+  RANKS.map((rank, index) => [rank, index])
+);
 
 type JsonObject = Record<string, unknown>;
 
@@ -99,6 +103,11 @@ interface HandStatsAccumulator {
 interface TrainerSelectionRow {
   chart: RangeChart;
   action: RangeChartAction;
+}
+
+interface HandCoordinate {
+  row: number;
+  col: number;
 }
 
 async function requireDb() {
@@ -317,6 +326,62 @@ function groupRowsByAction(rows: RangeChartAction[]) {
   return byAction;
 }
 
+function getHandCoordinate(handCode: string): HandCoordinate | null {
+  if (!VALID_HANDS.has(handCode)) return null;
+
+  const firstRank = handCode[0];
+  const secondRank = handCode[1];
+  const firstIndex = RANK_INDEX.get(firstRank);
+  const secondIndex = RANK_INDEX.get(secondRank);
+
+  if (firstIndex === undefined || secondIndex === undefined) return null;
+  if (handCode.length === 2) return { row: firstIndex, col: firstIndex };
+
+  const suffix = handCode[2];
+  if (suffix === "s") return { row: firstIndex, col: secondIndex };
+  if (suffix === "o") return { row: secondIndex, col: firstIndex };
+
+  return null;
+}
+
+function handDistance(a: HandCoordinate, b: HandCoordinate): number {
+  return Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
+}
+
+function getMarginalFoldActions(actions: RangeChartAction[]): RangeChartAction[] {
+  const continueCoordinates = actions
+    .filter(action => action.primaryAction !== "FOLD")
+    .map(action => getHandCoordinate(action.handCode))
+    .filter((coordinate): coordinate is HandCoordinate => coordinate !== null);
+
+  if (continueCoordinates.length === 0) return [];
+
+  return actions.filter(action => {
+    if (action.primaryAction !== "FOLD") return false;
+
+    const foldCoordinate = getHandCoordinate(action.handCode);
+    if (!foldCoordinate) return false;
+
+    return continueCoordinates.some(
+      continueCoordinate =>
+        handDistance(foldCoordinate, continueCoordinate) <=
+        MARGINAL_FOLD_DISTANCE
+    );
+  });
+}
+
+function buildTrainerActionPool(actions: RangeChartAction[]): RangeChartAction[] {
+  const continueActions = actions.filter(action => action.primaryAction !== "FOLD");
+  const marginalFolds = getMarginalFoldActions(actions);
+
+  if (continueActions.length === 0) return marginalFolds;
+  if (marginalFolds.length === 0) return continueActions;
+
+  return [...continueActions, ...marginalFolds].sort((a, b) =>
+    compareHandCode(a.handCode, b.handCode)
+  );
+}
+
 function pickActionBucket(byAction: Map<Action, RangeChartAction[]>): Action {
   const foldRows = byAction.get("FOLD") ?? [];
   const continueActions = ACTIONS.filter(
@@ -348,14 +413,17 @@ function pickHandForTrainer(
 
   if (chartActions.length === 0) return null;
 
+  const trainerActionPool = buildTrainerActionPool(chartActions);
+  if (trainerActionPool.length === 0) return null;
+
   const recentHands = new Set(
     (filters.recentHandKeys ?? []).slice(0, RECENT_HAND_GUARD_LIMIT)
   );
-  const repeatSafeActions = chartActions.filter(
+  const repeatSafeActions = trainerActionPool.filter(
     action => !recentHands.has(handHistoryKey(chart.id, action.handCode))
   );
   const actionPool =
-    repeatSafeActions.length > 0 ? repeatSafeActions : chartActions;
+    repeatSafeActions.length > 0 ? repeatSafeActions : trainerActionPool;
   const byAction = groupRowsByAction(actionPool);
   const selectedAction = pickActionBucket(byAction);
   const selectedActionRows = byAction.get(selectedAction) ?? actionPool;
