@@ -247,14 +247,14 @@ export default function RangeTrainer() {
   }
 
   return (
-    <div className="h-[calc(100dvh-4rem)] bg-[radial-gradient(circle_at_top_left,rgba(255,111,0,0.08),transparent_32rem),linear-gradient(180deg,#fffaf4_0%,#ffffff_36%,#f8fafc_100%)]">
-      <div className="grid h-full grid-cols-1 md:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col border-b border-border/80 bg-white/90 backdrop-blur md:border-b-0 md:border-r">
-          <div className="space-y-4 border-b border-border/80 p-4">
+    <div className="min-h-[calc(100dvh-4rem)] overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.12),transparent_28rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#f1f5f9_100%)] pb-24 md:h-[calc(100dvh-4rem)] md:overflow-hidden md:pb-0">
+      <div className="grid min-h-full grid-cols-1 md:h-full md:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+        <aside className="flex flex-col border-b border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5 backdrop-blur md:min-h-0 md:border-b-0 md:border-r">
+          <div className="space-y-4 border-b border-slate-200/80 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1 className="flex items-center gap-2 text-base font-bold text-foreground">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500 text-white shadow-sm">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-zinc-950 text-orange-300 shadow-lg shadow-zinc-950/15">
                     <Target className="h-4 w-4" />
                   </span>
                   Range Trainer
@@ -266,7 +266,7 @@ export default function RangeTrainer() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 shrink-0 gap-1.5"
+                className="h-9 shrink-0 gap-1.5 rounded-full border-slate-200 bg-white px-3 text-xs font-semibold shadow-sm"
                 onClick={selectRandomSpot}
                 disabled={spots.length === 0}
               >
@@ -284,7 +284,11 @@ export default function RangeTrainer() {
                   <Button
                     size="sm"
                     variant={stackDepth === undefined ? "default" : "outline"}
-                    className="h-8 px-2 text-xs"
+                    className={`h-8 rounded-full px-2 text-xs font-semibold shadow-sm ${
+                      stackDepth === undefined
+                        ? "bg-zinc-950 text-white hover:bg-zinc-900"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
+                    }`}
                     onClick={() => setStackDepth(undefined)}
                   >
                     All
@@ -294,7 +298,11 @@ export default function RangeTrainer() {
                       key={depth}
                       size="sm"
                       variant={stackDepth === depth ? "default" : "outline"}
-                      className="h-8 px-2 text-xs"
+                      className={`h-8 rounded-full px-2 text-xs font-semibold shadow-sm ${
+                        stackDepth === depth
+                          ? "bg-zinc-950 text-white hover:bg-zinc-900"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
+                      }`}
                       onClick={() => setStackDepth(depth)}
                     >
                       {depth}
@@ -311,7 +319,11 @@ export default function RangeTrainer() {
                   <Button
                     size="sm"
                     variant={spotGroup === undefined ? "default" : "outline"}
-                    className="h-8 shrink-0 px-3 text-xs"
+                    className={`h-8 shrink-0 rounded-full px-3 text-xs font-semibold shadow-sm ${
+                      spotGroup === undefined
+                        ? "bg-zinc-950 text-white hover:bg-zinc-900"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
+                    }`}
                     onClick={() => setSpotGroup(undefined)}
                   >
                     All
@@ -321,12 +333,16 @@ export default function RangeTrainer() {
                       key={group}
                       size="sm"
                       variant={spotGroup === group ? "default" : "outline"}
-                      className="h-8 shrink-0 gap-1.5 px-3 text-xs"
+                      className={`h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs font-semibold shadow-sm ${
+                        spotGroup === group
+                          ? "bg-zinc-950 text-white hover:bg-zinc-900"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
+                      }`}
                       onClick={() => setSpotGroup(group)}
                     >
                       {SPOT_GROUP_LABELS[group].replace(" (Open Raise)", "")}
                       {(groupCounts[group] ?? 0) > 0 && (
-                        <span className="rounded-full bg-background/70 px-1.5 text-[10px] text-muted-foreground">
+                        <span className="rounded-full bg-white/15 px-1.5 text-[10px] text-current opacity-75">
                           {groupCounts[group]}
                         </span>
                       )}
@@ -341,13 +357,13 @@ export default function RangeTrainer() {
                   value={searchTerm}
                   onChange={event => setSearchTerm(event.target.value)}
                   placeholder="Search BTN, BB, 20bb..."
-                  className="h-10 bg-white pl-9"
+                  className="h-11 rounded-2xl border-slate-200 bg-white pl-9 shadow-sm"
                 />
               </div>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <div className="max-h-72 overflow-y-auto p-3 md:min-h-0 md:max-h-none md:flex-1">
             <div className="mb-2 flex items-center justify-between px-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Drills
@@ -366,7 +382,7 @@ export default function RangeTrainer() {
             )}
 
             {!spotsLoading && spots.length === 0 && (
-              <Card className="border-dashed">
+              <Card className="rounded-2xl border-dashed bg-slate-50/80">
                 <CardContent className="p-4 text-center text-sm text-muted-foreground">
                   No charts available. Run the seed script to add ranges.
                 </CardContent>
@@ -374,7 +390,7 @@ export default function RangeTrainer() {
             )}
 
             {!spotsLoading && spots.length > 0 && filteredSpots.length === 0 && (
-              <Card className="border-dashed">
+              <Card className="rounded-2xl border-dashed bg-slate-50/80">
                 <CardContent className="p-4 text-center text-sm text-muted-foreground">
                   No drills match this search. Clear the search or change the
                   filters.
@@ -391,8 +407,8 @@ export default function RangeTrainer() {
                     key={spot.id}
                     className={`group w-full rounded-2xl border p-3 text-left shadow-sm transition ${
                       active
-                        ? "border-orange-400 bg-orange-50 text-orange-950 shadow-orange-500/10"
-                        : "border-border bg-white hover:border-orange-200 hover:bg-orange-50/40"
+                        ? "border-zinc-950 bg-zinc-950 text-white shadow-lg shadow-zinc-950/15"
+                        : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50/50 hover:shadow-md"
                     }`}
                     onClick={() => selectSpot(spot.id)}
                   >
@@ -401,24 +417,40 @@ export default function RangeTrainer() {
                         <p className="truncate text-sm font-semibold">
                           {spot.title}
                         </p>
-                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                        <p
+                          className={`mt-1 truncate text-xs ${
+                            active ? "text-zinc-400" : "text-muted-foreground"
+                          }`}
+                        >
                           {SPOT_GROUP_LABELS[spot.spotGroup]}
                         </p>
                       </div>
                       <Badge
                         variant={active ? "default" : "outline"}
-                        className="h-6 shrink-0"
+                        className={`h-6 shrink-0 rounded-full ${
+                          active
+                            ? "bg-orange-500 text-white"
+                            : "border-slate-200 bg-white"
+                        }`}
                       >
                         {spot.stackDepth}bb
                       </Badge>
                     </div>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="rounded-full bg-background px-2 py-0.5">
+                    <div
+                      className={`mt-3 flex items-center gap-2 text-xs ${
+                        active ? "text-zinc-400" : "text-muted-foreground"
+                      }`}
+                    >
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${
+                          active ? "bg-white/10" : "bg-slate-100"
+                        }`}
+                      >
                         {spot.heroPosition}
                         {spot.villainPosition ? ` vs ${spot.villainPosition}` : ""}
                       </span>
                       {active && (
-                        <span className="font-medium text-orange-600">
+                        <span className="font-medium text-orange-300">
                           Training now
                         </span>
                       )}
@@ -429,7 +461,7 @@ export default function RangeTrainer() {
             </div>
           </div>
 
-          <div className="border-t border-border/80 bg-white p-4">
+          <div className="border-t border-slate-200/80 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 This Session
@@ -449,19 +481,19 @@ export default function RangeTrainer() {
               </Button>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border bg-slate-50 p-2 text-center">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5 text-center shadow-sm">
                 <p className="text-lg font-bold text-foreground">
                   {sessionStats.total}
                 </p>
                 <p className="text-[11px] text-muted-foreground">Hands</p>
               </div>
-              <div className="rounded-xl border bg-orange-50 p-2 text-center">
+              <div className="rounded-2xl border border-orange-200 bg-orange-50 p-2.5 text-center shadow-sm">
                 <p className="text-lg font-bold text-orange-600">
                   {accuracy}%
                 </p>
                 <p className="text-[11px] text-muted-foreground">Accuracy</p>
               </div>
-              <div className="rounded-xl border bg-green-50 p-2 text-center">
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-2.5 text-center shadow-sm">
                 <p className="text-lg font-bold text-green-600">
                   {sessionStats.streak}
                 </p>
@@ -477,9 +509,9 @@ export default function RangeTrainer() {
           </div>
         </aside>
 
-        <main className="min-h-0 overflow-y-auto p-4 md:p-6 xl:p-8">
-          <div className="mx-auto flex max-w-4xl flex-col gap-5 pb-8">
-            <Card className="overflow-hidden border-0 bg-zinc-950 text-white shadow-xl shadow-orange-950/10">
+        <main className="min-h-0 p-4 md:overflow-y-auto md:p-6 xl:p-8">
+          <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-5">
+            <Card className="overflow-hidden rounded-[1.75rem] border-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_18rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] text-white shadow-2xl shadow-slate-950/20">
               <CardContent className="p-5 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
@@ -494,7 +526,7 @@ export default function RangeTrainer() {
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-300">
                       {(trainerSpot?.chart.stackDepth ??
                         selectedSpot?.stackDepth) && (
-                        <Badge className="bg-orange-500 text-white">
+                        <Badge className="rounded-full bg-orange-500 text-white">
                           {trainerSpot?.chart.stackDepth ??
                             selectedSpot?.stackDepth}
                           bb
@@ -504,7 +536,7 @@ export default function RangeTrainer() {
                         selectedSpot?.spotGroup) && (
                         <Badge
                           variant="outline"
-                          className="border-zinc-700 text-zinc-200"
+                          className="rounded-full border-white/15 bg-white/5 text-zinc-200"
                         >
                           {
                             SPOT_GROUP_LABELS[
@@ -521,17 +553,17 @@ export default function RangeTrainer() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 sm:w-72">
-                    <div className="rounded-2xl bg-white/8 p-3 text-center">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-3 text-center">
                       <CheckCircle2 className="mx-auto mb-1 h-4 w-4 text-green-400" />
                       <p className="text-lg font-bold">{sessionStats.correct}</p>
                       <p className="text-[11px] text-zinc-400">Correct</p>
                     </div>
-                    <div className="rounded-2xl bg-white/8 p-3 text-center">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-3 text-center">
                       <Target className="mx-auto mb-1 h-4 w-4 text-orange-300" />
                       <p className="text-lg font-bold">{accuracy}%</p>
                       <p className="text-[11px] text-zinc-400">Accuracy</p>
                     </div>
-                    <div className="rounded-2xl bg-white/8 p-3 text-center">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-3 text-center">
                       <Flame className="mx-auto mb-1 h-4 w-4 text-amber-300" />
                       <p className="text-lg font-bold">{sessionStats.streak}</p>
                       <p className="text-[11px] text-zinc-400">Streak</p>
@@ -541,9 +573,9 @@ export default function RangeTrainer() {
               </CardContent>
             </Card>
 
-            <div className="flex items-start justify-center">
+            <div className="flex flex-1 items-start justify-center">
               {!selectedChartId && !spotsLoading && (
-                <Card className="w-full max-w-lg border-dashed bg-white/90">
+                <Card className="w-full max-w-lg rounded-[1.75rem] border-dashed bg-white/95 shadow-xl shadow-slate-950/5">
                   <CardContent className="space-y-4 p-8 text-center">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
                       <Target className="h-7 w-7" />
@@ -558,7 +590,7 @@ export default function RangeTrainer() {
                       </p>
                     </div>
                     <Button
-                      className="bg-orange-500 text-white hover:bg-orange-600"
+                      className="rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
                       onClick={selectRandomSpot}
                       disabled={spots.length === 0}
                     >
@@ -613,7 +645,7 @@ export default function RangeTrainer() {
               )}
 
               {selectedChartId && !trainerSpotLoading && !trainerSpot && (
-                <Card className="w-full max-w-lg border-dashed bg-white/90">
+                <Card className="w-full max-w-lg rounded-[1.75rem] border-dashed bg-white/95 shadow-xl shadow-slate-950/5">
                   <CardContent className="space-y-3 p-8 text-center">
                     <Target className="mx-auto h-10 w-10 text-muted-foreground opacity-40" />
                     <p className="text-sm text-muted-foreground">
