@@ -26,7 +26,7 @@ const SIZE_CONFIG: Record<
 > = {
   sm: { minCell: 20, maxCell: 28, font: 9 },
   md: { minCell: 24, maxCell: 40, font: 10 },
-  lg: { minCell: 30, maxCell: 50, font: 12 },
+  lg: { minCell: 32, maxCell: 58, font: 12 },
 };
 
 const COMPACT_SIZE_CONFIG = { minCell: 18, maxCell: 30, font: 9 };
