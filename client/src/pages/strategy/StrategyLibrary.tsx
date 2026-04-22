@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import { Link, useSearch } from "wouter";
-import { BookOpen, Clock, Play, Search, SlidersHorizontal } from "lucide-react";
+import { BookOpen, Clock, Play, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActionLegend } from "@/components/strategy/ActionLegend";
+import { PreflopSetupControls } from "@/components/strategy/PreflopSetupControls";
 import { RangeMatrix } from "@/components/strategy/RangeMatrix";
 import { buildActionMap } from "@/components/strategy/utils";
 import {
@@ -39,12 +38,6 @@ type SpotSummary = {
   villainPosition?: string | null;
   sourceLabel?: string | null;
 };
-
-const PLAYER_OPTIONS = [
-  { label: "6", value: "6", enabled: false },
-  { label: "8", value: "8", enabled: false },
-  { label: "9", value: "9", enabled: true },
-];
 
 const GROUP_ORDER = new Map(SPOT_GROUPS.map((group, index) => [group, index]));
 const POSITION_ORDER = new Map(
@@ -120,39 +113,6 @@ function spotMatchesSetup(
     return false;
   }
   return true;
-}
-
-function SetupButton({
-  active,
-  disabled = false,
-  children,
-  onClick,
-  className,
-}: {
-  active: boolean;
-  disabled?: boolean;
-  children: ReactNode;
-  onClick?: () => void;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        "min-h-9 rounded-xl border px-3 text-xs font-black transition",
-        active
-          ? "border-orange-400 bg-orange-500 text-white shadow-lg shadow-orange-950/20"
-          : "border-white/10 bg-white/[0.06] text-zinc-300 hover:border-orange-300/70 hover:bg-orange-500/10 hover:text-white",
-        disabled &&
-          "cursor-not-allowed opacity-35 hover:border-white/10 hover:bg-white/[0.06] hover:text-zinc-300",
-        className
-      )}
-    >
-      {children}
-    </button>
-  );
 }
 
 export default function StrategyLibrary() {
@@ -482,152 +442,22 @@ export default function StrategyLibrary() {
 
           <div className="grid gap-3 md:grid-cols-[1.1fr_0.9fr] lg:grid-cols-1">
             <div className="space-y-2.5">
-              <div>
-                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                  Decision
-                </p>
-                <div className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
-                  <SetupButton
-                    active={spotGroup === undefined}
-                    onClick={() => setGroup(undefined)}
-                    className="shrink-0"
-                  >
-                    Any
-                  </SetupButton>
-                  {SPOT_GROUPS.map(group => (
-                    <SetupButton
-                      key={group}
-                      active={spotGroup === group}
-                      onClick={() => setGroup(group)}
-                      className="shrink-0"
-                    >
-                      {SPOT_GROUP_LABELS[group].replace(" (Open Raise)", "")}
-                    </SetupButton>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Stack
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <SetupButton
-                      active={stackDepth === undefined}
-                      onClick={() => setStack(undefined)}
-                      className="px-2"
-                    >
-                      All
-                    </SetupButton>
-                    {STACK_DEPTHS.map(depth => (
-                      <SetupButton
-                        key={depth}
-                        active={stackDepth === depth}
-                        disabled={
-                          availableStacks.length > 0 &&
-                          !availableStacks.includes(depth)
-                        }
-                        onClick={() => setStack(depth)}
-                        className="px-2"
-                      >
-                        {depth}
-                      </SetupButton>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Players
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {PLAYER_OPTIONS.map(option => (
-                      <SetupButton
-                        key={option.value}
-                        active={option.enabled}
-                        disabled={!option.enabled}
-                        className="px-2"
-                      >
-                        {option.label}
-                      </SetupButton>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                  Hero Position
-                </p>
-                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-4">
-                  <SetupButton
-                    active={heroPosition === undefined}
-                    onClick={() => setHero(undefined)}
-                    className="px-2"
-                  >
-                    Any
-                  </SetupButton>
-                  {POSITIONS.map(position => (
-                    <SetupButton
-                      key={position}
-                      active={heroPosition === position}
-                      disabled={!heroOptions.includes(position)}
-                      onClick={() => setHero(position)}
-                      className="px-2"
-                    >
-                      {position}
-                    </SetupButton>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                className={cn(
-                  "transition",
-                  villainOptions.length === 0 && "opacity-50"
-                )}
-              >
-                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                  Villain / Opener
-                </p>
-                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-4">
-                  <SetupButton
-                    active={villainPosition === undefined}
-                    disabled={villainOptions.length === 0}
-                    onClick={() => setVillain(undefined)}
-                    className="px-2"
-                  >
-                    Any
-                  </SetupButton>
-                  {POSITIONS.map(position => (
-                    <SetupButton
-                      key={position}
-                      active={villainPosition === position}
-                      disabled={!villainOptions.includes(position)}
-                      onClick={() => setVillain(position)}
-                      className="px-2"
-                    >
-                      {position}
-                    </SetupButton>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              <div>
-                <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                  <Search className="h-3.5 w-3.5" />
-                  Quick Find
-                </p>
-                <Input
-                  value={searchTerm}
-                  onChange={event => setSearchTerm(event.target.value)}
-                  placeholder="40bb sb rfi"
-                  className="h-10 rounded-xl border-white/10 bg-white/[0.06] text-sm text-white placeholder:text-zinc-500"
-                />
-              </div>
+              <PreflopSetupControls
+                spotGroup={spotGroup}
+                stackDepth={stackDepth}
+                heroPosition={heroPosition}
+                villainPosition={villainPosition}
+                availableStacks={availableStacks}
+                heroOptions={heroOptions}
+                villainOptions={villainOptions}
+                searchTerm={searchTerm}
+                searchPlaceholder="40bb SB RFI"
+                onSpotGroupChange={setGroup}
+                onStackDepthChange={setStack}
+                onHeroPositionChange={setHero}
+                onVillainPositionChange={setVillain}
+                onSearchTermChange={setSearchTerm}
+              />
 
               {recentSpots.length > 0 && (
                 <div>

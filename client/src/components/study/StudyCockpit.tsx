@@ -8,10 +8,8 @@ import {
   ClipboardList,
   FileText,
   History,
-  Layers,
   Plus,
   Target,
-  Trophy,
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -120,7 +118,6 @@ export function StudyCockpit() {
 
   const { data: spots = [], isLoading: spotsLoading } =
     trpc.strategy.listSpots.useQuery({});
-  const { data: icmPacks = [] } = trpc.icm.listPacks.useQuery();
   const { data: hands = [], isLoading: handsLoading } =
     trpc.hands.getByUser.useQuery({ limit: 5 });
   const { data: topLeaks = [] } = trpc.leaks.getTop.useQuery({ limit: 4 });
@@ -151,10 +148,6 @@ export function StudyCockpit() {
     ? `${recentSpot.title} - ${formatSpotMeta(recentSpot)}`
     : "Jump into Range Trainer and build reps from the current range pool.";
   const chartCount = spots.length;
-  const icmSpotCount = icmPacks.reduce(
-    (total, pack) => total + pack.spotCount,
-    0
-  );
   const pendingHands = useMemo(
     () => hands.filter(hand => !hand.reviewed).length,
     [hands]
@@ -175,8 +168,8 @@ export function StudyCockpit() {
                 Study
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
-                Train ranges, review leaks, and capture hands while the
-                decision is still fresh.
+                Train preflop ranges, review leaks, and capture tournament
+                hands while the decision is still fresh.
               </p>
             </div>
 
@@ -220,7 +213,7 @@ export function StudyCockpit() {
             href="/strategy/library"
             icon={BookOpen}
             title="Hand Ranges"
-            subtitle="Browse structured preflop charts by stack and spot."
+            subtitle="Browse BBA tournament charts through 40bb."
             meta={
               spotsLoading ? "Loading charts" : `${chartCount} charts available`
             }
@@ -230,7 +223,7 @@ export function StudyCockpit() {
             href="/strategy/trainer"
             icon={Zap}
             title="Range Trainer"
-            subtitle="Fast flashcards with visual chart reveal after answers."
+            subtitle="Fast preflop drills with visual chart reveal."
             meta={
               stats
                 ? `${stats.accuracy}% saved accuracy`
@@ -239,22 +232,18 @@ export function StudyCockpit() {
             tone="orange"
           />
           <StudyModuleCard
-            href="/study/icm"
-            icon={Trophy}
-            title="ICM Packs"
-            subtitle="Advanced final-table and payout-pressure spots."
-            meta={
-              icmSpotCount > 0
-                ? `${icmSpotCount} curated spots`
-                : "Advanced pack"
-            }
+            href="/log"
+            icon={FileText}
+            title="Notes"
+            subtitle="Capture spot takeaways and hand lessons."
+            meta="Attached to review"
             tone="blue"
           />
           <StudyModuleCard
             href="/hands"
             icon={Brain}
-            title="Leak Review"
-            subtitle="Revisit mistakes and turn missed hands into drills."
+            title="Hand Review"
+            subtitle="Revisit preflop mistakes and turn them into drills."
             meta={
               pendingHands > 0
                 ? `${pendingHands} hands to review`
@@ -503,34 +492,34 @@ export function StudyCockpit() {
           <SectionHeader
             label="Tools"
             title="Study Utilities"
-            helper="Secondary workflows stay close, without competing with training."
+            helper="Secondary workflows stay close, without competing with preflop training."
           />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                href: "/study-plan",
-                icon: Layers,
-                title: "Study Plan",
-                helper: "Weekly structure and planned work.",
+                href: "/strategy/library",
+                icon: BookOpen,
+                title: "Spot Notes",
+                helper: "Review notes attached to preflop charts.",
               },
               {
-                href: "/guided-session",
+                href: "/strategy/trainer",
                 icon: Target,
-                title: "Guided Session",
-                helper: "Run a focused study block.",
+                title: "Focused Reps",
+                helper: "Drill the current spot or decision family.",
               },
               {
                 href: "/hands",
                 icon: FileText,
                 title: "Hand Review",
-                helper: "Review saved hand history.",
+                helper: "Review saved preflop hand logs.",
               },
               {
                 href: "/log",
                 icon: Plus,
                 title: "Quick Capture",
-                helper: "Log a hand, leak, note, or tournament.",
+                helper: "Log a hand, leak, note, or takeaway.",
               },
             ].map(item => (
               <Link key={item.href} href={item.href}>

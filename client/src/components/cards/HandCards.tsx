@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { parseHandClass } from "@shared/preflop";
 import { PlayingCard, type CardSuit, type PlayingCardSize } from "./PlayingCard";
 
 interface HandCardsProps {
@@ -7,50 +8,20 @@ interface HandCardsProps {
   showLabel?: boolean;
 }
 
-interface ParsedDisplayHand {
-  firstRank: string;
-  secondRank: string;
-  firstSuit: CardSuit;
-  secondSuit: CardSuit;
-}
-
 const CARD_OFFSET_CLASSES: Record<PlayingCardSize, string> = {
   sm: "-ml-3",
   md: "-ml-4",
   lg: "-ml-5",
 };
 
-function parseHandForDisplay(handCode: string): ParsedDisplayHand {
-  const normalized = handCode.trim();
-  const firstRank = normalized[0]?.toUpperCase() ?? "?";
-  const secondRank = normalized[1]?.toUpperCase() ?? firstRank;
-  const suffix = normalized[2]?.toLowerCase();
-  const isPair = firstRank === secondRank && normalized.length === 2;
-  const isSuited = suffix === "s";
-
-  if (isSuited) {
-    return {
-      firstRank,
-      secondRank,
-      firstSuit: "spades",
-      secondSuit: "spades",
-    };
-  }
-
-  if (isPair || suffix === "o") {
-    return {
-      firstRank,
-      secondRank,
-      firstSuit: "spades",
-      secondSuit: "hearts",
-    };
-  }
-
+function fallbackDisplayHand(handCode: string) {
+  const firstRank = handCode.trim()[0]?.toUpperCase() ?? "?";
+  const secondRank = handCode.trim()[1]?.toUpperCase() ?? firstRank;
   return {
     firstRank,
     secondRank,
-    firstSuit: "spades",
-    secondSuit: "hearts",
+    firstSuit: "spades" as CardSuit,
+    secondSuit: "hearts" as CardSuit,
   };
 }
 
@@ -59,10 +30,14 @@ export function HandCards({
   size = "md",
   showLabel = true,
 }: HandCardsProps) {
-  const displayHand = parseHandForDisplay(handCode);
+  const parsedHand = parseHandClass(handCode);
+  const displayHand = parsedHand ?? fallbackDisplayHand(handCode);
 
   return (
-    <div className="flex flex-col items-center" aria-label={handCode}>
+    <div
+      className="flex flex-col items-center"
+      aria-label={parsedHand ? `${parsedHand.code} ${parsedHand.label}` : handCode}
+    >
       <span className="sr-only">{handCode}</span>
       <div className="flex items-center justify-center">
         <PlayingCard

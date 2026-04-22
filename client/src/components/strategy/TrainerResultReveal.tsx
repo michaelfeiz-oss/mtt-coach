@@ -6,6 +6,7 @@ import {
   type Action,
   type RangeChartWithActions,
 } from "../../../../shared/strategy";
+import { buildHandClassRevealNote } from "../../../../shared/preflop";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,10 +57,11 @@ export function TrainerResultReveal({
   const chartActionNote = chart?.actions.find(
     action => action.handCode === handCode
   )?.note;
-  const revealNote =
-    explanation ??
-    chartActionNote ??
-    `This hand sits inside the ${ACTION_LABELS[correctAction].toLowerCase()} region for this spot.`;
+  const revealNote = buildHandClassRevealNote(
+    handCode,
+    correctAction,
+    explanation ?? chartActionNote
+  );
 
   return (
     <Card

@@ -13,7 +13,7 @@ import {
   listAvailableSpots,
   submitTrainerAttempt,
 } from "./service";
-import { ACTIONS, SPOT_GROUPS, STACK_DEPTHS } from "../../shared/strategy";
+import { ACTIONS, POSITIONS, SPOT_GROUPS, STACK_DEPTHS } from "../../shared/strategy";
 
 const StackDepthInput = z
   .number()
@@ -25,6 +25,8 @@ const StackDepthInput = z
 const ListSpotsInput = z.object({
   stackDepth: StackDepthInput.optional(),
   spotGroup: z.enum(SPOT_GROUPS).optional(),
+  heroPosition: z.enum(POSITIONS).optional(),
+  villainPosition: z.enum(POSITIONS).optional(),
 });
 
 const GetChartInput = z.object({
@@ -41,6 +43,8 @@ const GetTrainerSpotInput = z.object({
   chartId: z.number().int().positive().optional(),
   stackDepth: StackDepthInput.optional(),
   spotGroup: z.enum(SPOT_GROUPS).optional(),
+  heroPosition: z.enum(POSITIONS).optional(),
+  villainPosition: z.enum(POSITIONS).optional(),
   recentChartIds: z.array(z.number().int().positive()).max(20).optional(),
   recentHandKeys: z.array(z.string().min(1).max(24)).max(60).optional(),
 });

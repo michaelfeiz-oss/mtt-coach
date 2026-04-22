@@ -34,6 +34,8 @@ import {
 export interface ListSpotsFilters {
   stackDepth?: number;
   spotGroup?: SpotGroup;
+  heroPosition?: Position;
+  villainPosition?: Position;
 }
 
 export interface TrainerSpotFilters extends ListSpotsFilters {
@@ -179,6 +181,14 @@ function buildChartConditions(filters: ListSpotsFilters): SQL[] {
 
   if (filters.spotGroup !== undefined) {
     conditions.push(eq(rangeCharts.spotGroup, filters.spotGroup));
+  }
+
+  if (filters.heroPosition !== undefined) {
+    conditions.push(eq(rangeCharts.heroPosition, filters.heroPosition));
+  }
+
+  if (filters.villainPosition !== undefined) {
+    conditions.push(eq(rangeCharts.villainPosition, filters.villainPosition));
   }
 
   return conditions;

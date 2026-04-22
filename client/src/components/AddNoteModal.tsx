@@ -13,8 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 interface AddNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: AddNoteFormData) => void;
   isLoading?: boolean;
+}
+
+export interface AddNoteFormData {
+  category: string;
+  content: string;
 }
 
 export function AddNoteModal({
@@ -64,12 +69,11 @@ export function AddNoteModal({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="observation">Observation</SelectItem>
-              <SelectItem value="strategy">Strategy</SelectItem>
-              <SelectItem value="opponent">Opponent</SelectItem>
-              <SelectItem value="mental">Mental Game</SelectItem>
-              <SelectItem value="session">Session Review</SelectItem>
-              <SelectItem value="goal">Goal</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="range-note">Range Note</SelectItem>
+              <SelectItem value="spot-takeaway">Spot Takeaway</SelectItem>
+              <SelectItem value="hand-review">Hand Review</SelectItem>
+              <SelectItem value="trainer-reminder">Trainer Reminder</SelectItem>
+              <SelectItem value="other-preflop">Other Preflop Note</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -79,7 +83,7 @@ export function AddNoteModal({
           <Label htmlFor="content">Note *</Label>
           <Textarea
             id="content"
-            placeholder="Write your note here..."
+            placeholder="Write a preflop takeaway or reminder."
             value={formData.content}
             onChange={(e) =>
               setFormData({ ...formData, content: e.target.value })
