@@ -444,7 +444,7 @@ export default function RangeTrainer() {
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-white">
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5 lg:max-w-[1500px] 2xl:max-w-[1660px]">
         <header className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -717,25 +717,27 @@ export default function RangeTrainer() {
           </div>
         </section>
 
-        <section className="flex flex-1 items-start justify-center">
+        <section className="min-w-0">
           {trainerEnabled &&
             (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
-              <Skeleton className="h-[520px] w-full rounded-[1.35rem] bg-white/10" />
+              <Skeleton className="h-[520px] w-full rounded-[1.35rem] bg-white/10 lg:h-[620px]" />
             )}
 
           {trainerSpot && (
-            <div className="w-full space-y-3">
+            <div className="w-full space-y-3 lg:space-y-4">
               <div
                 ref={questionCardRef}
-                className="grid gap-3 lg:grid-cols-[0.85fr_1fr]"
+                className="grid gap-3 md:grid-cols-[19rem_minmax(0,1fr)] lg:grid-cols-[21rem_minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]"
               >
-                <TableContext
-                  title={trainerSpot.chart.title}
-                  stackDepth={trainerSpot.chart.stackDepth}
-                  heroPosition={trainerSpot.chart.heroPosition}
-                  villainPosition={trainerSpot.chart.villainPosition}
-                  spotGroup={trainerSpot.chart.spotGroup}
-                />
+                <div className="md:sticky md:top-4">
+                  <TableContext
+                    title={trainerSpot.chart.title}
+                    stackDepth={trainerSpot.chart.stackDepth}
+                    heroPosition={trainerSpot.chart.heroPosition}
+                    villainPosition={trainerSpot.chart.villainPosition}
+                    spotGroup={trainerSpot.chart.spotGroup}
+                  />
+                </div>
                 <TrainerCard
                   key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
                   chartId={trainerSpot.chartId}
@@ -762,7 +764,7 @@ export default function RangeTrainer() {
               {answerReveal && (
                 <div
                   ref={resultRevealRef}
-                  className="scroll-mt-4 md:scroll-mt-6"
+                  className="scroll-mt-4 md:scroll-mt-6 lg:scroll-mt-4"
                 >
                   <TrainerResultReveal
                     chart={revealChart}

@@ -65,7 +65,7 @@ export function TableContext({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-[1.2rem] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_11rem),linear-gradient(180deg,#18181b_0%,#09090b_100%)] p-2.5 text-white shadow-xl shadow-black/20 sm:p-3",
+        "overflow-hidden rounded-[1.2rem] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_11rem),linear-gradient(180deg,#18181b_0%,#09090b_100%)] p-2.5 text-white shadow-xl shadow-black/20 sm:p-3 xl:p-4",
         className
       )}
       aria-label="Trainer table context"
@@ -93,7 +93,7 @@ export function TableContext({
         </div>
       </div>
 
-      <div className="relative mx-auto h-[8.5rem] max-w-sm sm:h-44">
+      <div className="relative mx-auto h-[8.5rem] max-w-sm sm:h-44 lg:h-48 xl:h-52">
         <div className="absolute inset-x-[13%] inset-y-[23%] rounded-[999px] border border-orange-300/25 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1),transparent_46%),linear-gradient(135deg,rgba(24,24,27,0.94),rgba(39,39,42,0.62))] shadow-inner shadow-black/45" />
         <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-xl border border-white/10 bg-black/35 px-2.5 py-1.5 text-center shadow-md shadow-black/20">
           <span className="text-[10px] font-black text-zinc-100">
@@ -113,7 +113,7 @@ export function TableContext({
             <div
               key={position}
               className={cn(
-                "absolute flex h-9 w-12 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-xl border text-center text-[9px] font-black leading-tight transition sm:h-10 sm:w-14",
+                "absolute flex h-9 w-12 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-xl border text-center text-[9px] font-black leading-tight transition sm:h-10 sm:w-14 xl:h-11 xl:w-16",
                 SEAT_LAYOUT[position],
                 seatTone(position, heroPosition, villainPosition)
               )}

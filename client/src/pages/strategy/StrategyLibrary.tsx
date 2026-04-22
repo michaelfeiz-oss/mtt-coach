@@ -363,8 +363,8 @@ export default function StrategyLibrary() {
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_42%,#0f172a_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-white">
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5">
-        <header className="flex items-center justify-between gap-3">
+      <main className="mx-auto grid w-full max-w-5xl gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5 lg:max-w-[1500px] lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:max-w-[1660px]">
+        <header className="flex items-center justify-between gap-3 lg:col-span-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
@@ -390,9 +390,9 @@ export default function StrategyLibrary() {
           )}
         </header>
 
-        <section className="rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-xl shadow-black/15 backdrop-blur sm:p-3">
+        <section className="min-w-0 rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-xl shadow-black/15 backdrop-blur sm:p-3 lg:min-h-[calc(100dvh-9.25rem)] lg:p-3 xl:p-4">
           {chartLoading && selectedChartId !== undefined && (
-            <div className="space-y-3">
+            <div className="space-y-3 lg:flex lg:min-h-[calc(100dvh-11.5rem)] lg:flex-col">
               <Skeleton className="h-10 w-56 rounded-xl bg-white/10" />
               <Skeleton className="h-80 w-full rounded-2xl bg-white/10" />
             </div>
@@ -454,14 +454,19 @@ export default function StrategyLibrary() {
                 />
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1.5 shadow-inner shadow-black/25">
-                <RangeMatrix actions={actionMap} compact size="md" />
+              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1.5 shadow-inner shadow-black/25 lg:flex lg:flex-1 lg:items-center lg:justify-center lg:p-3 xl:p-4">
+                <div className="lg:hidden">
+                  <RangeMatrix actions={actionMap} compact size="md" />
+                </div>
+                <div className="hidden w-full lg:block">
+                  <RangeMatrix actions={actionMap} size="lg" />
+                </div>
               </div>
             </div>
           )}
         </section>
 
-        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3">
+        <section className="min-w-0 rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div>
               <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
@@ -475,13 +480,13 @@ export default function StrategyLibrary() {
             </Badge>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-3 md:grid-cols-[1.1fr_0.9fr] lg:grid-cols-1">
             <div className="space-y-2.5">
               <div>
                 <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   Decision
                 </p>
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                <div className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible">
                   <SetupButton
                     active={spotGroup === undefined}
                     onClick={() => setGroup(undefined)}
@@ -555,7 +560,7 @@ export default function StrategyLibrary() {
                 <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   Hero Position
                 </p>
-                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-4">
                   <SetupButton
                     active={heroPosition === undefined}
                     onClick={() => setHero(undefined)}
@@ -586,7 +591,7 @@ export default function StrategyLibrary() {
                 <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   Villain / Opener
                 </p>
-                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-4">
                   <SetupButton
                     active={villainPosition === undefined}
                     disabled={villainOptions.length === 0}
@@ -630,7 +635,7 @@ export default function StrategyLibrary() {
                     <Clock className="h-3.5 w-3.5" />
                     Recent
                   </p>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
                     {recentSpots.slice(0, 6).map(spot => (
                       <button
                         key={spot.id}
@@ -659,7 +664,7 @@ export default function StrategyLibrary() {
                 <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   Matching Spots
                 </p>
-                <div className="grid max-h-44 gap-1.5 overflow-y-auto pr-1">
+                <div className="grid max-h-44 gap-1.5 overflow-y-auto pr-1 lg:max-h-64">
                   {spotsLoading && (
                     <>
                       <Skeleton className="h-10 rounded-xl bg-white/10" />
@@ -701,12 +706,33 @@ export default function StrategyLibrary() {
                   ))}
                 </div>
               </div>
+
+              {chart && chartNotes.length > 0 && (
+                <div className="hidden rounded-xl border border-white/10 bg-white/[0.045] p-3 text-zinc-200 lg:block">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Spot Notes
+                  </p>
+                  <ul className="space-y-1.5">
+                    {chartNotes.map((note, index) => (
+                      <li
+                        key={index}
+                        className="flex gap-2 text-xs leading-relaxed"
+                      >
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-orange-500 text-[9px] font-black text-white">
+                          {index + 1}
+                        </span>
+                        <span className="text-zinc-300">{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
         {chart && chartNotes.length > 0 && (
-          <section className="rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 text-zinc-200 sm:p-3">
+          <section className="rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 text-zinc-200 sm:p-3 lg:hidden">
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
               Spot Notes
             </p>
