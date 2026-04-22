@@ -22,6 +22,7 @@ interface TrainerCardProps {
   showInlineResult?: boolean;
   compact?: boolean;
   showContextBadges?: boolean;
+  showSpotText?: boolean;
   onAnswer: (selectedAction: Action, isCorrect: boolean) => void;
   onSkip: () => void;
   className?: string;
@@ -41,6 +42,7 @@ export function TrainerCard({
   showInlineResult = true,
   compact = false,
   showContextBadges = true,
+  showSpotText = true,
   onAnswer,
   onSkip,
   className = "",
@@ -143,15 +145,17 @@ export function TrainerCard({
               size={compact ? "md" : "lg"}
               showLabel
             />
-            <p
-              className={cn(
-                "mt-4 text-sm font-semibold text-zinc-100",
-                compact && "mt-3"
-              )}
-            >
-              {spotLabel}
-            </p>
-            {spotContext && (
+            {showSpotText && (
+              <p
+                className={cn(
+                  "mt-4 text-sm font-semibold text-zinc-100",
+                  compact && "mt-3"
+                )}
+              >
+                {spotLabel}
+              </p>
+            )}
+            {showSpotText && spotContext && (
               <p className="mt-1 text-xs leading-relaxed text-zinc-400">
                 {spotContext}
               </p>

@@ -64,18 +64,18 @@ export function TrainerResultReveal({
   return (
     <Card
       className={cn(
-        "overflow-hidden rounded-[1.75rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/10",
+        "overflow-hidden rounded-[1.2rem] border-white/10 bg-zinc-950/90 text-white shadow-xl shadow-black/25",
         className
       )}
     >
-      <CardContent className="space-y-4 p-4 sm:p-5">
-        <div className="flex items-start gap-3 rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4">
+      <CardContent className="space-y-3 p-3 sm:p-4">
+        <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3">
           <div
             className={cn(
-              "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-sm",
+              "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm",
               isCorrect
-                ? "bg-green-100 text-green-700 shadow-green-950/10"
-                : "bg-red-100 text-red-700 shadow-red-950/10"
+                ? "bg-green-500/15 text-green-300 shadow-green-950/10"
+                : "bg-red-500/15 text-red-300 shadow-red-950/10"
             )}
           >
             {isCorrect ? (
@@ -88,43 +88,43 @@ export function TrainerResultReveal({
             <p
               className={cn(
                 "text-base font-bold",
-                isCorrect ? "text-green-700" : "text-red-700"
+                isCorrect ? "text-green-300" : "text-red-300"
               )}
             >
               {isCorrect ? "Correct" : "Incorrect"}
             </p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge
-                variant={isCorrect ? "secondary" : "outline"}
-                className="rounded-full px-2.5"
+                variant="outline"
+                className="rounded-full border-white/10 bg-white/[0.06] px-2.5 text-zinc-300"
               >
                 You chose: {ACTION_LABELS[selectedAction]}
               </Badge>
-              <Badge className="rounded-full bg-zinc-950 px-2.5 text-white">
+              <Badge className="rounded-full bg-orange-500/90 px-2.5 text-white">
                 Correct: {ACTION_LABELS[correctAction]}
               </Badge>
             </div>
             {revealNote && (
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+              <p className="mt-2 text-xs leading-relaxed text-zinc-400">
                 {revealNote}
               </p>
             )}
           </div>
         </div>
 
-        <div className="space-y-3 rounded-[1.5rem] border border-slate-200/80 bg-white p-3 shadow-inner shadow-slate-950/5 sm:p-4">
+        <div className="space-y-2.5 rounded-[1rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-inner shadow-black/20 sm:p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Chart Context
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                Chart
               </p>
-              <p className="text-sm font-semibold text-foreground">
+              <p className="text-sm font-semibold text-zinc-100">
                 {chart?.title ?? "Loading chart"}
               </p>
             </div>
             <ActionLegend
               actions={visibleActions}
-              className="rounded-2xl bg-slate-50/80 p-2"
+              className="rounded-xl border border-white/10 bg-black/20 p-1.5"
             />
           </div>
 
@@ -140,13 +140,13 @@ export function TrainerResultReveal({
 
           {!chart && isLoadingChart && (
             <div className="space-y-2">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-72 w-full rounded-2xl" />
+              <Skeleton className="h-6 w-48 bg-white/10" />
+              <Skeleton className="h-72 w-full rounded-2xl bg-white/10" />
             </div>
           )}
 
           {!chart && !isLoadingChart && (
-            <div className="rounded-2xl border border-dashed bg-slate-50 p-4 text-center text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.04] p-4 text-center text-sm text-zinc-400">
               Chart actions are not available for this reveal.
             </div>
           )}
@@ -154,7 +154,7 @@ export function TrainerResultReveal({
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
           <Button
-            className="h-12 rounded-2xl bg-orange-500 text-base font-bold text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
+            className="h-11 rounded-xl bg-orange-500 text-sm font-black text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
             onClick={onNext}
           >
             Next Hand
@@ -163,7 +163,7 @@ export function TrainerResultReveal({
           <Link href={`/strategy/library?chartId=${chartId}`}>
             <Button
               variant="outline"
-              className="h-12 w-full gap-2 rounded-2xl border-slate-200 bg-white font-semibold sm:w-auto"
+              className="h-11 w-full gap-2 rounded-xl border-white/10 bg-white/[0.06] text-sm font-bold text-zinc-200 hover:bg-white/10 sm:w-auto"
             >
               View Full Chart
               <ExternalLink className="h-4 w-4" />

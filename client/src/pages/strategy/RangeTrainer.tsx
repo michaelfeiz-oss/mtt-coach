@@ -443,7 +443,7 @@ export default function RangeTrainer() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-24 text-white">
+    <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-white">
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5">
         <header className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -487,7 +487,7 @@ export default function RangeTrainer() {
           </div>
         </header>
 
-        <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3">
+        <section className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3">
           <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
             <div className="min-w-0 space-y-2.5">
               <div className="grid grid-cols-2 gap-2">
@@ -496,7 +496,7 @@ export default function RangeTrainer() {
                   className={cn(
                     "h-9 rounded-xl text-xs font-black",
                     mode === "full_pool"
-                      ? "bg-orange-500 text-white hover:bg-orange-600"
+                      ? "bg-orange-500/90 text-white hover:bg-orange-600"
                       : "border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/10"
                   )}
                   variant={mode === "full_pool" ? "default" : "outline"}
@@ -533,7 +533,7 @@ export default function RangeTrainer() {
                       className={cn(
                         "h-8 rounded-xl px-2 text-xs font-black",
                         stackDepth === undefined
-                          ? "bg-orange-500 text-white hover:bg-orange-600"
+                          ? "bg-orange-500/90 text-white hover:bg-orange-600"
                           : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
                       )}
                       onClick={() => setStackFilter(undefined)}
@@ -548,7 +548,7 @@ export default function RangeTrainer() {
                         className={cn(
                           "h-8 rounded-xl px-2 text-xs font-black",
                           stackDepth === depth
-                            ? "bg-orange-500 text-white hover:bg-orange-600"
+                            ? "bg-orange-500/90 text-white hover:bg-orange-600"
                             : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
                         )}
                         onClick={() => setStackFilter(depth)}
@@ -570,7 +570,7 @@ export default function RangeTrainer() {
                       className={cn(
                         "h-8 shrink-0 rounded-xl px-3 text-xs font-black",
                         spotGroup === undefined
-                          ? "bg-orange-500 text-white hover:bg-orange-600"
+                          ? "bg-orange-500/90 text-white hover:bg-orange-600"
                           : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
                       )}
                       onClick={() => setFamilyFilter(undefined)}
@@ -585,7 +585,7 @@ export default function RangeTrainer() {
                         className={cn(
                           "h-8 shrink-0 gap-1.5 rounded-xl px-3 text-xs font-black",
                           spotGroup === group
-                            ? "bg-orange-500 text-white hover:bg-orange-600"
+                            ? "bg-orange-500/90 text-white hover:bg-orange-600"
                             : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
                         )}
                         onClick={() => setFamilyFilter(group)}
@@ -658,7 +658,7 @@ export default function RangeTrainer() {
                         className={cn(
                           "min-h-12 w-32 shrink-0 rounded-xl border px-3 py-2 text-left transition sm:w-36",
                           active
-                            ? "border-orange-400 bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+                            ? "border-orange-400 bg-orange-500/90 text-white shadow-lg shadow-orange-950/20"
                             : "border-white/10 bg-white/[0.06] text-zinc-200 hover:border-orange-300/70 hover:bg-orange-500/10"
                         )}
                         onClick={() => selectExactChart(spot.id)}
@@ -752,6 +752,7 @@ export default function RangeTrainer() {
                   showInlineResult={false}
                   compact
                   showContextBadges={false}
+                  showSpotText={false}
                   onAnswer={handleAnswer}
                   onSkip={handleNext}
                   className="w-full"

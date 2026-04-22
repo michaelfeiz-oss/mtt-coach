@@ -13,18 +13,18 @@ interface TableContextProps {
   villainPosition?: string | null;
   spotGroup?: SpotGroup;
   playerCount?: number;
-  anteLabel?: string;
+  blindAnteLabel?: string;
   className?: string;
 }
 
 const SEAT_LAYOUT: Record<string, string> = {
-  UTG: "left-[17%] top-[12%]",
-  UTG1: "left-[39%] top-[5%]",
-  MP: "right-[17%] top-[12%]",
+  UTG: "left-[18%] top-[13%]",
+  UTG1: "left-[40%] top-[6%]",
+  MP: "right-[18%] top-[13%]",
   HJ: "right-[6%] top-[42%]",
-  CO: "right-[17%] bottom-[12%]",
-  BTN: "left-[39%] bottom-[5%]",
-  SB: "left-[17%] bottom-[12%]",
+  CO: "right-[18%] bottom-[13%]",
+  BTN: "left-[40%] bottom-[6%]",
+  SB: "left-[18%] bottom-[13%]",
   BB: "left-[6%] top-[42%]",
 };
 
@@ -42,14 +42,14 @@ function seatTone(
   }
 
   if (position === villainPosition) {
-    return "border-sky-300 bg-sky-500 text-white shadow-lg shadow-sky-950/25";
+    return "border-sky-300/80 bg-sky-500/80 text-white shadow-md shadow-sky-950/20";
   }
 
   if (position === "SB" || position === "BB" || position === "BTN") {
-    return "border-white/15 bg-white/[0.13] text-zinc-200";
+    return "border-white/10 bg-white/[0.09] text-zinc-300";
   }
 
-  return "border-white/10 bg-white/[0.06] text-zinc-500";
+  return "border-white/10 bg-white/[0.035] text-zinc-600";
 }
 
 export function TableContext({
@@ -59,18 +59,18 @@ export function TableContext({
   villainPosition,
   spotGroup,
   playerCount = 9,
-  anteLabel = "12.5%",
+  blindAnteLabel = "BBA",
   className,
 }: TableContextProps) {
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-[1.35rem] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.12),transparent_13rem),linear-gradient(180deg,#18181b_0%,#09090b_100%)] p-3 text-white shadow-xl shadow-black/25",
+        "overflow-hidden rounded-[1.2rem] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_11rem),linear-gradient(180deg,#18181b_0%,#09090b_100%)] p-2.5 text-white shadow-xl shadow-black/20 sm:p-3",
         className
       )}
       aria-label="Trainer table context"
     >
-      <div className="mb-2 flex items-start justify-between gap-3">
+      <div className="mb-1.5 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-300">
             Scenario
@@ -93,17 +93,15 @@ export function TableContext({
         </div>
       </div>
 
-      <div className="relative mx-auto h-40 max-w-sm sm:h-52">
-        <div className="absolute inset-x-[12%] inset-y-[20%] rounded-[999px] border border-orange-300/35 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.13),transparent_46%),linear-gradient(135deg,rgba(24,24,27,0.95),rgba(39,39,42,0.7))] shadow-inner shadow-black/50" />
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-2xl border border-white/10 bg-black/35 px-3 py-2 text-center shadow-lg shadow-black/20">
-          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-            {playerCount} players
+      <div className="relative mx-auto h-[8.5rem] max-w-sm sm:h-44">
+        <div className="absolute inset-x-[13%] inset-y-[23%] rounded-[999px] border border-orange-300/25 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1),transparent_46%),linear-gradient(135deg,rgba(24,24,27,0.94),rgba(39,39,42,0.62))] shadow-inner shadow-black/45" />
+        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-xl border border-white/10 bg-black/35 px-2.5 py-1.5 text-center shadow-md shadow-black/20">
+          <span className="text-[10px] font-black text-zinc-100">
+            {playerCount}P
           </span>
-          <span className="mt-0.5 text-xs font-black text-zinc-100">
-            Ante {anteLabel}
-          </span>
-          <span className="mt-1 text-[10px] text-zinc-500">
-            BTN marker shown
+          <span className="h-3 w-px bg-white/15" />
+          <span className="text-[10px] font-black text-zinc-100">
+            {blindAnteLabel}
           </span>
         </div>
 
@@ -115,7 +113,7 @@ export function TableContext({
             <div
               key={position}
               className={cn(
-                "absolute flex h-11 w-14 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-2xl border text-center text-[10px] font-black leading-tight transition",
+                "absolute flex h-9 w-12 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-xl border text-center text-[9px] font-black leading-tight transition sm:h-10 sm:w-14",
                 SEAT_LAYOUT[position],
                 seatTone(position, heroPosition, villainPosition)
               )}
@@ -143,13 +141,13 @@ export function TableContext({
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-400">
-        <div className="rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-2">
+        <div className="rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
           <span className="font-black text-zinc-200">
             {heroPosition ? displayPosition(heroPosition) : "Mixed"}
           </span>
           <span className="ml-1">hero</span>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-2">
+        <div className="rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5">
           <span className="font-black text-zinc-200">
             {villainPosition ? displayPosition(villainPosition) : "No opener"}
           </span>
