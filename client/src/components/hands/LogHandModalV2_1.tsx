@@ -48,35 +48,32 @@ const SPOT_OPTIONS: Array<{
 }> = [
   {
     id: "SINGLE_RAISED_POT_IP",
-    label: "SRP IP",
-    helper: "Single-raised pot, in position",
+    label: "RFI / Open",
+    helper: "Open or continue before the flop",
   },
   {
     id: "SINGLE_RAISED_POT_OOP",
-    label: "SRP OOP",
-    helper: "Single-raised pot, out of position",
+    label: "Defend vs RFI",
+    helper: "Blind or position defend",
   },
-  { id: "THREE_BET_POT_IP", label: "3BP IP", helper: "3-bet pot, IP" },
-  { id: "THREE_BET_POT_OOP", label: "3BP OOP", helper: "3-bet pot, OOP" },
+  { id: "THREE_BET_POT_IP", label: "3-Bet", helper: "Apply preflop pressure" },
+  { id: "THREE_BET_POT_OOP", label: "Facing 3-Bet", helper: "Continue, fold, or jam" },
   { id: "BLINDS_VS_BLIND", label: "BvB", helper: "Blind versus blind" },
-  { id: "LIMPED_POT", label: "Limped", helper: "Limped pot" },
-  { id: "FOUR_BET_POT", label: "4BP", helper: "4-bet pot" },
-  { id: "ICM_SPOT", label: "ICM", helper: "Payout-pressure spot" },
+  { id: "LIMPED_POT", label: "Limp", helper: "Limp or iso spot" },
+  { id: "FOUR_BET_POT", label: "4-Bet / Jam", helper: "High-pressure preflop spot" },
 ];
 
 const POSITIONS = ["UTG", "UTG+1", "MP", "HJ", "CO", "BTN", "SB", "BB"];
-const STACK_PRESETS = ["12", "15", "20", "25", "30", "40", "60"];
-const STREETS: StreetAction["street"][] = ["PREFLOP", "FLOP", "TURN", "RIVER"];
+const STACK_PRESETS = ["15", "20", "25", "40"];
+const STREETS: StreetAction["street"][] = ["PREFLOP"];
 const HERO_ACTIONS: HeroActionType[] = [
-  "CHECK",
   "CALL",
-  "BET",
   "RAISE",
   "JAM",
   "FOLD",
 ];
-const VILLAIN_ACTIONS: VillainActionType[] = ["CHECK", "BET", "RAISE", "JAM"];
-const SIZE_BUCKETS: SizeBucket[] = ["SMALL", "MEDIUM", "BIG", "OVERBET"];
+const VILLAIN_ACTIONS: VillainActionType[] = ["RAISE", "JAM"];
+const SIZE_BUCKETS: SizeBucket[] = ["SMALL", "MEDIUM", "BIG"];
 const VILLAIN_TYPES: Array<{ id: VillainType; label: string }> = [
   { id: "UNKNOWN", label: "Unknown" },
   { id: "REC", label: "Rec" },
@@ -111,7 +108,6 @@ const PHASES: Array<{ id: TournamentPhase; label: string }> = [
 ];
 const TAG_OPTIONS = [
   "PREFLOP",
-  "ICM",
   "BLIND_DEFENSE",
   "3BET_POT",
   "OVERFOLD",
@@ -249,7 +245,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   });
 
   const stackNumber = Number.parseFloat(effectiveStackBb);
-  const isStackValid = Number.isFinite(stackNumber) && stackNumber > 0;
+  const isStackValid =
+    Number.isFinite(stackNumber) && stackNumber > 0 && stackNumber <= 40;
   const isContextValid = Boolean(
     spotType && heroPosition && heroHand && isStackValid
   );
@@ -361,7 +358,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     if (!canAdvance) {
       toast.error(
         currentStep === 0
-          ? "Add spot type, position, hand, and stack first."
+          ? "Add preflop spot, position, hand, and a stack up to 40bb first."
           : "Select the key street and hero decision first."
       );
       return;
@@ -454,7 +451,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 Log Hand
               </DialogTitle>
               <DialogDescription className="mt-2 text-sm leading-relaxed text-zinc-400">
-                Capture the spot now. Add deep review detail only when it helps.
+                Capture the preflop spot now. Add detail only when it helps.
               </DialogDescription>
             </div>
             <Button
@@ -502,7 +499,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       Context
                     </h3>
                     <p className="text-sm text-slate-600">
-                      Required: spot type, position, hand, and effective stack.
+                      Required: preflop spot, position, hand, and stack up to 40bb.
                     </p>
                   </div>
                   <Badge className="rounded-full bg-orange-500 text-white">
@@ -564,7 +561,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       id="effective-stack"
                       type="number"
                       min="1"
-                      max="500"
+                      max="40"
                       value={effectiveStackBb}
                       onChange={event => setEffectiveStackBb(event.target.value)}
                       placeholder="25"
@@ -622,7 +619,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       Key Action
                     </h3>
                     <p className="text-sm text-slate-600">
-                      Capture the street and hero decision. Villain action is
+                      Capture the preflop hero decision. Opener action is
                       optional.
                     </p>
                   </div>
@@ -633,7 +630,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
                 <div className="mt-4">
                   <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                    Decision Street
+                    Scope
                   </Label>
                   <div className="mt-2 grid grid-cols-4 gap-2">
                     {STREETS.map(street => (
@@ -693,7 +690,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       Optional action detail
                     </p>
                     <p className="text-xs text-slate-600">
-                      Add board, villain action, and profile when useful.
+                      Add opener action and player profile when useful.
                     </p>
                   </div>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
@@ -704,26 +701,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 {fullDetailsVisible && (
                   <div className="mt-4 space-y-4">
                     <div>
-                      <Label
-                        htmlFor="board-runout"
-                        className="text-sm font-bold text-slate-950"
-                      >
-                        Board Runout
-                      </Label>
-                      <Input
-                        id="board-runout"
-                        value={boardRunout}
-                        onChange={event =>
-                          setBoardRunout(event.target.value.toUpperCase())
-                        }
-                        placeholder="Ah Kd 7s 2c Jh"
-                        className="mt-2 h-11 rounded-2xl border-slate-200"
-                      />
-                    </div>
-
-                    <div>
                       <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                        Villain Action
+                        Opener / Villain Action
                       </Label>
                       <div className="mt-2 grid grid-cols-4 gap-2">
                         {VILLAIN_ACTIONS.map(action => (

@@ -137,6 +137,27 @@ describe("Strategy Module", () => {
       expect(spot!.chart.title).toBe("Test BTN RFI @ 20bb");
     });
 
+    it("supports current decision family setup filters", async () => {
+      const spot = await getTrainerSpot({
+        stackDepth: 20,
+        spotGroup: "RFI",
+      });
+
+      expect(spot).not.toBeNull();
+      expect(spot!.chart.stackDepth).toBe(20);
+      expect(spot!.chart.spotGroup).toBe("RFI");
+    });
+
+    it("keeps current spot mode pinned to the requested chart", async () => {
+      const spot = await getTrainerSpot({
+        chartId: testChartId,
+        recentChartIds: [testChartId],
+      });
+
+      expect(spot).not.toBeNull();
+      expect(spot!.chartId).toBe(testChartId);
+    });
+
     it("provides answer choices including the correct action", async () => {
       const spot = await getTrainerSpot({ chartId: testChartId });
       expect(spot!.choices).toContain(spot!.correctAction);

@@ -3,21 +3,18 @@ import { useSearch } from "wouter";
 import {
   CheckCircle2,
   ChevronRight,
-  ChevronsUpDown,
   Flame,
   RotateCcw,
-  Search,
   Shuffle,
   Target,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { PreflopSetupControls } from "@/components/strategy/PreflopSetupControls";
 import { TableContext } from "@/components/strategy/TableContext";
 import { TrainerCard } from "@/components/strategy/TrainerCard";
 import { TrainerResultReveal } from "@/components/strategy/TrainerResultReveal";
@@ -26,15 +23,16 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
   ACTION_LABELS,
+  POSITIONS,
   SPOT_GROUP_LABELS,
   SPOT_GROUPS,
-  SPOT_GROUP_SUBTITLES,
   STACK_DEPTHS,
   type Action,
+  type Position,
   type SpotGroup,
 } from "../../../../shared/strategy";
 
-type TrainerMode = "exact_chart" | "family" | "stack" | "full_pool";
+type TrainerMode = "current_spot" | "decision_family" | "random_spot";
 
 interface SessionStats {
   total: number;
@@ -78,9 +76,9 @@ function modeForFilters(
   stackDepth?: number,
   spotGroup?: SpotGroup
 ): TrainerMode {
-  if (spotGroup) return "family";
-  if (stackDepth !== undefined) return "stack";
-  return "full_pool";
+  if (spotGroup) return "decision_family";
+  if (stackDepth !== undefined) return "random_spot";
+  return "random_spot";
 }
 
 function searchTextForSpot(spot: SpotSummary) {
@@ -111,27 +109,44 @@ function sortSpots(a: SpotSummary, b: SpotSummary) {
   );
 }
 
+function positionSort(a: string, b: string) {
+  return (
+    (POSITIONS.indexOf(a as Position) === -1
+      ? 99
+      : POSITIONS.indexOf(a as Position)) -
+    (POSITIONS.indexOf(b as Position) === -1
+      ? 99
+      : POSITIONS.indexOf(b as Position))
+  );
+}
+
+function toPosition(value: string | undefined): Position | undefined {
+  return POSITIONS.includes(value as Position) ? (value as Position) : undefined;
+}
+
+function uniqueSorted<T extends string | number>(items: T[]): T[] {
+  return Array.from(new Set(items));
+}
+
 function formatModeLabel(
   mode: TrainerMode,
   selectedSpot: SpotSummary | undefined,
   stackDepth: number | undefined,
   spotGroup: SpotGroup | undefined
 ) {
-  if (mode === "exact_chart") {
-    return selectedSpot ? `Exact Chart - ${selectedSpot.title}` : "Exact Chart";
+  if (mode === "current_spot") {
+    return selectedSpot
+      ? `Current Spot - ${selectedSpot.title}`
+      : "Current Spot";
   }
 
-  if (mode === "family" && spotGroup) {
+  if (mode === "decision_family" && spotGroup) {
     return `${SPOT_GROUP_LABELS[spotGroup]} - ${
       stackDepth ? `${stackDepth}bb` : "All stacks"
     }`;
   }
 
-  if (mode === "stack" && stackDepth) {
-    return `${stackDepth}bb - All Families`;
-  }
-
-  return "Full Pool";
+  return stackDepth ? `Random Spot - ${stackDepth}bb` : "Random Spot";
 }
 
 function filterSummary(
@@ -139,13 +154,15 @@ function filterSummary(
   stackDepth: number | undefined,
   spotGroup: SpotGroup | undefined
 ) {
-  if (mode === "exact_chart") return "Stays inside the selected chart.";
-  if (spotGroup && stackDepth) {
+  if (mode === "current_spot") return "Random hands inside the selected chart.";
+  if (mode === "decision_family" && spotGroup && stackDepth) {
     return `Rotating ${SPOT_GROUP_LABELS[spotGroup]} charts at ${stackDepth}bb.`;
   }
-  if (spotGroup) return `Rotating all ${SPOT_GROUP_LABELS[spotGroup]} charts.`;
-  if (stackDepth) return `Rotating every family at ${stackDepth}bb.`;
-  return "Rotating across all eligible stacks and families.";
+  if (mode === "decision_family" && spotGroup) {
+    return `Rotating all ${SPOT_GROUP_LABELS[spotGroup]} charts.`;
+  }
+  if (stackDepth) return `Random supported preflop spots at ${stackDepth}bb.`;
+  return "Random supported preflop spots up to 40bb.";
 }
 
 function scrollElementIntoComfortView(element: HTMLElement | null) {
@@ -184,13 +201,19 @@ export default function RangeTrainer() {
       : null;
 
   const [mode, setMode] = useState<TrainerMode>(
-    initialChartId !== null ? "exact_chart" : "full_pool"
+    initialChartId !== null ? "current_spot" : "random_spot"
   );
   const [selectedChartId, setSelectedChartId] = useState<number | null>(
     initialChartId
   );
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
+  const [heroPosition, setHeroPosition] = useState<string | undefined>(
+    undefined
+  );
+  const [villainPosition, setVillainPosition] = useState<string | undefined>(
+    undefined
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     total: 0,
@@ -210,9 +233,6 @@ export default function RangeTrainer() {
 
   const { data: spots = [], isLoading: spotsLoading } =
     trpc.strategy.listSpots.useQuery({ stackDepth, spotGroup });
-  const { data: allVisibleStackSpots = [] } = trpc.strategy.listSpots.useQuery({
-    stackDepth,
-  });
 
   const selectedSpot = useMemo(
     () => spots.find(spot => spot.id === selectedChartId),
@@ -224,37 +244,53 @@ export default function RangeTrainer() {
       chartId?: number;
       stackDepth?: number;
       spotGroup?: SpotGroup;
+      heroPosition?: Position;
+      villainPosition?: Position;
       recentChartIds: number[];
       recentHandKeys: string[];
     } = {
       recentChartIds,
       recentHandKeys,
     };
+    const selectedHeroPosition = toPosition(heroPosition);
+    const selectedVillainPosition = toPosition(villainPosition);
 
     switch (mode) {
-      case "exact_chart":
+      case "current_spot":
         if (selectedChartId !== null) input.chartId = selectedChartId;
         return input;
-      case "family":
+      case "decision_family":
         if (spotGroup !== undefined) input.spotGroup = spotGroup;
         if (stackDepth !== undefined) input.stackDepth = stackDepth;
+        if (selectedHeroPosition !== undefined) {
+          input.heroPosition = selectedHeroPosition;
+        }
+        if (selectedVillainPosition !== undefined) {
+          input.villainPosition = selectedVillainPosition;
+        }
         return input;
-      case "stack":
+      case "random_spot":
         if (stackDepth !== undefined) input.stackDepth = stackDepth;
-        return input;
-      case "full_pool":
+        if (selectedHeroPosition !== undefined) {
+          input.heroPosition = selectedHeroPosition;
+        }
+        if (selectedVillainPosition !== undefined) {
+          input.villainPosition = selectedVillainPosition;
+        }
         return input;
     }
   }, [
+    heroPosition,
     mode,
     recentChartIds,
     recentHandKeys,
     selectedChartId,
     stackDepth,
     spotGroup,
+    villainPosition,
   ]);
 
-  const trainerEnabled = mode !== "exact_chart" || selectedChartId !== null;
+  const trainerEnabled = mode !== "current_spot" || selectedChartId !== null;
   const {
     data: trainerSpot,
     isLoading: trainerSpotLoading,
@@ -281,21 +317,41 @@ export default function RangeTrainer() {
   });
 
   const accuracy = calcAccuracy(sessionStats.correct, sessionStats.total);
-  const groupCounts = useMemo(
+  const availableStacks = [...STACK_DEPTHS];
+
+  const heroOptions = useMemo(
     () =>
-      allVisibleStackSpots.reduce<Partial<Record<SpotGroup, number>>>(
-        (counts, spot) => {
-          counts[spot.spotGroup] = (counts[spot.spotGroup] ?? 0) + 1;
-          return counts;
-        },
-        {}
-      ),
-    [allVisibleStackSpots]
+      uniqueSorted(spots.map(spot => spot.heroPosition)).sort(positionSort),
+    [spots]
+  );
+
+  const villainOptions = useMemo(
+    () =>
+      uniqueSorted(
+        spots
+          .filter(spot =>
+            heroPosition === undefined
+              ? true
+              : spot.heroPosition === heroPosition
+          )
+          .map(spot => spot.villainPosition)
+          .filter((position): position is string => Boolean(position))
+      ).sort(positionSort),
+    [heroPosition, spots]
   );
 
   const filteredSpots = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    const base = [...spots].sort(sortSpots);
+    const base = spots
+      .filter(spot =>
+        heroPosition === undefined ? true : spot.heroPosition === heroPosition
+      )
+      .filter(spot =>
+        villainPosition === undefined
+          ? true
+          : (spot.villainPosition ?? "") === villainPosition
+      )
+      .sort(sortSpots);
     if (!query) return base;
 
     const tokens = query.split(/\s+/).filter(Boolean);
@@ -303,7 +359,7 @@ export default function RangeTrainer() {
       const searchable = searchTextForSpot(spot);
       return tokens.every(token => searchable.includes(token));
     });
-  }, [searchTerm, spots]);
+  }, [heroPosition, searchTerm, spots, villainPosition]);
 
   const quickSpots = useMemo(() => filteredSpots.slice(0, 12), [filteredSpots]);
 
@@ -320,6 +376,21 @@ export default function RangeTrainer() {
 
     return () => window.clearTimeout(timeout);
   }, [answerReveal]);
+
+  useEffect(() => {
+    if (heroPosition !== undefined && !heroOptions.includes(heroPosition)) {
+      setHeroPosition(undefined);
+    }
+  }, [heroOptions, heroPosition]);
+
+  useEffect(() => {
+    if (
+      villainPosition !== undefined &&
+      !villainOptions.includes(villainPosition)
+    ) {
+      setVillainPosition(undefined);
+    }
+  }, [villainOptions, villainPosition]);
 
   function resetSessionState() {
     setSessionStats({ total: 0, correct: 0, streak: 0 });
@@ -349,23 +420,36 @@ export default function RangeTrainer() {
 
   function selectExactChart(chartId: number) {
     setSelectedChartId(chartId);
-    setMode("exact_chart");
+    setMode("current_spot");
     replaceTrainerUrl(chartId);
     resetSessionState();
   }
 
-  function startFullRandom() {
-    setStackDepth(undefined);
+  function selectCurrentTrainerSpot() {
+    const chartId = selectedChartId ?? trainerSpot?.chartId ?? null;
+    if (chartId === null) return;
+
+    setSelectedChartId(chartId);
+    setMode("current_spot");
+    replaceTrainerUrl(chartId);
+    resetSessionState();
+  }
+
+  function startRandomSpot() {
     setSpotGroup(undefined);
     setSelectedChartId(null);
-    setMode("full_pool");
+    setMode("random_spot");
     replaceTrainerUrl(null);
     resetSessionState();
   }
 
-  function mixCurrentFilters() {
+  function startDecisionFamily() {
+    const nextGroup = spotGroup ?? trainerSpot?.chart.spotGroup;
+    if (!nextGroup) return;
+
+    setSpotGroup(nextGroup);
     setSelectedChartId(null);
-    setMode(modeForFilters(stackDepth, spotGroup));
+    setMode("decision_family");
     replaceTrainerUrl(null);
     resetSessionState();
   }
@@ -488,142 +572,73 @@ export default function RangeTrainer() {
         </header>
 
         <section className="overflow-hidden rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3">
-          <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
-            <div className="min-w-0 space-y-2.5">
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  size="sm"
-                  className={cn(
-                    "h-9 rounded-xl text-xs font-black",
-                    mode === "full_pool"
-                      ? "bg-orange-500/90 text-white hover:bg-orange-600"
-                      : "border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/10"
-                  )}
-                  variant={mode === "full_pool" ? "default" : "outline"}
-                  onClick={startFullRandom}
-                >
-                  Full pool
-                </Button>
-                <Button
-                  size="sm"
-                  className="h-9 gap-1 rounded-xl border-white/10 bg-white/[0.06] text-xs font-black text-zinc-200 hover:bg-white/10"
-                  variant="outline"
-                  onClick={mixCurrentFilters}
-                  disabled={
-                    selectedChartId === null &&
-                    stackDepth === undefined &&
-                    spotGroup === undefined &&
-                    mode !== "exact_chart"
-                  }
-                >
-                  <ChevronsUpDown className="h-3.5 w-3.5" />
-                  Mix filters
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] gap-2.5">
-                <div className="min-w-0">
-                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Stack
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <Button
-                      size="sm"
-                      variant={stackDepth === undefined ? "default" : "outline"}
-                      className={cn(
-                        "h-8 rounded-xl px-2 text-xs font-black",
-                        stackDepth === undefined
-                          ? "bg-orange-500/90 text-white hover:bg-orange-600"
-                          : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
-                      )}
-                      onClick={() => setStackFilter(undefined)}
-                    >
-                      All
-                    </Button>
-                    {STACK_DEPTHS.map(depth => (
-                      <Button
-                        key={depth}
-                        size="sm"
-                        variant={stackDepth === depth ? "default" : "outline"}
-                        className={cn(
-                          "h-8 rounded-xl px-2 text-xs font-black",
-                          stackDepth === depth
-                            ? "bg-orange-500/90 text-white hover:bg-orange-600"
-                            : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
-                        )}
-                        onClick={() => setStackFilter(depth)}
-                      >
-                        {depth}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="min-w-0">
-                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Decision
-                  </p>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1">
-                    <Button
-                      size="sm"
-                      variant={spotGroup === undefined ? "default" : "outline"}
-                      className={cn(
-                        "h-8 shrink-0 rounded-xl px-3 text-xs font-black",
-                        spotGroup === undefined
-                          ? "bg-orange-500/90 text-white hover:bg-orange-600"
-                          : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
-                      )}
-                      onClick={() => setFamilyFilter(undefined)}
-                    >
-                      All
-                    </Button>
-                    {SPOT_GROUPS.map(group => (
-                      <Button
-                        key={group}
-                        size="sm"
-                        variant={spotGroup === group ? "default" : "outline"}
-                        className={cn(
-                          "h-8 shrink-0 gap-1.5 rounded-xl px-3 text-xs font-black",
-                          spotGroup === group
-                            ? "bg-orange-500/90 text-white hover:bg-orange-600"
-                            : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
-                        )}
-                        onClick={() => setFamilyFilter(group)}
-                      >
-                        {SPOT_GROUP_LABELS[group].replace(" (Open Raise)", "")}
-                        {(groupCounts[group] ?? 0) > 0 && (
-                          <span className="rounded-full bg-black/20 px-1.5 text-[10px] text-current opacity-80">
-                            {groupCounts[group]}
-                          </span>
-                        )}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                size="sm"
+                className={cn(
+                  "h-9 rounded-xl text-xs font-black",
+                  mode === "current_spot"
+                    ? "bg-orange-500/90 text-white hover:bg-orange-600"
+                    : "border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/10"
+                )}
+                variant={mode === "current_spot" ? "default" : "outline"}
+                onClick={selectCurrentTrainerSpot}
+                disabled={selectedChartId === null && !trainerSpot}
+              >
+                Current spot
+              </Button>
+              <Button
+                size="sm"
+                className={cn(
+                  "h-9 rounded-xl text-xs font-black",
+                  mode === "decision_family"
+                    ? "bg-orange-500/90 text-white hover:bg-orange-600"
+                    : "border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/10"
+                )}
+                variant={mode === "decision_family" ? "default" : "outline"}
+                onClick={startDecisionFamily}
+                disabled={!spotGroup && !trainerSpot}
+              >
+                Decision family
+              </Button>
+              <Button
+                size="sm"
+                className={cn(
+                  "h-9 rounded-xl text-xs font-black",
+                  mode === "random_spot"
+                    ? "bg-orange-500/90 text-white hover:bg-orange-600"
+                    : "border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/10"
+                )}
+                variant={mode === "random_spot" ? "default" : "outline"}
+                onClick={startRandomSpot}
+              >
+                Random spot
+              </Button>
             </div>
 
-            <div className="min-w-0 space-y-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                <Input
-                  value={searchTerm}
-                  onChange={event => setSearchTerm(event.target.value)}
-                  placeholder="Jump to 40bb sb rfi..."
-                  className="h-10 rounded-xl border-white/10 bg-white/[0.06] pl-9 text-sm text-white placeholder:text-zinc-500"
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200"
-                    onClick={() => setSearchTerm("")}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
+            <PreflopSetupControls
+              spotGroup={spotGroup}
+              stackDepth={stackDepth}
+              heroPosition={heroPosition}
+              villainPosition={villainPosition}
+              availableStacks={availableStacks}
+              heroOptions={heroOptions}
+              villainOptions={villainOptions}
+              searchTerm={searchTerm}
+              searchPlaceholder="Jump to 40bb SB RFI"
+              onSpotGroupChange={setFamilyFilter}
+              onStackDepthChange={setStackFilter}
+              onHeroPositionChange={setHeroPosition}
+              onVillainPositionChange={setVillainPosition}
+              onSearchTermChange={setSearchTerm}
+            />
 
-              {searchTerm.trim().length > 0 && (
+            {searchTerm.trim().length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Matching spots
+                </p>
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {spotsLoading && (
                     <>
@@ -649,7 +664,7 @@ export default function RangeTrainer() {
 
                   {quickSpots.map(spot => {
                     const active =
-                      mode === "exact_chart" && selectedChartId === spot.id;
+                      mode === "current_spot" && selectedChartId === spot.id;
 
                     return (
                       <button
@@ -673,19 +688,17 @@ export default function RangeTrainer() {
                     );
                   })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-zinc-500">
             <Badge className="rounded-full bg-orange-500 text-white">
-              {mode === "exact_chart"
-                ? "Exact Chart"
-                : mode === "family"
-                  ? "Family"
-                  : mode === "stack"
-                    ? "Stack"
-                    : "Full Pool"}
+              {mode === "current_spot"
+                ? "Current Spot"
+                : mode === "decision_family"
+                  ? "Decision Family"
+                  : "Random Spot"}
             </Badge>
             <span className="inline-flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
@@ -724,7 +737,7 @@ export default function RangeTrainer() {
             )}
 
           {trainerSpot && (
-            <div className="w-full space-y-3 lg:space-y-4">
+            <div className="w-full rounded-[1.35rem] border border-white/10 bg-zinc-950/82 p-2.5 shadow-2xl shadow-black/25 sm:p-3 lg:p-4">
               <div
                 ref={questionCardRef}
                 className="grid gap-3 md:grid-cols-[19rem_minmax(0,1fr)] lg:grid-cols-[21rem_minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]"
@@ -757,14 +770,14 @@ export default function RangeTrainer() {
                   showSpotText={false}
                   onAnswer={handleAnswer}
                   onSkip={handleNext}
-                  className="w-full"
+                  className="w-full border-white/10 shadow-none"
                 />
               </div>
 
               {answerReveal && (
                 <div
                   ref={resultRevealRef}
-                  className="scroll-mt-4 md:scroll-mt-6 lg:scroll-mt-4"
+                  className="mt-3 scroll-mt-4 md:scroll-mt-6 lg:scroll-mt-4"
                 >
                   <TrainerResultReveal
                     chart={revealChart}
@@ -776,6 +789,7 @@ export default function RangeTrainer() {
                     isCorrect={answerReveal.isCorrect}
                     explanation={answerReveal.explanation}
                     onNext={handleNext}
+                    className="border-white/10 bg-black/20 shadow-none"
                   />
                 </div>
               )}
@@ -800,9 +814,9 @@ export default function RangeTrainer() {
                   </div>
                   <Button
                     className="rounded-2xl bg-orange-500 text-white hover:bg-orange-600"
-                    onClick={startFullRandom}
+                    onClick={startRandomSpot}
                   >
-                    Train full pool
+                    Random spot
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>

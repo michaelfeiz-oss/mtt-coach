@@ -18,7 +18,6 @@ import {
   Trophy,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { PROGRAM_WEEKS } from "@/lib/curriculum";
 import { EditTournamentModal } from "@/components/EditTournamentModal";
 
 export default function Dashboard() {
@@ -52,18 +51,14 @@ export default function Dashboard() {
     const cycleWeek = ((weekNumber - 1) % 12) + 1;
     setCurrentWeek(cycleWeek);
 
-    const weekData = PROGRAM_WEEKS[cycleWeek - 1];
-    if (!weekData) return;
-
     const dayOfWeek = today.getDay();
     const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const day = weekData.days[dayIndex];
-    if (!day) return;
 
     setTodayDrill({
-      title: day.label,
-      description: day.description,
-      tool: day.drills[0]?.tool || "Poker Trainer",
+      title: "Preflop Range Reps",
+      description:
+        "Review one BBA chart, then drill hands from the same spot.",
+      tool: "Range Trainer",
       week: cycleWeek,
       dayName: [
         "Monday",
@@ -118,7 +113,7 @@ export default function Dashboard() {
           </p>
           <h1 className="text-2xl font-black tracking-tight">Dashboard</h1>
           <p className="mt-1 text-sm text-zinc-400">
-            Your poker progress and study plan at a glance.
+            Preflop tournament study, hand logs, and notes in one place.
           </p>
         </div>
       </div>
@@ -140,9 +135,9 @@ export default function Dashboard() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   Focus: {todayDrill.description}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Tool: {todayDrill.tool}
-                </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Tool: {todayDrill.tool} - BBA only - up to 40bb
+                  </p>
               </div>
               <Button
                 className="h-11 w-full rounded-2xl bg-orange-500 font-bold text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
@@ -172,7 +167,7 @@ export default function Dashboard() {
                     Hand Ranges
                   </p>
                   <p className="mt-0.5 text-xs leading-tight text-muted-foreground">
-                    Preflop charts by stack and spot
+                    BBA tournament charts up to 40bb
                   </p>
                 </div>
               </CardContent>
@@ -190,7 +185,7 @@ export default function Dashboard() {
                     Range Trainer
                   </p>
                   <p className="mt-0.5 text-xs leading-tight text-muted-foreground">
-                    Drill hands with flashcards
+                    Drill current spot or random preflop spots
                   </p>
                 </div>
               </CardContent>
@@ -253,7 +248,7 @@ export default function Dashboard() {
               <CardContent className="pt-4 text-center">
                 <p className="text-2xl font-black text-orange-600">0</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Solver Drills
+                  Range Reps
                 </p>
                 <Progress value={50} className="mt-2 h-1" />
               </CardContent>
@@ -271,9 +266,9 @@ export default function Dashboard() {
             </Card>
             <Card className="rounded-[1.5rem] border-purple-200 bg-white/95 shadow-sm shadow-slate-950/5">
               <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-black text-purple-600">18</p>
+                <p className="text-2xl font-black text-purple-600">40</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  ICM Spots
+                  Max Stack bb
                 </p>
                 <Progress value={75} className="mt-2 h-1" />
               </CardContent>

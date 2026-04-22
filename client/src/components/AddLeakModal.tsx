@@ -14,8 +14,16 @@ import { Textarea } from "@/components/ui/textarea";
 interface AddLeakModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: AddLeakFormData) => void;
   isLoading?: boolean;
+}
+
+export interface AddLeakFormData {
+  leakType: string;
+  frequency: string;
+  context: string;
+  impact: string;
+  notes: string;
 }
 
 export function AddLeakModal({
@@ -51,7 +59,7 @@ export function AddLeakModal({
     <BottomSheetModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add Leak"
+      title="Add Preflop Leak"
       onSubmit={handleSubmit}
       submitLabel="Save Leak"
       isLoading={isLoading}
@@ -71,14 +79,12 @@ export function AddLeakModal({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="preflop-ranges">Preflop Ranges</SelectItem>
-              <SelectItem value="3bet-defense">3-Bet Defense</SelectItem>
-              <SelectItem value="cbet-strategy">C-Bet Strategy</SelectItem>
-              <SelectItem value="turn-play">Turn Play</SelectItem>
-              <SelectItem value="river-play">River Play</SelectItem>
-              <SelectItem value="position-play">Position Play</SelectItem>
-              <SelectItem value="bankroll-mgmt">Bankroll Management</SelectItem>
-              <SelectItem value="tilt-control">Tilt Control</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="blind-defense">Blind Defense</SelectItem>
+              <SelectItem value="3bet-defense">3-Bet / 4-Bet</SelectItem>
+              <SelectItem value="facing-3bet">Facing 3-Bet</SelectItem>
+              <SelectItem value="jam-fold">Jam / Fold Thresholds</SelectItem>
+              <SelectItem value="bvb">Blind vs Blind</SelectItem>
+              <SelectItem value="other-preflop">Other Preflop Spot</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -152,7 +158,7 @@ export function AddLeakModal({
           <Label htmlFor="notes">Notes</Label>
           <Textarea
             id="notes"
-            placeholder="Describe this leak in detail..."
+            placeholder="One preflop takeaway or spot to train next."
             value={formData.notes}
             onChange={(e) =>
               setFormData({ ...formData, notes: e.target.value })

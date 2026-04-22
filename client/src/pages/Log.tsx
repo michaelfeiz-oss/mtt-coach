@@ -12,8 +12,8 @@ import {
 import { toast } from "sonner";
 import { LogHandModalV2_1 } from "@/components/hands/LogHandModalV2_1";
 import { LogTournamentModal } from "@/components/LogTournamentModal";
-import { AddLeakModal } from "@/components/AddLeakModal";
-import { AddNoteModal } from "@/components/AddNoteModal";
+import { AddLeakModal, type AddLeakFormData } from "@/components/AddLeakModal";
+import { AddNoteModal, type AddNoteFormData } from "@/components/AddNoteModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,17 +31,7 @@ interface TournamentFormData {
   notes: string;
 }
 
-interface LeakFormData {
-  leakType: string;
-  notes?: string;
-}
-
-interface NoteFormData {
-  category?: string;
-  content: string;
-}
-
-type LeakCategory = "PREFLOP" | "POSTFLOP" | "ICM" | "MENTAL" | "EXPLOIT";
+type LeakCategory = "PREFLOP";
 
 const secondaryActions = [
   {
@@ -52,8 +42,8 @@ const secondaryActions = [
   },
   {
     id: "leak",
-    title: "Add Leak",
-    helper: "Track a recurring mistake",
+    title: "Preflop Leak",
+    helper: "Track a recurring range or spot mistake",
     icon: AlertCircle,
   },
   {
@@ -74,17 +64,8 @@ function parseFinalPosition(value: string) {
   return match ? Number.parseInt(match[0], 10) : undefined;
 }
 
-function leakCategoryFromType(leakType: string): LeakCategory {
-  if (leakType.includes("preflop") || leakType.includes("3bet")) {
-    return "PREFLOP";
-  }
-  if (leakType.includes("tilt")) return "MENTAL";
-  if (leakType.includes("bankroll")) return "MENTAL";
-  if (leakType.includes("icm")) return "ICM";
-  if (leakType.includes("strategy") || leakType.includes("play")) {
-    return "POSTFLOP";
-  }
-  return "EXPLOIT";
+function leakCategoryFromType(): LeakCategory {
+  return "PREFLOP";
 }
 
 export default function Log() {
@@ -129,16 +110,16 @@ export default function Log() {
     });
   }
 
-  function handleAddLeak(data: LeakFormData) {
+  function handleAddLeak(data: AddLeakFormData) {
     createLeak({
       name: data.leakType.replace(/-/g, " ") || "Poker leak",
-      category: leakCategoryFromType(data.leakType),
+      category: leakCategoryFromType(),
       description: data.notes || "",
       status: "ACTIVE",
     });
   }
 
-  function handleAddNote(data: NoteFormData) {
+  function handleAddNote(data: AddNoteFormData) {
     toast.success(data.category ? "Note captured" : "Quick note captured");
     setShowAddNoteModal(false);
   }
@@ -160,8 +141,8 @@ export default function Log() {
               </p>
               <h1 className="text-3xl font-black tracking-tight">Log</h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                Capture hands while the decision is fresh. Keep the first pass
-                fast, then review mistakes when you are ready.
+                Capture preflop tournament hands while the decision is fresh.
+                Keep the first pass fast, then review mistakes when you are ready.
               </p>
             </div>
             <Button
@@ -191,14 +172,13 @@ export default function Log() {
                         Guided Hand Entry
                       </h2>
                       <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                        Four focused steps: context, key action, review signal,
-                        and save.
+                        Preflop context, key action, review signal, and save.
                       </p>
                     </div>
                     <ChevronRight className="mt-1 h-5 w-5 text-slate-400" />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {["Under 60 sec", "Mobile first", "Review later"].map(
+                    {["Under 60 sec", "Preflop first", "Review later"].map(
                       label => (
                         <Badge
                           key={label}

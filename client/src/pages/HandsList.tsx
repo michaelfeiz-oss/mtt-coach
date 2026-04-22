@@ -40,8 +40,8 @@ export default function HandsList() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.09),transparent_28rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef2f7_100%)] pb-24">
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="gap-2">
@@ -53,11 +53,14 @@ export default function HandsList() {
         </div>
       </header>
 
-      <main className="container py-6">
-        <Card>
+      <main className="container max-w-5xl py-6">
+        <Card className="rounded-[1.75rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
           <CardHeader>
-            <CardTitle>Review Hands</CardTitle>
-            <CardDescription>View and analyze your logged hands</CardDescription>
+            <CardTitle>Preflop Hand Review</CardTitle>
+            <CardDescription>
+              Scan logged tournament spots by hand, stack, position, decision,
+              and lesson.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -68,9 +71,9 @@ export default function HandsList() {
               </div>
             ) : !hands || hands.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-slate-500 mb-4">No hands logged yet</p>
+                <p className="text-slate-500 mb-4">No preflop hands logged yet</p>
                 <p className="text-sm text-slate-400">
-                  Hands are automatically created when you log tournaments
+                  Use quick capture after a tournament session, then review here.
                 </p>
               </div>
             ) : (
@@ -82,11 +85,10 @@ export default function HandsList() {
                     <div
                       key={hand.id}
                       onClick={() => setLocation(`/hands/${hand.id}`)}
-                      className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+                      className="w-full cursor-pointer rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition-all hover:border-orange-200 hover:bg-white hover:shadow-md"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          {/* Hero Hand & Position */}
                           <div className="flex items-center gap-2 mb-1">
                             {hand.heroHand && (
                               <span className="font-mono font-bold text-lg">{hand.heroHand}</span>
@@ -103,15 +105,10 @@ export default function HandsList() {
                             )}
                           </div>
 
-                          {/* Board */}
-                          {hand.boardRunout && (
-                            <p className="text-sm text-slate-600 font-mono mb-1">{hand.boardRunout}</p>
-                          )}
-
-                          {/* Spot Type & Stack */}
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                             {hand.spotType && <span>{hand.spotType.replace(/_/g, " ")}</span>}
                             {hand.effectiveStackBb && <span>{hand.effectiveStackBb.toFixed(1)}bb</span>}
+                            <span>BBA</span>
                             {hand.mistakeSeverity > 0 && (
                               <span className="text-red-600 font-medium">
                                 Mistake: {hand.mistakeSeverity}/3
@@ -119,7 +116,6 @@ export default function HandsList() {
                             )}
                           </div>
 
-                          {/* Tags */}
                           {tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {tags.map((tag: string, i: number) => (
