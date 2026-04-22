@@ -20,6 +20,8 @@ interface TrainerCardProps {
   isPersisted?: boolean;
   choices?: Action[];
   showInlineResult?: boolean;
+  compact?: boolean;
+  showContextBadges?: boolean;
   onAnswer: (selectedAction: Action, isCorrect: boolean) => void;
   onSkip: () => void;
   className?: string;
@@ -37,6 +39,8 @@ export function TrainerCard({
   explanation,
   choices = [...ACTIONS],
   showInlineResult = true,
+  compact = false,
+  showContextBadges = true,
   onAnswer,
   onSkip,
   className = "",
@@ -102,28 +106,49 @@ export function TrainerCard({
         className
       )}
     >
-      <CardContent className="space-y-5 p-5 sm:p-7">
-        <div className="space-y-4 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-1.5">
-            {stackDepth !== undefined && (
-              <Badge className="rounded-full bg-orange-500 px-2.5 py-0.5 text-white shadow-sm shadow-orange-950/25">
-                {stackDepth}bb
-              </Badge>
-            )}
-            {heroPosition && (
-              <Badge
-                variant="outline"
-                className="rounded-full border-white/15 bg-white/5 px-2.5 py-0.5 text-zinc-200"
-              >
-                {heroPosition}
-                {villainPosition ? ` vs ${villainPosition}` : ""}
-              </Badge>
-            )}
-          </div>
+      <CardContent
+        className={cn(
+          "space-y-5 p-5 sm:p-7",
+          compact && "space-y-3 p-4 sm:p-5"
+        )}
+      >
+        <div className={cn("space-y-4 text-center", compact && "space-y-3")}>
+          {showContextBadges && (
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              {stackDepth !== undefined && (
+                <Badge className="rounded-full bg-orange-500 px-2.5 py-0.5 text-white shadow-sm shadow-orange-950/25">
+                  {stackDepth}bb
+                </Badge>
+              )}
+              {heroPosition && (
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-white/15 bg-white/5 px-2.5 py-0.5 text-zinc-200"
+                >
+                  {heroPosition}
+                  {villainPosition ? ` vs ${villainPosition}` : ""}
+                </Badge>
+              )}
+            </div>
+          )}
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-5 shadow-inner">
-            <HandCards handCode={handCode} size="lg" showLabel />
-            <p className="mt-4 text-sm font-semibold text-zinc-100">
+          <div
+            className={cn(
+              "rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-5 shadow-inner",
+              compact && "rounded-[1.25rem] px-3 py-3"
+            )}
+          >
+            <HandCards
+              handCode={handCode}
+              size={compact ? "md" : "lg"}
+              showLabel
+            />
+            <p
+              className={cn(
+                "mt-4 text-sm font-semibold text-zinc-100",
+                compact && "mt-3"
+              )}
+            >
               {spotLabel}
             </p>
             {spotContext && (
@@ -159,6 +184,7 @@ export function TrainerCard({
                 variant="outline"
                 className={cn(
                   "h-11 rounded-2xl border-zinc-700/80 bg-zinc-900/75 px-3 text-xs font-bold text-zinc-100 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-zinc-800 active:translate-y-0 sm:h-12 sm:px-4 sm:text-sm",
+                  compact && "h-10 rounded-xl sm:h-11",
                   "justify-between",
                   extraClass
                 )}
