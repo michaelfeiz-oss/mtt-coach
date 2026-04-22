@@ -46,12 +46,6 @@ const PLAYER_OPTIONS = [
   { label: "9", value: "9", enabled: true },
 ];
 
-const ANTE_OPTIONS = [
-  { label: "0", value: "0", enabled: false },
-  { label: "10%", value: "10", enabled: false },
-  { label: "12.5%", value: "12.5", enabled: true },
-];
-
 const GROUP_ORDER = new Map(SPOT_GROUPS.map((group, index) => [group, index]));
 const POSITION_ORDER = new Map(
   POSITIONS.map((position, index) => [position, index])
@@ -368,8 +362,8 @@ export default function StrategyLibrary() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_42%,#0f172a_100%)] pb-24 text-white">
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 py-3 sm:px-5 md:gap-4 md:py-5">
+    <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_42%,#0f172a_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-white">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5">
         <header className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -396,7 +390,7 @@ export default function StrategyLibrary() {
           )}
         </header>
 
-        <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-3 shadow-2xl shadow-black/20 backdrop-blur">
+        <section className="rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-xl shadow-black/15 backdrop-blur sm:p-3">
           {chartLoading && selectedChartId !== undefined && (
             <div className="space-y-3">
               <Skeleton className="h-10 w-56 rounded-xl bg-white/10" />
@@ -450,32 +444,29 @@ export default function StrategyLibrary() {
                       9 players
                     </Badge>
                     <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
-                      12.5% ante
+                      BBA
                     </Badge>
                   </div>
                 </div>
                 <ActionLegend
                   actions={visibleActions}
-                  className="rounded-2xl border border-white/10 bg-black/20 p-2"
+                  className="rounded-xl border border-white/10 bg-black/20 p-1.5"
                 />
               </div>
 
-              <div className="rounded-[1.15rem] border border-white/10 bg-zinc-950/45 p-2 shadow-inner shadow-black/30">
+              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1.5 shadow-inner shadow-black/25">
                 <RangeMatrix actions={actionMap} compact size="md" />
               </div>
             </div>
           )}
         </section>
 
-        <section className="rounded-[1.35rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20">
-          <div className="mb-3 flex items-center justify-between gap-2">
+        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <div>
               <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
                 <SlidersHorizontal className="h-3.5 w-3.5" />
                 Setup
-              </p>
-              <p className="mt-0.5 text-xs text-zinc-400">
-                Direct controls update the chart immediately.
               </p>
             </div>
             <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
@@ -484,8 +475,8 @@ export default function StrategyLibrary() {
             </Badge>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="space-y-3">
+          <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-2.5">
               <div>
                 <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   Decision
@@ -511,7 +502,7 @@ export default function StrategyLibrary() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_1.4fr]">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                     Stack
@@ -547,24 +538,6 @@ export default function StrategyLibrary() {
                   </p>
                   <div className="grid grid-cols-3 gap-1.5">
                     {PLAYER_OPTIONS.map(option => (
-                      <SetupButton
-                        key={option.value}
-                        active={option.enabled}
-                        disabled={!option.enabled}
-                        className="px-2"
-                      >
-                        {option.label}
-                      </SetupButton>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="col-span-2 sm:col-span-1">
-                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Ante
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {ANTE_OPTIONS.map(option => (
                       <SetupButton
                         key={option.value}
                         active={option.enabled}
@@ -637,7 +610,7 @@ export default function StrategyLibrary() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div>
                 <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   <Search className="h-3.5 w-3.5" />
@@ -664,9 +637,9 @@ export default function StrategyLibrary() {
                         type="button"
                         onClick={() => selectSpot(spot)}
                         className={cn(
-                          "shrink-0 rounded-xl border px-3 py-2 text-left text-xs font-bold transition",
+                          "shrink-0 rounded-xl border px-2.5 py-1.5 text-left text-xs font-bold transition",
                           selectedChartId === spot.id
-                            ? "border-orange-400 bg-orange-500 text-white"
+                            ? "border-orange-400 bg-orange-500/90 text-white"
                             : "border-white/10 bg-white/[0.06] text-zinc-300 hover:border-orange-300/70"
                         )}
                       >
@@ -686,7 +659,7 @@ export default function StrategyLibrary() {
                 <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
                   Matching Spots
                 </p>
-                <div className="grid max-h-56 gap-1.5 overflow-y-auto pr-1">
+                <div className="grid max-h-44 gap-1.5 overflow-y-auto pr-1">
                   {spotsLoading && (
                     <>
                       <Skeleton className="h-10 rounded-xl bg-white/10" />
@@ -707,9 +680,9 @@ export default function StrategyLibrary() {
                       type="button"
                       onClick={() => selectSpot(spot)}
                       className={cn(
-                        "flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition",
+                        "flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left transition",
                         selectedChartId === spot.id
-                          ? "border-orange-400 bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+                          ? "border-orange-400 bg-orange-500/90 text-white shadow-lg shadow-orange-950/20"
                           : "border-white/10 bg-white/[0.06] text-zinc-200 hover:border-orange-300/70 hover:bg-orange-500/10"
                       )}
                     >
@@ -733,7 +706,7 @@ export default function StrategyLibrary() {
         </section>
 
         {chart && chartNotes.length > 0 && (
-          <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-3 text-zinc-200">
+          <section className="rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 text-zinc-200 sm:p-3">
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
               Spot Notes
             </p>
