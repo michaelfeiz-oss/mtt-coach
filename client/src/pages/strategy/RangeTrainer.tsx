@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "wouter";
 import {
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   ChevronsUpDown,
   Flame,
@@ -19,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { TableContext } from "@/components/strategy/TableContext";
 import { TrainerCard } from "@/components/strategy/TrainerCard";
 import { TrainerResultReveal } from "@/components/strategy/TrainerResultReveal";
 import { calcAccuracy } from "@/components/strategy/utils";
@@ -74,7 +74,10 @@ function dedupePush<T>(items: T[], next: T, limit: number): T[] {
   return [next, ...items.filter(item => item !== next)].slice(0, limit);
 }
 
-function modeForFilters(stackDepth?: number, spotGroup?: SpotGroup): TrainerMode {
+function modeForFilters(
+  stackDepth?: number,
+  spotGroup?: SpotGroup
+): TrainerMode {
   if (spotGroup) return "family";
   if (stackDepth !== undefined) return "stack";
   return "full_pool";
@@ -149,8 +152,10 @@ function scrollElementIntoComfortView(element: HTMLElement | null) {
   if (!element) return;
 
   const rect = element.getBoundingClientRect();
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-  const isComfortablyVisible = rect.top >= 72 && rect.top <= viewportHeight * 0.45;
+  const viewportHeight =
+    window.innerHeight || document.documentElement.clientHeight;
+  const isComfortablyVisible =
+    rect.top >= 72 && rect.top <= viewportHeight * 0.45;
 
   if (isComfortablyVisible) return;
 
@@ -161,7 +166,9 @@ function replaceTrainerUrl(chartId: number | null) {
   if (typeof window === "undefined") return;
 
   const nextUrl =
-    chartId === null ? "/strategy/trainer" : `/strategy/trainer?chartId=${chartId}`;
+    chartId === null
+      ? "/strategy/trainer"
+      : `/strategy/trainer?chartId=${chartId}`;
   window.history.replaceState(window.history.state, "", nextUrl);
 }
 
@@ -171,9 +178,10 @@ export default function RangeTrainer() {
   const params = new URLSearchParams(search);
   const chartIdParamRaw = params.get("chartId");
   const chartIdParam = chartIdParamRaw ? Number(chartIdParamRaw) : undefined;
-  const initialChartId = chartIdParam !== undefined && Number.isFinite(chartIdParam)
-    ? chartIdParam
-    : null;
+  const initialChartId =
+    chartIdParam !== undefined && Number.isFinite(chartIdParam)
+      ? chartIdParam
+      : null;
 
   const [mode, setMode] = useState<TrainerMode>(
     initialChartId !== null ? "exact_chart" : "full_pool"
@@ -184,9 +192,6 @@ export default function RangeTrainer() {
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
-  const [openGroups, setOpenGroups] = useState<Partial<Record<SpotGroup, boolean>>>(
-    {}
-  );
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     total: 0,
     correct: 0,
@@ -205,8 +210,9 @@ export default function RangeTrainer() {
 
   const { data: spots = [], isLoading: spotsLoading } =
     trpc.strategy.listSpots.useQuery({ stackDepth, spotGroup });
-  const { data: allVisibleStackSpots = [] } =
-    trpc.strategy.listSpots.useQuery({ stackDepth });
+  const { data: allVisibleStackSpots = [] } = trpc.strategy.listSpots.useQuery({
+    stackDepth,
+  });
 
   const selectedSpot = useMemo(
     () => spots.find(spot => spot.id === selectedChartId),
@@ -239,7 +245,14 @@ export default function RangeTrainer() {
       case "full_pool":
         return input;
     }
-  }, [mode, recentChartIds, recentHandKeys, selectedChartId, stackDepth, spotGroup]);
+  }, [
+    mode,
+    recentChartIds,
+    recentHandKeys,
+    selectedChartId,
+    stackDepth,
+    spotGroup,
+  ]);
 
   const trainerEnabled = mode !== "exact_chart" || selectedChartId !== null;
   const {
@@ -292,14 +305,7 @@ export default function RangeTrainer() {
     });
   }, [searchTerm, spots]);
 
-  const groupedSpots = useMemo(
-    () =>
-      SPOT_GROUPS.map(group => ({
-        group,
-        spots: filteredSpots.filter(spot => spot.spotGroup === group),
-      })).filter(section => section.spots.length > 0),
-    [filteredSpots]
-  );
+  const quickSpots = useMemo(() => filteredSpots.slice(0, 12), [filteredSpots]);
 
   const activeSpot = trainerSpot?.chart ?? selectedSpot;
   const modeLabel = formatModeLabel(mode, activeSpot, stackDepth, spotGroup);
@@ -430,20 +436,6 @@ export default function RangeTrainer() {
     void refetchTrainerSpot();
   }
 
-  function groupIsOpen(group: SpotGroup) {
-    if (searchTerm.trim()) return true;
-    if (spotGroup) return group === spotGroup;
-    if (mode === "exact_chart" && selectedSpot?.spotGroup === group) return true;
-    return openGroups[group] ?? group === "RFI";
-  }
-
-  function toggleGroup(group: SpotGroup) {
-    setOpenGroups(previous => ({
-      ...previous,
-      [group]: !groupIsOpen(group),
-    }));
-  }
-
   function scenarioSublabel(spot: SpotSummary) {
     return spot.villainPosition
       ? `${spot.heroPosition} vs ${spot.villainPosition}`
@@ -451,493 +443,370 @@ export default function RangeTrainer() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.12),transparent_28rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#f1f5f9_100%)] pb-24 md:h-[calc(100dvh-4rem)] md:overflow-hidden md:pb-0">
-      <div className="grid min-h-full grid-cols-1 md:h-full md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
-        <aside className="flex flex-col border-b border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5 backdrop-blur md:min-h-0 md:border-b-0 md:border-r">
-          <div className="space-y-4 border-b border-slate-200/80 p-4">
-            <div className="flex items-start justify-between gap-3">
+    <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-24 text-white">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5">
+        <header className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
+                <Target className="h-4 w-4" />
+              </span>
               <div>
-                <h1 className="flex items-center gap-2 text-base font-black text-foreground">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-zinc-950 text-orange-300 shadow-lg shadow-zinc-950/15">
-                    <Target className="h-4 w-4" />
-                  </span>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
                   Range Trainer
+                </p>
+                <h1 className="truncate text-xl font-black tracking-tight">
+                  {modeLabel}
                 </h1>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  Train one chart, one family, one stack, or the full pool.
-                </p>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 shrink-0 gap-1.5 rounded-full border-slate-200 bg-white px-3 text-xs font-bold shadow-sm"
-                onClick={handleShuffle}
-                disabled={!trainerEnabled}
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-                Shuffle
-              </Button>
             </div>
+            <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
+              {modeHelper}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5 rounded-xl border-white/10 bg-white/[0.06] px-3 text-xs font-black text-zinc-200 hover:bg-white/10"
+              onClick={resetDrill}
+              disabled={!trainerEnabled}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 gap-1.5 rounded-xl bg-orange-500 px-3 text-xs font-black text-white hover:bg-orange-600"
+              onClick={handleShuffle}
+              disabled={!trainerEnabled}
+            >
+              <Shuffle className="h-3.5 w-3.5" />
+              Shuffle
+            </Button>
+          </div>
+        </header>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                size="sm"
-                className={cn(
-                  "h-9 rounded-2xl text-xs font-black",
-                  mode === "full_pool"
-                    ? "bg-zinc-950 text-white hover:bg-zinc-900"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-orange-50"
-                )}
-                variant={mode === "full_pool" ? "default" : "outline"}
-                onClick={startFullRandom}
-              >
-                Full pool
-              </Button>
-              <Button
-                size="sm"
-                className="h-9 gap-1 rounded-2xl border-slate-200 bg-white text-xs font-black text-slate-700 hover:bg-orange-50"
-                variant="outline"
-                onClick={mixCurrentFilters}
-                disabled={
-                  selectedChartId === null &&
-                  stackDepth === undefined &&
-                  spotGroup === undefined &&
-                  mode !== "exact_chart"
-                }
-              >
-                <ChevronsUpDown className="h-3.5 w-3.5" />
-                Mix filters
-              </Button>
-            </div>
+        <section className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3">
+          <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
+            <div className="min-w-0 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  className={cn(
+                    "h-9 rounded-xl text-xs font-black",
+                    mode === "full_pool"
+                      ? "bg-orange-500 text-white hover:bg-orange-600"
+                      : "border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/10"
+                  )}
+                  variant={mode === "full_pool" ? "default" : "outline"}
+                  onClick={startFullRandom}
+                >
+                  Full pool
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-9 gap-1 rounded-xl border-white/10 bg-white/[0.06] text-xs font-black text-zinc-200 hover:bg-white/10"
+                  variant="outline"
+                  onClick={mixCurrentFilters}
+                  disabled={
+                    selectedChartId === null &&
+                    stackDepth === undefined &&
+                    spotGroup === undefined &&
+                    mode !== "exact_chart"
+                  }
+                >
+                  <ChevronsUpDown className="h-3.5 w-3.5" />
+                  Mix filters
+                </Button>
+              </div>
 
-            <div className="space-y-3 rounded-[1.35rem] border border-slate-200 bg-slate-50/80 p-3">
-              <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Stack
-                </p>
-                <div className="grid grid-cols-5 gap-1.5">
-                  <Button
-                    size="sm"
-                    variant={stackDepth === undefined ? "default" : "outline"}
-                    className={cn(
-                      "h-8 rounded-full px-2 text-xs font-bold shadow-sm",
-                      stackDepth === undefined
-                        ? "bg-zinc-950 text-white hover:bg-zinc-900"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
-                    )}
-                    onClick={() => setStackFilter(undefined)}
-                  >
-                    All
-                  </Button>
-                  {STACK_DEPTHS.map(depth => (
+              <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] gap-2.5">
+                <div className="min-w-0">
+                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Stack
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
                     <Button
-                      key={depth}
                       size="sm"
-                      variant={stackDepth === depth ? "default" : "outline"}
+                      variant={stackDepth === undefined ? "default" : "outline"}
                       className={cn(
-                        "h-8 rounded-full px-2 text-xs font-bold shadow-sm",
-                        stackDepth === depth
-                          ? "bg-zinc-950 text-white hover:bg-zinc-900"
-                          : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
+                        "h-8 rounded-xl px-2 text-xs font-black",
+                        stackDepth === undefined
+                          ? "bg-orange-500 text-white hover:bg-orange-600"
+                          : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
                       )}
-                      onClick={() => setStackFilter(depth)}
+                      onClick={() => setStackFilter(undefined)}
                     >
-                      {depth}
+                      All
                     </Button>
-                  ))}
+                    {STACK_DEPTHS.map(depth => (
+                      <Button
+                        key={depth}
+                        size="sm"
+                        variant={stackDepth === depth ? "default" : "outline"}
+                        className={cn(
+                          "h-8 rounded-xl px-2 text-xs font-black",
+                          stackDepth === depth
+                            ? "bg-orange-500 text-white hover:bg-orange-600"
+                            : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
+                        )}
+                        onClick={() => setStackFilter(depth)}
+                      >
+                        {depth}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="min-w-0">
+                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Decision
+                  </p>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                    <Button
+                      size="sm"
+                      variant={spotGroup === undefined ? "default" : "outline"}
+                      className={cn(
+                        "h-8 shrink-0 rounded-xl px-3 text-xs font-black",
+                        spotGroup === undefined
+                          ? "bg-orange-500 text-white hover:bg-orange-600"
+                          : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
+                      )}
+                      onClick={() => setFamilyFilter(undefined)}
+                    >
+                      All
+                    </Button>
+                    {SPOT_GROUPS.map(group => (
+                      <Button
+                        key={group}
+                        size="sm"
+                        variant={spotGroup === group ? "default" : "outline"}
+                        className={cn(
+                          "h-8 shrink-0 gap-1.5 rounded-xl px-3 text-xs font-black",
+                          spotGroup === group
+                            ? "bg-orange-500 text-white hover:bg-orange-600"
+                            : "border-white/10 bg-white/[0.06] text-zinc-300 hover:bg-white/10"
+                        )}
+                        onClick={() => setFamilyFilter(group)}
+                      >
+                        {SPOT_GROUP_LABELS[group].replace(" (Open Raise)", "")}
+                        {(groupCounts[group] ?? 0) > 0 && (
+                          <span className="rounded-full bg-black/20 px-1.5 text-[10px] text-current opacity-80">
+                            {groupCounts[group]}
+                          </span>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Family
-                </p>
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
-                  <Button
-                    size="sm"
-                    variant={spotGroup === undefined ? "default" : "outline"}
-                    className={cn(
-                      "h-8 shrink-0 rounded-full px-3 text-xs font-bold shadow-sm",
-                      spotGroup === undefined
-                        ? "bg-zinc-950 text-white hover:bg-zinc-900"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
-                    )}
-                    onClick={() => setFamilyFilter(undefined)}
-                  >
-                    All
-                  </Button>
-                  {SPOT_GROUPS.map(group => (
-                    <Button
-                      key={group}
-                      size="sm"
-                      variant={spotGroup === group ? "default" : "outline"}
-                      className={cn(
-                        "h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs font-bold shadow-sm",
-                        spotGroup === group
-                          ? "bg-zinc-950 text-white hover:bg-zinc-900"
-                          : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
-                      )}
-                      onClick={() => setFamilyFilter(group)}
-                    >
-                      {SPOT_GROUP_LABELS[group].replace(" (Open Raise)", "")}
-                      {(groupCounts[group] ?? 0) > 0 && (
-                        <span className="rounded-full bg-white/15 px-1.5 text-[10px] text-current opacity-75">
-                          {groupCounts[group]}
-                        </span>
-                      )}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
+            <div className="min-w-0 space-y-2">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                 <Input
                   value={searchTerm}
                   onChange={event => setSearchTerm(event.target.value)}
-                  placeholder="Try 40bb sb rfi, btn vs bb..."
-                  className="h-11 rounded-2xl border-slate-200 bg-white pl-9 shadow-sm"
+                  placeholder="Jump to 40bb sb rfi..."
+                  className="h-10 rounded-xl border-white/10 bg-white/[0.06] pl-9 text-sm text-white placeholder:text-zinc-500"
                 />
                 {searchTerm && (
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200"
                     onClick={() => setSearchTerm("")}
                   >
                     <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
-            </div>
-          </div>
 
-          <div className="max-h-96 overflow-y-auto p-3 md:min-h-0 md:max-h-none md:flex-1">
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Scenario Browser
-              </p>
-              <Badge variant="secondary" className="h-5 rounded-full text-[11px]">
-                {filteredSpots.length}
-              </Badge>
-            </div>
+              {searchTerm.trim().length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  {spotsLoading && (
+                    <>
+                      <Skeleton className="h-12 w-32 shrink-0 rounded-xl bg-white/10" />
+                      <Skeleton className="h-12 w-32 shrink-0 rounded-xl bg-white/10" />
+                      <Skeleton className="h-12 w-32 shrink-0 rounded-xl bg-white/10" />
+                    </>
+                  )}
 
-            {spotsLoading && (
-              <div className="space-y-2">
-                {[1, 2, 3, 4, 5].map(index => (
-                  <Skeleton key={index} className="h-16 w-full rounded-xl" />
-                ))}
-              </div>
-            )}
-
-            {!spotsLoading && spots.length === 0 && (
-              <Card className="rounded-2xl border-dashed bg-slate-50/80">
-                <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                  No charts available. Run the seed script to add ranges.
-                </CardContent>
-              </Card>
-            )}
-
-            {!spotsLoading && spots.length > 0 && filteredSpots.length === 0 && (
-              <Card className="rounded-2xl border-dashed bg-slate-50/80">
-                <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                  No scenarios match this search. Try "40bb sb rfi" or clear a
-                  filter.
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="space-y-2">
-              {groupedSpots.map(section => {
-                const open = groupIsOpen(section.group);
-
-                return (
-                  <div
-                    key={section.group}
-                    className="rounded-[1.35rem] border border-slate-200 bg-white shadow-sm"
-                  >
-                    <button
-                      type="button"
-                      className="flex w-full items-start justify-between gap-3 px-3 py-3 text-left"
-                      onClick={() => toggleGroup(section.group)}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-black text-slate-950">
-                            {SPOT_GROUP_LABELS[section.group]}
-                          </p>
-                          <Badge
-                            variant="secondary"
-                            className="h-5 rounded-full px-1.5 text-[10px]"
-                          >
-                            {section.spots.length}
-                          </Badge>
-                        </div>
-                        <p className="mt-0.5 text-xs leading-tight text-slate-500">
-                          {SPOT_GROUP_SUBTITLES[section.group]}
-                        </p>
-                      </div>
-                      <ChevronDown
-                        className={cn(
-                          "mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition",
-                          open && "rotate-180"
-                        )}
-                      />
-                    </button>
-
-                    {open && (
-                      <div className="space-y-1 border-t border-slate-100 p-2">
-                        {section.spots.map(spot => {
-                          const active =
-                            mode === "exact_chart" && selectedChartId === spot.id;
-
-                          return (
-                            <button
-                              key={spot.id}
-                              type="button"
-                              className={cn(
-                                "group w-full rounded-2xl border p-3 text-left shadow-sm transition",
-                                active
-                                  ? "border-zinc-950 bg-zinc-950 text-white shadow-lg shadow-zinc-950/15"
-                                  : "border-slate-200 bg-slate-50/80 text-foreground hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50/60 hover:shadow-md"
-                              )}
-                              onClick={() => selectExactChart(spot.id)}
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-bold">
-                                    {spot.title}
-                                  </p>
-                                  <p
-                                    className={cn(
-                                      "mt-1 truncate text-xs",
-                                      active
-                                        ? "text-zinc-400"
-                                        : "text-muted-foreground"
-                                    )}
-                                  >
-                                    {scenarioSublabel(spot)}
-                                  </p>
-                                </div>
-                                <Badge
-                                  variant={active ? "default" : "outline"}
-                                  className={cn(
-                                    "h-6 shrink-0 rounded-full",
-                                    active
-                                      ? "bg-orange-500 text-white"
-                                      : "border-slate-200 bg-white"
-                                  )}
-                                >
-                                  {spot.stackDepth}bb
-                                </Badge>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200/80 bg-white p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Session Quality
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
-                onClick={resetDrill}
-                disabled={!trainerEnabled}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset
-              </Button>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5 text-center shadow-sm">
-                <p className="text-lg font-bold text-foreground">
-                  {sessionStats.total}
-                </p>
-                <p className="text-[11px] text-muted-foreground">Hands</p>
-              </div>
-              <div className="rounded-2xl border border-orange-200 bg-orange-50 p-2.5 text-center shadow-sm">
-                <p className="text-lg font-bold text-orange-600">
-                  {chartsCovered.length}
-                </p>
-                <p className="text-[11px] text-muted-foreground">Charts</p>
-              </div>
-              <div className="rounded-2xl border border-green-200 bg-green-50 p-2.5 text-center shadow-sm">
-                <p className="text-lg font-bold text-green-600">
-                  {actionsCovered.length}
-                </p>
-                <p className="text-[11px] text-muted-foreground">Actions</p>
-              </div>
-            </div>
-            {actionsCovered.length > 0 && (
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                Actions covered:{" "}
-                {actionsCovered
-                  .slice(0, 5)
-                  .map(action => ACTION_LABELS[action])
-                  .join(", ")}
-              </p>
-            )}
-            {!isAuthenticated && (
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                Practice works while logged out. Saved weak spots require login.
-              </p>
-            )}
-          </div>
-        </aside>
-
-        <main className="min-h-0 p-4 md:overflow-y-auto md:p-6 xl:p-8">
-          <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-5">
-            <Card className="overflow-hidden rounded-[1.75rem] border-0 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_18rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] text-white shadow-2xl shadow-slate-950/20">
-              <CardContent className="p-5 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-orange-300">
-                      Training
-                    </p>
-                    <h2 className="text-2xl font-black tracking-tight">
-                      {modeLabel}
-                    </h2>
-                    <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                      {modeHelper}
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-300">
-                      <Badge className="rounded-full bg-orange-500 text-white">
-                        {mode === "exact_chart"
-                          ? "Exact Chart"
-                          : mode === "family"
-                            ? "Family Mode"
-                            : mode === "stack"
-                              ? "Stack Mode"
-                              : "Full Pool"}
-                      </Badge>
-                      {stackDepth !== undefined && (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full border-white/15 bg-white/5 text-zinc-200"
-                        >
-                          {stackDepth}bb
-                        </Badge>
-                      )}
-                      {spotGroup !== undefined && (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full border-white/15 bg-white/5 text-zinc-200"
-                        >
-                          {SPOT_GROUP_LABELS[spotGroup]}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 sm:w-72">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-3 text-center">
-                      <CheckCircle2 className="mx-auto mb-1 h-4 w-4 text-green-400" />
-                      <p className="text-lg font-bold">{sessionStats.correct}</p>
-                      <p className="text-[11px] text-zinc-400">Correct</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-3 text-center">
-                      <Target className="mx-auto mb-1 h-4 w-4 text-orange-300" />
-                      <p className="text-lg font-bold">{accuracy}%</p>
-                      <p className="text-[11px] text-zinc-400">Accuracy</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.08] p-3 text-center">
-                      <Flame className="mx-auto mb-1 h-4 w-4 text-amber-300" />
-                      <p className="text-lg font-bold">{sessionStats.streak}</p>
-                      <p className="text-[11px] text-zinc-400">Streak</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex flex-1 items-start justify-center">
-              {trainerEnabled &&
-                (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
-                  <Skeleton className="h-[440px] w-full max-w-xl rounded-3xl" />
-                )}
-
-              {trainerSpot && (
-                <div className="w-full max-w-3xl space-y-4">
-                  <div ref={questionCardRef}>
-                    <TrainerCard
-                      key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
-                      chartId={trainerSpot.chartId}
-                      handCode={trainerSpot.handCode}
-                      spotLabel={trainerSpot.chart.title}
-                      spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
-                      stackDepth={trainerSpot.chart.stackDepth}
-                      heroPosition={trainerSpot.chart.heroPosition}
-                      villainPosition={trainerSpot.chart.villainPosition}
-                      correctAction={trainerSpot.correctAction}
-                      explanation={trainerSpot.correctNote}
-                      isPersisted={isAuthenticated}
-                      choices={trainerSpot.choices}
-                      showInlineResult={false}
-                      onAnswer={handleAnswer}
-                      onSkip={handleNext}
-                      className="mx-auto w-full max-w-xl"
-                    />
-                  </div>
-
-                  {answerReveal && (
-                    <div ref={resultRevealRef} className="scroll-mt-4 md:scroll-mt-6">
-                      <TrainerResultReveal
-                        chart={revealChart}
-                        isLoadingChart={
-                          revealChartLoading || revealChartFetching
-                        }
-                        chartId={answerReveal.chartId}
-                        handCode={answerReveal.handCode}
-                        selectedAction={answerReveal.selectedAction}
-                        correctAction={answerReveal.correctAction}
-                        isCorrect={answerReveal.isCorrect}
-                        explanation={answerReveal.explanation}
-                        onNext={handleNext}
-                      />
+                  {!spotsLoading && spots.length === 0 && (
+                    <div className="w-full rounded-xl border border-dashed border-white/10 bg-white/[0.04] p-3 text-center text-xs text-zinc-400">
+                      No charts available. Run the seed script to add ranges.
                     </div>
                   )}
+
+                  {!spotsLoading &&
+                    spots.length > 0 &&
+                    quickSpots.length === 0 && (
+                      <div className="w-full rounded-xl border border-dashed border-white/10 bg-white/[0.04] p-3 text-center text-xs text-zinc-400">
+                        No scenarios match this setup.
+                      </div>
+                    )}
+
+                  {quickSpots.map(spot => {
+                    const active =
+                      mode === "exact_chart" && selectedChartId === spot.id;
+
+                    return (
+                      <button
+                        key={spot.id}
+                        type="button"
+                        className={cn(
+                          "min-h-12 w-32 shrink-0 rounded-xl border px-3 py-2 text-left transition sm:w-36",
+                          active
+                            ? "border-orange-400 bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+                            : "border-white/10 bg-white/[0.06] text-zinc-200 hover:border-orange-300/70 hover:bg-orange-500/10"
+                        )}
+                        onClick={() => selectExactChart(spot.id)}
+                      >
+                        <span className="block truncate text-xs font-black">
+                          {spot.title}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[10px] opacity-70">
+                          {spot.stackDepth}bb - {scenarioSublabel(spot)}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
-
-              {trainerEnabled &&
-                !trainerSpotLoading &&
-                !trainerSpotFetching &&
-                !trainerSpot && (
-                  <Card className="w-full max-w-lg rounded-[1.75rem] border-dashed bg-white/95 shadow-xl shadow-slate-950/5">
-                    <CardContent className="space-y-4 p-8 text-center">
-                      <Target className="mx-auto h-10 w-10 text-muted-foreground opacity-40" />
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          No trainer hand available
-                        </p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {trainerSpotError?.message ??
-                            "Clear filters or choose a different scenario."}
-                        </p>
-                      </div>
-                      <Button
-                        className="rounded-2xl bg-orange-500 text-white hover:bg-orange-600"
-                        onClick={startFullRandom}
-                      >
-                        Train full pool
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
             </div>
           </div>
-        </main>
-      </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-zinc-500">
+            <Badge className="rounded-full bg-orange-500 text-white">
+              {mode === "exact_chart"
+                ? "Exact Chart"
+                : mode === "family"
+                  ? "Family"
+                  : mode === "stack"
+                    ? "Stack"
+                    : "Full Pool"}
+            </Badge>
+            <span className="inline-flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+              {sessionStats.correct}/{sessionStats.total} correct
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Target className="h-3.5 w-3.5 text-orange-300" />
+              {accuracy}% accuracy
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5 text-amber-300" />
+              {sessionStats.streak} streak
+            </span>
+            <span>Charts covered: {chartsCovered.length}</span>
+            {actionsCovered.length > 0 && (
+              <span>
+                Actions:{" "}
+                {actionsCovered
+                  .slice(0, 4)
+                  .map(action => ACTION_LABELS[action])
+                  .join(", ")}
+              </span>
+            )}
+            {!isAuthenticated && (
+              <span className="ml-auto">
+                Practice is local while logged out.
+              </span>
+            )}
+          </div>
+        </section>
+
+        <section className="flex flex-1 items-start justify-center">
+          {trainerEnabled &&
+            (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
+              <Skeleton className="h-[520px] w-full rounded-[1.35rem] bg-white/10" />
+            )}
+
+          {trainerSpot && (
+            <div className="w-full space-y-3">
+              <div
+                ref={questionCardRef}
+                className="grid gap-3 lg:grid-cols-[0.85fr_1fr]"
+              >
+                <TableContext
+                  title={trainerSpot.chart.title}
+                  stackDepth={trainerSpot.chart.stackDepth}
+                  heroPosition={trainerSpot.chart.heroPosition}
+                  villainPosition={trainerSpot.chart.villainPosition}
+                  spotGroup={trainerSpot.chart.spotGroup}
+                />
+                <TrainerCard
+                  key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
+                  chartId={trainerSpot.chartId}
+                  handCode={trainerSpot.handCode}
+                  spotLabel={trainerSpot.chart.title}
+                  spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
+                  stackDepth={trainerSpot.chart.stackDepth}
+                  heroPosition={trainerSpot.chart.heroPosition}
+                  villainPosition={trainerSpot.chart.villainPosition}
+                  correctAction={trainerSpot.correctAction}
+                  explanation={trainerSpot.correctNote}
+                  isPersisted={isAuthenticated}
+                  choices={trainerSpot.choices}
+                  showInlineResult={false}
+                  compact
+                  showContextBadges={false}
+                  onAnswer={handleAnswer}
+                  onSkip={handleNext}
+                  className="w-full"
+                />
+              </div>
+
+              {answerReveal && (
+                <div
+                  ref={resultRevealRef}
+                  className="scroll-mt-4 md:scroll-mt-6"
+                >
+                  <TrainerResultReveal
+                    chart={revealChart}
+                    isLoadingChart={revealChartLoading || revealChartFetching}
+                    chartId={answerReveal.chartId}
+                    handCode={answerReveal.handCode}
+                    selectedAction={answerReveal.selectedAction}
+                    correctAction={answerReveal.correctAction}
+                    isCorrect={answerReveal.isCorrect}
+                    explanation={answerReveal.explanation}
+                    onNext={handleNext}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {trainerEnabled &&
+            !trainerSpotLoading &&
+            !trainerSpotFetching &&
+            !trainerSpot && (
+              <Card className="w-full max-w-lg rounded-[1.75rem] border-dashed border-white/10 bg-white/[0.06] text-white shadow-xl shadow-black/20">
+                <CardContent className="space-y-4 p-8 text-center">
+                  <Target className="mx-auto h-10 w-10 text-zinc-500" />
+                  <div>
+                    <p className="text-sm font-semibold">
+                      No trainer hand available
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-400">
+                      {trainerSpotError?.message ??
+                        "Clear filters or choose a different scenario."}
+                    </p>
+                  </div>
+                  <Button
+                    className="rounded-2xl bg-orange-500 text-white hover:bg-orange-600"
+                    onClick={startFullRandom}
+                  >
+                    Train full pool
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+        </section>
+      </main>
     </div>
   );
 }

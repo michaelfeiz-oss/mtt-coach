@@ -1,70 +1,61 @@
-/**
- * client/src/pages/strategy/StrategyLibrary.tsx
- * ─────────────────────────────────────────────────────────────────────────────
- * Strategy Library page — browse and view range charts.
- * Route: /strategy/library
- *
- * CODEX TASK: Implement the page body.
- *
- * Layout:
- *   - Left sidebar (240px): SpotFilters + list of matching spots
- *   - Right main area: selected chart view (RangeMatrix + ActionLegend + notes)
- *
- * State:
- *   - selectedStackDepth: number | undefined
- *   - selectedSpotGroup: SpotGroup | undefined
- *   - selectedChartId: number | undefined
- *
- * Data:
- *   - trpc.strategy.listSpots.useQuery({ stackDepth, spotGroup }) → spot list
- *   - trpc.strategy.getChart.useQuery({ chartId }) → chart with actions
- *
- * Spot list item:
- *   - Shows title + stack depth badge
- *   - Clicking sets selectedChartId
- *   - Active item highlighted in orange
- *
- * Chart view (right panel):
- *   - Chart title + source label
- *   - Notes (if any) in a collapsible section
- *   - RangeMatrix (size="md") with buildActionMap(chart.actions)
- *   - ActionLegend below matrix
- *   - "Train this spot →" button linking to /strategy/trainer?chartId=X
- *
- * Empty state:
- *   - No spots: "No charts available. Run the seed script to add ranges."
- *   - No selection: "Select a spot from the left to view its range chart."
- *
- * Design:
- *   - Consistent with rest of app (dark theme, orange accents)
- *   - Responsive: on mobile, show list first, matrix on selection
- */
-
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { Link, useSearch } from "wouter";
-import { BookOpen, Clock, Play } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { BookOpen, Clock, Play, Search, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { trpc } from "@/lib/trpc";
+import { ActionLegend } from "@/components/strategy/ActionLegend";
+import { RangeMatrix } from "@/components/strategy/RangeMatrix";
+import { buildActionMap } from "@/components/strategy/utils";
 import {
   addRecentStrategySpot,
   loadRecentStrategySpots,
   saveRecentStrategySpots,
   type RecentStrategySpot,
 } from "@/lib/strategyRecentSpots";
-import { SpotFilters } from "@/components/strategy/SpotFilters";
-import { RangeMatrix } from "@/components/strategy/RangeMatrix";
-import { ActionLegend } from "@/components/strategy/ActionLegend";
-import { buildActionMap } from "@/components/strategy/utils";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import {
+  POSITIONS,
   SPOT_GROUP_LABELS,
-  SPOT_GROUP_SUBTITLES,
   SPOT_GROUPS,
+  SPOT_GROUP_SUBTITLES,
+  STACK_DEPTHS,
   type Action,
+  type Position,
   type SpotGroup,
 } from "../../../../shared/strategy";
+
+type SpotSummary = {
+  id: number;
+  title: string;
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  spotKey: string;
+  heroPosition: string;
+  villainPosition?: string | null;
+  sourceLabel?: string | null;
+};
+
+const PLAYER_OPTIONS = [
+  { label: "6", value: "6", enabled: false },
+  { label: "8", value: "8", enabled: false },
+  { label: "9", value: "9", enabled: true },
+];
+
+const ANTE_OPTIONS = [
+  { label: "0", value: "0", enabled: false },
+  { label: "10%", value: "10", enabled: false },
+  { label: "12.5%", value: "12.5", enabled: true },
+];
+
+const GROUP_ORDER = new Map(SPOT_GROUPS.map((group, index) => [group, index]));
+const POSITION_ORDER = new Map(
+  POSITIONS.map((position, index) => [position, index])
+);
 
 function parseChartNotes(notesJson?: string | null): string[] {
   if (!notesJson) return [];
@@ -79,6 +70,97 @@ function parseChartNotes(notesJson?: string | null): string[] {
   }
 }
 
+function positionSort(a: string, b: string) {
+  return (
+    (POSITION_ORDER.get(a as Position) ?? 99) -
+    (POSITION_ORDER.get(b as Position) ?? 99)
+  );
+}
+
+function sortSpots(a: SpotSummary, b: SpotSummary) {
+  return (
+    a.stackDepth - b.stackDepth ||
+    (GROUP_ORDER.get(a.spotGroup) ?? 99) -
+      (GROUP_ORDER.get(b.spotGroup) ?? 99) ||
+    positionSort(a.heroPosition, b.heroPosition) ||
+    a.title.localeCompare(b.title)
+  );
+}
+
+function uniqueSorted<T extends string | number>(items: T[]): T[] {
+  return Array.from(new Set(items));
+}
+
+function searchTextForSpot(spot: SpotSummary) {
+  const villain = spot.villainPosition ?? "";
+  return [
+    spot.title,
+    spot.spotKey,
+    spot.stackDepth,
+    `${spot.stackDepth}bb`,
+    spot.heroPosition,
+    villain,
+    villain ? `${spot.heroPosition} vs ${villain}` : "",
+    SPOT_GROUP_LABELS[spot.spotGroup],
+    spot.spotGroup,
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function spotMatchesSetup(
+  spot: SpotSummary,
+  stackDepth: number | undefined,
+  spotGroup: SpotGroup | undefined,
+  heroPosition: string | undefined,
+  villainPosition: string | undefined
+) {
+  if (stackDepth !== undefined && spot.stackDepth !== stackDepth) return false;
+  if (spotGroup !== undefined && spot.spotGroup !== spotGroup) return false;
+  if (heroPosition !== undefined && spot.heroPosition !== heroPosition)
+    return false;
+  if (
+    villainPosition !== undefined &&
+    (spot.villainPosition ?? "") !== villainPosition
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function SetupButton({
+  active,
+  disabled = false,
+  children,
+  onClick,
+  className,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  children: ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "min-h-9 rounded-xl border px-3 text-xs font-black transition",
+        active
+          ? "border-orange-400 bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+          : "border-white/10 bg-white/[0.06] text-zinc-300 hover:border-orange-300/70 hover:bg-orange-500/10 hover:text-white",
+        disabled &&
+          "cursor-not-allowed opacity-35 hover:border-white/10 hover:bg-white/[0.06] hover:text-zinc-300",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function StrategyLibrary() {
   const search = useSearch();
   const params = new URLSearchParams(search);
@@ -87,24 +169,26 @@ export default function StrategyLibrary() {
   const initialChartId = Number.isFinite(chartIdParam)
     ? chartIdParam
     : undefined;
+
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
+  const [heroPosition, setHeroPosition] = useState<string | undefined>(
+    undefined
+  );
+  const [villainPosition, setVillainPosition] = useState<string | undefined>(
+    undefined
+  );
   const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
     initialChartId
   );
+  const [searchTerm, setSearchTerm] = useState("");
   const [recentSpots, setRecentSpots] = useState<RecentStrategySpot[]>([]);
 
   const {
-    data: spots = [],
+    data: allSpots = [],
     isLoading: spotsLoading,
     error: spotsError,
-  } = trpc.strategy.listSpots.useQuery({
-    stackDepth,
-    spotGroup,
-  });
-  const { data: countSpots = [] } = trpc.strategy.listSpots.useQuery({
-    stackDepth,
-  });
+  } = trpc.strategy.listSpots.useQuery({});
 
   const {
     data: chart,
@@ -115,6 +199,80 @@ export default function StrategyLibrary() {
     { enabled: selectedChartId !== undefined }
   );
 
+  const availableStacks = useMemo(
+    () =>
+      STACK_DEPTHS.filter(depth =>
+        allSpots.some(spot => spot.stackDepth === depth)
+      ),
+    [allSpots]
+  );
+
+  const baseSetupSpots = useMemo(
+    () =>
+      allSpots
+        .filter(spot =>
+          spotMatchesSetup(spot, stackDepth, spotGroup, undefined, undefined)
+        )
+        .sort(sortSpots),
+    [allSpots, stackDepth, spotGroup]
+  );
+
+  const heroOptions = useMemo(
+    () =>
+      uniqueSorted(baseSetupSpots.map(spot => spot.heroPosition)).sort(
+        positionSort
+      ),
+    [baseSetupSpots]
+  );
+
+  const villainBaseSpots = useMemo(
+    () =>
+      baseSetupSpots.filter(spot =>
+        heroPosition === undefined ? true : spot.heroPosition === heroPosition
+      ),
+    [baseSetupSpots, heroPosition]
+  );
+
+  const villainOptions = useMemo(
+    () =>
+      uniqueSorted(
+        villainBaseSpots
+          .map(spot => spot.villainPosition)
+          .filter((position): position is string => Boolean(position))
+      ).sort(positionSort),
+    [villainBaseSpots]
+  );
+
+  const matchingSpots = useMemo(
+    () =>
+      allSpots
+        .filter(spot =>
+          spotMatchesSetup(
+            spot,
+            stackDepth,
+            spotGroup,
+            heroPosition,
+            villainPosition
+          )
+        )
+        .sort(sortSpots),
+    [allSpots, stackDepth, spotGroup, heroPosition, villainPosition]
+  );
+
+  const visibleScenarioSpots = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    const base = matchingSpots.length > 0 ? matchingSpots : baseSetupSpots;
+    if (!query) return base.slice(0, 12);
+
+    const tokens = query.split(/\s+/).filter(Boolean);
+    return base
+      .filter(spot => {
+        const searchable = searchTextForSpot(spot);
+        return tokens.every(token => searchable.includes(token));
+      })
+      .slice(0, 12);
+  }, [baseSetupSpots, matchingSpots, searchTerm]);
+
   const actionMap = chart ? buildActionMap(chart.actions) : {};
   const chartNotes = parseChartNotes(chart?.notesJson);
   const visibleActions = chart
@@ -123,30 +281,17 @@ export default function StrategyLibrary() {
       ) as Action[])
     : undefined;
 
-  const groupCounts = useMemo(
-    () =>
-      countSpots.reduce<Partial<Record<SpotGroup, number>>>((counts, spot) => {
-        counts[spot.spotGroup] = (counts[spot.spotGroup] ?? 0) + 1;
-        return counts;
-      }, {}),
-    [countSpots]
-  );
-
-  const groupedSpots = useMemo(
-    () =>
-      SPOT_GROUPS.map(group => ({
-        group,
-        spots: spots.filter(spot => spot.spotGroup === group),
-      })).filter(group => group.spots.length > 0),
-    [spots]
-  );
-
   useEffect(() => {
     setRecentSpots(loadRecentStrategySpots());
   }, []);
 
   useEffect(() => {
     if (!chart) return;
+
+    setStackDepth(chart.stackDepth);
+    setSpotGroup(chart.spotGroup);
+    setHeroPosition(chart.heroPosition);
+    setVillainPosition(chart.villainPosition ?? undefined);
 
     const nextSpot: RecentStrategySpot = {
       id: chart.id,
@@ -165,262 +310,446 @@ export default function StrategyLibrary() {
     });
   }, [chart?.id]);
 
-  function selectChart(chartId: number) {
-    setSelectedChartId(chartId);
+  useEffect(() => {
+    if (spotsLoading) return;
+    if (
+      selectedChartId !== undefined &&
+      matchingSpots.some(spot => spot.id === selectedChartId)
+    ) {
+      return;
+    }
+
+    setSelectedChartId(matchingSpots[0]?.id);
+  }, [matchingSpots, selectedChartId, spotsLoading]);
+
+  useEffect(() => {
+    if (heroPosition !== undefined && !heroOptions.includes(heroPosition)) {
+      setHeroPosition(undefined);
+    }
+  }, [heroOptions, heroPosition]);
+
+  useEffect(() => {
+    if (
+      villainPosition !== undefined &&
+      !villainOptions.includes(villainPosition)
+    ) {
+      setVillainPosition(undefined);
+    }
+  }, [villainOptions, villainPosition]);
+
+  function selectSpot(spot: SpotSummary | RecentStrategySpot) {
+    setSelectedChartId(spot.id);
+    setStackDepth(spot.stackDepth);
+    setSpotGroup(spot.spotGroup);
+    setHeroPosition(spot.heroPosition);
+    setVillainPosition(spot.villainPosition ?? undefined);
+  }
+
+  function setGroup(nextGroup: SpotGroup | undefined) {
+    setSpotGroup(nextGroup);
+    setSelectedChartId(undefined);
+    setVillainPosition(undefined);
+  }
+
+  function setStack(nextStack: number | undefined) {
+    setStackDepth(nextStack);
+    setSelectedChartId(undefined);
+  }
+
+  function setHero(nextHero: string | undefined) {
+    setHeroPosition(nextHero);
+    setSelectedChartId(undefined);
+    setVillainPosition(undefined);
+  }
+
+  function setVillain(nextVillain: string | undefined) {
+    setVillainPosition(nextVillain);
+    setSelectedChartId(undefined);
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] flex-col gap-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.1),transparent_26rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_42%,#f1f5f9_100%)] pb-20 md:h-[calc(100dvh-4rem)] md:flex-row md:overflow-hidden md:pb-0">
-      {/* Left sidebar */}
-      <div className="flex w-full flex-shrink-0 flex-col border-b border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5 backdrop-blur md:h-full md:w-80 md:border-b-0 md:border-r xl:w-[22rem]">
-        <div className="border-b border-slate-200/80 p-4">
-          <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
-            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-zinc-950 text-orange-300 shadow-lg shadow-zinc-950/15">
-              <BookOpen className="h-4 w-4" />
-            </span>
-            Strategy Library
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Pick a stack, then choose the spot you want to review.
-          </p>
-        </div>
-
-        <div className="border-b border-slate-200/80 bg-slate-50/70 p-3">
-          <SpotFilters
-            stackDepth={stackDepth}
-            spotGroup={spotGroup}
-            onStackChange={setStackDepth}
-            onGroupChange={setSpotGroup}
-            groupCounts={groupCounts}
-          />
-        </div>
-
-        <div className="flex-1 space-y-5 overflow-y-auto p-3">
-          {spotsLoading && (
-            <div className="space-y-2 p-2">
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-14 w-full rounded-2xl" />
-              ))}
-            </div>
-          )}
-
-          {!spotsLoading && spots.length === 0 && (
-            <div className="rounded-2xl border border-dashed bg-slate-50 p-4 text-center text-xs text-muted-foreground">
-              {spotsError?.message ??
-                "No charts available. Run the seed script to add ranges."}
-            </div>
-          )}
-
-          {recentSpots.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                <Clock className="h-3.5 w-3.5" />
-                Recently Viewed
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                {recentSpots.map(spot => (
-                  <button
-                    key={spot.id}
-                    className={`w-full rounded-2xl border px-3 py-2.5 text-left text-sm shadow-sm transition ${
-                      selectedChartId === spot.id
-                        ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15"
-                        : "border-slate-200 bg-white text-foreground hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50/50 hover:shadow-md"
-                    }`}
-                    onClick={() => selectChart(spot.id)}
-                  >
-                    <div className="truncate font-medium">{spot.title}</div>
-                    <div className="mt-1 flex items-center gap-1.5">
-                      <Badge
-                        variant="outline"
-                        className={`h-5 rounded-full px-1.5 text-xs ${
-                          selectedChartId === spot.id
-                            ? "border-white/15 bg-white/10 text-zinc-200"
-                            : "border-slate-200 bg-white"
-                        }`}
-                      >
-                        {spot.stackDepth}bb
-                      </Badge>
-                      <span
-                        className={`truncate text-xs ${
-                          selectedChartId === spot.id
-                            ? "text-zinc-400"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {SPOT_GROUP_LABELS[spot.spotGroup]}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {groupedSpots.map(group => (
-            <div key={group.group} className="space-y-1.5">
-              <div className="px-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    {SPOT_GROUP_LABELS[group.group]}
-                  </p>
-                  <Badge variant="secondary" className="h-5 rounded-full px-1.5 text-xs">
-                    {group.spots.length}
-                  </Badge>
-                </div>
-                <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
-                  {SPOT_GROUP_SUBTITLES[group.group]}
+    <div className="min-h-[calc(100dvh-4rem)] bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_42%,#0f172a_100%)] pb-24 text-white">
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-3 py-3 sm:px-5 md:gap-4 md:py-5">
+        <header className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
+                <BookOpen className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+                  Hand Ranges
                 </p>
-              </div>
-
-              <div className="space-y-1">
-                {group.spots.map(spot => (
-                  <button
-                    key={spot.id}
-                    className={`w-full rounded-2xl border px-3 py-3 text-left text-sm shadow-sm transition ${
-                      selectedChartId === spot.id
-                        ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15"
-                        : "border-slate-200 bg-white text-foreground hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50/50 hover:shadow-md"
-                    }`}
-                    onClick={() => selectChart(spot.id)}
-                  >
-                    <div className="font-medium truncate">{spot.title}</div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Badge
-                        variant="outline"
-                        className={`h-5 rounded-full px-1.5 text-xs ${
-                          selectedChartId === spot.id
-                            ? "border-white/15 bg-white/10 text-zinc-200"
-                            : "border-slate-200 bg-white"
-                        }`}
-                      >
-                        {spot.stackDepth}bb
-                      </Badge>
-                      <span
-                        className={`truncate text-xs ${
-                          selectedChartId === spot.id
-                            ? "text-zinc-400"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {spot.heroPosition}
-                        {spot.villainPosition ? ` vs ${spot.villainPosition}` : ""}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-6">
-        {!selectedChartId && (
-          <div className="h-full flex items-center justify-center text-center">
-            <div className="w-full max-w-md rounded-[1.75rem] border border-dashed bg-white/90 p-8 shadow-xl shadow-slate-950/5">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
-                <BookOpen className="h-7 w-7" />
-              </div>
-              <p className="mt-4 text-sm font-semibold text-foreground">
-                Choose a spot to study
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Select a range from the library to view the chart, notes, and
-                trainer shortcut.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {selectedChartId && chartLoading && (
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-96 w-full" />
-          </div>
-        )}
-
-        {selectedChartId && chartError && (
-          <div className="h-full flex items-center justify-center text-center">
-            <p className="rounded-2xl border border-dashed bg-white/90 p-6 text-sm text-muted-foreground shadow-xl shadow-slate-950/5">
-              {chartError.message}
-            </p>
-          </div>
-        )}
-
-        {chart && (
-          <div className="mx-auto max-w-4xl space-y-4">
-            {/* Header */}
-            <div className="flex flex-col gap-4 rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-4 shadow-xl shadow-slate-950/5 sm:flex-row sm:items-start sm:justify-between sm:p-5">
-              <div className="min-w-0">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-600">
-                  Range Chart
-                </p>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                  {chart.title}
+                <h1 className="truncate text-xl font-black tracking-tight">
+                  Compact Range Viewer
                 </h1>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <Badge variant="default" className="rounded-full bg-orange-500">
-                    {chart.stackDepth}bb
-                  </Badge>
-                  <Badge variant="outline" className="rounded-full border-slate-200 bg-white">
-                    {SPOT_GROUP_LABELS[chart.spotGroup]}
-                  </Badge>
-                  <Badge variant="outline" className="rounded-full border-slate-200 bg-white">
-                    {chart.heroPosition}
-                    {chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
-                  </Badge>
-                </div>
-                {chart.sourceLabel && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Source: {chart.sourceLabel}
-                  </p>
-                )}
               </div>
-              <Link href={`/strategy/trainer?chartId=${chart.id}`}>
-                <Button
-                  size="sm"
-                  className="h-11 w-full gap-1 rounded-2xl bg-orange-500 px-4 font-bold text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600 sm:w-auto"
-                >
-                  <Play className="h-3 w-3" />
-                  Train this spot
-                </Button>
-              </Link>
-            </div>
-
-            {/* Notes */}
-            {chartNotes.length > 0 && (
-              <Card className="rounded-[1.5rem] border-slate-200/80 bg-white/90 shadow-sm shadow-slate-950/5">
-                <CardContent className="pb-3 pt-3">
-                  <ul className="space-y-2">
-                    {chartNotes.map((note, i) => (
-                      <li
-                        key={i}
-                        className="flex gap-2 text-xs leading-relaxed text-muted-foreground [&>span:first-child]:hidden"
-                      >
-                        <span className="text-orange-500 flex-shrink-0">•</span>
-                        <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-[10px] font-bold text-orange-600">
-                          {i + 1}
-                        </span>
-                        {note}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Range matrix */}
-            <div className="space-y-3 rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-3 shadow-xl shadow-slate-950/5 sm:p-4">
-              <ActionLegend
-                actions={visibleActions}
-                className="rounded-2xl bg-slate-50/90 p-2"
-              />
-              <RangeMatrix actions={actionMap} size="md" />
             </div>
           </div>
+          {chart && (
+            <Link href={`/strategy/trainer?chartId=${chart.id}`}>
+              <Button className="h-9 shrink-0 gap-1.5 rounded-xl bg-orange-500 px-3 text-xs font-black text-white hover:bg-orange-600">
+                <Play className="h-3.5 w-3.5" />
+                Train
+              </Button>
+            </Link>
+          )}
+        </header>
+
+        <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-3 shadow-2xl shadow-black/20 backdrop-blur">
+          {chartLoading && selectedChartId !== undefined && (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-56 rounded-xl bg-white/10" />
+              <Skeleton className="h-80 w-full rounded-2xl bg-white/10" />
+            </div>
+          )}
+
+          {chartError && (
+            <Card className="border-red-500/30 bg-red-500/10 text-white">
+              <CardContent className="p-4 text-sm">
+                {chartError.message}
+              </CardContent>
+            </Card>
+          )}
+
+          {!chart && !chartLoading && (
+            <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.04] p-6 text-center">
+              <BookOpen className="mx-auto h-9 w-9 text-zinc-500" />
+              <p className="mt-3 text-sm font-bold">No range selected</p>
+              <p className="mt-1 text-xs text-zinc-400">
+                {spotsError?.message ??
+                  "Choose a supported setup below to load a chart."}
+              </p>
+            </div>
+          )}
+
+          {chart && (
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+                    Current Chart
+                  </p>
+                  <h2 className="mt-0.5 truncate text-lg font-black tracking-tight sm:text-2xl">
+                    {chart.title}
+                  </h2>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <Badge className="rounded-full bg-orange-500 text-white">
+                      {chart.stackDepth}bb
+                    </Badge>
+                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-200">
+                      {SPOT_GROUP_LABELS[chart.spotGroup]}
+                    </Badge>
+                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-200">
+                      {chart.heroPosition}
+                      {chart.villainPosition
+                        ? ` vs ${chart.villainPosition}`
+                        : ""}
+                    </Badge>
+                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
+                      9 players
+                    </Badge>
+                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
+                      12.5% ante
+                    </Badge>
+                  </div>
+                </div>
+                <ActionLegend
+                  actions={visibleActions}
+                  className="rounded-2xl border border-white/10 bg-black/20 p-2"
+                />
+              </div>
+
+              <div className="rounded-[1.15rem] border border-white/10 bg-zinc-950/45 p-2 shadow-inner shadow-black/30">
+                <RangeMatrix actions={actionMap} compact size="md" />
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-[1.35rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Setup
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-400">
+                Direct controls update the chart immediately.
+              </p>
+            </div>
+            <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
+              {matchingSpots.length} match
+              {matchingSpots.length === 1 ? "" : "es"}
+            </Badge>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="space-y-3">
+              <div>
+                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Decision
+                </p>
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  <SetupButton
+                    active={spotGroup === undefined}
+                    onClick={() => setGroup(undefined)}
+                    className="shrink-0"
+                  >
+                    Any
+                  </SetupButton>
+                  {SPOT_GROUPS.map(group => (
+                    <SetupButton
+                      key={group}
+                      active={spotGroup === group}
+                      onClick={() => setGroup(group)}
+                      className="shrink-0"
+                    >
+                      {SPOT_GROUP_LABELS[group].replace(" (Open Raise)", "")}
+                    </SetupButton>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_1.4fr]">
+                <div>
+                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Stack
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <SetupButton
+                      active={stackDepth === undefined}
+                      onClick={() => setStack(undefined)}
+                      className="px-2"
+                    >
+                      All
+                    </SetupButton>
+                    {STACK_DEPTHS.map(depth => (
+                      <SetupButton
+                        key={depth}
+                        active={stackDepth === depth}
+                        disabled={
+                          availableStacks.length > 0 &&
+                          !availableStacks.includes(depth)
+                        }
+                        onClick={() => setStack(depth)}
+                        className="px-2"
+                      >
+                        {depth}
+                      </SetupButton>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Players
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {PLAYER_OPTIONS.map(option => (
+                      <SetupButton
+                        key={option.value}
+                        active={option.enabled}
+                        disabled={!option.enabled}
+                        className="px-2"
+                      >
+                        {option.label}
+                      </SetupButton>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Ante
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {ANTE_OPTIONS.map(option => (
+                      <SetupButton
+                        key={option.value}
+                        active={option.enabled}
+                        disabled={!option.enabled}
+                        className="px-2"
+                      >
+                        {option.label}
+                      </SetupButton>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Hero Position
+                </p>
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                  <SetupButton
+                    active={heroPosition === undefined}
+                    onClick={() => setHero(undefined)}
+                    className="px-2"
+                  >
+                    Any
+                  </SetupButton>
+                  {POSITIONS.map(position => (
+                    <SetupButton
+                      key={position}
+                      active={heroPosition === position}
+                      disabled={!heroOptions.includes(position)}
+                      onClick={() => setHero(position)}
+                      className="px-2"
+                    >
+                      {position}
+                    </SetupButton>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                className={cn(
+                  "transition",
+                  villainOptions.length === 0 && "opacity-50"
+                )}
+              >
+                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Villain / Opener
+                </p>
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                  <SetupButton
+                    active={villainPosition === undefined}
+                    disabled={villainOptions.length === 0}
+                    onClick={() => setVillain(undefined)}
+                    className="px-2"
+                  >
+                    Any
+                  </SetupButton>
+                  {POSITIONS.map(position => (
+                    <SetupButton
+                      key={position}
+                      active={villainPosition === position}
+                      disabled={!villainOptions.includes(position)}
+                      onClick={() => setVillain(position)}
+                      className="px-2"
+                    >
+                      {position}
+                    </SetupButton>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  <Search className="h-3.5 w-3.5" />
+                  Quick Find
+                </p>
+                <Input
+                  value={searchTerm}
+                  onChange={event => setSearchTerm(event.target.value)}
+                  placeholder="40bb sb rfi"
+                  className="h-10 rounded-xl border-white/10 bg-white/[0.06] text-sm text-white placeholder:text-zinc-500"
+                />
+              </div>
+
+              {recentSpots.length > 0 && (
+                <div>
+                  <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    <Clock className="h-3.5 w-3.5" />
+                    Recent
+                  </p>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                    {recentSpots.slice(0, 6).map(spot => (
+                      <button
+                        key={spot.id}
+                        type="button"
+                        onClick={() => selectSpot(spot)}
+                        className={cn(
+                          "shrink-0 rounded-xl border px-3 py-2 text-left text-xs font-bold transition",
+                          selectedChartId === spot.id
+                            ? "border-orange-400 bg-orange-500 text-white"
+                            : "border-white/10 bg-white/[0.06] text-zinc-300 hover:border-orange-300/70"
+                        )}
+                      >
+                        <span className="block max-w-32 truncate">
+                          {spot.title}
+                        </span>
+                        <span className="text-[10px] opacity-70">
+                          {spot.stackDepth}bb
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Matching Spots
+                </p>
+                <div className="grid max-h-56 gap-1.5 overflow-y-auto pr-1">
+                  {spotsLoading && (
+                    <>
+                      <Skeleton className="h-10 rounded-xl bg-white/10" />
+                      <Skeleton className="h-10 rounded-xl bg-white/10" />
+                      <Skeleton className="h-10 rounded-xl bg-white/10" />
+                    </>
+                  )}
+
+                  {!spotsLoading && visibleScenarioSpots.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.04] p-3 text-center text-xs text-zinc-400">
+                      No supported chart for this setup yet.
+                    </div>
+                  )}
+
+                  {visibleScenarioSpots.map(spot => (
+                    <button
+                      key={spot.id}
+                      type="button"
+                      onClick={() => selectSpot(spot)}
+                      className={cn(
+                        "flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition",
+                        selectedChartId === spot.id
+                          ? "border-orange-400 bg-orange-500 text-white shadow-lg shadow-orange-950/20"
+                          : "border-white/10 bg-white/[0.06] text-zinc-200 hover:border-orange-300/70 hover:bg-orange-500/10"
+                      )}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-xs font-black">
+                          {spot.title}
+                        </span>
+                        <span className="block truncate text-[10px] opacity-70">
+                          {SPOT_GROUP_SUBTITLES[spot.spotGroup]}
+                        </span>
+                      </span>
+                      <span className="shrink-0 rounded-full bg-black/20 px-2 py-1 text-[10px] font-black">
+                        {spot.stackDepth}bb
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {chart && chartNotes.length > 0 && (
+          <section className="rounded-[1.35rem] border border-white/10 bg-white/[0.06] p-3 text-zinc-200">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+              Spot Notes
+            </p>
+            <ul className="space-y-1.5">
+              {chartNotes.map((note, index) => (
+                <li key={index} className="flex gap-2 text-xs leading-relaxed">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-500 text-[10px] font-black text-white">
+                    {index + 1}
+                  </span>
+                  <span className="text-zinc-300">{note}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
-      </div>
+      </main>
     </div>
   );
 }
