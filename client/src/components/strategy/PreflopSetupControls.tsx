@@ -1,4 +1,3 @@
-import { Search } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Select,
@@ -7,7 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   POSITIONS,
@@ -30,13 +28,10 @@ interface PreflopSetupControlsProps {
   availableStacks?: number[];
   heroOptions?: string[];
   villainOptions?: string[];
-  searchTerm?: string;
-  searchPlaceholder?: string;
   onSpotGroupChange: SelectValueChange<SpotGroup>;
   onStackDepthChange: SelectValueChange<number>;
   onHeroPositionChange: SelectValueChange<string>;
   onVillainPositionChange: SelectValueChange<string>;
-  onSearchTermChange?: (value: string) => void;
   className?: string;
 }
 
@@ -76,13 +71,10 @@ export function PreflopSetupControls({
   availableStacks = [...STACK_DEPTHS],
   heroOptions = [...POSITIONS],
   villainOptions = [],
-  searchTerm,
-  searchPlaceholder = "Jump to 40bb SB RFI",
   onSpotGroupChange,
   onStackDepthChange,
   onHeroPositionChange,
   onVillainPositionChange,
-  onSearchTermChange,
   className,
 }: PreflopSetupControlsProps) {
   const stackSet = new Set(availableStacks);
@@ -91,7 +83,7 @@ export function PreflopSetupControls({
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-2.5 sm:grid-cols-2">
         <Field label="Decision">
           <Select
             value={spotGroup ?? ANY_VALUE}
@@ -203,20 +195,6 @@ export function PreflopSetupControls({
             </SelectContent>
           </Select>
         </Field>
-
-        {onSearchTermChange && (
-          <Field label="Search">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <Input
-                value={searchTerm ?? ""}
-                onChange={event => onSearchTermChange(event.target.value)}
-                placeholder={searchPlaceholder}
-                className="h-10 rounded-xl border-white/10 bg-white/[0.06] pl-9 text-sm text-white placeholder:text-zinc-500"
-              />
-            </div>
-          </Field>
-        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
-import { BookOpen, Clock, Play, SlidersHorizontal } from "lucide-react";
+import { BookOpen, Play, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,20 +13,17 @@ import {
   addRecentStrategySpot,
   loadRecentStrategySpots,
   saveRecentStrategySpots,
-  type RecentStrategySpot,
 } from "@/lib/strategyRecentSpots";
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
 import {
   POSITIONS,
   SPOT_GROUP_LABELS,
   SPOT_GROUPS,
-  SPOT_GROUP_SUBTITLES,
   STACK_DEPTHS,
   type Action,
   type Position,
   type SpotGroup,
-} from "../../../../shared/strategy";
+} from "@shared/strategy";
 
 type SpotSummary = {
   id: number;
@@ -36,7 +33,6 @@ type SpotSummary = {
   spotKey: string;
   heroPosition: string;
   villainPosition?: string | null;
-  sourceLabel?: string | null;
 };
 
 const GROUP_ORDER = new Map(SPOT_GROUPS.map((group, index) => [group, index]));
@@ -78,23 +74,6 @@ function uniqueSorted<T extends string | number>(items: T[]): T[] {
   return Array.from(new Set(items));
 }
 
-function searchTextForSpot(spot: SpotSummary) {
-  const villain = spot.villainPosition ?? "";
-  return [
-    spot.title,
-    spot.spotKey,
-    spot.stackDepth,
-    `${spot.stackDepth}bb`,
-    spot.heroPosition,
-    villain,
-    villain ? `${spot.heroPosition} vs ${villain}` : "",
-    SPOT_GROUP_LABELS[spot.spotGroup],
-    spot.spotGroup,
-  ]
-    .join(" ")
-    .toLowerCase();
-}
-
 function spotMatchesSetup(
   spot: SpotSummary,
   stackDepth: number | undefined,
@@ -104,8 +83,9 @@ function spotMatchesSetup(
 ) {
   if (stackDepth !== undefined && spot.stackDepth !== stackDepth) return false;
   if (spotGroup !== undefined && spot.spotGroup !== spotGroup) return false;
-  if (heroPosition !== undefined && spot.heroPosition !== heroPosition)
+  if (heroPosition !== undefined && spot.heroPosition !== heroPosition) {
     return false;
+  }
   if (
     villainPosition !== undefined &&
     (spot.villainPosition ?? "") !== villainPosition
@@ -135,8 +115,6 @@ export default function StrategyLibrary() {
   const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
     initialChartId
   );
-  const [searchTerm, setSearchTerm] = useState("");
-  const [recentSpots, setRecentSpots] = useState<RecentStrategySpot[]>([]);
 
   const {
     data: allSpots = [],
@@ -179,22 +157,19 @@ export default function StrategyLibrary() {
     [baseSetupSpots]
   );
 
-  const villainBaseSpots = useMemo(
-    () =>
-      baseSetupSpots.filter(spot =>
-        heroPosition === undefined ? true : spot.heroPosition === heroPosition
-      ),
-    [baseSetupSpots, heroPosition]
-  );
-
   const villainOptions = useMemo(
     () =>
       uniqueSorted(
-        villainBaseSpots
+        baseSetupSpots
+          .filter(spot =>
+            heroPosition === undefined
+              ? true
+              : spot.heroPosition === heroPosition
+          )
           .map(spot => spot.villainPosition)
           .filter((position): position is string => Boolean(position))
       ).sort(positionSort),
-    [villainBaseSpots]
+    [baseSetupSpots, heroPosition]
   );
 
   const matchingSpots = useMemo(
@@ -213,20 +188,6 @@ export default function StrategyLibrary() {
     [allSpots, stackDepth, spotGroup, heroPosition, villainPosition]
   );
 
-  const visibleScenarioSpots = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    const base = matchingSpots.length > 0 ? matchingSpots : baseSetupSpots;
-    if (!query) return base.slice(0, 12);
-
-    const tokens = query.split(/\s+/).filter(Boolean);
-    return base
-      .filter(spot => {
-        const searchable = searchTextForSpot(spot);
-        return tokens.every(token => searchable.includes(token));
-      })
-      .slice(0, 12);
-  }, [baseSetupSpots, matchingSpots, searchTerm]);
-
   const actionMap = chart ? buildActionMap(chart.actions) : {};
   const chartNotes = parseChartNotes(chart?.notesJson);
   const visibleActions = chart
@@ -236,10 +197,6 @@ export default function StrategyLibrary() {
     : undefined;
 
   useEffect(() => {
-    setRecentSpots(loadRecentStrategySpots());
-  }, []);
-
-  useEffect(() => {
     if (!chart) return;
 
     setStackDepth(chart.stackDepth);
@@ -247,7 +204,7 @@ export default function StrategyLibrary() {
     setHeroPosition(chart.heroPosition);
     setVillainPosition(chart.villainPosition ?? undefined);
 
-    const nextSpot: RecentStrategySpot = {
+    const nextRecentSpot = {
       id: chart.id,
       title: chart.title,
       stackDepth: chart.stackDepth,
@@ -256,13 +213,12 @@ export default function StrategyLibrary() {
       heroPosition: chart.heroPosition,
       villainPosition: chart.villainPosition,
     };
-
-    setRecentSpots(previous => {
-      const next = addRecentStrategySpot(previous, nextSpot);
-      saveRecentStrategySpots(next);
-      return next;
-    });
-  }, [chart?.id]);
+    const updatedRecent = addRecentStrategySpot(
+      loadRecentStrategySpots(),
+      nextRecentSpot
+    );
+    saveRecentStrategySpots(updatedRecent);
+  }, [chart]);
 
   useEffect(() => {
     if (spotsLoading) return;
@@ -272,7 +228,6 @@ export default function StrategyLibrary() {
     ) {
       return;
     }
-
     setSelectedChartId(matchingSpots[0]?.id);
   }, [matchingSpots, selectedChartId, spotsLoading]);
 
@@ -291,18 +246,10 @@ export default function StrategyLibrary() {
     }
   }, [villainOptions, villainPosition]);
 
-  function selectSpot(spot: SpotSummary | RecentStrategySpot) {
-    setSelectedChartId(spot.id);
-    setStackDepth(spot.stackDepth);
-    setSpotGroup(spot.spotGroup);
-    setHeroPosition(spot.heroPosition);
-    setVillainPosition(spot.villainPosition ?? undefined);
-  }
-
   function setGroup(nextGroup: SpotGroup | undefined) {
     setSpotGroup(nextGroup);
-    setSelectedChartId(undefined);
     setVillainPosition(undefined);
+    setSelectedChartId(undefined);
   }
 
   function setStack(nextStack: number | undefined) {
@@ -312,8 +259,8 @@ export default function StrategyLibrary() {
 
   function setHero(nextHero: string | undefined) {
     setHeroPosition(nextHero);
-    setSelectedChartId(undefined);
     setVillainPosition(undefined);
+    setSelectedChartId(undefined);
   }
 
   function setVillain(nextVillain: string | undefined) {
@@ -323,36 +270,61 @@ export default function StrategyLibrary() {
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_42%,#0f172a_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-white">
-      <main className="mx-auto grid w-full max-w-5xl gap-3 overflow-x-hidden px-3 py-3 sm:px-5 md:gap-4 md:py-5 lg:max-w-[1500px] lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:max-w-[1660px]">
-        <header className="flex items-center justify-between gap-3 lg:col-span-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
-                <BookOpen className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
-                  Hand Ranges
-                </p>
-                <h1 className="truncate text-xl font-black tracking-tight">
-                  Compact Range Viewer
-                </h1>
+      <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
+        <header className="rounded-[1.2rem] border border-white/10 bg-zinc-950/78 p-3 shadow-xl shadow-black/20 sm:p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
+                  <BookOpen className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+                    Hand Ranges
+                  </p>
+                  <h1 className="truncate text-xl font-black tracking-tight">
+                    Preflop Chart Viewer
+                  </h1>
+                </div>
               </div>
+              <p className="mt-1 text-xs text-zinc-400">
+                Select a setup, review the range, then train the same spot.
+              </p>
             </div>
+            {chart && (
+              <Link href={`/strategy/trainer?chartId=${chart.id}`}>
+                <Button className="h-9 shrink-0 gap-1.5 rounded-xl bg-orange-500 px-3 text-xs font-black text-white hover:bg-orange-600">
+                  <Play className="h-3.5 w-3.5" />
+                  Train
+                </Button>
+              </Link>
+            )}
           </div>
-          {chart && (
-            <Link href={`/strategy/trainer?chartId=${chart.id}`}>
-              <Button className="h-9 shrink-0 gap-1.5 rounded-xl bg-orange-500 px-3 text-xs font-black text-white hover:bg-orange-600">
-                <Play className="h-3.5 w-3.5" />
-                Train
-              </Button>
-            </Link>
-          )}
         </header>
 
-        <section className="min-w-0 rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-xl shadow-black/15 backdrop-blur sm:p-3 lg:min-h-[calc(100dvh-9.25rem)] lg:p-3 xl:p-4">
+        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20 sm:p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Setup
+          </p>
+          <PreflopSetupControls
+            spotGroup={spotGroup}
+            stackDepth={stackDepth}
+            heroPosition={heroPosition}
+            villainPosition={villainPosition}
+            availableStacks={availableStacks}
+            heroOptions={heroOptions}
+            villainOptions={villainOptions}
+            onSpotGroupChange={setGroup}
+            onStackDepthChange={setStack}
+            onHeroPositionChange={setHero}
+            onVillainPositionChange={setVillain}
+          />
+        </section>
+
+        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/78 p-3 shadow-xl shadow-black/20 sm:p-4">
           {chartLoading && selectedChartId !== undefined && (
-            <div className="space-y-3 lg:flex lg:min-h-[calc(100dvh-11.5rem)] lg:flex-col">
+            <div className="space-y-3">
               <Skeleton className="h-10 w-56 rounded-xl bg-white/10" />
               <Skeleton className="h-80 w-full rounded-2xl bg-white/10" />
             </div>
@@ -369,10 +341,10 @@ export default function StrategyLibrary() {
           {!chart && !chartLoading && (
             <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.04] p-6 text-center">
               <BookOpen className="mx-auto h-9 w-9 text-zinc-500" />
-              <p className="mt-3 text-sm font-bold">No range selected</p>
+              <p className="mt-3 text-sm font-bold">No chart selected</p>
               <p className="mt-1 text-xs text-zinc-400">
                 {spotsError?.message ??
-                  "Choose a supported setup below to load a chart."}
+                  "Choose a supported setup to load a preflop chart."}
               </p>
             </div>
           )}
@@ -414,134 +386,20 @@ export default function StrategyLibrary() {
                 />
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1.5 shadow-inner shadow-black/25 lg:flex lg:flex-1 lg:items-center lg:justify-center lg:p-3 xl:p-4">
-                <div className="lg:hidden">
+              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1.5 shadow-inner shadow-black/25 sm:p-3">
+                <div className="md:hidden">
                   <RangeMatrix actions={actionMap} compact size="md" />
                 </div>
-                <div className="hidden w-full lg:block">
+                <div className="hidden md:block">
                   <RangeMatrix actions={actionMap} size="lg" />
                 </div>
               </div>
-            </div>
-          )}
-        </section>
 
-        <section className="min-w-0 rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-2.5 shadow-xl shadow-black/20 sm:p-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div>
-              <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                Setup
-              </p>
-            </div>
-            <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
-              {matchingSpots.length} match
-              {matchingSpots.length === 1 ? "" : "es"}
-            </Badge>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-[1.1fr_0.9fr] lg:grid-cols-1">
-            <div className="space-y-2.5">
-              <PreflopSetupControls
-                spotGroup={spotGroup}
-                stackDepth={stackDepth}
-                heroPosition={heroPosition}
-                villainPosition={villainPosition}
-                availableStacks={availableStacks}
-                heroOptions={heroOptions}
-                villainOptions={villainOptions}
-                searchTerm={searchTerm}
-                searchPlaceholder="40bb SB RFI"
-                onSpotGroupChange={setGroup}
-                onStackDepthChange={setStack}
-                onHeroPositionChange={setHero}
-                onVillainPositionChange={setVillain}
-                onSearchTermChange={setSearchTerm}
-              />
-
-              {recentSpots.length > 0 && (
-                <div>
-                  <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    <Clock className="h-3.5 w-3.5" />
-                    Recent
-                  </p>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
-                    {recentSpots.slice(0, 6).map(spot => (
-                      <button
-                        key={spot.id}
-                        type="button"
-                        onClick={() => selectSpot(spot)}
-                        className={cn(
-                          "shrink-0 rounded-xl border px-2.5 py-1.5 text-left text-xs font-bold transition",
-                          selectedChartId === spot.id
-                            ? "border-orange-400 bg-orange-500/90 text-white"
-                            : "border-white/10 bg-white/[0.06] text-zinc-300 hover:border-orange-300/70"
-                        )}
-                      >
-                        <span className="block max-w-32 truncate">
-                          {spot.title}
-                        </span>
-                        <span className="text-[10px] opacity-70">
-                          {spot.stackDepth}bb
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                  Matching Spots
+              <div className="rounded-[1rem] border border-white/10 bg-white/[0.045] p-3 text-zinc-200">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Spot Notes
                 </p>
-                <div className="grid max-h-44 gap-1.5 overflow-y-auto pr-1 lg:max-h-64">
-                  {spotsLoading && (
-                    <>
-                      <Skeleton className="h-10 rounded-xl bg-white/10" />
-                      <Skeleton className="h-10 rounded-xl bg-white/10" />
-                      <Skeleton className="h-10 rounded-xl bg-white/10" />
-                    </>
-                  )}
-
-                  {!spotsLoading && visibleScenarioSpots.length === 0 && (
-                    <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.04] p-3 text-center text-xs text-zinc-400">
-                      No supported chart for this setup yet.
-                    </div>
-                  )}
-
-                  {visibleScenarioSpots.map(spot => (
-                    <button
-                      key={spot.id}
-                      type="button"
-                      onClick={() => selectSpot(spot)}
-                      className={cn(
-                        "flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left transition",
-                        selectedChartId === spot.id
-                          ? "border-orange-400 bg-orange-500/90 text-white shadow-lg shadow-orange-950/20"
-                          : "border-white/10 bg-white/[0.06] text-zinc-200 hover:border-orange-300/70 hover:bg-orange-500/10"
-                      )}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-xs font-black">
-                          {spot.title}
-                        </span>
-                        <span className="block truncate text-[10px] opacity-70">
-                          {SPOT_GROUP_SUBTITLES[spot.spotGroup]}
-                        </span>
-                      </span>
-                      <span className="shrink-0 rounded-full bg-black/20 px-2 py-1 text-[10px] font-black">
-                        {spot.stackDepth}bb
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {chart && chartNotes.length > 0 && (
-                <div className="hidden rounded-xl border border-white/10 bg-white/[0.045] p-3 text-zinc-200 lg:block">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Spot Notes
-                  </p>
+                {chartNotes.length > 0 ? (
                   <ul className="space-y-1.5">
                     {chartNotes.map((note, index) => (
                       <li
@@ -555,29 +413,23 @@ export default function StrategyLibrary() {
                       </li>
                     ))}
                   </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+                ) : (
+                  <p className="text-xs text-zinc-400">
+                    No notes saved for this spot yet.
+                  </p>
+                )}
+              </div>
 
-        {chart && chartNotes.length > 0 && (
-          <section className="rounded-[1.2rem] border border-white/10 bg-white/[0.055] p-2.5 text-zinc-200 sm:p-3 lg:hidden">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-              Spot Notes
-            </p>
-            <ul className="space-y-1.5">
-              {chartNotes.map((note, index) => (
-                <li key={index} className="flex gap-2 text-xs leading-relaxed">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-500 text-[10px] font-black text-white">
-                    {index + 1}
-                  </span>
-                  <span className="text-zinc-300">{note}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+              <div className="pt-1">
+                <Link href={`/strategy/trainer?chartId=${chart.id}`}>
+                  <Button className="h-11 w-full rounded-xl bg-orange-500 text-sm font-black text-white hover:bg-orange-600">
+                    Train This Spot
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
