@@ -47,39 +47,46 @@
 }
 
 :root {
-  --primary: #f97316;
+  --primary: #ea6c0a;
   --primary-foreground: #ffffff;
-  --sidebar-primary: #f97316;
+  --sidebar-primary: #ea6c0a;
   --sidebar-primary-foreground: #ffffff;
   --chart-1: #2563eb;
   --chart-2: #16a34a;
   --chart-3: #d97706;
-  --chart-4: #f97316;
+  --chart-4: #ea6c0a;
   --chart-5: #8b5cf6;
   --radius: 0.75rem;
-  --background: #d6d6d6;
-  --foreground: #1f2937;
-  --card: #ffffff;
-  --card-foreground: #111827;
-  --popover: #ffffff;
-  --popover-foreground: #111827;
-  --secondary: #e0e0e0;
-  --secondary-foreground: #4b5563;
-  --muted: #d4d4d4;
-  --muted-foreground: #6b7280;
-  --accent: #e8e8e8;
-  --accent-foreground: #374151;
-  --destructive: #ef4444;
+  /* Page shell: very light warm neutral */
+  --background: #f0eeeb;
+  --foreground: #1c1917;
+  /* Cards: near-white */
+  --card: #fafaf9;
+  --card-foreground: #1c1917;
+  --popover: #fafaf9;
+  --popover-foreground: #1c1917;
+  /* Secondary surfaces: subtle warm-neutral, not orange-tinted */
+  --secondary: #e8e5e1;
+  --secondary-foreground: #44403c;
+  /* Muted: calm warm-gray with good readability */
+  --muted: #e8e5e1;
+  --muted-foreground: #78716c;
+  /* Accent: neutral warm-gray for chips/rows, not orange */
+  --accent: #ede9e4;
+  --accent-foreground: #292524;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #c0c0c0;
-  --input: #d4d4d4;
-  --ring: #f97316;
-  --sidebar: #a0a0a0;
-  --sidebar-foreground: #1f2937;
-  --sidebar-accent: #f6f1ea;
-  --sidebar-accent-foreground: #374151;
-  --sidebar-border: #e5ddd0;
-  --sidebar-ring: #f97316;
+  /* Borders: soft warm gray */
+  --border: #d6d0c9;
+  --input: #e8e5e1;
+  --ring: #ea6c0a;
+  /* Sidebar: slightly darker warm-neutral */
+  --sidebar: #e4e0db;
+  --sidebar-foreground: #1c1917;
+  --sidebar-accent: #ede9e4;
+  --sidebar-accent-foreground: #292524;
+  --sidebar-border: #d6d0c9;
+  --sidebar-ring: #ea6c0a;
   --success: #16a34a;
   --warning: #d97706;
   --error: #dc2626;
@@ -147,15 +154,15 @@
 
 @layer components {
   .app-shell {
-    background-color: #d6d6d6;
+    background-color: #f0eeeb;
   }
 
   .app-surface {
-    @apply rounded-[1rem] border border-border bg-card shadow-[0_8px_24px_rgba(15,23,42,0.08)];
+    @apply rounded-[1rem] border border-border bg-card shadow-[0_2px_8px_rgba(28,25,23,0.06)];
   }
 
   .app-surface-elevated {
-    @apply rounded-[1rem] border border-border bg-popover shadow-[0_14px_34px_rgba(15,23,42,0.12)];
+    @apply rounded-[1rem] border border-border bg-popover shadow-[0_4px_16px_rgba(28,25,23,0.08)];
   }
 
   .app-surface-subtle {

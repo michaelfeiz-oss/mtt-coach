@@ -219,7 +219,7 @@ export default function Log() {
                   className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
                   onClick={() => openSupportingAction(action.id)}
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-primary">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
                     <Icon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -258,10 +258,9 @@ export default function Log() {
               )}
 
               {!handsLoading && recentHands.length === 0 && (
-                <div className="rounded-xl border border-dashed border-border bg-accent/60 p-4 text-sm text-muted-foreground">
-                  No hands logged yet. Capture your next preflop decision from the
-                  button above.
-                </div>
+                <p className="py-2 text-sm text-muted-foreground">
+                  No hands logged yet.
+                </p>
               )}
 
               {!handsLoading &&
@@ -269,7 +268,7 @@ export default function Log() {
                   const status = reviewStatus(hand.reviewed, hand.mistakeSeverity);
                   return (
                     <Link key={hand.id} href={`/hands/${hand.id}`}>
-                      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-accent/60 p-3 transition hover:bg-accent/85">
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2.5 transition hover:bg-secondary/70">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold">
                             {hand.heroHand || "Captured hand"}
@@ -315,7 +314,7 @@ export default function Log() {
               ].map(stat => (
                 <div
                   key={stat.label}
-                  className="flex items-center justify-between rounded-lg border border-border bg-accent/70 px-3 py-2"
+                  className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/40 px-3 py-2"
                 >
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                   <p className="text-sm font-semibold">{stat.value}</p>

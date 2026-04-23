@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { EditTournamentModal } from "@/components/EditTournamentModal";
+import { cn } from "@/lib/utils";
 
 type TournamentActivity = {
   id: number;
@@ -173,7 +174,7 @@ export default function Dashboard() {
               onClick={action.onClick}
               className="app-surface flex items-center gap-2 p-3 text-left transition hover:-translate-y-0.5"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
                 <action.icon className="h-4 w-4" />
               </span>
               <span className="text-sm font-semibold">{action.label}</span>
@@ -188,7 +189,7 @@ export default function Dashboard() {
             className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
             style={{ backgroundColor: "#f9fee1" }}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-primary">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
               <Layers className="h-5 w-5" />
             </span>
             <div>
@@ -250,23 +251,23 @@ export default function Dashboard() {
         </section>
 
         <Card className="app-surface">
-          <CardHeader className="flex flex-row items-end justify-between gap-3">
+          <CardHeader className="flex flex-row items-end justify-between gap-3 pb-3">
             <div>
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Last tournament updates and result edits.
-              </p>
+              <p className="app-eyebrow mb-1">This Week</p>
+              <CardTitle className="text-base">Tournament Updates</CardTitle>
             </div>
-            <Badge variant="outline">Latest {recentActivity.length}</Badge>
+            {recentActivity.length > 0 && (
+              <span className="text-xs text-muted-foreground">{recentActivity.length} logged</span>
+            )}
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1.5">
             {recentActivity.length === 0 && (
-              <div className="rounded-xl border border-dashed border-border bg-accent/50 p-4 text-sm text-muted-foreground">
-                No activity yet this week. Start with one quick hand log.
-              </div>
+              <p className="py-2 text-sm text-muted-foreground">
+                No tournaments logged this week.
+              </p>
             )}
 
-            {recentActivity.map(activity => (
+            {recentActivity.slice(0, 4).map(activity => (
               <button
                 key={activity.id}
                 type="button"
@@ -274,14 +275,21 @@ export default function Dashboard() {
                   setSelectedTournament(activity.tournament);
                   setShowEditModal(true);
                 }}
-                className="flex w-full items-center justify-between rounded-xl border border-border bg-accent/50 p-3 text-left transition hover:bg-accent/75"
+                className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-secondary/40 px-3 py-2.5 text-left transition hover:bg-secondary/70"
               >
-                <div>
-                  <p className="text-sm font-semibold">{activity.title}</p>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{activity.title}</p>
                   <p className="text-xs text-muted-foreground">{activity.time}</p>
                 </div>
-                <Badge variant="outline">
-                  {activity.tournament.netResult >= 0 ? "Win" : "Review"}
+                <Badge
+                  className={cn(
+                    "ml-3 shrink-0 rounded-full text-[11px]",
+                    activity.tournament.netResult >= 0
+                      ? "border-transparent bg-emerald-100 text-emerald-700"
+                      : "border-transparent bg-slate-100 text-slate-600"
+                  )}
+                >
+                  {activity.tournament.netResult >= 0 ? "Profit" : "Loss"}
                 </Badge>
               </button>
             ))}
