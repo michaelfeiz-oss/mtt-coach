@@ -57,7 +57,7 @@
   --chart-4: #f97316;
   --chart-5: #8b5cf6;
   --radius: 0.75rem;
-  --background: #8f8f8f;
+  --background: #d6d6d6;
   --foreground: #1f2937;
   --card: #ffffff;
   --card-foreground: #111827;
@@ -147,7 +147,7 @@
 
 @layer components {
   .app-shell {
-    background-color: #8f8f8f;
+    background-color: #d6d6d6;
   }
 
   .app-surface {
