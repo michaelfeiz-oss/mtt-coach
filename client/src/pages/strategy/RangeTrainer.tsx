@@ -441,15 +441,15 @@ export default function RangeTrainer() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-white">
+    <div className="app-shell min-h-[calc(100dvh-4rem)] overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground">
       <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
-        <header className="rounded-[1.2rem] border border-white/10 bg-zinc-950/78 p-3 shadow-xl shadow-black/20 sm:p-4">
+        <header className="app-surface p-3 sm:p-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
               <Target className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+              <p className="text-[11px] font-semibold text-muted-foreground">
                 Range Trainer
               </p>
               <h1 className="truncate text-xl font-black tracking-tight">
@@ -457,21 +457,21 @@ export default function RangeTrainer() {
               </h1>
             </div>
           </div>
-          <p className="mt-2 text-xs text-zinc-400">
+          <p className="mt-2 text-xs text-muted-foreground">
             {modeLabel}. {modeHelper}
           </p>
         </header>
 
-        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20 sm:p-3.5">
+        <section className="app-surface bg-card/90 p-3 sm:p-3.5">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Setup
             </p>
             <Button
               type="button"
               variant="ghost"
-              className="h-7 rounded-lg px-2 text-[11px] font-bold text-zinc-300 hover:bg-white/[0.08] hover:text-white"
+              className="h-7 rounded-lg px-2 text-[11px] font-semibold text-muted-foreground hover:bg-accent/60 hover:text-foreground"
               onClick={() => setSetupCollapsed(current => !current)}
             >
               {setupCollapsed ? "Edit setup" : "Collapse"}
@@ -488,9 +488,9 @@ export default function RangeTrainer() {
               {setupSummary.map(item => (
                 <Badge
                   key={item.label}
-                  className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-zinc-200"
+                  className="rounded-full border border-border/75 bg-accent/55 px-2 py-1 text-[10px] font-semibold text-secondary-foreground"
                 >
-                  <span className="mr-1 text-zinc-400">{item.label}:</span>
+                  <span className="mr-1 text-muted-foreground">{item.label}:</span>
                   <span>{item.value}</span>
                 </Badge>
               ))}
@@ -514,12 +514,12 @@ export default function RangeTrainer() {
           <div className="mt-2.5 space-y-1.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
-                <Badge className="rounded-full bg-orange-500 text-white">BBA</Badge>
-                <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-200">
+                <Badge className="rounded-full bg-primary text-primary-foreground">BBA</Badge>
+                <Badge className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground">
                   Up to 40bb
                 </Badge>
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-zinc-300">
+              <div className="flex items-center gap-3 text-[11px] text-secondary-foreground">
                 <span className="inline-flex items-center gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
                   {sessionStats.correct}/{sessionStats.total}
@@ -532,7 +532,7 @@ export default function RangeTrainer() {
               </div>
             </div>
             {!isAuthenticated && (
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-[10px] text-muted-foreground">
                 Logged-out practice stays local to this device.
               </p>
             )}
@@ -549,7 +549,7 @@ export default function RangeTrainer() {
             <div className="space-y-3">
               <div
                 ref={questionCardRef}
-                className="space-y-2.5 rounded-[1.2rem] border border-white/10 bg-zinc-950/82 p-3 shadow-xl shadow-black/20 sm:p-3.5"
+                className="space-y-2.5 rounded-[1.2rem] border border-border/80 bg-card/92 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.24)] sm:p-3.5"
               >
                 <TableContext
                   title={trainerSpot.chart.title}
@@ -560,7 +560,7 @@ export default function RangeTrainer() {
                   embedded
                 />
 
-                <div className="h-px bg-white/10" />
+                <div className="h-px bg-border/80" />
 
                 <TrainerCard
                   key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
@@ -599,14 +599,14 @@ export default function RangeTrainer() {
                       isCorrect={answerReveal.isCorrect}
                       explanation={answerReveal.explanation}
                       onNext={handleNext}
-                      className="border-white/10 bg-black/20 shadow-none"
+                      className="border-border/80 bg-card/90 shadow-none"
                     />
                   </div>
-                  <div className="rounded-[1rem] border border-white/10 bg-white/[0.045] p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-3">
+                    <p className="text-[11px] font-semibold text-muted-foreground">
                       Takeaway
                     </p>
-                    <p className="mt-1 text-xs leading-relaxed text-zinc-300">
+                    <p className="mt-1 text-xs leading-relaxed text-secondary-foreground">
                       {revealNote}
                     </p>
                   </div>
@@ -619,20 +619,20 @@ export default function RangeTrainer() {
             !trainerSpotLoading &&
             !trainerSpotFetching &&
             !trainerSpot && (
-              <Card className="rounded-[1.2rem] border-dashed border-white/10 bg-white/[0.06] text-white shadow-xl shadow-black/20">
+              <Card className="rounded-[1.2rem] border-dashed border-border/80 bg-accent/45 text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
                 <CardContent className="space-y-4 p-6 text-center">
-                  <Target className="mx-auto h-10 w-10 text-zinc-500" />
+                  <Target className="mx-auto h-10 w-10 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-semibold">
                       No trainer hand available
                     </p>
-                    <p className="mt-1 text-sm text-zinc-400">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {trainerSpotError?.message ??
                         "Adjust setup to another supported preflop spot."}
                     </p>
                   </div>
                   <Button
-                    className="rounded-xl bg-orange-500 text-white hover:bg-orange-600"
+                    className="rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
                     onClick={unlockCurrentSpotAndContinue}
                   >
                     Try Another Spot

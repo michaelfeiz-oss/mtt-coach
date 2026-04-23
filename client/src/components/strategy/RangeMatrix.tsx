@@ -95,7 +95,7 @@ export function RangeMatrix({
     <div className={cn("w-full", className)}>
       <div
         className={cn(
-          "mx-auto grid border border-white/70 bg-slate-900/20 shadow-sm shadow-slate-950/10",
+          "mx-auto grid border border-border/80 bg-accent/45 shadow-sm shadow-black/20",
           compact
             ? "gap-px rounded-xl p-1"
             : "gap-[2px] rounded-2xl p-1.5 sm:p-2"
@@ -136,7 +136,7 @@ export function RangeMatrix({
                   ? "cursor-pointer hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   : "cursor-default",
                 isHighlighted &&
-                  "z-10 scale-[1.08] border-white shadow-[0_0_0_2px_rgba(15,23,42,0.9),0_0_0_5px_rgba(249,115,22,0.95),0_10px_24px_rgba(15,23,42,0.22),inset_0_0_0_1px_rgba(255,255,255,0.35)] ring-2 ring-orange-400 ring-offset-2 ring-offset-background"
+                  "z-10 scale-[1.06] border-white/90 shadow-[0_0_0_2px_rgba(11,15,20,0.9),0_0_0_4px_rgba(255,122,0,0.72),0_8px_20px_rgba(11,15,20,0.28),inset_0_0_0_1px_rgba(255,255,255,0.35)] ring-2 ring-[#FF7A00] ring-offset-2 ring-offset-background"
               )}
               style={{
                 backgroundColor: style.backgroundColor,

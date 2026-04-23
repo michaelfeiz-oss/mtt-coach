@@ -80,7 +80,7 @@ export function EditTournamentModal({
       isLoading={isLoading}
     >
       <div className="space-y-3">
-        <div className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:grid-cols-2">
+        <div className="grid gap-3 rounded-xl border border-border/80 bg-accent/45 p-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="buyIn">Buy-in ($) *</Label>
             <Input
@@ -159,7 +159,7 @@ export function EditTournamentModal({
           </div>
         </div>
 
-        <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+        <div className="space-y-2 rounded-xl border border-border/80 bg-accent/45 p-3">
           <Label htmlFor="notes">Notes</Label>
           <Textarea
             id="notes"

@@ -66,12 +66,12 @@ export function TrainerResultReveal({
   return (
     <Card
       className={cn(
-        "overflow-hidden rounded-[1.2rem] border-white/10 bg-zinc-950/90 text-white shadow-xl shadow-black/25",
+        "overflow-hidden rounded-[1.2rem] border-border/80 bg-card/92 text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.24)]",
         className
       )}
     >
       <CardContent className="space-y-3 p-3 sm:p-4">
-        <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3">
+        <div className="flex items-start gap-3 rounded-2xl border border-border/80 bg-accent/55 p-3">
           <div
             className={cn(
               "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm",
@@ -98,35 +98,35 @@ export function TrainerResultReveal({
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge
                 variant="outline"
-                className="rounded-full border-white/10 bg-white/[0.06] px-2.5 text-zinc-300"
+                className="rounded-full border-border/80 bg-accent/55 px-2.5 text-secondary-foreground"
               >
                 You chose: {ACTION_LABELS[selectedAction]}
               </Badge>
-              <Badge className="rounded-full bg-orange-500/90 px-2.5 text-white">
+              <Badge className="rounded-full bg-primary/90 px-2.5 text-primary-foreground">
                 Correct: {ACTION_LABELS[correctAction]}
               </Badge>
             </div>
             {revealNote && (
-              <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 {revealNote}
               </p>
             )}
           </div>
         </div>
 
-        <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-white/10 bg-white/[0.055] p-2.5 shadow-inner shadow-black/20 sm:p-3">
+        <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-border/80 bg-accent/50 p-2.5 shadow-inner shadow-black/20 sm:p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+              <p className="text-[11px] font-semibold text-muted-foreground">
                 Chart
               </p>
-              <p className="text-sm font-semibold text-zinc-100">
+              <p className="text-sm font-semibold text-foreground">
                 {chart?.title ?? "Loading chart"}
               </p>
             </div>
             <ActionLegend
               actions={visibleActions}
-              className="rounded-xl border border-white/10 bg-black/20 p-1.5"
+              className="rounded-xl border border-border/80 bg-accent/45 p-1.5"
             />
           </div>
 
@@ -160,7 +160,7 @@ export function TrainerResultReveal({
           )}
 
           {!chart && !isLoadingChart && (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.04] p-4 text-center text-sm text-zinc-400">
+            <div className="rounded-2xl border border-dashed border-border/75 bg-accent/40 p-4 text-center text-sm text-muted-foreground">
               Chart actions are not available for this reveal.
             </div>
           )}
@@ -168,7 +168,7 @@ export function TrainerResultReveal({
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
           <Button
-            className="h-11 rounded-xl bg-orange-500 text-sm font-black text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
+            className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]"
             onClick={onNext}
           >
             Next Hand
@@ -177,7 +177,7 @@ export function TrainerResultReveal({
           <Link href={`/strategy/library?chartId=${chartId}`}>
             <Button
               variant="outline"
-              className="h-11 w-full gap-2 rounded-xl border-white/10 bg-white/[0.06] text-sm font-bold text-zinc-200 hover:bg-white/10 sm:w-auto"
+              className="h-11 w-full gap-2 rounded-xl border-border/80 bg-accent/55 text-sm font-semibold text-secondary-foreground hover:bg-accent sm:w-auto"
             >
               View Full Chart
               <ExternalLink className="h-4 w-4" />

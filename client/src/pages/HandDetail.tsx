@@ -126,14 +126,14 @@ export default function HandDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <div className="app-shell min-h-screen text-foreground">
+        <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90">
           <div className="container py-4">
             <Skeleton className="h-8 w-32" />
           </div>
         </header>
         <main className="container py-6">
-          <Card>
+          <Card className="border-border/80 bg-card/92">
             <CardHeader>
               <Skeleton className="h-8 w-48" />
             </CardHeader>
@@ -150,8 +150,8 @@ export default function HandDetail() {
 
   if (!hand) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <Card>
+      <div className="app-shell flex min-h-screen items-center justify-center text-foreground">
+        <Card className="border-border/80 bg-card/92">
           <CardHeader>
             <CardTitle>Hand Not Found</CardTitle>
           </CardHeader>
@@ -164,8 +164,8 @@ export default function HandDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="app-shell min-h-screen text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90">
         <div className="container py-4">
           <Button variant="ghost" size="sm" onClick={() => setLocation("/hands")} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -176,10 +176,10 @@ export default function HandDetail() {
 
       <main className="container py-6 space-y-6">
         {/* Hand Overview */}
-        <Card>
+        <Card className="border-border/80 bg-card/92">
           <CardHeader>
             <CardTitle>Hand Details</CardTitle>
-            <CardDescription>
+            <CardDescription className="text-muted-foreground">
               {hand.heroPosition && `${hand.heroPosition} • `}
               {hand.spotType && hand.spotType.replace(/_/g, " ")}
             </CardDescription>
@@ -188,11 +188,11 @@ export default function HandDetail() {
             {/* Hero Hand & Board */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs text-slate-500">Hero Hand</Label>
+                <Label className="text-xs text-muted-foreground">Hero Hand</Label>
                 <p className="font-mono font-bold text-2xl">{hand.heroHand || "—"}</p>
               </div>
               <div>
-                <Label className="text-xs text-slate-500">Board</Label>
+                <Label className="text-xs text-muted-foreground">Board</Label>
                 <p className="font-mono text-lg">{hand.boardRunout || "—"}</p>
               </div>
             </div>
@@ -200,40 +200,40 @@ export default function HandDetail() {
             {/* Stack & SPR */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <Label className="text-xs text-slate-500">Effective Stack</Label>
+                <Label className="text-xs text-muted-foreground">Effective Stack</Label>
                 <p className="font-medium">{hand.effectiveStackBb?.toFixed(1) || "—"} bb</p>
               </div>
               <div>
-                <Label className="text-xs text-slate-500">SPR</Label>
+                <Label className="text-xs text-muted-foreground">SPR</Label>
                 <p className="font-medium">{hand.spr?.toFixed(1) || "—"}</p>
               </div>
             </div>
 
             {/* Hero Decisions */}
             <div className="space-y-2">
-              <Label className="text-xs text-slate-500">Hero Actions</Label>
+              <Label className="text-xs text-muted-foreground">Hero Actions</Label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                 {hand.heroDecisionPreflop && (
                   <div>
-                    <span className="text-xs text-slate-400">Preflop:</span>
+                    <span className="text-xs text-muted-foreground">Preflop:</span>
                     <p className="font-medium">{hand.heroDecisionPreflop}</p>
                   </div>
                 )}
                 {hand.heroDecisionFlop && (
                   <div>
-                    <span className="text-xs text-slate-400">Flop:</span>
+                    <span className="text-xs text-muted-foreground">Flop:</span>
                     <p className="font-medium">{hand.heroDecisionFlop}</p>
                   </div>
                 )}
                 {hand.heroDecisionTurn && (
                   <div>
-                    <span className="text-xs text-slate-400">Turn:</span>
+                    <span className="text-xs text-muted-foreground">Turn:</span>
                     <p className="font-medium">{hand.heroDecisionTurn}</p>
                   </div>
                 )}
                 {hand.heroDecisionRiver && (
                   <div>
-                    <span className="text-xs text-slate-400">River:</span>
+                    <span className="text-xs text-muted-foreground">River:</span>
                     <p className="font-medium">{hand.heroDecisionRiver}</p>
                   </div>
                 )}
@@ -244,10 +244,10 @@ export default function HandDetail() {
 
         {/* Strategy Recommendation */}
         {strategyRecommendation && (
-          <Card className="border-orange-200 bg-orange-50/60">
+          <Card className="border-border/80 bg-card/92">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Target className="h-4 w-4 text-orange-600" />
+                <Target className="h-4 w-4 text-primary" />
                 Recommended Preflop Study
               </CardTitle>
               <CardDescription>
@@ -255,11 +255,11 @@ export default function HandDetail() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-lg border bg-white p-3">
+              <div className="rounded-lg border border-border/80 bg-accent/45 p-3">
                 <p className="text-sm font-semibold">
                   {strategyRecommendation.chart.title}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {strategyRecommendation.chart.heroPosition}
                   {strategyRecommendation.chart.villainPosition
                     ? ` vs ${strategyRecommendation.chart.villainPosition}`
@@ -275,7 +275,7 @@ export default function HandDetail() {
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
-                  className="bg-orange-500 text-white hover:bg-orange-600"
+                  className="bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
                   onClick={() =>
                     setLocation(
                       `/strategy/trainer?chartId=${strategyRecommendation.chart.id}`
@@ -300,7 +300,7 @@ export default function HandDetail() {
         )}
 
         {/* Edit Form */}
-        <Card>
+        <Card className="border-border/80 bg-card/92">
           <CardHeader>
             <CardTitle>Review & Analysis</CardTitle>
           </CardHeader>
@@ -396,7 +396,7 @@ export default function HandDetail() {
                         />
                         <Label htmlFor={`leak-${leak.id}`} className="cursor-pointer flex-1">
                           <span className="font-medium">{leak.name}</span>
-                          <span className="text-xs text-slate-500 ml-2">({leak.category})</span>
+                          <span className="text-xs text-muted-foreground ml-2">({leak.category})</span>
                         </Label>
                       </div>
                     ))}

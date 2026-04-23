@@ -131,22 +131,22 @@ export default function Log() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.14),transparent_26rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-24 text-white">
+    <main className="app-shell min-h-screen pb-24 text-foreground">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-5 sm:px-6 lg:py-7">
-        <section className="rounded-[1.3rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.2),transparent_18rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-white shadow-2xl shadow-black/25 sm:p-6">
+        <section className="app-surface-elevated rounded-[1.3rem] p-5 sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-orange-300">
+              <p className="app-eyebrow mb-2">
                 Fast Capture
               </p>
               <h1 className="text-3xl font-black tracking-tight">Log</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                 Capture preflop tournament hands while the decision is fresh.
                 Keep the first pass fast, then review mistakes when you are ready.
               </p>
             </div>
             <Button
-              className="h-12 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-lg shadow-orange-950/25 hover:bg-orange-600"
+              className="h-12 rounded-2xl bg-primary px-5 font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]"
               onClick={() => setShowLogHandModal(true)}
             >
               <Zap className="mr-2 h-4 w-4" />
@@ -157,25 +157,25 @@ export default function Log() {
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
           <Card
-            className="cursor-pointer rounded-[1.2rem] border-white/10 bg-zinc-950/78 shadow-xl shadow-black/25 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-zinc-900/90"
+            className="cursor-pointer rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5 hover:border-border hover:bg-card"
             onClick={() => setShowLogHandModal(true)}
           >
             <CardContent className="p-5 sm:p-6">
               <div className="flex items-start gap-4">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/15">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
                   <Zap className="h-7 w-7" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-black tracking-tight text-zinc-100">
+                      <h2 className="text-xl font-semibold tracking-tight text-foreground">
                         Guided Hand Entry
                       </h2>
-                      <p className="mt-1 text-sm leading-relaxed text-zinc-400">
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                         Preflop context, key action, review signal, and save.
                       </p>
                     </div>
-                    <ChevronRight className="mt-1 h-5 w-5 text-zinc-500" />
+                    <ChevronRight className="mt-1 h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {["Under 60 sec", "Preflop first", "Review later"].map(
@@ -183,7 +183,7 @@ export default function Log() {
                         <Badge
                           key={label}
                           variant="outline"
-                          className="rounded-full border-orange-400/30 bg-orange-500/10 text-orange-300"
+                          className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground"
                         >
                           {label}
                         </Badge>
@@ -203,20 +203,20 @@ export default function Log() {
                 <button
                   key={action.id}
                   type="button"
-                  className="rounded-[1rem] border border-white/10 bg-zinc-950/75 p-4 text-left shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-zinc-900/90"
+                  className="rounded-[1rem] border border-border/80 bg-card/88 p-4 text-left shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-border hover:bg-card"
                   onClick={() => openSecondaryAction(action.id)}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-950 text-orange-300">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent text-primary">
                       <Icon className="h-5 w-5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-black text-zinc-100">
+                      <p className="font-semibold text-foreground">
                         {action.title}
                       </p>
-                      <p className="text-sm text-zinc-400">{action.helper}</p>
+                      <p className="text-sm text-muted-foreground">{action.helper}</p>
                     </div>
-                    <Plus className="h-4 w-4 text-zinc-500" />
+                    <Plus className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </button>
               );
@@ -227,10 +227,10 @@ export default function Log() {
         <section className="space-y-3">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-600">
+              <p className="mb-1 text-[11px] font-semibold text-muted-foreground">
                 Review Queue
               </p>
-              <h2 className="text-lg font-black tracking-tight text-zinc-100">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">
                 Recent Hands
               </h2>
             </div>
@@ -238,14 +238,14 @@ export default function Log() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 rounded-full text-xs font-bold text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-100"
-              >
-                Open review
-              </Button>
+                    className="h-8 rounded-full text-xs font-semibold text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                  >
+                    Open review
+                  </Button>
             </Link>
           </div>
 
-          <Card className="rounded-[1.2rem] border-white/10 bg-zinc-950/78 shadow-xl shadow-black/25">
+          <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
             <CardContent className="space-y-2 p-4 sm:p-5">
               {handsLoading && (
                 <div className="space-y-2">
@@ -256,12 +256,12 @@ export default function Log() {
               )}
 
               {!handsLoading && recentHands.length === 0 && (
-                <div className="rounded-[1rem] border border-dashed border-white/15 bg-white/[0.03] p-6 text-center">
-                  <History className="mx-auto h-7 w-7 text-zinc-500" />
-                  <p className="mt-3 text-sm font-bold text-zinc-100">
+                <div className="rounded-[1rem] border border-dashed border-border/75 bg-accent/45 p-6 text-center">
+                  <History className="mx-auto h-7 w-7 text-muted-foreground" />
+                  <p className="mt-3 text-sm font-semibold text-foreground">
                     No hands logged yet
                   </p>
-                  <p className="mt-1 text-sm text-zinc-400">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Start with one fast capture. You can add detail later.
                   </p>
                 </div>
@@ -270,12 +270,12 @@ export default function Log() {
               {!handsLoading &&
                 recentHands.map(hand => (
                   <Link key={hand.id} href={`/hands/${hand.id}`}>
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-orange-300/40 hover:bg-white/[0.08] hover:shadow-md hover:shadow-black/20">
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:border-border hover:bg-accent/65 hover:shadow-md hover:shadow-black/20">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-zinc-100">
+                        <p className="truncate text-sm font-semibold text-foreground">
                           {hand.heroHand || "Captured hand"}
                         </p>
-                        <p className="mt-0.5 truncate text-xs text-zinc-400">
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {[
                             hand.heroPosition,
                             hand.effectiveStackBb

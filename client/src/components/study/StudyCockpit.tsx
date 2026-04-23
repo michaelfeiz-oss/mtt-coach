@@ -66,15 +66,15 @@ function SectionHeader({
     <div className="flex items-end justify-between gap-4">
       <div>
         {label && (
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-600">
+          <p className="mb-1 text-[11px] font-semibold text-muted-foreground">
             {label}
           </p>
         )}
-        <h2 className="text-lg font-black tracking-tight text-zinc-100">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">
           {title}
         </h2>
         {helper && (
-          <p className="mt-1 text-sm leading-relaxed text-zinc-400">
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             {helper}
           </p>
         )}
@@ -96,14 +96,14 @@ function EmptyState({
   ctaLabel: string;
 }) {
   return (
-    <div className="rounded-[1rem] border border-dashed border-white/15 bg-white/[0.03] p-5 text-center shadow-sm shadow-black/20">
-      <p className="text-sm font-bold text-zinc-100">{title}</p>
-      <p className="mt-1 text-sm leading-relaxed text-zinc-400">{helper}</p>
+    <div className="rounded-[1rem] border border-dashed border-border/75 bg-accent/45 p-5 text-center shadow-sm shadow-black/20">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{helper}</p>
       <Link href={ctaHref}>
         <Button
           size="sm"
           variant="outline"
-          className="mt-4 h-9 rounded-full px-4 text-xs font-bold"
+          className="mt-4 h-9 rounded-full px-4 text-xs font-semibold"
         >
           {ctaLabel}
         </Button>
@@ -156,18 +156,18 @@ export function StudyCockpit() {
   const missedHands = progress?.missedHands ?? [];
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.14),transparent_26rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-24 text-white">
+    <main className="app-shell min-h-screen pb-24 text-foreground">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:py-7">
-        <section className="overflow-hidden rounded-[1.4rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.22),transparent_20rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-white shadow-2xl shadow-black/25 sm:p-6">
+        <section className="app-surface-elevated overflow-hidden rounded-[1.4rem] p-5 sm:p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-orange-300">
+              <p className="app-eyebrow mb-2">
                 Training Cockpit
               </p>
               <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
                 Study
               </h1>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Train preflop ranges, review leaks, and capture tournament
                 hands while the decision is still fresh.
               </p>
@@ -175,7 +175,7 @@ export function StudyCockpit() {
 
             <div className="grid gap-2 sm:min-w-[20rem]">
               <Link href={continueHref}>
-                <Button className="h-12 w-full justify-between rounded-2xl bg-orange-500 px-4 text-sm font-black text-white shadow-lg shadow-orange-950/25 hover:bg-orange-600">
+                <Button className="h-12 w-full justify-between rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]">
                   <span className="flex items-center gap-2">
                     <Target className="h-4 w-4" />
                     {continueTitle}
@@ -186,7 +186,7 @@ export function StudyCockpit() {
               <Link href="/log">
                 <Button
                   variant="outline"
-                  className="h-11 w-full justify-between rounded-2xl border-white/15 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20"
+                  className="h-11 w-full justify-between rounded-2xl border-border/80 bg-accent/55 px-4 text-sm font-semibold text-secondary-foreground hover:bg-accent"
                 >
                   <span className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -198,11 +198,11 @@ export function StudyCockpit() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+          <div className="mt-5 rounded-[1.5rem] border border-border/75 bg-accent/55 p-4">
+            <p className="text-xs font-semibold text-muted-foreground">
               Next action
             </p>
-            <p className="mt-1 text-sm font-semibold text-zinc-100">
+            <p className="mt-1 text-sm font-medium text-foreground">
               {continueHelper}
             </p>
           </div>
@@ -264,7 +264,7 @@ export function StudyCockpit() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full text-xs font-bold text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-100"
+                    className="h-8 rounded-full text-xs font-semibold text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                   >
                     View all
                   </Button>
@@ -272,11 +272,11 @@ export function StudyCockpit() {
               }
             />
 
-            <Card className="rounded-[1.2rem] border-white/10 bg-zinc-950/78 shadow-xl shadow-black/25">
+            <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
               <CardContent className="space-y-4 p-4 sm:p-5">
                 {recentSpots.length > 0 ? (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                       <History className="h-3.5 w-3.5" />
                       Recently Viewed Ranges
                     </div>
@@ -286,17 +286,17 @@ export function StudyCockpit() {
                           key={spot.id}
                           href={`/strategy/library?chartId=${spot.id}`}
                         >
-                          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-white/[0.08] hover:shadow-md hover:shadow-black/20">
-                            <p className="truncate text-sm font-bold text-zinc-100">
+                          <div className="rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:-translate-y-0.5 hover:border-border hover:bg-accent/65 hover:shadow-md hover:shadow-black/20">
+                            <p className="truncate text-sm font-semibold text-foreground">
                               {spot.title}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                              <Badge className="rounded-full bg-orange-500 text-white">
+                              <Badge className="rounded-full bg-primary text-primary-foreground">
                                 {spot.stackDepth}bb
                               </Badge>
                               <Badge
                                 variant="outline"
-                                className="rounded-full border-white/10 bg-white/[0.04] text-[11px] text-zinc-300"
+                                className="rounded-full border-border/80 bg-accent/55 text-[11px] text-secondary-foreground"
                               >
                                 {SPOT_GROUP_LABELS[spot.spotGroup]}
                               </Badge>
@@ -315,10 +315,10 @@ export function StudyCockpit() {
                   />
                 )}
 
-                <div className="h-px bg-white/10" />
+                <div className="h-px bg-border/80" />
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                     <ClipboardList className="h-3.5 w-3.5" />
                     Recently Logged Hands
                   </div>
@@ -346,12 +346,12 @@ export function StudyCockpit() {
                   {!handsLoading &&
                     hands.slice(0, 3).map(hand => (
                       <Link key={hand.id} href={`/hands/${hand.id}`}>
-                        <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-white/[0.08] hover:shadow-md hover:shadow-black/20">
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:-translate-y-0.5 hover:border-border hover:bg-accent/65 hover:shadow-md hover:shadow-black/20">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-zinc-100">
+                            <p className="truncate text-sm font-semibold text-foreground">
                               {hand.heroHand || "Hand captured"}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-zinc-400">
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
                               {formatHandMeta(hand)}
                             </p>
                           </div>
@@ -376,28 +376,28 @@ export function StudyCockpit() {
               helper="Saved trainer history and leak data drive this area."
             />
 
-            <Card className="rounded-[1.2rem] border-white/10 bg-zinc-950/78 shadow-xl shadow-black/25">
+            <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
               <CardContent className="space-y-4 p-4 sm:p-5">
                 {isAuthenticated && weakSpots.length > 0 && (
                   <div className="space-y-2">
                     {weakSpots.slice(0, 4).map(spot => (
                       <div
                         key={spot.chartId}
-                        className="rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                        className="rounded-xl border border-border/80 bg-accent/45 p-3"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-zinc-100">
+                            <p className="truncate text-sm font-semibold text-foreground">
                               {spot.chartTitle}
                             </p>
-                            <p className="mt-0.5 text-xs text-zinc-400">
+                            <p className="mt-0.5 text-xs text-muted-foreground">
                               {spot.accuracy}% over {spot.attempts} attempts
                             </p>
                           </div>
                           <Link href={`/strategy/trainer?chartId=${spot.chartId}`}>
                             <Button
                               size="sm"
-                              className="h-8 shrink-0 rounded-full bg-orange-500 px-3 text-xs font-bold text-white hover:bg-orange-600"
+                              className="h-8 shrink-0 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
                             >
                               Train
                             </Button>
@@ -411,23 +411,23 @@ export function StudyCockpit() {
                 {(!isAuthenticated || weakSpots.length === 0) &&
                   topLeaks.length > 0 && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                      <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                         <AlertCircle className="h-3.5 w-3.5" />
                         Active Leaks
                       </div>
                       {topLeaks.map(leak => (
                         <Link key={leak.id} href={`/leaks/${leak.id}`}>
-                          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-orange-300/40 hover:bg-white/[0.08]">
+                          <div className="rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:border-border hover:bg-accent/65">
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-zinc-100">
+                                <p className="truncate text-sm font-semibold text-foreground">
                                   {leak.name}
                                 </p>
-                                <p className="mt-0.5 text-xs text-zinc-400">
+                                <p className="mt-0.5 text-xs text-muted-foreground">
                                   {leak.category} - {leak.handCount} linked hands
                                 </p>
                               </div>
-                              <ChevronRight className="h-4 w-4 text-zinc-500" />
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </div>
                           </div>
                         </Link>
@@ -437,21 +437,21 @@ export function StudyCockpit() {
 
                 {isAuthenticated && missedHands.length > 0 && (
                   <>
-                    <div className="h-px bg-white/10" />
+                    <div className="h-px bg-border/80" />
                     <div className="space-y-2">
-                      <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                      <div className="text-[11px] font-semibold text-muted-foreground">
                         Most Missed Hands
                       </div>
                       {missedHands.slice(0, 3).map(hand => (
                         <div
                           key={`${hand.chartId}-${hand.handCode}`}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-accent/45 p-3"
                         >
                           <div>
-                            <p className="font-mono text-base font-black text-zinc-100">
+                            <p className="font-mono text-base font-semibold text-foreground">
                               {hand.handCode}
                             </p>
-                            <p className="text-xs text-zinc-400">
+                            <p className="text-xs text-muted-foreground">
                               Correct: {ACTION_LABELS[hand.correctAction]}
                             </p>
                           </div>
@@ -478,7 +478,7 @@ export function StudyCockpit() {
                   )}
 
                 {!isAuthenticated && (
-                  <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs leading-relaxed text-zinc-500">
+                  <p className="rounded-xl border border-border/80 bg-accent/45 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
                     Range practice works while logged out. Saved weak spots
                     appear here for authenticated users.
                   </p>
@@ -523,12 +523,12 @@ export function StudyCockpit() {
               },
             ].map(item => (
               <Link key={item.href} href={item.href}>
-                <div className="group rounded-[1rem] border border-white/10 bg-zinc-950/75 p-4 shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-zinc-900/90 hover:shadow-md hover:shadow-black/25">
-                  <item.icon className="h-5 w-5 text-orange-500" />
-                  <p className="mt-3 text-sm font-black text-zinc-100">
+                <div className="group rounded-[1rem] border border-border/80 bg-card/88 p-4 shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md hover:shadow-black/25">
+                  <item.icon className="h-5 w-5 text-primary" />
+                  <p className="mt-3 text-sm font-semibold text-foreground">
                     {item.title}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                     {item.helper}
                   </p>
                 </div>
@@ -548,10 +548,10 @@ export function StudyCockpit() {
               {recentAttempts.map(attempt => (
                 <div
                   key={attempt.id}
-                  className="rounded-[1rem] border border-white/10 bg-zinc-950/75 p-3 shadow-sm shadow-black/20"
+                  className="rounded-[1rem] border border-border/80 bg-card/88 p-3 shadow-sm shadow-black/20"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-mono text-base font-black text-zinc-100">
+                    <p className="font-mono text-base font-semibold text-foreground">
                       {attempt.handCode}
                     </p>
                     <Badge
@@ -564,7 +564,7 @@ export function StudyCockpit() {
                       {attempt.isCorrect ? "Hit" : "Miss"}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-xs text-zinc-400">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Correct:{" "}
                     {ACTION_LABELS[attempt.correctAction as Action] ??
                       attempt.correctAction}

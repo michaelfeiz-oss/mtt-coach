@@ -23,37 +23,37 @@ export const ACTION_CELL_STYLES: Record<
   }
 > = {
   FOLD: {
-    backgroundColor: "#eef2f7",
-    color: "#64748b",
+    backgroundColor: "#d4dce7",
+    color: "#526175",
     label: ACTION_LABELS.FOLD,
   },
   RAISE: {
-    backgroundColor: "#dc2626",
+    backgroundColor: "#d54f3f",
     color: "#ffffff",
     label: ACTION_LABELS.RAISE,
   },
   CALL: {
-    backgroundColor: "#15803d",
+    backgroundColor: "#1f9b63",
     color: "#ffffff",
     label: ACTION_LABELS.CALL,
   },
   THREE_BET: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#2f6ccb",
     color: "#ffffff",
     label: ACTION_LABELS.THREE_BET,
   },
   JAM: {
-    backgroundColor: "#ea580c",
+    backgroundColor: "#dd6e2a",
     color: "#ffffff",
     label: ACTION_LABELS.JAM,
   },
   LIMP: {
-    backgroundColor: "#ca8a04",
+    backgroundColor: "#b48b2a",
     color: "#ffffff",
     label: ACTION_LABELS.LIMP,
   },
   CHECK: {
-    backgroundColor: "#52525b",
+    backgroundColor: "#5d6777",
     color: "#ffffff",
     label: ACTION_LABELS.CHECK,
   },

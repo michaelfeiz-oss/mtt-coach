@@ -107,14 +107,14 @@ export function TrainerCard({
         {showContextBadges && (
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             {stackDepth !== undefined && (
-              <Badge className="rounded-full bg-orange-500 px-2.5 py-0.5 text-white shadow-sm shadow-orange-950/25">
+              <Badge className="rounded-full bg-primary px-2.5 py-0.5 text-primary-foreground shadow-sm shadow-black/20">
                 {stackDepth}bb
               </Badge>
             )}
             {heroPosition && (
               <Badge
                 variant="outline"
-                className="rounded-full border-white/15 bg-white/5 px-2.5 py-0.5 text-zinc-200"
+                className="rounded-full border-border/80 bg-accent/55 px-2.5 py-0.5 text-secondary-foreground"
               >
                 {heroPosition}
                 {villainPosition ? ` vs ${villainPosition}` : ""}
@@ -125,7 +125,7 @@ export function TrainerCard({
 
         <div
           className={cn(
-            "rounded-[1rem] border border-white/10 bg-white/[0.04] px-3.5 py-3 shadow-inner",
+            "rounded-[1rem] border border-border/75 bg-accent/50 px-3.5 py-3 shadow-inner shadow-black/25",
             compact && "px-3 py-2.5"
           )}
         >
@@ -133,7 +133,7 @@ export function TrainerCard({
           {showSpotText && (
             <p
               className={cn(
-                "mt-4 text-sm font-semibold text-zinc-100",
+                "mt-4 text-sm font-semibold text-foreground",
                 compact && "mt-3"
               )}
             >
@@ -141,7 +141,7 @@ export function TrainerCard({
             </p>
           )}
           {showSpotText && spotContext && (
-            <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {spotContext}
             </p>
           )}
@@ -169,7 +169,7 @@ export function TrainerCard({
               key={action}
               variant="outline"
               className={cn(
-                "h-10 rounded-xl border-zinc-700/80 bg-zinc-900/75 px-3 text-xs font-bold text-zinc-100 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-zinc-800 active:translate-y-0 sm:h-10 sm:px-4 sm:text-sm",
+                "h-10 rounded-xl border-border/80 bg-input/78 px-3 text-xs font-semibold text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-border hover:bg-input active:translate-y-0 sm:h-10 sm:px-4 sm:text-sm",
                 compact && "h-9 sm:h-9",
                 "justify-between",
                 extraClass
@@ -178,7 +178,7 @@ export function TrainerCard({
               disabled={isRevealed}
             >
               <span className="min-w-0 truncate">{ACTION_LABELS[action]}</span>
-              <span className="ml-2 shrink-0 rounded-lg border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-400 sm:px-2 sm:text-[11px]">
+              <span className="ml-2 shrink-0 rounded-lg border border-border/70 bg-accent/55 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground sm:px-2 sm:text-[11px]">
                 {index + 1}
               </span>
             </Button>
@@ -187,7 +187,7 @@ export function TrainerCard({
       </div>
 
       {isRevealed && showInlineResult && (
-        <div className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4">
+        <div className="space-y-4 rounded-3xl border border-border/80 bg-accent/50 p-4">
           <div className="text-center">
             <p
               className={cn(
@@ -197,20 +197,20 @@ export function TrainerCard({
             >
               {selectedAction === correctAction ? "Correct" : "Incorrect"}
             </p>
-            <p className="mt-1 text-sm text-zinc-300">
+            <p className="mt-1 text-sm text-secondary-foreground">
               Correct action:{" "}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-foreground">
                 {ACTION_LABELS[correctAction]}
               </span>
             </p>
             {explanation && (
-              <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 {explanation}
               </p>
             )}
           </div>
           <Button
-            className="h-12 w-full rounded-2xl bg-orange-500 text-base font-bold text-white shadow-lg shadow-orange-950/25 hover:bg-orange-600"
+            className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]"
             onClick={handleNext}
           >
             Next Hand
@@ -225,7 +225,7 @@ export function TrainerCard({
         <div className="flex justify-end">
           <Button
             variant="ghost"
-            className="h-7 rounded-lg px-2.5 text-[11px] font-semibold text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+            className="h-7 rounded-lg px-2.5 text-[11px] font-semibold text-muted-foreground hover:bg-accent/55 hover:text-secondary-foreground"
             onClick={onSkip}
           >
             Skip hand
@@ -239,7 +239,11 @@ export function TrainerCard({
     return (
       <div
         data-chart-id={chartId}
-        className={cn("space-y-3 text-white", compact && "space-y-2.5", className)}
+        className={cn(
+          "space-y-3 text-foreground",
+          compact && "space-y-2.5",
+          className
+        )}
       >
         {content}
       </div>
@@ -250,7 +254,7 @@ export function TrainerCard({
     <div
       data-chart-id={chartId}
       className={cn(
-        "overflow-hidden rounded-[1.75rem] border border-zinc-800/90 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#18181b_0%,#09090b_100%)] p-5 text-white shadow-2xl shadow-zinc-950/25 sm:p-7",
+        "overflow-hidden rounded-[1.75rem] border border-border/80 bg-card/92 p-5 text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.24)] sm:p-7",
         compact && "space-y-3 p-4 sm:p-5",
         className
       )}
