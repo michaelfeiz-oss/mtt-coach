@@ -57,17 +57,20 @@ export function AddNoteModal({
       <div className="space-y-4">
         {/* Category */}
         <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
+          <Label htmlFor="category" className="text-zinc-200">Category</Label>
           <Select
             value={formData.category}
             onValueChange={(value) =>
               setFormData({ ...formData, category: value })
             }
           >
-            <SelectTrigger id="category">
+            <SelectTrigger
+              id="category"
+              className="border-white/10 bg-white/[0.05] text-zinc-100"
+            >
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border-zinc-800 bg-zinc-950 text-zinc-100">
               <SelectItem value="observation">Observation</SelectItem>
               <SelectItem value="range-note">Range Note</SelectItem>
               <SelectItem value="spot-takeaway">Spot Takeaway</SelectItem>
@@ -80,7 +83,7 @@ export function AddNoteModal({
 
         {/* Content */}
         <div className="space-y-2">
-          <Label htmlFor="content">Note *</Label>
+          <Label htmlFor="content" className="text-zinc-200">Note *</Label>
           <Textarea
             id="content"
             placeholder="Write a preflop takeaway or reminder."
@@ -88,12 +91,12 @@ export function AddNoteModal({
             onChange={(e) =>
               setFormData({ ...formData, content: e.target.value })
             }
-            className="min-h-32"
+            className="min-h-32 border-white/10 bg-white/[0.05] text-zinc-100 placeholder:text-zinc-500"
           />
         </div>
 
         {/* Character count */}
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-zinc-500">
           {formData.content.length} characters
         </div>
       </div>

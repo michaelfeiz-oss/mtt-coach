@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "wouter";
-import { CheckCircle2, Flame, Target } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Flame, SlidersHorizontal, Target } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -182,6 +182,7 @@ export default function RangeTrainer() {
     null
   );
   const [questionVersion, setQuestionVersion] = useState(0);
+  const [setupCollapsed, setSetupCollapsed] = useState(false);
 
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const resultRevealRef = useRef<HTMLDivElement | null>(null);
@@ -298,6 +299,19 @@ export default function RangeTrainer() {
         answerReveal.explanation
       )
     : null;
+  const setupSummary = [
+    {
+      label: "Decision",
+      value:
+        (spotGroup
+          ? SPOT_GROUP_LABELS[spotGroup].replace(" (Open Raise)", "")
+          : undefined) ?? "Any",
+    },
+    { label: "Stack", value: stackDepth ? `${stackDepth}bb` : "Any" },
+    { label: "Players", value: "9" },
+    { label: "Hero", value: heroPosition ?? "Any" },
+    { label: "Opener", value: villainPosition ?? "Any / no opener" },
+  ];
 
   useEffect(() => {
     if (!answerReveal) return;
@@ -306,6 +320,12 @@ export default function RangeTrainer() {
     }, 80);
     return () => window.clearTimeout(timeout);
   }, [answerReveal]);
+
+  useEffect(() => {
+    if (trainerSpot) {
+      setSetupCollapsed(true);
+    }
+  }, [trainerSpot?.chartId]);
 
   useEffect(() => {
     if (heroPosition !== undefined && !heroOptions.includes(heroPosition)) {
@@ -442,38 +462,80 @@ export default function RangeTrainer() {
           </p>
         </header>
 
-        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20 sm:p-4">
-          <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
-            Setup
-          </p>
-          <PreflopSetupControls
-            spotGroup={spotGroup}
-            stackDepth={stackDepth}
-            heroPosition={heroPosition}
-            villainPosition={villainPosition}
-            availableStacks={availableStacks}
-            heroOptions={heroOptions}
-            villainOptions={villainOptions}
-            onSpotGroupChange={setFamilyFilter}
-            onStackDepthChange={setStackFilter}
-            onHeroPositionChange={setHeroFilter}
-            onVillainPositionChange={setVillainFilter}
-          />
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-zinc-400">
-            <Badge className="rounded-full bg-orange-500 text-white">BBA</Badge>
-            <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-200">
-              Up to 40bb
-            </Badge>
-            <span className="inline-flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
-              {sessionStats.correct}/{sessionStats.total} correct
-            </span>
-            <span>{accuracy}% accuracy</span>
-            <span className="inline-flex items-center gap-1">
-              <Flame className="h-3.5 w-3.5 text-amber-300" />
-              {sessionStats.streak} streak
-            </span>
-            {!isAuthenticated && <span>Practice stays local while logged out.</span>}
+        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20 sm:p-3.5">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Setup
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-7 rounded-lg px-2 text-[11px] font-bold text-zinc-300 hover:bg-white/[0.08] hover:text-white"
+              onClick={() => setSetupCollapsed(current => !current)}
+            >
+              {setupCollapsed ? "Edit setup" : "Collapse"}
+              {setupCollapsed ? (
+                <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
+              ) : (
+                <ChevronUp className="ml-1.5 h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+
+          {setupCollapsed ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {setupSummary.map(item => (
+                <Badge
+                  key={item.label}
+                  className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-zinc-200"
+                >
+                  <span className="mr-1 text-zinc-400">{item.label}:</span>
+                  <span>{item.value}</span>
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <PreflopSetupControls
+              spotGroup={spotGroup}
+              stackDepth={stackDepth}
+              heroPosition={heroPosition}
+              villainPosition={villainPosition}
+              availableStacks={availableStacks}
+              heroOptions={heroOptions}
+              villainOptions={villainOptions}
+              onSpotGroupChange={setFamilyFilter}
+              onStackDepthChange={setStackFilter}
+              onHeroPositionChange={setHeroFilter}
+              onVillainPositionChange={setVillainFilter}
+            />
+          )}
+
+          <div className="mt-2.5 space-y-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <Badge className="rounded-full bg-orange-500 text-white">BBA</Badge>
+                <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-200">
+                  Up to 40bb
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] text-zinc-300">
+                <span className="inline-flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+                  {sessionStats.correct}/{sessionStats.total}
+                </span>
+                <span>{accuracy}%</span>
+                <span className="inline-flex items-center gap-1">
+                  <Flame className="h-3.5 w-3.5 text-amber-300" />
+                  {sessionStats.streak}
+                </span>
+              </div>
+            </div>
+            {!isAuthenticated && (
+              <p className="text-[10px] text-zinc-500">
+                Logged-out practice stays local to this device.
+              </p>
+            )}
           </div>
         </section>
 
@@ -487,7 +549,7 @@ export default function RangeTrainer() {
             <div className="space-y-3">
               <div
                 ref={questionCardRef}
-                className="space-y-3 rounded-[1.2rem] border border-white/10 bg-zinc-950/82 p-3 shadow-xl shadow-black/20 sm:p-4"
+                className="space-y-2.5 rounded-[1.2rem] border border-white/10 bg-zinc-950/82 p-3 shadow-xl shadow-black/20 sm:p-3.5"
               >
                 <TableContext
                   title={trainerSpot.chart.title}

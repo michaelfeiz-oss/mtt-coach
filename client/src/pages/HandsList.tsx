@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
@@ -40,11 +46,16 @@ export default function HandsList() {
   });
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.09),transparent_28rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef2f7_100%)] pb-24">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.13),transparent_26rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-24 text-white">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-zinc-950/90 backdrop-blur">
         <div className="container py-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/")}
+              className="gap-2 text-zinc-300 hover:bg-white/[0.08] hover:text-zinc-100"
+            >
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
             </Button>
@@ -54,10 +65,10 @@ export default function HandsList() {
       </header>
 
       <main className="container max-w-5xl py-6">
-        <Card className="rounded-[1.75rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
+        <Card className="rounded-[1.2rem] border-white/10 bg-zinc-950/80 shadow-xl shadow-black/25">
           <CardHeader>
-            <CardTitle>Preflop Hand Review</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-zinc-100">Preflop Hand Review</CardTitle>
+            <CardDescription className="text-zinc-400">
               Scan logged tournament spots by hand, stack, position, decision,
               and lesson.
             </CardDescription>
@@ -66,13 +77,13 @@ export default function HandsList() {
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Skeleton key={i} className="h-20 w-full" />
+                  <Skeleton key={i} className="h-20 w-full rounded-xl bg-white/10" />
                 ))}
               </div>
             ) : !hands || hands.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-slate-500 mb-4">No preflop hands logged yet</p>
-                <p className="text-sm text-slate-400">
+              <div className="py-12 text-center">
+                <p className="mb-4 text-zinc-300">No preflop hands logged yet</p>
+                <p className="text-sm text-zinc-500">
                   Use quick capture after a tournament session, then review here.
                 </p>
               </div>
@@ -80,48 +91,48 @@ export default function HandsList() {
               <div className="space-y-2">
                 {hands.map((hand) => {
                   const tags = hand.tagsJson ? JSON.parse(hand.tagsJson) : [];
-                  
+
                   return (
                     <div
                       key={hand.id}
                       onClick={() => setLocation(`/hands/${hand.id}`)}
-                      className="w-full cursor-pointer rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition-all hover:border-orange-200 hover:bg-white hover:shadow-md"
+                      className="w-full cursor-pointer rounded-xl border border-white/10 bg-white/[0.04] p-4 transition-all hover:border-orange-300/40 hover:bg-white/[0.08] hover:shadow-md hover:shadow-black/20"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center gap-2">
                             {hand.heroHand && (
-                              <span className="font-mono font-bold text-lg">{hand.heroHand}</span>
+                              <span className="font-mono text-lg font-bold">{hand.heroHand}</span>
                             )}
                             {hand.heroPosition && (
-                              <span className="text-xs bg-slate-100 px-2 py-1 rounded">
+                              <span className="rounded bg-white/[0.06] px-2 py-1 text-xs text-zinc-300">
                                 {hand.heroPosition}
                               </span>
                             )}
                             {hand.reviewed && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                              <span className="rounded bg-green-500/20 px-2 py-1 text-xs text-green-300">
                                 Reviewed
                               </span>
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
                             {hand.spotType && <span>{hand.spotType.replace(/_/g, " ")}</span>}
                             {hand.effectiveStackBb && <span>{hand.effectiveStackBb.toFixed(1)}bb</span>}
                             <span>BBA</span>
                             {hand.mistakeSeverity > 0 && (
-                              <span className="text-red-600 font-medium">
+                              <span className="font-medium text-red-400">
                                 Mistake: {hand.mistakeSeverity}/3
                               </span>
                             )}
                           </div>
 
                           {tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="mt-2 flex flex-wrap gap-1">
                               {tags.map((tag: string, i: number) => (
                                 <span
                                   key={i}
-                                  className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded"
+                                  className="rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-300"
                                 >
                                   {tag}
                                 </span>
@@ -130,7 +141,7 @@ export default function HandsList() {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex flex-shrink-0 items-center gap-2">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -138,7 +149,7 @@ export default function HandsList() {
                               e.stopPropagation();
                               setEditingHandId(hand.id);
                             }}
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-100"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -149,11 +160,11 @@ export default function HandsList() {
                               e.stopPropagation();
                               setDeletingHandId(hand.id);
                             }}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/15 hover:text-red-300"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          <ChevronRight className="h-5 w-5 text-slate-400" />
+                          <ChevronRight className="h-5 w-5 text-zinc-500" />
                         </div>
                       </div>
                     </div>

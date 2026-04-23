@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearch } from "wouter";
-import { BookOpen, Play, SlidersHorizontal } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronUp, Play, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -115,6 +115,7 @@ export default function StrategyLibrary() {
   const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
     initialChartId
   );
+  const [setupCollapsed, setSetupCollapsed] = useState(false);
 
   const {
     data: allSpots = [],
@@ -195,6 +196,19 @@ export default function StrategyLibrary() {
         new Set(chart.actions.map(action => action.primaryAction))
       ) as Action[])
     : undefined;
+  const setupSummary = [
+    {
+      label: "Decision",
+      value:
+        (spotGroup
+          ? SPOT_GROUP_LABELS[spotGroup].replace(" (Open Raise)", "")
+          : undefined) ?? "Any",
+    },
+    { label: "Stack", value: stackDepth ? `${stackDepth}bb` : "Any" },
+    { label: "Players", value: "9" },
+    { label: "Hero", value: heroPosition ?? "Any" },
+    { label: "Opener", value: villainPosition ?? "Any / no opener" },
+  ];
 
   useEffect(() => {
     if (!chart) return;
@@ -218,6 +232,7 @@ export default function StrategyLibrary() {
       nextRecentSpot
     );
     saveRecentStrategySpots(updatedRecent);
+    setSetupCollapsed(true);
   }, [chart]);
 
   useEffect(() => {
@@ -293,7 +308,10 @@ export default function StrategyLibrary() {
             </div>
             {chart && (
               <Link href={`/strategy/trainer?chartId=${chart.id}`}>
-                <Button className="h-9 shrink-0 gap-1.5 rounded-xl bg-orange-500 px-3 text-xs font-black text-white hover:bg-orange-600">
+                <Button
+                  variant="outline"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl border-white/15 bg-white/[0.04] px-3 text-xs font-black text-zinc-100 hover:bg-white/[0.1]"
+                >
                   <Play className="h-3.5 w-3.5" />
                   Train
                 </Button>
@@ -302,24 +320,54 @@ export default function StrategyLibrary() {
           </div>
         </header>
 
-        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20 sm:p-4">
-          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            Setup
-          </p>
-          <PreflopSetupControls
-            spotGroup={spotGroup}
-            stackDepth={stackDepth}
-            heroPosition={heroPosition}
-            villainPosition={villainPosition}
-            availableStacks={availableStacks}
-            heroOptions={heroOptions}
-            villainOptions={villainOptions}
-            onSpotGroupChange={setGroup}
-            onStackDepthChange={setStack}
-            onHeroPositionChange={setHero}
-            onVillainPositionChange={setVillain}
-          />
+        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20 sm:p-3.5">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Setup
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-7 rounded-lg px-2 text-[11px] font-bold text-zinc-300 hover:bg-white/[0.08] hover:text-white"
+              onClick={() => setSetupCollapsed(current => !current)}
+            >
+              {setupCollapsed ? "Edit setup" : "Collapse"}
+              {setupCollapsed ? (
+                <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
+              ) : (
+                <ChevronUp className="ml-1.5 h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+
+          {setupCollapsed ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {setupSummary.map(item => (
+                <Badge
+                  key={item.label}
+                  className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-zinc-200"
+                >
+                  <span className="mr-1 text-zinc-400">{item.label}:</span>
+                  <span>{item.value}</span>
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <PreflopSetupControls
+              spotGroup={spotGroup}
+              stackDepth={stackDepth}
+              heroPosition={heroPosition}
+              villainPosition={villainPosition}
+              availableStacks={availableStacks}
+              heroOptions={heroOptions}
+              villainOptions={villainOptions}
+              onSpotGroupChange={setGroup}
+              onStackDepthChange={setStack}
+              onHeroPositionChange={setHero}
+              onVillainPositionChange={setVillain}
+            />
+          )}
         </section>
 
         <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/78 p-3 shadow-xl shadow-black/20 sm:p-4">
@@ -373,9 +421,6 @@ export default function StrategyLibrary() {
                         : ""}
                     </Badge>
                     <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
-                      9 players
-                    </Badge>
-                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
                       BBA
                     </Badge>
                   </div>
@@ -386,7 +431,7 @@ export default function StrategyLibrary() {
                 />
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1.5 shadow-inner shadow-black/25 sm:p-3">
+              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1 shadow-inner shadow-black/25 sm:p-2.5">
                 <div className="md:hidden">
                   <RangeMatrix actions={actionMap} compact size="md" />
                 </div>

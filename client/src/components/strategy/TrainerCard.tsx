@@ -103,7 +103,7 @@ export function TrainerCard({
 
   const content = (
     <>
-      <div className={cn("space-y-4 text-center", compact && "space-y-3")}>
+      <div className={cn("space-y-2.5 text-center", compact && "space-y-2")}>
         {showContextBadges && (
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             {stackDepth !== undefined && (
@@ -125,8 +125,8 @@ export function TrainerCard({
 
         <div
           className={cn(
-            "rounded-[1.1rem] border border-white/10 bg-white/[0.04] px-4 py-4 shadow-inner",
-            compact && "px-3 py-3"
+            "rounded-[1rem] border border-white/10 bg-white/[0.04] px-3.5 py-3 shadow-inner",
+            compact && "px-3 py-2.5"
           )}
         >
           <HandCards handCode={handCode} size={compact ? "md" : "lg"} showLabel />
@@ -148,7 +148,7 @@ export function TrainerCard({
         </div>
       </div>
 
-      <div className={cn("grid gap-2", answerGridClass)}>
+      <div className={cn("grid gap-1.5", answerGridClass)}>
         {answerChoices.map((action, index) => {
           let extraClass = "";
 
@@ -169,8 +169,8 @@ export function TrainerCard({
               key={action}
               variant="outline"
               className={cn(
-                "h-11 rounded-xl border-zinc-700/80 bg-zinc-900/75 px-3 text-xs font-bold text-zinc-100 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-zinc-800 active:translate-y-0 sm:h-11 sm:px-4 sm:text-sm",
-                compact && "h-10 sm:h-10",
+                "h-10 rounded-xl border-zinc-700/80 bg-zinc-900/75 px-3 text-xs font-bold text-zinc-100 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-zinc-800 active:translate-y-0 sm:h-10 sm:px-4 sm:text-sm",
+                compact && "h-9 sm:h-9",
                 "justify-between",
                 extraClass
               )}
@@ -222,13 +222,15 @@ export function TrainerCard({
       )}
 
       {!isRevealed && (
-        <Button
-          variant="ghost"
-          className="w-full rounded-2xl text-xs text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
-          onClick={onSkip}
-        >
-          Skip
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            className="h-7 rounded-lg px-2.5 text-[11px] font-semibold text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+            onClick={onSkip}
+          >
+            Skip hand
+          </Button>
+        </div>
       )}
     </>
   );
