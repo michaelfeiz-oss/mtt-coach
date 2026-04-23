@@ -54,7 +54,7 @@ export function HandCards({
         />
       </div>
       {showLabel && (
-        <span className="mt-3 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs font-bold tracking-[0.18em] text-zinc-300">
+        <span className="mt-3 rounded-full border border-border/75 bg-accent/55 px-3 py-1 font-mono text-xs font-bold tracking-[0.18em] text-secondary-foreground">
           {handCode}
         </span>
       )}

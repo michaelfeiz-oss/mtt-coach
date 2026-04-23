@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { BottomSheetModal } from "./BottomSheetModal";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,22 +34,31 @@ export function AddNoteModal({
     content: "",
   });
 
-  const handleSubmit = () => {
-    if (!formData.content.trim()) {
-      alert("Please enter a note");
-      return;
-    }
-    onSubmit(formData);
+  const resetForm = () => {
     setFormData({
       category: "",
       content: "",
     });
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleSubmit = () => {
+    if (!formData.content.trim()) {
+      toast.error("Enter a note before saving.");
+      return;
+    }
+    onSubmit(formData);
+    resetForm();
+  };
+
   return (
     <BottomSheetModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Add Note"
       description="Capture a quick preflop takeaway or reminder."
       eyebrow="Study Note"

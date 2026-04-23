@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { SessionTimer } from "@/components/SessionTimer";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { trpc } from "@/lib/trpc";
 
 const SESSION_TYPES = [
   { value: "RANGE_TRAINING", label: "Range Training" },
@@ -42,10 +36,11 @@ export default function LogStudySession() {
   const urlParams = new URLSearchParams(window.location.search);
   const fromPlan = urlParams.get("fromPlan") === "true";
   const planSlot = urlParams.get("planSlot") || undefined;
-  const typeFromUrl = getSafeSessionType(urlParams.get("type") || "HAND_REVIEW");
+  const typeFromUrl = getSafeSessionType(urlParams.get("type") || "RANGE_TRAINING");
   const dateFromUrl = urlParams.get("date")
     ? new Date(urlParams.get("date")!)
     : new Date();
+
   const planTypeLabel = useMemo(
     () =>
       SESSION_TYPES.find(type => type.value === typeFromUrl)?.label ??
@@ -65,11 +60,11 @@ export default function LogStudySession() {
 
   const createSession = trpc.studySessions.create.useMutation({
     onSuccess: () => {
-      toast.success("Study session logged successfully.");
-      utils.weeks.getCurrent.invalidate();
-      utils.dashboard.getStats.invalidate();
-      utils.studyPlan.getWeek.invalidate();
-      utils.studyPlan.getToday.invalidate();
+      toast.success("Study session logged");
+      void utils.weeks.getCurrent.invalidate();
+      void utils.dashboard.getStats.invalidate();
+      void utils.studyPlan.getWeek.invalidate();
+      void utils.studyPlan.getToday.invalidate();
       setLocation("/");
     },
     onError: error => {
@@ -78,42 +73,37 @@ export default function LogStudySession() {
   });
 
   useEffect(() => {
-    setFormData(previous => ({
-      ...previous,
-      type: typeFromUrl,
-    }));
+    setFormData(previous => ({ ...previous, type: typeFromUrl }));
   }, [typeFromUrl]);
 
-  const handleSubmit = (event: FormEvent) => {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (!formData.durationMinutes || parseInt(formData.durationMinutes) < 1) {
+    const duration = Number.parseInt(formData.durationMinutes, 10);
+    if (!Number.isFinite(duration) || duration < 1) {
       toast.error("Please enter a valid duration.");
       return;
     }
 
     createSession.mutate({
       date: dateFromUrl,
-      type: formData.type as
-        | "RANGE_TRAINING"
-        | "HAND_REVIEW"
-        | "LIGHT_REVIEW",
-      durationMinutes: parseInt(formData.durationMinutes),
+      type: formData.type as "RANGE_TRAINING" | "HAND_REVIEW" | "LIGHT_REVIEW",
+      durationMinutes: duration,
       resourceUsed: formData.resourceUsed || undefined,
-      handsReviewedCount: parseInt(formData.handsReviewedCount) || 0,
-      drillsCompletedCount: parseInt(formData.drillsCompletedCount) || 0,
+      handsReviewedCount: Number.parseInt(formData.handsReviewedCount, 10) || 0,
+      drillsCompletedCount: Number.parseInt(formData.drillsCompletedCount, 10) || 0,
       accuracyPercent: formData.accuracyPercent
-        ? parseFloat(formData.accuracyPercent)
+        ? Number.parseFloat(formData.accuracyPercent)
         : undefined,
-      keyTakeaways: formData.keyTakeaways || undefined,
+      keyTakeaways: formData.keyTakeaways.trim() || undefined,
       fromPlan,
       planSlot,
     });
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+    <div className="app-shell min-h-screen text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
         <div className="container py-4">
           <Button
             variant="ghost"
@@ -127,18 +117,14 @@ export default function LogStudySession() {
         </div>
       </header>
 
-      <main className="container py-6">
-        <Card className="mx-auto max-w-2xl">
+      <main className="container max-w-2xl py-6">
+        <Card className="app-surface">
           <CardHeader>
             <CardTitle>Log Study Session</CardTitle>
             <CardDescription>
-              {fromPlan ? (
-                <span className="font-medium text-blue-600">
-                  From Study Plan - {planTypeLabel}
-                </span>
-              ) : (
-                "Record a preflop study session, hand review, or note pass."
-              )}
+              {fromPlan
+                ? `From Study Plan - ${planTypeLabel}`
+                : "Capture your preflop study effort and takeaways."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -148,11 +134,11 @@ export default function LogStudySession() {
                 <Select
                   value={formData.type}
                   onValueChange={value =>
-                    setFormData({ ...formData, type: value })
+                    setFormData(previous => ({ ...previous, type: value }))
                   }
                   disabled={fromPlan}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -169,12 +155,12 @@ export default function LogStudySession() {
                 <Label>Session Timer</Label>
                 <SessionTimer
                   onDurationChange={minutes =>
-                    setFormData({
-                      ...formData,
-                      durationMinutes: minutes.toString(),
-                    })
+                    setFormData(previous => ({
+                      ...previous,
+                      durationMinutes: String(minutes),
+                    }))
                   }
-                  initialMinutes={parseInt(formData.durationMinutes) || 0}
+                  initialMinutes={Number.parseInt(formData.durationMinutes, 10) || 0}
                 />
               </div>
 
@@ -187,34 +173,30 @@ export default function LogStudySession() {
                   placeholder="30"
                   value={formData.durationMinutes}
                   onChange={event =>
-                    setFormData({
-                      ...formData,
+                    setFormData(previous => ({
+                      ...previous,
                       durationMinutes: event.target.value,
-                    })
+                    }))
                   }
-                  required
                 />
-                <p className="text-xs text-slate-500">
-                  Auto-filled by timer, or enter manually.
-                </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="resource">Resource Used</Label>
                 <Input
                   id="resource"
-                  placeholder="e.g., Range Trainer, Hand Ranges, Notes"
+                  placeholder="Range Trainer, Hand Ranges, Notes..."
                   value={formData.resourceUsed}
                   onChange={event =>
-                    setFormData({
-                      ...formData,
+                    setFormData(previous => ({
+                      ...previous,
                       resourceUsed: event.target.value,
-                    })
+                    }))
                   }
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="handsReviewed">Hands Reviewed</Label>
                   <Input
@@ -223,14 +205,13 @@ export default function LogStudySession() {
                     min="0"
                     value={formData.handsReviewedCount}
                     onChange={event =>
-                      setFormData({
-                        ...formData,
+                      setFormData(previous => ({
+                        ...previous,
                         handsReviewedCount: event.target.value,
-                      })
+                      }))
                     }
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="drills">Range Reps</Label>
                   <Input
@@ -239,10 +220,10 @@ export default function LogStudySession() {
                     min="0"
                     value={formData.drillsCompletedCount}
                     onChange={event =>
-                      setFormData({
-                        ...formData,
+                      setFormData(previous => ({
+                        ...previous,
                         drillsCompletedCount: event.target.value,
-                      })
+                      }))
                     }
                   />
                 </div>
@@ -256,46 +237,46 @@ export default function LogStudySession() {
                   min="0"
                   max="100"
                   step="0.1"
-                  placeholder="85.5"
+                  placeholder="85"
                   value={formData.accuracyPercent}
                   onChange={event =>
-                    setFormData({
-                      ...formData,
+                    setFormData(previous => ({
+                      ...previous,
                       accuracyPercent: event.target.value,
-                    })
+                    }))
                   }
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="takeaways">Key Takeaways</Label>
+                <Label htmlFor="takeaways">Key Takeaway</Label>
                 <Textarea
                   id="takeaways"
-                  placeholder="What should you study or remember next?"
                   rows={4}
+                  placeholder="What should you train next?"
                   value={formData.keyTakeaways}
                   onChange={event =>
-                    setFormData({
-                      ...formData,
+                    setFormData(previous => ({
+                      ...previous,
                       keyTakeaways: event.target.value,
-                    })
+                    }))
                   }
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="outline"
+                  className="h-10 rounded-xl"
                   onClick={() => setLocation("/")}
-                  className="flex-1"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
+                  className="h-10 rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
                   disabled={createSession.isPending}
-                  className="flex-1"
                 >
                   {createSession.isPending ? "Saving..." : "Save Session"}
                 </Button>

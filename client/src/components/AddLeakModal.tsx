@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { BottomSheetModal } from "./BottomSheetModal";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -40,12 +40,7 @@ export function AddLeakModal({
     notes: "",
   });
 
-  const handleSubmit = () => {
-    if (!formData.leakType || !formData.frequency) {
-      alert("Please fill in required fields");
-      return;
-    }
-    onSubmit(formData);
+  const resetForm = () => {
     setFormData({
       leakType: "",
       frequency: "",
@@ -55,10 +50,24 @@ export function AddLeakModal({
     });
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleSubmit = () => {
+    if (!formData.leakType || !formData.frequency) {
+      toast.error("Leak type and frequency are required.");
+      return;
+    }
+    onSubmit(formData);
+    resetForm();
+  };
+
   return (
     <BottomSheetModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Add Preflop Leak"
       description="Track recurring mistakes so they are easy to revisit in study."
       eyebrow="Leak Capture"

@@ -1,8 +1,8 @@
+import { useMemo, useState } from "react";
+import { useLocation, useSearch } from "wouter";
+import { ArrowLeft, CheckCircle2, Circle, Clock, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle2, Clock, Target } from "lucide-react";
-import { useLocation, useSearch } from "wouter";
-import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 
 export default function GuidedSession() {
@@ -14,145 +14,158 @@ export default function GuidedSession() {
 
   const params = new URLSearchParams(search);
   const fromDate = params.get("date") ? new Date(params.get("date")!) : new Date();
-
   const { data: todayDrills } = trpc.studyPlan.getCurriculumToday.useQuery();
 
-  if (!todayDrills || !todayDrills.drills || todayDrills.drills.length === 0) {
+  const drills = todayDrills?.drills ?? [];
+  const currentDrill = drills[currentDrillIndex];
+  const isLastDrill = currentDrillIndex === drills.length - 1;
+  const allCompleted = drills.length > 0 && completedDrills.length === drills.length;
+  const progressPct = drills.length
+    ? Math.round(((currentDrillIndex + 1) / drills.length) * 100)
+    : 0;
+
+  const dayLabel = useMemo(
+    () =>
+      fromDate.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      }),
+    [fromDate]
+  );
+
+  function handleCompleteDrill() {
+    if (!currentDrill) return;
+    if (!completedDrills.includes(currentDrill.drillId)) {
+      setCompletedDrills(previous => [...previous, currentDrill.drillId]);
+    }
+    if (!isLastDrill) {
+      setCurrentDrillIndex(previous => previous + 1);
+    }
+  }
+
+  function handleFinishSession() {
+    const nextParams = new URLSearchParams({
+      fromPlan: "true",
+      type: todayDrills?.studyType ?? "RANGE_TRAINING",
+      date: fromDate.toISOString(),
+      guided: "true",
+      completedDrills: completedDrills.join(","),
+      notes: sessionNotes.trim(),
+    });
+    setLocation(`/log-session?${nextParams.toString()}`);
+  }
+
+  if (!todayDrills || drills.length === 0 || !currentDrill) {
     return (
-      <div className="min-h-screen bg-slate-50 p-4">
-        <div className="container max-w-2xl">
-          <button
-            onClick={() => setLocation("/")}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <p className="text-center text-slate-500 py-8">
-            No drills available for today
-          </p>
-        </div>
+      <div className="app-shell min-h-screen text-foreground">
+        <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
+          <div className="container py-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/")}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </div>
+        </header>
+        <main className="container max-w-3xl py-6">
+          <Card className="app-surface">
+            <CardContent className="py-10 text-center text-muted-foreground">
+              No guided drills are available right now.
+            </CardContent>
+          </Card>
+        </main>
       </div>
     );
   }
 
-  const currentDrill = todayDrills.drills[currentDrillIndex];
-  const isLastDrill = currentDrillIndex === todayDrills.drills.length - 1;
-  const allCompleted = completedDrills.length === todayDrills.drills.length;
-
-  const handleCompleteDrill = () => {
-    if (!completedDrills.includes(currentDrill.drillId)) {
-      setCompletedDrills([...completedDrills, currentDrill.drillId]);
-    }
-    if (!isLastDrill) {
-      setCurrentDrillIndex(currentDrillIndex + 1);
-    }
-  };
-
-  const handleFinishSession = async () => {
-    // Save session with guided metadata
-    const params = new URLSearchParams({
-      fromPlan: "true",
-      type: todayDrills.studyType,
-      date: fromDate.toISOString(),
-      guided: "true",
-      completedDrills: completedDrills.join(","),
-    });
-    setLocation(`/log-session?${params.toString()}`);
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="container max-w-2xl px-4 py-4">
-          <div className="flex items-center gap-3 mb-2">
-            <button
-              onClick={() => setLocation("/")}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold">Guided Study Session</h1>
-          </div>
-          <p className="text-sm text-slate-600 ml-12">
-            {todayDrills.focusTitle}
-          </p>
+    <div className="app-shell min-h-screen text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
+        <div className="container max-w-3xl py-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/")}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Progress Bar */}
-      <div className="bg-white border-b px-4 py-4">
-        <div className="container max-w-2xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-slate-700">
-              Drill {currentDrillIndex + 1} of {todayDrills.drills.length}
-            </span>
-            <span className="text-sm text-slate-500">
-              {Math.round(((currentDrillIndex + 1) / todayDrills.drills.length) * 100)}%
-            </span>
-          </div>
-          <div className="w-full bg-slate-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{
-                width: `${((currentDrillIndex + 1) / todayDrills.drills.length) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-      </div>
+      <main className="container max-w-3xl space-y-4 py-6">
+        <Card className="app-surface-elevated">
+          <CardContent className="space-y-3 p-5">
+            <p className="app-eyebrow">Guided Session</p>
+            <h1 className="text-2xl font-black tracking-tight">Preflop Study Block</h1>
+            <p className="text-sm text-muted-foreground">
+              {todayDrills.focusTitle} - {dayLabel}
+            </p>
+            <div className="rounded-xl border border-border/80 bg-accent/50 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>
+                  Drill {currentDrillIndex + 1} of {drills.length}
+                </span>
+                <span>{progressPct}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-accent">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Current Drill */}
-      <div className="container max-w-2xl px-4 py-6">
-        <Card className="border-blue-200">
+        <Card className="app-surface">
           <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div>
                 <CardTitle className="text-xl">{currentDrill.title}</CardTitle>
-                <p className="text-sm text-slate-600 mt-2">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {todayDrills.focusDescription}
                 </p>
               </div>
               {completedDrills.includes(currentDrill.drillId) && (
-                <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
+                <CheckCircle2 className="mt-1 h-5 w-5 text-emerald-300" />
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Drill Details */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="w-4 h-4 text-slate-600" />
-                  <span className="text-xs font-medium text-slate-600 uppercase">
-                    Primary Tool
-                  </span>
-                </div>
-                <p className="font-semibold text-slate-900">
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <Target className="h-3.5 w-3.5" />
+                  Primary Tool
+                </p>
+                <p className="text-sm font-semibold text-foreground">
                   {currentDrill.primaryTool}
                 </p>
               </div>
-
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-slate-600" />
-                  <span className="text-xs font-medium text-slate-600 uppercase">
-                    Duration
-                  </span>
-                </div>
-                <p className="font-semibold text-slate-900">{currentDrill.reps}</p>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  Duration
+                </p>
+                <p className="text-sm font-semibold text-foreground">{currentDrill.reps}</p>
               </div>
             </div>
 
-            {/* Tools */}
             {currentDrill.tools && currentDrill.tools.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Tools:</p>
-                <div className="flex flex-wrap gap-2">
-                  {currentDrill.tools.map((tool) => (
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs font-semibold text-muted-foreground">Tools</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {currentDrill.tools.map(tool => (
                     <span
                       key={tool}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                      className="rounded-full border border-border/80 bg-accent/60 px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground"
                     >
                       {tool}
                     </span>
@@ -161,128 +174,107 @@ export default function GuidedSession() {
               </div>
             )}
 
-            {/* Instructions */}
-            <div>
-              <p className="text-sm font-medium text-slate-700 mb-2">
-                Instructions:
-              </p>
-              <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
+            <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+              <p className="text-xs font-semibold text-muted-foreground">Instructions</p>
+              <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
                 {currentDrill.instructions}
               </p>
             </div>
 
-            {/* Success Metric */}
-            <div>
-              <p className="text-sm font-medium text-slate-700 mb-2">
-                Success Metric:
-              </p>
-              <p className="text-sm text-green-700 bg-green-50 p-3 rounded-lg font-medium">
+            <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+              <p className="text-xs font-semibold text-muted-foreground">Success Metric</p>
+              <p className="mt-1 text-sm font-semibold text-emerald-300">
                 {currentDrill.successMetric}
               </p>
             </div>
 
-            {/* Session Notes */}
-            <div>
-              <label className="text-sm font-medium text-slate-700 block mb-2">
-                Session Notes (Optional)
+            <div className="space-y-2">
+              <label
+                htmlFor="guided-notes"
+                className="text-xs font-semibold text-muted-foreground"
+              >
+                Session Notes (optional)
               </label>
               <textarea
+                id="guided-notes"
                 value={sessionNotes}
-                onChange={(e) => setSessionNotes(e.target.value)}
-                placeholder="Add any notes about this drill or your progress..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
+                onChange={event => setSessionNotes(event.target.value)}
+                className="min-h-20 w-full rounded-lg border border-border/80 bg-input/85 px-3 py-2 text-sm text-foreground outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/35"
+                placeholder="One quick note from this drill."
               />
             </div>
 
-            {/* Navigation Buttons */}
-            <div className="flex gap-3 pt-4 border-t">
-              {currentDrillIndex > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentDrillIndex(currentDrillIndex - 1)}
-                  className="flex-1"
-                >
-                  Previous
-                </Button>
-              )}
-              {!isLastDrill && (
-                <Button
-                  onClick={handleCompleteDrill}
-                  className="flex-1"
-                  variant={
-                    completedDrills.includes(currentDrill.drillId)
-                      ? "outline"
-                      : "default"
-                  }
-                >
-                  {completedDrills.includes(currentDrill.drillId)
-                    ? "Completed ✓"
-                    : "Mark Complete"}
-                </Button>
-              )}
-              {isLastDrill && (
-                <Button
-                  onClick={() => {
-                    if (!completedDrills.includes(currentDrill.drillId)) {
-                      setCompletedDrills([...completedDrills, currentDrill.drillId]);
-                    }
-                  }}
-                  className="flex-1"
-                  variant={
-                    completedDrills.includes(currentDrill.drillId)
-                      ? "outline"
-                      : "default"
-                  }
-                >
-                  {completedDrills.includes(currentDrill.drillId)
-                    ? "Completed ✓"
-                    : "Mark Complete"}
-                </Button>
-              )}
+            <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl"
+                onClick={() =>
+                  setCurrentDrillIndex(previous => Math.max(0, previous - 1))
+                }
+                disabled={currentDrillIndex === 0}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                className="h-10 rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
+                onClick={handleCompleteDrill}
+                disabled={completedDrills.includes(currentDrill.drillId)}
+              >
+                {completedDrills.includes(currentDrill.drillId)
+                  ? "Completed ✓"
+                  : isLastDrill
+                    ? "Mark Complete"
+                    : "Complete & Next"}
+              </Button>
             </div>
 
-            {/* Finish Session Button */}
             {allCompleted && (
               <Button
+                type="button"
+                className="h-10 w-full rounded-xl bg-emerald-500 text-white hover:bg-emerald-600"
                 onClick={handleFinishSession}
-                className="w-full bg-green-600 hover:bg-green-700"
               >
-                Finish Session & Log
+                Finish Session and Log
               </Button>
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* Drill List Sidebar */}
-      <div className="container max-w-2xl px-4 py-6">
-        <h3 className="font-semibold text-slate-900 mb-3">Today's Drills</h3>
-        <div className="space-y-2">
-          {todayDrills.drills.map((drill, idx) => (
-            <button
-              key={drill.drillId}
-              onClick={() => setCurrentDrillIndex(idx)}
-              className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
-                idx === currentDrillIndex
-                  ? "border-blue-500 bg-blue-50"
-                  : completedDrills.includes(drill.drillId)
-                  ? "border-green-200 bg-green-50"
-                  : "border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                {completedDrills.includes(drill.drillId) ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                ) : (
-                  <div className="w-4 h-4 rounded-full border-2 border-slate-300" />
-                )}
-                <span className="text-sm font-medium">{drill.title}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+        <Card className="app-surface">
+          <CardHeader>
+            <CardTitle className="text-base">Today&apos;s Drill Queue</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {drills.map((drill, index) => {
+              const isCurrent = index === currentDrillIndex;
+              const isDone = completedDrills.includes(drill.drillId);
+              return (
+                <button
+                  key={drill.drillId}
+                  type="button"
+                  onClick={() => setCurrentDrillIndex(index)}
+                  className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition ${
+                    isCurrent
+                      ? "border-primary/45 bg-primary/12 text-foreground"
+                      : isDone
+                        ? "border-emerald-400/30 bg-emerald-500/10 text-foreground"
+                        : "border-border/80 bg-accent/45 text-secondary-foreground hover:bg-accent/65"
+                  }`}
+                >
+                  {isDone ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className="truncate">{drill.title}</span>
+                </button>
+              );
+            })}
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

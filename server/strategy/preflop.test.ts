@@ -68,4 +68,16 @@ describe("preflop hand class helpers", () => {
     expect(note).toContain("offsuit");
     expect(note.toLowerCase()).not.toContain("suited broadways");
   });
+
+  it("does not show suited or offsuit wording for a pair hand", () => {
+    const note = buildHandClassRevealNote(
+      "77",
+      "CALL",
+      "Mix suited and offsuit bluff-catches here."
+    );
+
+    expect(note).toContain("77");
+    expect(note.toLowerCase()).toContain("pair");
+    expect(note.toLowerCase()).not.toContain("suited and offsuit");
+  });
 });

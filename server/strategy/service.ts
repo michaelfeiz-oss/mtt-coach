@@ -336,7 +336,7 @@ function groupRowsByAction(rows: RangeChartAction[]) {
   return byAction;
 }
 
-function getHandCoordinate(handCode: string): HandCoordinate | null {
+export function getHandCoordinate(handCode: string): HandCoordinate | null {
   if (!VALID_HANDS.has(handCode)) return null;
 
   const firstRank = handCode[0];
@@ -354,11 +354,13 @@ function getHandCoordinate(handCode: string): HandCoordinate | null {
   return null;
 }
 
-function handDistance(a: HandCoordinate, b: HandCoordinate): number {
+export function handDistance(a: HandCoordinate, b: HandCoordinate): number {
   return Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
 }
 
-function getMarginalFoldActions(actions: RangeChartAction[]): RangeChartAction[] {
+export function getMarginalFoldActions(
+  actions: RangeChartAction[]
+): RangeChartAction[] {
   const continueCoordinates = actions
     .filter(action => action.primaryAction !== "FOLD")
     .map(action => getHandCoordinate(action.handCode))
@@ -380,7 +382,9 @@ function getMarginalFoldActions(actions: RangeChartAction[]): RangeChartAction[]
   });
 }
 
-function buildTrainerActionPool(actions: RangeChartAction[]): RangeChartAction[] {
+export function buildTrainerActionPool(
+  actions: RangeChartAction[]
+): RangeChartAction[] {
   const continueActions = actions.filter(action => action.primaryAction !== "FOLD");
   const marginalFolds = getMarginalFoldActions(actions);
 
@@ -520,7 +524,7 @@ function canonicalHandFromRanks(
   return handCode && VALID_HANDS.has(handCode) ? handCode : null;
 }
 
-function normalizeHandCode(value: string | null | undefined): string | null {
+export function normalizeHandCode(value: string | null | undefined): string | null {
   if (!value) return null;
 
   const raw = value.trim();

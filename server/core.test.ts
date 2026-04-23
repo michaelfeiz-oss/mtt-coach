@@ -38,7 +38,9 @@ function createTestContext(): { ctx: TrpcContext } {
   return { ctx };
 }
 
-describe("MTT Coach Core Functionality", () => {
+const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
+
+describeDb("MTT Coach Core Functionality", () => {
   describe("Week Management", () => {
     it("should get or create current week", async () => {
       const { ctx } = createTestContext();

@@ -149,19 +149,20 @@ function replaceTrainerUrl(chartId: number | null) {
 export default function RangeTrainer() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
-  const params = new URLSearchParams(search);
-  const chartIdParamRaw = params.get("chartId");
-  const chartIdParam = chartIdParamRaw ? Number(chartIdParamRaw) : undefined;
-  const initialChartId =
-    chartIdParam !== undefined && Number.isFinite(chartIdParam)
+  const chartIdFromSearch = useMemo(() => {
+    const params = new URLSearchParams(search);
+    const chartIdParamRaw = params.get("chartId");
+    const chartIdParam = chartIdParamRaw ? Number(chartIdParamRaw) : undefined;
+    return chartIdParam !== undefined && Number.isFinite(chartIdParam)
       ? chartIdParam
       : null;
+  }, [search]);
 
   const [mode, setMode] = useState<TrainerMode>(
-    initialChartId !== null ? "current_spot" : "random_spot"
+    chartIdFromSearch !== null ? "current_spot" : "random_spot"
   );
   const [selectedChartId, setSelectedChartId] = useState<number | null>(
-    initialChartId
+    chartIdFromSearch
   );
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
@@ -312,6 +313,30 @@ export default function RangeTrainer() {
     { label: "Hero", value: heroPosition ?? "Any" },
     { label: "Opener", value: villainPosition ?? "Any / no opener" },
   ];
+
+  useEffect(() => {
+    if (chartIdFromSearch !== null) {
+      if (selectedChartId !== chartIdFromSearch || mode !== "current_spot") {
+        setSelectedChartId(chartIdFromSearch);
+        setMode("current_spot");
+        setSetupCollapsed(false);
+        resetSessionState();
+      }
+      return;
+    }
+
+    if (mode === "current_spot" && selectedChartId !== null) {
+      setSelectedChartId(null);
+      setMode(modeForFilters(stackDepth, spotGroup));
+      resetSessionState();
+    }
+  }, [
+    chartIdFromSearch,
+    mode,
+    selectedChartId,
+    stackDepth,
+    spotGroup,
+  ]);
 
   useEffect(() => {
     if (!answerReveal) return;

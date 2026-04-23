@@ -1,3 +1,7 @@
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,183 +13,307 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
-import { Plus } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ACTION_LABELS, POSITIONS, type Action } from "@shared/strategy";
 
-const POSITIONS = ["BTN", "CO", "HJ", "LJ", "UTG", "UTG+1", "UTG+2", "SB", "BB"];
-const STACK_PRESETS = ["10bb", "15bb", "20bb", "30bb", "40bb", "50bb", "75bb", "100bb"];
+const STACK_PRESETS = [15, 20, 25, 40];
+const SPOT_TYPES = [
+  { value: "SINGLE_RAISED_POT", label: "RFI / Defend" },
+  { value: "3BET_POT", label: "3-Bet / vs 3-Bet" },
+  { value: "BvB", label: "Blind vs Blind" },
+  { value: "LIMPED_POT", label: "Limp Pot" },
+] as const;
+
+const ACTIONS: Action[] = [
+  "FOLD",
+  "CALL",
+  "RAISE",
+  "THREE_BET",
+  "JAM",
+  "LIMP",
+  "CHECK",
+];
+
+interface QuickHandForm {
+  spotType: string;
+  heroPosition: string;
+  heroHand: string;
+  effectiveStackBb: string;
+  heroDecisionPreflop: Action | "";
+  mistakeSeverity: string;
+  lesson: string;
+}
+
+function normalizeHandCode(value: string) {
+  return value.trim().replace(/\s+/g, "").toUpperCase();
+}
 
 export function QuickAddHand() {
   const [open, setOpen] = useState(false);
   const utils = trpc.useUtils();
-
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<QuickHandForm>({
+    spotType: "",
     heroPosition: "",
     heroHand: "",
-    boardRunout: "",
     effectiveStackBb: "",
+    heroDecisionPreflop: "",
     mistakeSeverity: "0",
+    lesson: "",
   });
 
   const createHand = trpc.hands.create.useMutation({
     onSuccess: () => {
-      toast.success("Hand added!");
-      utils.hands.getByUser.invalidate();
+      toast.success("Hand logged");
+      void utils.hands.getByUser.invalidate();
+      void utils.dashboard.getStats.invalidate();
       setOpen(false);
-      // Reset form
       setFormData({
+        spotType: "",
         heroPosition: "",
         heroHand: "",
-        boardRunout: "",
         effectiveStackBb: "",
+        heroDecisionPreflop: "",
         mistakeSeverity: "0",
+        lesson: "",
       });
     },
-    onError: (error) => {
-      toast.error(`Failed to add hand: ${error.message}`);
+    onError: error => {
+      toast.error(`Could not save hand: ${error.message}`);
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
 
-    if (!formData.heroHand) {
-      toast.error("Please enter your hand");
+    const stack = Number.parseFloat(formData.effectiveStackBb);
+    if (!formData.spotType || !formData.heroPosition || !formData.heroHand) {
+      toast.error("Spot, hero position, and hero hand are required.");
+      return;
+    }
+    if (!Number.isFinite(stack) || stack <= 0 || stack > 40) {
+      toast.error("Effective stack must be between 1 and 40bb.");
       return;
     }
 
     createHand.mutate({
-      heroPosition: formData.heroPosition || undefined,
-      heroHand: formData.heroHand,
-      boardRunout: formData.boardRunout || undefined,
-      effectiveStackBb: formData.effectiveStackBb ? parseFloat(formData.effectiveStackBb) : undefined,
-      mistakeSeverity: parseInt(formData.mistakeSeverity) || 0,
+      spotType: formData.spotType as
+        | "SINGLE_RAISED_POT"
+        | "3BET_POT"
+        | "BvB"
+        | "LIMPED_POT",
+      heroPosition: formData.heroPosition,
+      heroHand: normalizeHandCode(formData.heroHand),
+      effectiveStackBb: stack,
+      heroDecisionPreflop: formData.heroDecisionPreflop || undefined,
+      mistakeStreet:
+        Number.parseInt(formData.mistakeSeverity, 10) > 0 ? "PREFLOP" : undefined,
+      mistakeSeverity: Number.parseInt(formData.mistakeSeverity, 10) || 0,
+      lesson: formData.lesson.trim() || undefined,
     });
-  };
-
-  const handleStackPreset = (preset: string) => {
-    const value = preset.replace("bb", "");
-    setFormData({ ...formData, effectiveStackBb: value });
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]">
           <Plus className="h-4 w-4" />
           Quick Add Hand
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Quick Add Hand</DialogTitle>
-          <DialogDescription>Log a hand fast for later review.</DialogDescription>
+          <DialogTitle>Quick Preflop Capture</DialogTitle>
+          <DialogDescription>
+            Log the decision now. Add detail later in hand review.
+          </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Position */}
-          <div className="space-y-2">
-            <Label htmlFor="quick-position">Position</Label>
-            <Select value={formData.heroPosition} onValueChange={(v) => setFormData({ ...formData, heroPosition: v })}>
-              <SelectTrigger id="quick-position">
-                <SelectValue placeholder="Select position" />
-              </SelectTrigger>
-              <SelectContent>
-                {POSITIONS.map((pos) => (
-                  <SelectItem key={pos} value={pos}>
-                    {pos}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="quick-spot">Spot Family *</Label>
+              <Select
+                value={formData.spotType}
+                onValueChange={value =>
+                  setFormData(previous => ({ ...previous, spotType: value }))
+                }
+              >
+                <SelectTrigger id="quick-spot">
+                  <SelectValue placeholder="Select spot" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPOT_TYPES.map(spot => (
+                    <SelectItem key={spot.value} value={spot.value}>
+                      {spot.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Hero Hand */}
-          <div className="space-y-2">
-            <Label htmlFor="quick-hero-hand">Your Hand *</Label>
-            <Input
-              id="quick-hero-hand"
-              placeholder="AKs, QQ, 76o"
-              value={formData.heroHand}
-              onChange={(e) => setFormData({ ...formData, heroHand: e.target.value.toUpperCase() })}
-              required
-              autoFocus
-            />
-          </div>
-
-          {/* Board */}
-          <div className="space-y-2">
-            <Label htmlFor="quick-board">Board</Label>
-            <Input
-              id="quick-board"
-              placeholder="Ah Kc 7d 2s 9h"
-              value={formData.boardRunout}
-              onChange={(e) => setFormData({ ...formData, boardRunout: e.target.value.toUpperCase() })}
-            />
-            <p className="text-xs text-zinc-500">Enter cards separated by spaces.</p>
-          </div>
-
-          {/* Stack Size */}
-          <div className="space-y-2">
-            <Label htmlFor="quick-stack">Effective Stack (BB)</Label>
-            <Input
-              id="quick-stack"
-              type="number"
-              min="0"
-              step="0.1"
-              placeholder="20"
-              value={formData.effectiveStackBb}
-              onChange={(e) => setFormData({ ...formData, effectiveStackBb: e.target.value })}
-            />
-            <div className="mt-2 flex flex-wrap gap-2">
-              {STACK_PRESETS.map((preset) => (
-                <Button
-                  key={preset}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => handleStackPreset(preset)}
-                >
-                  {preset}
-                </Button>
-              ))}
+            <div className="space-y-2">
+              <Label htmlFor="quick-position">Hero Position *</Label>
+              <Select
+                value={formData.heroPosition}
+                onValueChange={value =>
+                  setFormData(previous => ({ ...previous, heroPosition: value }))
+                }
+              >
+                <SelectTrigger id="quick-position">
+                  <SelectValue placeholder="Select position" />
+                </SelectTrigger>
+                <SelectContent>
+                  {POSITIONS.map(position => (
+                    <SelectItem key={position} value={position}>
+                      {position === "UTG1" ? "UTG+1" : position}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Mistake Severity */}
-          <div className="space-y-2">
-            <Label htmlFor="quick-severity">Mistake Severity (optional)</Label>
-            <Select
-              value={formData.mistakeSeverity}
-              onValueChange={(v) => setFormData({ ...formData, mistakeSeverity: v })}
-            >
-              <SelectTrigger id="quick-severity">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">No mistake</SelectItem>
-                <SelectItem value="1">Minor (1)</SelectItem>
-                <SelectItem value="2">Moderate (2)</SelectItem>
-                <SelectItem value="3">Major (3)</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="quick-hero-hand">Hero Hand *</Label>
+              <Input
+                id="quick-hero-hand"
+                placeholder="AKs, QQ, KJo"
+                value={formData.heroHand}
+                onChange={event =>
+                  setFormData(previous => ({
+                    ...previous,
+                    heroHand: normalizeHandCode(event.target.value),
+                  }))
+                }
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quick-stack">Effective Stack (bb) *</Label>
+              <Input
+                id="quick-stack"
+                type="number"
+                min="1"
+                max="40"
+                step="0.5"
+                placeholder="20"
+                value={formData.effectiveStackBb}
+                onChange={event =>
+                  setFormData(previous => ({
+                    ...previous,
+                    effectiveStackBb: event.target.value,
+                  }))
+                }
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {STACK_PRESETS.map(stack => (
+                  <Button
+                    key={stack}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 rounded-full px-2.5 text-[11px]"
+                    onClick={() =>
+                      setFormData(previous => ({
+                        ...previous,
+                        effectiveStackBb: String(stack),
+                      }))
+                    }
+                  >
+                    {stack}bb
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="quick-action">Hero Decision</Label>
+              <Select
+                value={formData.heroDecisionPreflop}
+                onValueChange={value =>
+                  setFormData(previous => ({
+                    ...previous,
+                    heroDecisionPreflop: value as Action,
+                  }))
+                }
+              >
+                <SelectTrigger id="quick-action">
+                  <SelectValue placeholder="Optional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIONS.map(action => (
+                    <SelectItem key={action} value={action}>
+                      {ACTION_LABELS[action]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quick-severity">Mistake Severity</Label>
+              <Select
+                value={formData.mistakeSeverity}
+                onValueChange={value =>
+                  setFormData(previous => ({ ...previous, mistakeSeverity: value }))
+                }
+              >
+                <SelectTrigger id="quick-severity">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">No mistake</SelectItem>
+                  <SelectItem value="1">Minor (1)</SelectItem>
+                  <SelectItem value="2">Moderate (2)</SelectItem>
+                  <SelectItem value="3">Major (3)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="quick-lesson">Lesson / Takeaway</Label>
+            <Textarea
+              id="quick-lesson"
+              rows={3}
+              placeholder="One quick takeaway from this hand."
+              value={formData.lesson}
+              onChange={event =>
+                setFormData(previous => ({ ...previous, lesson: event.target.value }))
+              }
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Tournament preflop capture only - BBA context.
+          </p>
+
+          <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
             <Button
               type="button"
               variant="outline"
+              className="h-10 rounded-xl"
               onClick={() => setOpen(false)}
-              className="flex-1"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createHand.isPending} className="flex-1">
-              {createHand.isPending ? "Saving..." : "Save"}
+            <Button
+              type="submit"
+              className="h-10 rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
+              disabled={createHand.isPending}
+            >
+              {createHand.isPending ? "Saving..." : "Save Hand"}
             </Button>
           </div>
         </form>
