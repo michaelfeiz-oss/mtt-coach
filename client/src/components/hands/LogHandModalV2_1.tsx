@@ -148,10 +148,10 @@ function ChipButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-2xl border px-3 py-2 text-left text-xs font-bold transition active:scale-[0.99]",
+        "rounded-xl border px-3 py-2 text-left text-xs font-bold transition active:scale-[0.99]",
         active
-          ? "border-zinc-950 bg-zinc-950 text-white shadow-lg shadow-zinc-950/10"
-          : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50",
+          ? "border-orange-400/55 bg-orange-500/15 text-orange-200 shadow-sm shadow-orange-950/25"
+          : "border-white/10 bg-white/[0.03] text-zinc-200 hover:border-white/20 hover:bg-white/[0.07]",
         className
       )}
     >
@@ -175,8 +175,8 @@ function StepIndicator({ currentStep }: { currentStep: StepIndex }) {
               active
                 ? "border-orange-500 bg-orange-500 text-white"
                 : done
-                  ? "border-zinc-950 bg-zinc-950 text-white"
-                  : "border-slate-200 bg-slate-50 text-slate-500"
+                  ? "border-white/20 bg-white/[0.09] text-zinc-100"
+                  : "border-white/10 bg-white/[0.03] text-zinc-500"
             )}
           >
             {step}
@@ -189,11 +189,11 @@ function StepIndicator({ currentStep }: { currentStep: StepIndex }) {
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
-      <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+      <span className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
         {label}
       </span>
-      <span className="text-right text-sm font-semibold text-slate-950">
+      <span className="text-right text-sm font-semibold text-zinc-100">
         {value}
       </span>
     </div>
@@ -439,9 +439,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     <Dialog open={isOpen} onOpenChange={open => !open && closeModal()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden rounded-[2rem] border-slate-200 bg-white p-0 shadow-2xl sm:max-h-[88dvh]"
+        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden rounded-[1.4rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.08),transparent_15rem),linear-gradient(180deg,rgba(24,24,27,0.97),rgba(9,9,11,0.97))] p-0 shadow-2xl shadow-black/45 sm:max-h-[88dvh]"
       >
-        <DialogHeader className="border-b border-slate-200 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_17rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-left text-white">
+        <DialogHeader className="border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_17rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-left text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-300">
@@ -485,7 +485,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           </div>
         </DialogHeader>
 
-        <div className="border-b border-slate-200 bg-white px-5 py-3">
+        <div className="border-b border-white/10 bg-black/20 px-5 py-3">
           <StepIndicator currentStep={currentStep} />
         </div>
 
@@ -495,10 +495,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               <div>
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-black text-slate-950">
+                    <h3 className="text-base font-black text-zinc-100">
                       Context
                     </h3>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-zinc-400">
                       Required: preflop spot, position, hand, and stack up to 40bb.
                     </p>
                   </div>
@@ -521,7 +521,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                           "mt-1 block text-[11px] font-medium leading-tight",
                           spotType === option.id
                             ? "text-zinc-300"
-                            : "text-slate-500"
+                            : "text-zinc-500"
                         )}
                       >
                         {option.helper}
@@ -532,8 +532,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-                  <Label className="text-sm font-black text-slate-950">
+                <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
+                  <Label className="text-sm font-black text-zinc-100">
                     Hero Hand
                   </Label>
                   <div className="mt-2">
@@ -545,14 +545,14 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       setHeroHand(normalizeHandInput(event.target.value))
                     }
                     placeholder="Or type AKs, QQ, AhKh"
-                    className="mt-2 h-11 rounded-2xl border-slate-200 bg-white"
+                    className="mt-2 h-11 rounded-xl"
                   />
                 </div>
 
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+                <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
                   <Label
                     htmlFor="effective-stack"
-                    className="text-sm font-black text-slate-950"
+                    className="text-sm font-black text-zinc-100"
                   >
                     Effective Stack
                   </Label>
@@ -565,9 +565,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       value={effectiveStackBb}
                       onChange={event => setEffectiveStackBb(event.target.value)}
                       placeholder="25"
-                      className="h-11 rounded-2xl border-slate-200 bg-white"
+                      className="h-11 rounded-xl"
                     />
-                    <span className="text-sm font-black text-slate-500">bb</span>
+                    <span className="text-sm font-black text-zinc-500">bb</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {STACK_PRESETS.map(stack => (
@@ -577,9 +577,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         size="sm"
                         variant="outline"
                         className={cn(
-                          "h-8 rounded-full border-slate-200 px-3 text-xs font-bold",
+                          "h-8 rounded-full px-3 text-xs font-bold",
                           effectiveStackBb === stack &&
-                            "border-zinc-950 bg-zinc-950 text-white"
+                            "border-orange-400/55 bg-orange-500/15 text-orange-200"
                         )}
                         onClick={() => setEffectiveStackBb(stack)}
                       >
@@ -591,7 +591,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
 
               <div>
-                <Label className="text-sm font-black text-slate-950">
+                <Label className="text-sm font-black text-zinc-100">
                   Hero Position
                 </Label>
                 <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -612,24 +612,24 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+              <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-black text-slate-950">
+                    <h3 className="text-base font-black text-zinc-100">
                       Key Action
                     </h3>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-zinc-400">
                       Capture the preflop hero decision. Opener action is
                       optional.
                     </p>
                   </div>
-                  <Badge className="rounded-full bg-zinc-950 text-white">
+                  <Badge className="rounded-full border border-white/10 bg-white/[0.08] text-zinc-100">
                     Required
                   </Badge>
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                     Scope
                   </Label>
                   <div className="mt-2 grid grid-cols-4 gap-2">
@@ -647,7 +647,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                     Hero Decision
                   </Label>
                   <div className="mt-2 grid grid-cols-3 gap-2">
@@ -679,21 +679,21 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 </div>
               </div>
 
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+              <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
                 <button
                   type="button"
                   className="flex w-full items-center justify-between gap-3 text-left"
                   onClick={() => setShowActionDetails(value => !value)}
                 >
                   <div>
-                    <p className="text-sm font-black text-slate-950">
+                    <p className="text-sm font-black text-zinc-100">
                       Optional action detail
                     </p>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-zinc-400">
                       Add opener action and player profile when useful.
                     </p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-xs font-bold text-zinc-300">
                     {fullDetailsVisible ? "Hide" : "Add"}
                   </span>
                 </button>
@@ -701,7 +701,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 {fullDetailsVisible && (
                   <div className="mt-4 space-y-4">
                     <div>
-                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                         Opener / Villain Action
                       </Label>
                       <div className="mt-2 grid grid-cols-4 gap-2">
@@ -738,7 +738,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                           Villain Type
                         </Label>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -756,7 +756,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       </div>
 
                       <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                           Range Read
                         </Label>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -781,11 +781,11 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {currentStep === 2 && (
             <div className="space-y-6">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-                <h3 className="text-base font-black text-slate-950">
+              <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
+                <h3 className="text-base font-black text-zinc-100">
                   Review Signal
                 </h3>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-zinc-400">
                   Keep this light. Mark the mistake and write one takeaway if
                   there is one.
                 </p>
@@ -808,7 +808,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                     Mistake Severity
                   </Label>
                   <div className="mt-2 grid grid-cols-4 gap-2">
@@ -832,7 +832,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
                 {mistakeSeverity > 0 && (
                   <div className="mt-4">
-                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                       Mistake Street
                     </Label>
                     <div className="mt-2 grid grid-cols-4 gap-2">
@@ -851,10 +851,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 )}
               </div>
 
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+              <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
                 <Label
                   htmlFor="lesson"
-                  className="text-sm font-black text-slate-950"
+                  className="text-sm font-black text-zinc-100"
                 >
                   Lesson / Takeaway
                 </Label>
@@ -863,15 +863,15 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   value={notes}
                   onChange={event => setNotes(event.target.value.slice(0, 300))}
                   placeholder="One sentence about what to study or do differently next time."
-                  className="mt-2 min-h-24 resize-none rounded-2xl border-slate-200"
+                  className="mt-2 min-h-24 resize-none rounded-xl"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-zinc-500">
                   {300 - notes.length} characters remaining
                 </p>
               </div>
 
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
-                <p className="text-sm font-black text-slate-950">
+              <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
+                <p className="text-sm font-black text-zinc-100">
                   Optional Tags
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -889,13 +889,13 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
 
               {entryMode === "FULL" && (
-                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-black text-slate-950">
+                <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
+                  <p className="text-sm font-black text-zinc-100">
                     Tournament Context
                   </p>
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
                     <div>
-                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                         Result
                       </Label>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -913,7 +913,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     </div>
 
                     <div>
-                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                         Game Type
                       </Label>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -932,7 +932,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   </div>
 
                   <div className="mt-4">
-                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                       Tournament Phase
                     </Label>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -962,16 +962,16 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {currentStep === 3 && (
             <div className="space-y-5">
-              <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-5">
+              <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-5">
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/15">
                     <Sparkles className="h-5 w-5" />
                   </span>
                   <div>
-                    <h3 className="text-lg font-black text-slate-950">
+                    <h3 className="text-lg font-black text-zinc-100">
                       Ready to save
                     </h3>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-zinc-400">
                       Quick capture is complete. You can review or edit it
                       later from Hand Review.
                     </p>
@@ -1010,11 +1010,11 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-white p-4">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/10 bg-black/20 p-4">
           <Button
             type="button"
             variant="ghost"
-            className="rounded-2xl text-slate-500 hover:text-slate-950"
+            className="rounded-xl text-zinc-400 hover:text-zinc-100"
             onClick={currentStep === 0 ? closeModal : goBack}
           >
             {currentStep === 0 ? (

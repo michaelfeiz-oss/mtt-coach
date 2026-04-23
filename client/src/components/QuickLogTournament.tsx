@@ -77,7 +77,7 @@ export function QuickLogTournament() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Quick Log Tournament</DialogTitle>
-          <DialogDescription>Log your tournament results fast</DialogDescription>
+          <DialogDescription>Capture tournament results in one pass.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Buy-in */}
