@@ -100,7 +100,7 @@ function formatModeLabel(
   }
   if (mode === "decision_family" && spotGroup) {
     return `${SPOT_GROUP_LABELS[spotGroup]}${
-      stackDepth ? ` · ${stackDepth}bb` : ""
+      stackDepth ? ` - ${stackDepth}bb` : ""
     }`;
   }
   return stackDepth ? `${stackDepth}bb setup` : "Any preflop setup";
@@ -484,15 +484,22 @@ export default function RangeTrainer() {
             )}
 
           {trainerSpot && (
-            <div className="space-y-3 rounded-[1.2rem] border border-white/10 bg-zinc-950/82 p-3 shadow-xl shadow-black/20 sm:p-4">
-              <div ref={questionCardRef} className="space-y-3">
+            <div className="space-y-3">
+              <div
+                ref={questionCardRef}
+                className="space-y-3 rounded-[1.2rem] border border-white/10 bg-zinc-950/82 p-3 shadow-xl shadow-black/20 sm:p-4"
+              >
                 <TableContext
                   title={trainerSpot.chart.title}
                   stackDepth={trainerSpot.chart.stackDepth}
                   heroPosition={trainerSpot.chart.heroPosition}
                   villainPosition={trainerSpot.chart.villainPosition}
                   spotGroup={trainerSpot.chart.spotGroup}
+                  embedded
                 />
+
+                <div className="h-px bg-white/10" />
+
                 <TrainerCard
                   key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
                   chartId={trainerSpot.chartId}
@@ -508,11 +515,12 @@ export default function RangeTrainer() {
                   choices={trainerSpot.choices}
                   showInlineResult={false}
                   compact
+                  embedded
                   showContextBadges={false}
                   showSpotText={false}
                   onAnswer={handleAnswer}
                   onSkip={handleNext}
-                  className="w-full border-white/10 shadow-none"
+                  className="w-full"
                 />
               </div>
 
