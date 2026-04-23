@@ -320,8 +320,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          {/* On desktop: form left + Live Summary right rail. On tablet/mobile: single column, summary below form. */}
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
             <div className="space-y-4">
+              {/* ── A. Spot ── */}
               <section className="rounded-xl border border-border bg-card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-base font-semibold">Required details</h3>
@@ -439,6 +441,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     </div>
                   </div>
 
+                  {/* ── D. Action ── */}
                   <div>
                     <Label className="text-xs font-semibold text-muted-foreground">
                       Hero Decision
@@ -469,6 +472,26 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* ── E. Quick Note (always visible, below required fields) ── */}
+                  <div>
+                    <Label
+                      htmlFor="quick-note-inline"
+                      className="text-xs font-semibold text-muted-foreground"
+                    >
+                      Quick Note{" "}
+                      <span className="font-normal text-muted-foreground/70">
+                        (optional)
+                      </span>
+                    </Label>
+                    <Textarea
+                      id="quick-note-inline"
+                      value={note}
+                      onChange={event => setNote(event.target.value.slice(0, 300))}
+                      placeholder="Short takeaway or reminder for review."
+                      className="mt-2 min-h-16"
+                    />
                   </div>
                 </div>
               </section>
@@ -747,27 +770,14 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       </div>
                     )}
 
-                    <div>
-                      <Label
-                        htmlFor="quick-note"
-                        className="text-xs font-semibold text-muted-foreground"
-                      >
-                        Quick Note
-                      </Label>
-                      <Textarea
-                        id="quick-note"
-                        value={note}
-                        onChange={event => setNote(event.target.value.slice(0, 300))}
-                        placeholder="Short takeaway or reminder for review."
-                        className="mt-2 min-h-20"
-                      />
-                    </div>
+                    {/* Quick Note is now promoted above the optional section; this duplicate is removed */}
                   </div>
                 )}
               </section>
             </div>
 
-            <aside className="space-y-3">
+            {/* Live Summary: right rail on desktop, below form on mobile/tablet */}
+            <aside className="space-y-3 lg:block">
               <div className="rounded-xl border border-border bg-accent/60 p-3">
                 <p className="text-xs font-semibold text-muted-foreground">
                   Live Summary
