@@ -79,10 +79,10 @@ export function QuickAddHand() {
           Quick Add Hand
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Quick Add Hand</DialogTitle>
-          <DialogDescription>Log a hand for later review</DialogDescription>
+          <DialogDescription>Log a hand fast for later review.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Position */}
@@ -124,7 +124,7 @@ export function QuickAddHand() {
               value={formData.boardRunout}
               onChange={(e) => setFormData({ ...formData, boardRunout: e.target.value.toUpperCase() })}
             />
-            <p className="text-xs text-slate-500">Enter cards separated by spaces</p>
+            <p className="text-xs text-zinc-500">Enter cards separated by spaces.</p>
           </div>
 
           {/* Stack Size */}
@@ -139,7 +139,7 @@ export function QuickAddHand() {
               value={formData.effectiveStackBb}
               onChange={(e) => setFormData({ ...formData, effectiveStackBb: e.target.value })}
             />
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               {STACK_PRESETS.map((preset) => (
                 <Button
                   key={preset}

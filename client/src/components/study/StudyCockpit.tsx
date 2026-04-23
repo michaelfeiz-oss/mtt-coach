@@ -70,11 +70,11 @@ function SectionHeader({
             {label}
           </p>
         )}
-        <h2 className="text-lg font-black tracking-tight text-slate-950">
+        <h2 className="text-lg font-black tracking-tight text-zinc-100">
           {title}
         </h2>
         {helper && (
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+          <p className="mt-1 text-sm leading-relaxed text-zinc-400">
             {helper}
           </p>
         )}
@@ -96,14 +96,14 @@ function EmptyState({
   ctaLabel: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white/80 p-5 text-center shadow-sm shadow-slate-950/5">
-      <p className="text-sm font-bold text-slate-950">{title}</p>
-      <p className="mt-1 text-sm leading-relaxed text-slate-600">{helper}</p>
+    <div className="rounded-[1rem] border border-dashed border-white/15 bg-white/[0.03] p-5 text-center shadow-sm shadow-black/20">
+      <p className="text-sm font-bold text-zinc-100">{title}</p>
+      <p className="mt-1 text-sm leading-relaxed text-zinc-400">{helper}</p>
       <Link href={ctaHref}>
         <Button
           size="sm"
           variant="outline"
-          className="mt-4 h-9 rounded-full border-slate-200 bg-white px-4 text-xs font-bold"
+          className="mt-4 h-9 rounded-full px-4 text-xs font-bold"
         >
           {ctaLabel}
         </Button>
@@ -156,9 +156,9 @@ export function StudyCockpit() {
   const missedHands = progress?.missedHands ?? [];
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.11),transparent_26rem),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#eef2f7_100%)] pb-24">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.14),transparent_26rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-24 text-white">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:py-7">
-        <section className="overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.22),transparent_20rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-white shadow-2xl shadow-slate-950/20 sm:p-7">
+        <section className="overflow-hidden rounded-[1.4rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.22),transparent_20rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-white shadow-2xl shadow-black/25 sm:p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-orange-300">
@@ -186,7 +186,7 @@ export function StudyCockpit() {
               <Link href="/log">
                 <Button
                   variant="outline"
-                  className="h-11 w-full justify-between rounded-2xl border-white/15 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/15"
+                  className="h-11 w-full justify-between rounded-2xl border-white/15 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20"
                 >
                   <span className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -264,7 +264,7 @@ export function StudyCockpit() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-full text-xs font-bold text-slate-600 hover:text-slate-950"
+                    className="h-8 rounded-full text-xs font-bold text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-100"
                   >
                     View all
                   </Button>
@@ -272,11 +272,11 @@ export function StudyCockpit() {
               }
             />
 
-            <Card className="rounded-[1.75rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
+            <Card className="rounded-[1.2rem] border-white/10 bg-zinc-950/78 shadow-xl shadow-black/25">
               <CardContent className="space-y-4 p-4 sm:p-5">
                 {recentSpots.length > 0 ? (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
                       <History className="h-3.5 w-3.5" />
                       Recently Viewed Ranges
                     </div>
@@ -286,8 +286,8 @@ export function StudyCockpit() {
                           key={spot.id}
                           href={`/strategy/library?chartId=${spot.id}`}
                         >
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:-translate-y-0.5 hover:border-orange-200 hover:bg-orange-50/60 hover:shadow-md">
-                            <p className="truncate text-sm font-bold text-slate-950">
+                          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-white/[0.08] hover:shadow-md hover:shadow-black/20">
+                            <p className="truncate text-sm font-bold text-zinc-100">
                               {spot.title}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -296,7 +296,7 @@ export function StudyCockpit() {
                               </Badge>
                               <Badge
                                 variant="outline"
-                                className="rounded-full border-slate-200 bg-white text-[11px]"
+                                className="rounded-full border-white/10 bg-white/[0.04] text-[11px] text-zinc-300"
                               >
                                 {SPOT_GROUP_LABELS[spot.spotGroup]}
                               </Badge>
@@ -315,10 +315,10 @@ export function StudyCockpit() {
                   />
                 )}
 
-                <div className="h-px bg-slate-200/80" />
+                <div className="h-px bg-white/10" />
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
                     <ClipboardList className="h-3.5 w-3.5" />
                     Recently Logged Hands
                   </div>
@@ -346,12 +346,12 @@ export function StudyCockpit() {
                   {!handsLoading &&
                     hands.slice(0, 3).map(hand => (
                       <Link key={hand.id} href={`/hands/${hand.id}`}>
-                        <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:-translate-y-0.5 hover:border-orange-200 hover:bg-white hover:shadow-md">
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-white/[0.08] hover:shadow-md hover:shadow-black/20">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-slate-950">
+                            <p className="truncate text-sm font-bold text-zinc-100">
                               {hand.heroHand || "Hand captured"}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-slate-600">
+                            <p className="mt-0.5 truncate text-xs text-zinc-400">
                               {formatHandMeta(hand)}
                             </p>
                           </div>
@@ -376,21 +376,21 @@ export function StudyCockpit() {
               helper="Saved trainer history and leak data drive this area."
             />
 
-            <Card className="rounded-[1.75rem] border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
+            <Card className="rounded-[1.2rem] border-white/10 bg-zinc-950/78 shadow-xl shadow-black/25">
               <CardContent className="space-y-4 p-4 sm:p-5">
                 {isAuthenticated && weakSpots.length > 0 && (
                   <div className="space-y-2">
                     {weakSpots.slice(0, 4).map(spot => (
                       <div
                         key={spot.chartId}
-                        className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                        className="rounded-xl border border-white/10 bg-white/[0.04] p-3"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-bold text-slate-950">
+                            <p className="truncate text-sm font-bold text-zinc-100">
                               {spot.chartTitle}
                             </p>
-                            <p className="mt-0.5 text-xs text-slate-600">
+                            <p className="mt-0.5 text-xs text-zinc-400">
                               {spot.accuracy}% over {spot.attempts} attempts
                             </p>
                           </div>
@@ -411,23 +411,23 @@ export function StudyCockpit() {
                 {(!isAuthenticated || weakSpots.length === 0) &&
                   topLeaks.length > 0 && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
                         <AlertCircle className="h-3.5 w-3.5" />
                         Active Leaks
                       </div>
                       {topLeaks.map(leak => (
                         <Link key={leak.id} href={`/leaks/${leak.id}`}>
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 transition hover:border-orange-200 hover:bg-white">
+                          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-orange-300/40 hover:bg-white/[0.08]">
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-slate-950">
+                                <p className="truncate text-sm font-bold text-zinc-100">
                                   {leak.name}
                                 </p>
-                                <p className="mt-0.5 text-xs text-slate-600">
+                                <p className="mt-0.5 text-xs text-zinc-400">
                                   {leak.category} - {leak.handCount} linked hands
                                 </p>
                               </div>
-                              <ChevronRight className="h-4 w-4 text-slate-400" />
+                              <ChevronRight className="h-4 w-4 text-zinc-500" />
                             </div>
                           </div>
                         </Link>
@@ -437,27 +437,27 @@ export function StudyCockpit() {
 
                 {isAuthenticated && missedHands.length > 0 && (
                   <>
-                    <div className="h-px bg-slate-200/80" />
+                    <div className="h-px bg-white/10" />
                     <div className="space-y-2">
-                      <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500">
                         Most Missed Hands
                       </div>
                       {missedHands.slice(0, 3).map(hand => (
                         <div
                           key={`${hand.chartId}-${hand.handCode}`}
-                          className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3"
                         >
                           <div>
-                            <p className="font-mono text-base font-black text-slate-950">
+                            <p className="font-mono text-base font-black text-zinc-100">
                               {hand.handCode}
                             </p>
-                            <p className="text-xs text-slate-600">
+                            <p className="text-xs text-zinc-400">
                               Correct: {ACTION_LABELS[hand.correctAction]}
                             </p>
                           </div>
                           <Badge
                             variant="outline"
-                            className="rounded-full border-red-200 bg-red-50 text-red-700"
+                            className="rounded-full border-red-400/35 bg-red-500/12 text-red-300"
                           >
                             Missed {hand.missed}
                           </Badge>
@@ -478,7 +478,7 @@ export function StudyCockpit() {
                   )}
 
                 {!isAuthenticated && (
-                  <p className="rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
+                  <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs leading-relaxed text-zinc-500">
                     Range practice works while logged out. Saved weak spots
                     appear here for authenticated users.
                   </p>
@@ -523,12 +523,12 @@ export function StudyCockpit() {
               },
             ].map(item => (
               <Link key={item.href} href={item.href}>
-                <div className="group rounded-[1.35rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm shadow-slate-950/5 transition hover:-translate-y-0.5 hover:border-orange-200 hover:bg-white hover:shadow-md">
+                <div className="group rounded-[1rem] border border-white/10 bg-zinc-950/75 p-4 shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-orange-300/40 hover:bg-zinc-900/90 hover:shadow-md hover:shadow-black/25">
                   <item.icon className="h-5 w-5 text-orange-500" />
-                  <p className="mt-3 text-sm font-black text-slate-950">
+                  <p className="mt-3 text-sm font-black text-zinc-100">
                     {item.title}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                  <p className="mt-1 text-xs leading-relaxed text-zinc-400">
                     {item.helper}
                   </p>
                 </div>
@@ -548,10 +548,10 @@ export function StudyCockpit() {
               {recentAttempts.map(attempt => (
                 <div
                   key={attempt.id}
-                  className="rounded-[1.25rem] border border-slate-200 bg-white/90 p-3 shadow-sm"
+                  className="rounded-[1rem] border border-white/10 bg-zinc-950/75 p-3 shadow-sm shadow-black/20"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-mono text-base font-black text-slate-950">
+                    <p className="font-mono text-base font-black text-zinc-100">
                       {attempt.handCode}
                     </p>
                     <Badge
@@ -564,7 +564,7 @@ export function StudyCockpit() {
                       {attempt.isCorrect ? "Hit" : "Miss"}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-xs text-slate-600">
+                  <p className="mt-1 text-xs text-zinc-400">
                     Correct:{" "}
                     {ACTION_LABELS[attempt.correctAction as Action] ??
                       attempt.correctAction}

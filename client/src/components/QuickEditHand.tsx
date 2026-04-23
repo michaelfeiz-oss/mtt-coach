@@ -183,7 +183,7 @@ export function QuickEditHand({ handId, open, onOpenChange }: QuickEditHandProps
           {/* Linked Leaks */}
           <div className="space-y-2">
             <Label>Linked Leaks</Label>
-            <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
+            <div className="max-h-40 space-y-2 overflow-y-auto rounded-lg border border-white/10 bg-white/[0.03] p-3">
               {allLeaks && allLeaks.length > 0 ? (
                 allLeaks.map((leak) => (
                   <div key={leak.id} className="flex items-center space-x-2">
@@ -198,7 +198,7 @@ export function QuickEditHand({ handId, open, onOpenChange }: QuickEditHandProps
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-500">No leaks available</p>
+                <p className="text-sm text-zinc-500">No leaks available</p>
               )}
             </div>
           </div>
