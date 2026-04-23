@@ -11,10 +11,10 @@ interface PlayingCardProps {
 }
 
 const SUIT_SYMBOLS: Record<CardSuit, string> = {
-  spades: "♠",
-  hearts: "♥",
-  diamonds: "♦",
-  clubs: "♣",
+  spades: "\u2660",
+  hearts: "\u2665",
+  diamonds: "\u2666",
+  clubs: "\u2663",
 };
 
 const SIZE_CLASSES: Record<PlayingCardSize, string> = {

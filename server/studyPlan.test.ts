@@ -27,7 +27,9 @@ function createTestContext(): TrpcContext {
   };
 }
 
-describe("Study Plan Feature", () => {
+const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
+
+describeDb("Study Plan Feature", () => {
   describe("Study Plan Generation", () => {
     it("should generate a 7-day study plan for current week", async () => {
       const ctx = createTestContext();

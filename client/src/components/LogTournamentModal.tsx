@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { BottomSheetModal } from "./BottomSheetModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,12 +35,7 @@ export function LogTournamentModal({
     notes: "",
   });
 
-  const handleSubmit = () => {
-    if (!formData.buyIn || !formData.finalPosition) {
-      alert("Please fill in required fields");
-      return;
-    }
-    onSubmit(formData);
+  const resetForm = () => {
     setFormData({
       buyIn: "",
       reEntries: "0",
@@ -51,10 +47,24 @@ export function LogTournamentModal({
     });
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleSubmit = () => {
+    if (!formData.buyIn || !formData.finalPosition) {
+      toast.error("Buy-in and final position are required.");
+      return;
+    }
+    onSubmit(formData);
+    resetForm();
+  };
+
   return (
     <BottomSheetModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Log Tournament"
       description="Capture result details now, then review strategy spots later."
       eyebrow="Tournament Result"

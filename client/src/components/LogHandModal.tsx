@@ -10,6 +10,7 @@ import { BoardPicker } from "./BoardPicker";
 import { Stepper } from "./Stepper";
 import { BoardDisplay } from "./BoardDisplay";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 const POSITIONS = ["UTG", "UTG+1", "HJ", "CO", "BTN", "SB", "BB"];
 const TABLE_SIZES = ["6-max", "8-max", "9-max", "10-max"];
@@ -54,7 +55,7 @@ export function LogHandModal({ isOpen, onClose }: LogHandModalProps) {
       onClose();
     },
     onError: (error) => {
-      alert(`Error saving hand: ${error.message}`);
+      toast.error(`Error saving hand: ${error.message}`);
     },
   });
 
@@ -82,7 +83,7 @@ export function LogHandModal({ isOpen, onClose }: LogHandModalProps) {
 
   const handleSave = () => {
     if (!tableSize || !effectiveStack || !heroPosition || !heroHand || !preflopActions) {
-      alert("Please fill in all required preflop fields");
+      toast.error("Please fill in all required preflop fields");
       return;
     }
 
@@ -144,7 +145,7 @@ export function LogHandModal({ isOpen, onClose }: LogHandModalProps) {
     // Validate current street before moving
     if (street === 0) {
       if (!tableSize || !effectiveStack || !heroPosition || !heroHand || !preflopActions) {
-        alert("Please fill in all required preflop fields");
+        toast.error("Please fill in all required preflop fields");
         return;
       }
     }

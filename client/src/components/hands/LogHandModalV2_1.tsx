@@ -495,10 +495,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               <div>
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-black text-zinc-100">
+                    <h3 className="text-base font-black text-foreground">
                       Context
                     </h3>
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-muted-foreground">
                       Required: preflop spot, position, hand, and stack up to 40bb.
                     </p>
                   </div>
@@ -520,8 +520,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         className={cn(
                           "mt-1 block text-[11px] font-medium leading-tight",
                           spotType === option.id
-                            ? "text-zinc-300"
-                            : "text-zinc-500"
+                            ? "text-secondary-foreground"
+                            : "text-muted-foreground"
                         )}
                       >
                         {option.helper}
@@ -591,7 +591,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
 
               <div>
-                <Label className="text-sm font-black text-zinc-100">
+                <Label className="text-sm font-black text-foreground">
                   Hero Position
                 </Label>
                 <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -615,10 +615,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-black text-zinc-100">
+                    <h3 className="text-base font-black text-foreground">
                       Key Action
                     </h3>
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-muted-foreground">
                       Capture the preflop hero decision. Opener action is
                       optional.
                     </p>
@@ -629,7 +629,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                     Scope
                   </Label>
                   <div className="mt-2 grid grid-cols-4 gap-2">
@@ -647,7 +647,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                     Hero Decision
                   </Label>
                   <div className="mt-2 grid grid-cols-3 gap-2">
@@ -686,10 +686,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   onClick={() => setShowActionDetails(value => !value)}
                 >
                   <div>
-                    <p className="text-sm font-black text-zinc-100">
+                    <p className="text-sm font-black text-foreground">
                       Optional action detail
                     </p>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-muted-foreground">
                       Add opener action and player profile when useful.
                     </p>
                   </div>
@@ -701,7 +701,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 {fullDetailsVisible && (
                   <div className="mt-4 space-y-4">
                     <div>
-                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                         Opener / Villain Action
                       </Label>
                       <div className="mt-2 grid grid-cols-4 gap-2">
@@ -738,7 +738,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                           Villain Type
                         </Label>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -756,7 +756,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       </div>
 
                       <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                           Range Read
                         </Label>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -782,10 +782,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
-                <h3 className="text-base font-black text-zinc-100">
+                <h3 className="text-base font-black text-foreground">
                   Review Signal
                 </h3>
-                <p className="mt-1 text-sm text-zinc-400">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Keep this light. Mark the mistake and write one takeaway if
                   there is one.
                 </p>
@@ -808,7 +808,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 </div>
 
                 <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                     Mistake Severity
                   </Label>
                   <div className="mt-2 grid grid-cols-4 gap-2">
@@ -832,7 +832,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
                 {mistakeSeverity > 0 && (
                   <div className="mt-4">
-                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                       Mistake Street
                     </Label>
                     <div className="mt-2 grid grid-cols-4 gap-2">
@@ -854,7 +854,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
                 <Label
                   htmlFor="lesson"
-                  className="text-sm font-black text-zinc-100"
+                  className="text-sm font-black text-foreground"
                 >
                   Lesson / Takeaway
                 </Label>
@@ -871,9 +871,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
 
               <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
-                <p className="text-sm font-black text-zinc-100">
-                  Optional Tags
-                </p>
+                  <p className="text-sm font-black text-foreground">
+                    Optional Tags
+                  </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {TAG_OPTIONS.map(tag => (
                     <ChipButton
@@ -890,14 +890,14 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
               {entryMode === "FULL" && (
                 <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
-                  <p className="text-sm font-black text-zinc-100">
+                  <p className="text-sm font-black text-foreground">
                     Tournament Context
                   </p>
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
                     <div>
-                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                        Result
-                      </Label>
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
+                          Result
+                        </Label>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {RESULTS.map(item => (
                           <ChipButton
@@ -913,9 +913,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     </div>
 
                     <div>
-                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                        Game Type
-                      </Label>
+                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
+                          Game Type
+                        </Label>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {GAME_TYPES.map(item => (
                           <ChipButton
@@ -932,7 +932,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   </div>
 
                   <div className="mt-4">
-                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
                       Tournament Phase
                     </Label>
                     <div className="mt-2 flex flex-wrap gap-2">

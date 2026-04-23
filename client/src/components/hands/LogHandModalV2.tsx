@@ -8,6 +8,7 @@ import { PlayerActionsForm, type StreetAction } from "./PlayerActionsForm";
 import { VillainProfileForm, type VillainType, type VillainRangeType } from "./VillainProfileForm";
 import { OutcomeForm, type HandResult } from "./OutcomeForm";
 import { NotesForm } from "./NotesForm";
+import { toast } from "sonner";
 import {
   mapUiSpotTypeToDb,
   extractSpotPosition,
@@ -55,7 +56,7 @@ export function LogHandModalV2({ isOpen, onClose }: LogHandModalV2Props) {
       onClose();
     },
     onError: (error) => {
-      alert(`Error saving hand: ${error.message}`);
+      toast.error(`Error saving hand: ${error.message}`);
     },
   });
 
@@ -87,7 +88,7 @@ export function LogHandModalV2({ isOpen, onClose }: LogHandModalV2Props) {
 
   const handleSave = () => {
     if (!isValid()) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 

@@ -507,7 +507,7 @@ export function StudyCockpit() {
                 href: "/strategy/trainer",
                 icon: Target,
                 title: "Focused Reps",
-                helper: "Drill the current spot or decision family.",
+                helper: "Drill the current setup or spin a random spot.",
               },
               {
                 href: "/hands",

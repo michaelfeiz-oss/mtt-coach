@@ -198,7 +198,7 @@ export default function Dashboard() {
                     Range Trainer
                   </p>
                   <p className="mt-0.5 text-xs leading-tight text-muted-foreground">
-                    Drill current spot or random preflop spots
+                    Drill current setup or rotate random preflop spots
                   </p>
                 </div>
               </CardContent>

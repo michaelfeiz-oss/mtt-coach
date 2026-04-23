@@ -97,12 +97,12 @@ function spotMatchesSetup(
 
 export default function StrategyLibrary() {
   const search = useSearch();
-  const params = new URLSearchParams(search);
-  const chartIdParamRaw = params.get("chartId");
-  const chartIdParam = chartIdParamRaw ? Number(chartIdParamRaw) : undefined;
-  const initialChartId = Number.isFinite(chartIdParam)
-    ? chartIdParam
-    : undefined;
+  const chartIdFromSearch = useMemo(() => {
+    const params = new URLSearchParams(search);
+    const chartIdParamRaw = params.get("chartId");
+    const chartIdParam = chartIdParamRaw ? Number(chartIdParamRaw) : undefined;
+    return Number.isFinite(chartIdParam) ? chartIdParam : undefined;
+  }, [search]);
 
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
@@ -113,7 +113,7 @@ export default function StrategyLibrary() {
     undefined
   );
   const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
-    initialChartId
+    chartIdFromSearch
   );
   const [setupCollapsed, setSetupCollapsed] = useState(false);
 
@@ -211,6 +211,13 @@ export default function StrategyLibrary() {
   ];
 
   useEffect(() => {
+    if (chartIdFromSearch !== undefined && chartIdFromSearch !== selectedChartId) {
+      setSelectedChartId(chartIdFromSearch);
+      setSetupCollapsed(false);
+    }
+  }, [chartIdFromSearch, selectedChartId]);
+
+  useEffect(() => {
     if (!chart) return;
 
     setStackDepth(chart.stackDepth);
@@ -234,6 +241,19 @@ export default function StrategyLibrary() {
     saveRecentStrategySpots(updatedRecent);
     setSetupCollapsed(true);
   }, [chart]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const nextUrl =
+      selectedChartId !== undefined
+        ? `/strategy/library?chartId=${selectedChartId}`
+        : "/strategy/library";
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (nextUrl !== currentUrl) {
+      window.history.replaceState(window.history.state, "", nextUrl);
+    }
+  }, [selectedChartId]);
 
   useEffect(() => {
     if (spotsLoading) return;

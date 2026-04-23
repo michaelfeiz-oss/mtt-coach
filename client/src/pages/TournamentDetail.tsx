@@ -1,34 +1,94 @@
+import { useMemo, useState } from "react";
+import { useLocation, useParams } from "wouter";
+import { ArrowLeft, ChevronRight, Trophy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft } from "lucide-react";
-import { useLocation, useParams } from "wouter";
+
+function formatCurrency(amount?: number | null) {
+  if (amount === undefined || amount === null) return "-";
+  const sign = amount > 0 ? "+" : "";
+  return `${sign}$${amount.toFixed(0)}`;
+}
+
+function formatPosition(finalPosition?: number | null) {
+  if (!finalPosition) return "-";
+  return `${finalPosition}`;
+}
 
 export default function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
+  const tournamentId = Number(id);
   const [, setLocation] = useLocation();
-  const tournamentId = parseInt(id!);
+  const [handFilter, setHandFilter] = useState("all");
 
-  const { data: tournament, isLoading: tournamentLoading } = trpc.tournaments.getById.useQuery({
-    id: tournamentId,
-  });
+  const { data: tournament, isLoading: tournamentLoading } =
+    trpc.tournaments.getById.useQuery(
+      { id: tournamentId },
+      { enabled: Number.isFinite(tournamentId) }
+    );
 
-  const { data: hands, isLoading: handsLoading } = trpc.hands.getByTournament.useQuery({
-    tournamentId,
-  });
+  const { data: hands = [], isLoading: handsLoading } =
+    trpc.hands.getByTournament.useQuery(
+      { tournamentId },
+      { enabled: Number.isFinite(tournamentId) }
+    );
+
+  const preflopMistakes = useMemo(
+    () =>
+      hands.filter(
+        hand => hand.mistakeStreet === "PREFLOP" && (hand.mistakeSeverity ?? 0) > 0
+      ),
+    [hands]
+  );
+
+  const reviewedCount = useMemo(
+    () => hands.filter(hand => hand.reviewed).length,
+    [hands]
+  );
+
+  const averageSeverity = useMemo(() => {
+    if (preflopMistakes.length === 0) return "-";
+    const total = preflopMistakes.reduce(
+      (sum, hand) => sum + (hand.mistakeSeverity ?? 0),
+      0
+    );
+    return (total / preflopMistakes.length).toFixed(1);
+  }, [preflopMistakes]);
+
+  const topSpots = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const hand of hands) {
+      const key = hand.spotType ? hand.spotType.replace(/_/g, " ") : "Unlabeled";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+  }, [hands]);
+
+  const visibleHands = useMemo(() => {
+    if (handFilter === "all") return hands;
+    if (handFilter === "reviewed") return hands.filter(hand => hand.reviewed);
+    return hands.filter(
+      hand => hand.mistakeStreet === "PREFLOP" && (hand.mistakeSeverity ?? 0) > 0
+    );
+  }, [handFilter, hands]);
 
   if (tournamentLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <header className="bg-white border-b border-slate-200">
+      <div className="app-shell min-h-screen text-foreground">
+        <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90">
           <div className="container py-4">
-            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-40" />
           </div>
         </header>
-        <main className="container py-6 space-y-6">
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-64 w-full" />
+        <main className="container max-w-5xl space-y-4 py-6">
+          <Skeleton className="h-36 w-full rounded-2xl" />
+          <Skeleton className="h-72 w-full rounded-2xl" />
         </main>
       </div>
     );
@@ -36,223 +96,223 @@ export default function TournamentDetail() {
 
   if (!tournament) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <header className="bg-white border-b border-slate-200">
-          <div className="container py-4">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </div>
-        </header>
-        <main className="container py-6">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-slate-500">Tournament not found</p>
-            </CardContent>
-          </Card>
-        </main>
+      <div className="app-shell flex min-h-screen items-center justify-center text-foreground">
+        <Card className="app-surface w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Tournament not found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setLocation("/")}>Back to Dashboard</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Calculate mistake summary
-  const mistakesByStreet = hands?.reduce(
-    (acc: Record<string, number>, hand) => {
-      if (hand.mistakeStreet) {
-        acc[hand.mistakeStreet] = (acc[hand.mistakeStreet] || 0) + 1;
-      }
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const totalMistakes = Object.values(mistakesByStreet || {}).reduce((sum: number, count) => sum + (count as number), 0);
-
-  // Get top 3 leaks (would need to aggregate from handLeaks junction table)
-  // For now, just show mistake count by severity
-  const mistakesBySeverity = hands?.reduce(
-    (acc: Record<number, number>, hand) => {
-      if (hand.mistakeSeverity && hand.mistakeSeverity > 0) {
-        const severity = hand.mistakeSeverity;
-        acc[severity] = (acc[severity] || 0) + 1;
-      }
-      return acc;
-    },
-    {} as Record<number, number>
-  );
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="app-shell min-h-screen text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
         <div className="container py-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/")}
+            className="gap-2"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
         </div>
       </header>
 
-      <main className="container py-6 space-y-6">
-        {/* Tournament Info */}
-        <Card>
+      <main className="container max-w-5xl space-y-4 py-6">
+        <Card className="app-surface">
           <CardHeader>
-            <CardTitle>{tournament.name || tournament.venue}</CardTitle>
-            <CardDescription>{new Date(tournament.date).toLocaleDateString()}</CardDescription>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <CardTitle className="truncate text-xl">
+                  {tournament.name || tournament.venue || "Tournament Session"}
+                </CardTitle>
+                <CardDescription className="mt-1 text-muted-foreground">
+                  {new Date(tournament.date).toLocaleDateString()} - BBA tournament review
+                </CardDescription>
+              </div>
+              <Badge className="rounded-full bg-primary text-primary-foreground">
+                <Trophy className="mr-1 h-3.5 w-3.5" />
+                Preflop Focus
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-slate-500">Buy-in</p>
-                <p className="font-semibold">${tournament.buyIn}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Buy-in</p>
+                <p className="mt-1 text-lg font-black text-foreground">
+                  {formatCurrency(tournament.buyIn)}
+                </p>
               </div>
-              <div>
-                <p className="text-xs text-slate-500">Field Size</p>
-                <p className="font-semibold">{tournament.fieldSize || "—"}</p>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Finish</p>
+                <p className="mt-1 text-lg font-black text-foreground">
+                  {formatPosition(tournament.finalPosition)}
+                </p>
               </div>
-              <div>
-                <p className="text-xs text-slate-500">Position</p>
-                <p className="font-semibold">{tournament.finalPosition || "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Net Result</p>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Net</p>
                 <p
-                  className={`font-bold ${
-                    tournament.netResult >= 0 ? "text-green-600" : "text-red-600"
+                  className={`mt-1 text-lg font-black ${
+                    (tournament.netResult ?? 0) >= 0 ? "text-emerald-300" : "text-red-300"
                   }`}
                 >
-                  {tournament.netResult >= 0 ? "+" : ""}${tournament.netResult.toFixed(0)}
+                  {formatCurrency(tournament.netResult)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Prize</p>
+                <p className="mt-1 text-lg font-black text-foreground">
+                  {formatCurrency(tournament.prize)}
                 </p>
               </div>
             </div>
 
             {tournament.notesOverall && (
-              <div className="pt-4 border-t">
-                <p className="text-xs text-slate-500 mb-1">Notes</p>
-                <p className="text-sm">{tournament.notesOverall}</p>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs font-semibold text-muted-foreground">Tournament Note</p>
+                <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
+                  {tournament.notesOverall}
+                </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Mistake Summary */}
-        <Card>
+        <Card className="app-surface">
           <CardHeader>
-            <CardTitle>Mistake Summary</CardTitle>
+            <CardTitle>Preflop Review Summary</CardTitle>
             <CardDescription>
-              {totalMistakes} total mistakes across {hands?.length || 0} hands
+              Hand logs and mistakes from this tournament session.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* By Street */}
-            <div>
-              <p className="text-sm font-medium mb-2">Mistakes by Street</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {["PREFLOP", "FLOP", "TURN", "RIVER"].map((street) => (
-                  <div key={street} className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-600">{street}</p>
-                    <p className="text-lg font-bold">{mistakesByStreet?.[street] || 0}</p>
-                  </div>
-                ))}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Hands Logged</p>
+                <p className="mt-1 text-2xl font-black">{hands.length}</p>
+              </div>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Reviewed</p>
+                <p className="mt-1 text-2xl font-black">{reviewedCount}</p>
+              </div>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Preflop Mistakes</p>
+                <p className="mt-1 text-2xl font-black text-red-300">
+                  {preflopMistakes.length}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs text-muted-foreground">Avg Severity</p>
+                <p className="mt-1 text-2xl font-black">{averageSeverity}</p>
               </div>
             </div>
 
-            {/* By Severity */}
-            <div>
-              <p className="text-sm font-medium mb-2">Mistakes by Severity</p>
-              <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3].map((severity) => (
-                  <div key={severity} className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-600">
-                      {severity === 1 ? "Minor" : severity === 2 ? "Moderate" : "Major"}
-                    </p>
-                    <p className="text-lg font-bold">{mistakesBySeverity?.[severity] || 0}</p>
-                  </div>
-                ))}
+            {topSpots.length > 0 && (
+              <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
+                <p className="text-xs font-semibold text-muted-foreground">Top Spot Types</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {topSpots.map(([spot, count]) => (
+                    <Badge
+                      key={spot}
+                      variant="outline"
+                      className="rounded-full border-border/80 bg-accent/60 text-secondary-foreground"
+                    >
+                      {spot} - {count}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Hands List */}
-        <Card>
+        <Card className="app-surface">
           <CardHeader>
-            <CardTitle>Hands Played</CardTitle>
-            <CardDescription>{hands?.length || 0} hands logged</CardDescription>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle>Hands in This Session</CardTitle>
+                <CardDescription>Open any hand to review and tag takeaways.</CardDescription>
+              </div>
+              <Select value={handFilter} onValueChange={setHandFilter}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Hands</SelectItem>
+                  <SelectItem value="mistakes">Preflop Mistakes</SelectItem>
+                  <SelectItem value="reviewed">Reviewed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {handsLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-20 w-full" />
+              <div className="space-y-2">
+                {[1, 2, 3].map(index => (
+                  <Skeleton key={index} className="h-20 w-full rounded-xl" />
                 ))}
               </div>
-            ) : !hands || hands.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-8">No hands logged for this tournament</p>
+            ) : visibleHands.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/75 bg-accent/45 py-10 text-center">
+                <p className="text-sm font-semibold text-foreground">No hands match this filter</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Switch filters or log another hand from this session.
+                </p>
+              </div>
             ) : (
               <div className="space-y-2">
-                {hands.map((hand: any) => {
-                  const tags = hand.tagsJson ? JSON.parse(hand.tagsJson) : [];
-
-                  return (
-                    <button
-                      key={hand.id}
-                      onClick={() => setLocation(`/hands/${hand.id}`)}
-                      className="w-full text-left p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          {/* Hero Hand & Position */}
-                          <div className="flex items-center gap-2 mb-1">
-                            {hand.heroHand && (
-                              <span className="font-mono font-bold text-lg">{hand.heroHand}</span>
-                            )}
-                            {hand.heroPosition && (
-                              <span className="text-xs bg-slate-100 px-2 py-1 rounded">
-                                {hand.heroPosition}
-                              </span>
-                            )}
-                            {hand.reviewed && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                Reviewed
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Board */}
-                          {hand.boardRunout && (
-                            <p className="text-sm text-slate-600 font-mono mb-1">{hand.boardRunout}</p>
-                          )}
-
-                          {/* Spot Type & Stack */}
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
-                            {hand.spotType && <span>{hand.spotType}</span>}
-                            {hand.effectiveStackBb && <span>{hand.effectiveStackBb}bb</span>}
-                            {hand.mistakeStreet && (
-                              <span className="text-red-600">
-                                Mistake: {hand.mistakeStreet} (Severity: {hand.mistakeSeverity})
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Tags */}
-                          {tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {tags.map((tag: string, idx: number) => (
-                                <span
-                                  key={idx}
-                                  className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                {visibleHands.map(hand => (
+                  <button
+                    key={hand.id}
+                    type="button"
+                    onClick={() => setLocation(`/hands/${hand.id}`)}
+                    className="flex w-full items-start justify-between gap-3 rounded-xl border border-border/80 bg-accent/45 p-3 text-left transition hover:border-border hover:bg-accent/65"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-base font-semibold">
+                          {hand.heroHand || "Hand"}
+                        </span>
+                        {hand.heroPosition && (
+                          <Badge
+                            variant="outline"
+                            className="rounded-full border-border/80 bg-accent/60 text-[11px] text-secondary-foreground"
+                          >
+                            {hand.heroPosition}
+                          </Badge>
+                        )}
+                        {(hand.mistakeSeverity ?? 0) > 0 && (
+                          <Badge className="rounded-full bg-red-500/85 text-white">
+                            Sev {hand.mistakeSeverity}
+                          </Badge>
+                        )}
+                        {hand.reviewed && (
+                          <Badge className="rounded-full bg-emerald-500 text-white">
+                            Reviewed
+                          </Badge>
+                        )}
                       </div>
-                    </button>
-                  );
-                })}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {[
+                          hand.spotType?.replace(/_/g, " "),
+                          hand.effectiveStackBb ? `${Math.round(hand.effectiveStackBb)}bb` : null,
+                          "BBA",
+                        ]
+                          .filter(Boolean)
+                          .join(" - ")}
+                      </p>
+                    </div>
+                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+                  </button>
+                ))}
               </div>
             )}
           </CardContent>

@@ -1,146 +1,173 @@
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useParams } from "wouter";
+import { ArrowLeft, Target } from "lucide-react";
+import { toast } from "sonner";
+import { ACTION_LABELS } from "../../../shared/strategy";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Target } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useLocation, useParams } from "wouter";
-import { toast } from "sonner";
-import { ACTION_LABELS } from "../../../shared/strategy";
+import { Textarea } from "@/components/ui/textarea";
+
+interface HandReviewForm {
+  reviewed: boolean;
+  mistakeStreet: "NONE" | "PREFLOP";
+  mistakeSeverity: string;
+  tags: string;
+  lesson: string;
+  selectedLeakIds: number[];
+}
+
+function safeParseTags(tagsJson?: string | null): string[] {
+  if (!tagsJson) return [];
+  try {
+    const parsed = JSON.parse(tagsJson);
+    return Array.isArray(parsed)
+      ? parsed.filter((tag): tag is string => typeof tag === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function HandDetail() {
   const { id } = useParams();
+  const handId = Number(id);
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
 
   const { data: hand, isLoading } = trpc.hands.getById.useQuery(
-    { id: parseInt(id!) },
-    { enabled: !!id }
+    { id: handId },
+    { enabled: Number.isFinite(handId) }
+  );
+  const { data: allLeaks = [] } = trpc.leaks.list.useQuery();
+  const { data: handLeaks = [] } = trpc.hands.getLeaks.useQuery(
+    { handId },
+    { enabled: Number.isFinite(handId) }
+  );
+  const { data: strategyRecommendation } = trpc.strategy.getHandRecommendation.useQuery(
+    { handId },
+    { enabled: Number.isFinite(handId) }
   );
 
-  const { data: allLeaks } = trpc.leaks.list.useQuery();
-  const { data: handLeaks } = trpc.hands.getLeaks.useQuery(
-    { handId: parseInt(id!) },
-    { enabled: !!id }
-  );
-  const { data: strategyRecommendation } =
-    trpc.strategy.getHandRecommendation.useQuery(
-      { handId: parseInt(id!) },
-      { enabled: !!id }
-    );
-
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<HandReviewForm>({
     reviewed: false,
     mistakeStreet: "NONE",
     mistakeSeverity: "0",
     tags: "",
     lesson: "",
-    selectedLeakIds: [] as number[],
+    selectedLeakIds: [],
   });
 
   useEffect(() => {
-    if (hand) {
-      setFormData({
-        reviewed: hand.reviewed,
-        mistakeStreet: hand.mistakeStreet || "NONE",
-        mistakeSeverity: hand.mistakeSeverity.toString(),
-        tags: hand.tagsJson ? JSON.parse(hand.tagsJson).join(", ") : "",
-        lesson: hand.lesson || "",
-        selectedLeakIds: handLeaks?.map((l) => l.id) || [],
-      });
-    }
+    if (!hand) return;
+    setFormData({
+      reviewed: hand.reviewed,
+      mistakeStreet: hand.mistakeStreet === "PREFLOP" ? "PREFLOP" : "NONE",
+      mistakeSeverity: String(hand.mistakeSeverity),
+      tags: safeParseTags(hand.tagsJson).join(", "),
+      lesson: hand.lesson ?? "",
+      selectedLeakIds: handLeaks.map(leak => leak.id),
+    });
   }, [hand, handLeaks]);
+
+  const tagsPreview = useMemo(
+    () =>
+      formData.tags
+        .split(",")
+        .map(tag => tag.trim())
+        .filter(Boolean),
+    [formData.tags]
+  );
 
   const updateHand = trpc.hands.update.useMutation({
     onSuccess: () => {
-      toast.success("Hand updated successfully!");
-      utils.hands.getById.invalidate({ id: parseInt(id!) });
-      utils.hands.getByUser.invalidate();
+      toast.success("Hand review saved");
+      void utils.hands.getById.invalidate({ id: handId });
+      void utils.hands.getByUser.invalidate();
     },
-    onError: (error) => {
-      toast.error(`Failed to update hand: ${error.message}`);
+    onError: error => {
+      toast.error(`Could not save review: ${error.message}`);
     },
   });
 
   const linkLeak = trpc.hands.linkLeak.useMutation({
     onSuccess: () => {
-      utils.hands.getLeaks.invalidate({ handId: parseInt(id!) });
-      utils.leaks.getTop.invalidate();
+      void utils.hands.getLeaks.invalidate({ handId });
+      void utils.leaks.getTop.invalidate();
     },
   });
 
   const unlinkLeak = trpc.hands.unlinkLeak.useMutation({
     onSuccess: () => {
-      utils.hands.getLeaks.invalidate({ handId: parseInt(id!) });
-      utils.leaks.getTop.invalidate();
+      void utils.hands.getLeaks.invalidate({ handId });
+      void utils.leaks.getTop.invalidate();
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
 
-    // Update hand details
     const tagsArray = formData.tags
       .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
 
     await updateHand.mutateAsync({
-      id: parseInt(id!),
+      id: handId,
       reviewed: formData.reviewed,
-      mistakeStreet: (formData.mistakeStreet && formData.mistakeStreet !== "NONE") ? (formData.mistakeStreet as any) : undefined,
-      mistakeSeverity: parseInt(formData.mistakeSeverity),
+      mistakeStreet:
+        formData.mistakeStreet === "PREFLOP" ? "PREFLOP" : undefined,
+      mistakeSeverity: Number.parseInt(formData.mistakeSeverity, 10) || 0,
       tags: tagsArray,
-      lesson: formData.lesson || undefined,
+      lesson: formData.lesson.trim() || undefined,
     });
 
-    // Update leak links
-    const currentLeakIds = handLeaks?.map((l) => l.id) || [];
-    const toAdd = formData.selectedLeakIds.filter((id) => !currentLeakIds.includes(id));
-    const toRemove = currentLeakIds.filter((id) => !formData.selectedLeakIds.includes(id));
+    const currentLeakIds = handLeaks.map(leak => leak.id);
+    const toAdd = formData.selectedLeakIds.filter(leakId => !currentLeakIds.includes(leakId));
+    const toRemove = currentLeakIds.filter(leakId => !formData.selectedLeakIds.includes(leakId));
 
     for (const leakId of toAdd) {
-      await linkLeak.mutateAsync({ handId: parseInt(id!), leakId });
+      await linkLeak.mutateAsync({ handId, leakId });
     }
 
     for (const leakId of toRemove) {
-      await unlinkLeak.mutateAsync({ handId: parseInt(id!), leakId });
+      await unlinkLeak.mutateAsync({ handId, leakId });
     }
 
-    toast.success("Hand and leaks updated!");
-  };
+    toast.success("Hand and leak links updated");
+  }
 
-  const toggleLeak = (leakId: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedLeakIds: prev.selectedLeakIds.includes(leakId)
-        ? prev.selectedLeakIds.filter((id) => id !== leakId)
-        : [...prev.selectedLeakIds, leakId],
+  function toggleLeak(leakId: number) {
+    setFormData(previous => ({
+      ...previous,
+      selectedLeakIds: previous.selectedLeakIds.includes(leakId)
+        ? previous.selectedLeakIds.filter(idValue => idValue !== leakId)
+        : [...previous.selectedLeakIds, leakId],
     }));
-  };
+  }
 
   if (isLoading) {
     return (
       <div className="app-shell min-h-screen text-foreground">
         <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90">
           <div className="container py-4">
-            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-36" />
           </div>
         </header>
         <main className="container py-6">
-          <Card className="border-border/80 bg-card/92">
+          <Card className="app-surface">
             <CardHeader>
-              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-8 w-56" />
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+            <CardContent className="space-y-3">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-24 w-full" />
             </CardContent>
           </Card>
         </main>
@@ -151,275 +178,245 @@ export default function HandDetail() {
   if (!hand) {
     return (
       <div className="app-shell flex min-h-screen items-center justify-center text-foreground">
-        <Card className="border-border/80 bg-card/92">
+        <Card className="app-surface w-full max-w-md">
           <CardHeader>
-            <CardTitle>Hand Not Found</CardTitle>
+            <CardTitle>Hand not found</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setLocation("/hands")}>Back to Hands List</Button>
+            <Button onClick={() => setLocation("/hands")}>Back to hands</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  const isSaving =
+    updateHand.isPending || linkLeak.isPending || unlinkLeak.isPending;
+
   return (
     <div className="app-shell min-h-screen text-foreground">
-      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
         <div className="container py-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/hands")} className="gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/hands")}
+            className="gap-2"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Hands
           </Button>
         </div>
       </header>
 
-      <main className="container py-6 space-y-6">
-        {/* Hand Overview */}
-        <Card className="border-border/80 bg-card/92">
+      <main className="container max-w-5xl space-y-4 py-6">
+        <Card className="app-surface">
           <CardHeader>
             <CardTitle>Hand Details</CardTitle>
             <CardDescription className="text-muted-foreground">
-              {hand.heroPosition && `${hand.heroPosition} • `}
-              {hand.spotType && hand.spotType.replace(/_/g, " ")}
+              {[hand.heroPosition, hand.spotType?.replace(/_/g, " ")]
+                .filter(Boolean)
+                .join(" - ") || "Preflop hand log"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Hero Hand & Board */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Hero Hand</Label>
-                <p className="font-mono font-bold text-2xl">{hand.heroHand || "—"}</p>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Board</Label>
-                <p className="font-mono text-lg">{hand.boardRunout || "—"}</p>
-              </div>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Hero Hand</Label>
+              <p className="font-mono text-2xl font-black">{hand.heroHand || "-"}</p>
             </div>
-
-            {/* Stack & SPR */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <Label className="text-xs text-muted-foreground">Effective Stack</Label>
-                <p className="font-medium">{hand.effectiveStackBb?.toFixed(1) || "—"} bb</p>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">SPR</Label>
-                <p className="font-medium">{hand.spr?.toFixed(1) || "—"}</p>
-              </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Effective Stack</Label>
+              <p className="text-lg font-semibold">
+                {hand.effectiveStackBb ? `${hand.effectiveStackBb.toFixed(1)}bb` : "-"}
+              </p>
             </div>
-
-            {/* Hero Decisions */}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Hero Actions</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                {hand.heroDecisionPreflop && (
-                  <div>
-                    <span className="text-xs text-muted-foreground">Preflop:</span>
-                    <p className="font-medium">{hand.heroDecisionPreflop}</p>
-                  </div>
-                )}
-                {hand.heroDecisionFlop && (
-                  <div>
-                    <span className="text-xs text-muted-foreground">Flop:</span>
-                    <p className="font-medium">{hand.heroDecisionFlop}</p>
-                  </div>
-                )}
-                {hand.heroDecisionTurn && (
-                  <div>
-                    <span className="text-xs text-muted-foreground">Turn:</span>
-                    <p className="font-medium">{hand.heroDecisionTurn}</p>
-                  </div>
-                )}
-                {hand.heroDecisionRiver && (
-                  <div>
-                    <span className="text-xs text-muted-foreground">River:</span>
-                    <p className="font-medium">{hand.heroDecisionRiver}</p>
-                  </div>
-                )}
-              </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Hero Position</Label>
+              <p className="text-base font-semibold">{hand.heroPosition || "-"}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Preflop Decision</Label>
+              <p className="text-base font-semibold">{hand.heroDecisionPreflop || "-"}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Strategy Recommendation */}
         {strategyRecommendation && (
-          <Card className="border-border/80 bg-card/92">
+          <Card className="app-surface">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Target className="h-4 w-4 text-primary" />
                 Recommended Preflop Study
               </CardTitle>
-              <CardDescription>
-                {strategyRecommendation.reason}
-              </CardDescription>
+              <CardDescription>{strategyRecommendation.reason}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-lg border border-border/80 bg-accent/45 p-3">
-                <p className="text-sm font-semibold">
-                  {strategyRecommendation.chart.title}
-                </p>
+              <div className="app-surface-subtle p-3 text-sm">
+                <p className="font-semibold">{strategyRecommendation.chart.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {strategyRecommendation.chart.heroPosition}
-                  {strategyRecommendation.chart.villainPosition
-                    ? ` vs ${strategyRecommendation.chart.villainPosition}`
-                    : ""}{" "}
-                  • {strategyRecommendation.chart.stackDepth}bb
-                  {strategyRecommendation.handCode
-                    ? ` • ${strategyRecommendation.handCode}`
-                    : ""}
-                  {strategyRecommendation.recommendedAction
-                    ? ` • ${ACTION_LABELS[strategyRecommendation.recommendedAction]}`
-                    : ""}
+                  {[
+                    strategyRecommendation.chart.heroPosition +
+                      (strategyRecommendation.chart.villainPosition
+                        ? ` vs ${strategyRecommendation.chart.villainPosition}`
+                        : ""),
+                    `${strategyRecommendation.chart.stackDepth}bb`,
+                    strategyRecommendation.handCode,
+                    strategyRecommendation.recommendedAction
+                      ? ACTION_LABELS[strategyRecommendation.recommendedAction]
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" - ")}
                 </p>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <Button
-                  className="bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
                   onClick={() =>
-                    setLocation(
-                      `/strategy/trainer?chartId=${strategyRecommendation.chart.id}`
-                    )
+                    setLocation(`/strategy/trainer?chartId=${strategyRecommendation.chart.id}`)
                   }
                 >
-                  Train this leak
+                  Train This Spot
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() =>
-                    setLocation(
-                      `/strategy/library?chartId=${strategyRecommendation.chart.id}`
-                    )
+                    setLocation(`/strategy/library?chartId=${strategyRecommendation.chart.id}`)
                   }
                 >
-                  View chart
+                  View Chart
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Edit Form */}
-        <Card className="border-border/80 bg-card/92">
+        <Card className="app-surface">
           <CardHeader>
-            <CardTitle>Review & Analysis</CardTitle>
+            <CardTitle>Review and Notes</CardTitle>
+            <CardDescription>
+              Keep this focused on preflop mistakes and repeatable takeaways.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Reviewed Checkbox */}
-              <div className="flex items-center space-x-2">
+              <label className="flex items-center gap-2">
                 <Checkbox
-                  id="reviewed"
                   checked={formData.reviewed}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, reviewed: checked as boolean })
+                  onCheckedChange={checked =>
+                    setFormData(prev => ({ ...prev, reviewed: Boolean(checked) }))
                   }
                 />
-                <Label htmlFor="reviewed" className="cursor-pointer">
-                  Mark as reviewed
-                </Label>
+                <span className="text-sm font-medium">Marked as reviewed</span>
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="mistakeStreet">Mistake Street</Label>
+                  <Select
+                    value={formData.mistakeStreet}
+                    onValueChange={value =>
+                      setFormData(prev => ({
+                        ...prev,
+                        mistakeStreet: value as HandReviewForm["mistakeStreet"],
+                      }))
+                    }
+                  >
+                    <SelectTrigger id="mistakeStreet">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">None</SelectItem>
+                      <SelectItem value="PREFLOP">Preflop</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mistakeSeverity">Mistake Severity</Label>
+                  <Select
+                    value={formData.mistakeSeverity}
+                    onValueChange={value =>
+                      setFormData(prev => ({ ...prev, mistakeSeverity: value }))
+                    }
+                  >
+                    <SelectTrigger id="mistakeSeverity">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0 - None</SelectItem>
+                      <SelectItem value="1">1 - Minor</SelectItem>
+                      <SelectItem value="2">2 - Moderate</SelectItem>
+                      <SelectItem value="3">3 - Major</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* Mistake Street */}
-              <div className="space-y-2">
-                <Label htmlFor="mistakeStreet">Mistake Street</Label>
-                <Select
-                  value={formData.mistakeStreet}
-                  onValueChange={(value) => setFormData({ ...formData, mistakeStreet: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select street (if applicable)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">None</SelectItem>
-                    <SelectItem value="PREFLOP">Preflop</SelectItem>
-                    <SelectItem value="FLOP">Flop</SelectItem>
-                    <SelectItem value="TURN">Turn</SelectItem>
-                    <SelectItem value="RIVER">River</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Mistake Severity */}
-              <div className="space-y-2">
-                <Label htmlFor="severity">Mistake Severity (0-3)</Label>
-                <Select
-                  value={formData.mistakeSeverity}
-                  onValueChange={(value) => setFormData({ ...formData, mistakeSeverity: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">0 - No mistake</SelectItem>
-                    <SelectItem value="1">1 - Minor</SelectItem>
-                    <SelectItem value="2">2 - Moderate</SelectItem>
-                    <SelectItem value="3">3 - Major</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Tags */}
               <div className="space-y-2">
                 <Label htmlFor="tags">Tags (comma-separated)</Label>
                 <Input
                   id="tags"
-                  placeholder="BB_DEFENCE, OVERFOLD, ICM"
                   value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  onChange={event =>
+                    setFormData(prev => ({ ...prev, tags: event.target.value }))
+                  }
+                  placeholder="BB_DEFENSE, OVERFOLD, VS_3BET"
                 />
+                {tagsPreview.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Preview: {tagsPreview.join(" | ")}
+                  </p>
+                )}
               </div>
 
-              {/* Lesson */}
               <div className="space-y-2">
-                <Label htmlFor="lesson">Lesson / Notes</Label>
+                <Label htmlFor="lesson">Lesson</Label>
                 <Textarea
                   id="lesson"
-                  placeholder="What did you learn from this hand?"
                   rows={4}
                   value={formData.lesson}
-                  onChange={(e) => setFormData({ ...formData, lesson: e.target.value })}
+                  onChange={event =>
+                    setFormData(prev => ({ ...prev, lesson: event.target.value }))
+                  }
+                  placeholder="Short preflop takeaway for future reps."
                 />
               </div>
 
-              {/* Link to Leaks */}
-              {allLeaks && allLeaks.length > 0 && (
+              {allLeaks.length > 0 && (
                 <div className="space-y-2">
                   <Label>Link to Leaks</Label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-                    {allLeaks.map((leak) => (
-                      <div key={leak.id} className="flex items-center space-x-2">
+                  <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-border/80 bg-accent/45 p-3">
+                    {allLeaks.map(leak => (
+                      <label
+                        key={leak.id}
+                        className="flex items-start gap-2 rounded-lg p-2 hover:bg-accent/65"
+                      >
                         <Checkbox
-                          id={`leak-${leak.id}`}
                           checked={formData.selectedLeakIds.includes(leak.id)}
                           onCheckedChange={() => toggleLeak(leak.id)}
                         />
-                        <Label htmlFor={`leak-${leak.id}`} className="cursor-pointer flex-1">
-                          <span className="font-medium">{leak.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">({leak.category})</span>
-                        </Label>
-                      </div>
+                        <span className="min-w-0 text-sm">
+                          <span className="block font-semibold">{leak.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {leak.category}
+                          </span>
+                        </span>
+                      </label>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Submit */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setLocation("/hands")}
                   className="flex-1"
+                  onClick={() => setLocation("/hands")}
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={updateHand.isPending || linkLeak.isPending || unlinkLeak.isPending}
-                  className="flex-1"
-                >
-                  {updateHand.isPending ? "Saving..." : "Save Changes"}
+                <Button type="submit" className="flex-1" disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </form>

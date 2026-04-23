@@ -1,128 +1,121 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { trpc } from "@/lib/trpc";
-import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { toast } from "sonner";
+
+interface TournamentFormData {
+  date: string;
+  venue: string;
+  buyIn: string;
+  reEntries: string;
+  finalPosition: string;
+  prize: string;
+  notesOverall: string;
+}
+
+function parseFinalPosition(value: string) {
+  const match = value.match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : undefined;
+}
 
 export default function LogTournament() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
-
-  const [formData, setFormData] = useState({
-    name: "",
-    venue: "",
+  const [formData, setFormData] = useState<TournamentFormData>({
     date: new Date().toISOString().slice(0, 16),
+    venue: "",
     buyIn: "",
-    startingStack: "",
-    fieldSize: "",
     reEntries: "0",
     finalPosition: "",
-    prize: "0",
-    stageReached: "",
-    selfRating: "",
-    mentalRating: "",
+    prize: "",
     notesOverall: "",
   });
 
   const createTournament = trpc.tournaments.create.useMutation({
     onSuccess: () => {
-      toast.success("Tournament logged successfully!");
-      utils.weeks.getCurrent.invalidate();
-      utils.dashboard.getStats.invalidate();
-      utils.tournaments.getByWeek.invalidate();
+      toast.success("Tournament logged");
+      void utils.weeks.getCurrent.invalidate();
+      void utils.dashboard.getStats.invalidate();
+      void utils.tournaments.getByWeek.invalidate();
       setLocation("/");
     },
-    onError: (error) => {
-      toast.error(`Failed to log tournament: ${error.message}`);
+    onError: error => {
+      toast.error(`Could not save tournament: ${error.message}`);
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
 
-    if (!formData.buyIn || parseFloat(formData.buyIn) < 0) {
-      toast.error("Please enter a valid buy-in amount");
+    if (!formData.buyIn) {
+      toast.error("Buy-in is required.");
+      return;
+    }
+
+    if (!formData.finalPosition) {
+      toast.error("Final position is required.");
       return;
     }
 
     createTournament.mutate({
       date: new Date(formData.date),
-      name: formData.name || undefined,
+      buyIn: Number.parseFloat(formData.buyIn),
+      reEntries: Number.parseInt(formData.reEntries, 10) || 0,
+      finalPosition: parseFinalPosition(formData.finalPosition),
+      prize: Number.parseFloat(formData.prize) || 0,
       venue: formData.venue || undefined,
-      buyIn: parseFloat(formData.buyIn),
-      startingStack: formData.startingStack ? parseInt(formData.startingStack) : undefined,
-      fieldSize: formData.fieldSize ? parseInt(formData.fieldSize) : undefined,
-      reEntries: parseInt(formData.reEntries) || 0,
-      finalPosition: formData.finalPosition ? parseInt(formData.finalPosition) : undefined,
-      prize: parseFloat(formData.prize) || 0,
-      stageReached: formData.stageReached ? (formData.stageReached as any) : undefined,
-      selfRating: formData.selfRating ? parseInt(formData.selfRating) : undefined,
-      mentalRating: formData.mentalRating ? parseInt(formData.mentalRating) : undefined,
-      notesOverall: formData.notesOverall || undefined,
+      notesOverall: formData.notesOverall.trim() || undefined,
     });
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="app-shell min-h-screen text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
         <div className="container py-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/")}
+            className="gap-2"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
         </div>
       </header>
 
-      <main className="container py-6">
-        <Card className="max-w-2xl mx-auto">
+      <main className="container max-w-2xl py-6">
+        <Card className="app-surface">
           <CardHeader>
-            <CardTitle>Log Tournament</CardTitle>
-            <CardDescription>Record your tournament results and performance</CardDescription>
+            <CardTitle>Log Tournament Result</CardTitle>
+            <CardDescription>
+              Quick BBA tournament capture so hand review stays in context.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name & Venue */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Tournament Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Thursday Night $220"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="venue">Venue</Label>
-                  <Input
-                    id="venue"
-                    placeholder="Kings Poker, APL"
-                    value={formData.venue}
-                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Date */}
               <div className="space-y-2">
-                <Label htmlFor="date">Date & Time</Label>
+                <Label htmlFor="date">Date &amp; Time</Label>
                 <Input
                   id="date"
                   type="datetime-local"
                   value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
+                  onChange={event =>
+                    setFormData(previous => ({
+                      ...previous,
+                      date: event.target.value,
+                    }))
+                  }
                 />
               </div>
 
-              {/* Buy-in & Re-entries */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="buyIn">Buy-in ($) *</Label>
                   <Input
@@ -132,8 +125,12 @@ export default function LogTournament() {
                     step="0.01"
                     placeholder="220"
                     value={formData.buyIn}
-                    onChange={(e) => setFormData({ ...formData, buyIn: e.target.value })}
-                    required
+                    onChange={event =>
+                      setFormData(previous => ({
+                        ...previous,
+                        buyIn: event.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -143,48 +140,26 @@ export default function LogTournament() {
                     type="number"
                     min="0"
                     value={formData.reEntries}
-                    onChange={(e) => setFormData({ ...formData, reEntries: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Field Size & Starting Stack */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fieldSize">Field Size</Label>
-                  <Input
-                    id="fieldSize"
-                    type="number"
-                    min="1"
-                    placeholder="45"
-                    value={formData.fieldSize}
-                    onChange={(e) => setFormData({ ...formData, fieldSize: e.target.value })}
+                    onChange={event =>
+                      setFormData(previous => ({
+                        ...previous,
+                        reEntries: event.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="startingStack">Starting Stack</Label>
-                  <Input
-                    id="startingStack"
-                    type="number"
-                    min="1"
-                    placeholder="20000"
-                    value={formData.startingStack}
-                    onChange={(e) => setFormData({ ...formData, startingStack: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Final Position & Prize */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="finalPosition">Final Position</Label>
+                  <Label htmlFor="finalPosition">Final Position *</Label>
                   <Input
                     id="finalPosition"
-                    type="number"
-                    min="1"
-                    placeholder="8"
+                    placeholder="e.g. 12"
                     value={formData.finalPosition}
-                    onChange={(e) => setFormData({ ...formData, finalPosition: e.target.value })}
+                    onChange={event =>
+                      setFormData(previous => ({
+                        ...previous,
+                        finalPosition: event.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -194,78 +169,63 @@ export default function LogTournament() {
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="450"
+                    placeholder="0"
                     value={formData.prize}
-                    onChange={(e) => setFormData({ ...formData, prize: e.target.value })}
+                    onChange={event =>
+                      setFormData(previous => ({
+                        ...previous,
+                        prize: event.target.value,
+                      }))
+                    }
                   />
                 </div>
               </div>
 
-              {/* Stage Reached */}
               <div className="space-y-2">
-                <Label htmlFor="stage">Stage Reached</Label>
-                <Select
-                  value={formData.stageReached}
-                  onValueChange={(value) => setFormData({ ...formData, stageReached: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select stage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EARLY">Early</SelectItem>
-                    <SelectItem value="MID">Mid</SelectItem>
-                    <SelectItem value="LATE">Late</SelectItem>
-                    <SelectItem value="FT">Final Table</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Ratings */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="selfRating">Self Rating (0-10)</Label>
-                  <Input
-                    id="selfRating"
-                    type="number"
-                    min="0"
-                    max="10"
-                    placeholder="7"
-                    value={formData.selfRating}
-                    onChange={(e) => setFormData({ ...formData, selfRating: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mentalRating">Mental Rating (0-10)</Label>
-                  <Input
-                    id="mentalRating"
-                    type="number"
-                    min="0"
-                    max="10"
-                    placeholder="8"
-                    value={formData.mentalRating}
-                    onChange={(e) => setFormData({ ...formData, mentalRating: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Overall performance, key hands, mental state..."
-                  rows={4}
-                  value={formData.notesOverall}
-                  onChange={(e) => setFormData({ ...formData, notesOverall: e.target.value })}
+                <Label htmlFor="venue">Venue</Label>
+                <Input
+                  id="venue"
+                  placeholder="Poker room or platform"
+                  value={formData.venue}
+                  onChange={event =>
+                    setFormData(previous => ({
+                      ...previous,
+                      venue: event.target.value,
+                    }))
+                  }
                 />
               </div>
 
-              {/* Submit */}
-              <div className="flex gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setLocation("/")} className="flex-1">
+              <div className="space-y-2">
+                <Label htmlFor="notesOverall">Session Note</Label>
+                <Textarea
+                  id="notesOverall"
+                  rows={4}
+                  placeholder="One quick takeaway from this session."
+                  value={formData.notesOverall}
+                  onChange={event =>
+                    setFormData(previous => ({
+                      ...previous,
+                      notesOverall: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 pt-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-xl"
+                  onClick={() => setLocation("/")}
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createTournament.isPending} className="flex-1">
+                <Button
+                  type="submit"
+                  className="h-11 rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
+                  disabled={createTournament.isPending}
+                >
                   {createTournament.isPending ? "Saving..." : "Save Tournament"}
                 </Button>
               </div>

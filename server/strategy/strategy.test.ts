@@ -56,7 +56,9 @@ async function seedTestChart() {
 
 // ── tests ─────────────────────────────────────────────────────────────────────
 
-describe("Strategy Module", () => {
+const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
+
+describeDb("Strategy Module", () => {
   let testChartId: number;
 
   beforeAll(async () => {

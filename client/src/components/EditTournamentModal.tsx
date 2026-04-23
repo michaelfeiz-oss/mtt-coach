@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { BottomSheetModal } from "./BottomSheetModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +27,7 @@ export function EditTournamentModal({
   isLoading = false,
   tournament,
 }: EditTournamentModalProps) {
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     buyIn: "",
     reEntries: "0",
     startingStack: "",
@@ -34,6 +35,9 @@ export function EditTournamentModal({
     prize: "",
     venue: "",
     notes: "",
+  };
+  const [formData, setFormData] = useState({
+    ...emptyForm,
   });
 
   // Populate form when tournament data is provided
@@ -51,27 +55,28 @@ export function EditTournamentModal({
     }
   }, [tournament, isOpen]);
 
+  const resetForm = () => {
+    setFormData({ ...emptyForm });
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   const handleSubmit = () => {
     if (!formData.buyIn || !formData.finalPosition) {
-      alert("Please fill in required fields");
+      toast.error("Buy-in and final position are required.");
       return;
     }
     onSubmit(formData);
-    setFormData({
-      buyIn: "",
-      reEntries: "0",
-      startingStack: "",
-      finalPosition: "",
-      prize: "",
-      venue: "",
-      notes: "",
-    });
+    resetForm();
   };
 
   return (
     <BottomSheetModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Edit Tournament"
       description="Update result details and notes for this session."
       eyebrow="Tournament Result"
