@@ -44,7 +44,7 @@ function Field({
 }) {
   return (
     <label className="min-w-0 space-y-1">
-      <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-zinc-500">
+      <span className="block text-[11px] font-semibold text-muted-foreground">
         {label}
       </span>
       {children}
@@ -54,7 +54,7 @@ function Field({
 
 function selectClassName(disabled = false) {
   return cn(
-    "h-9 w-full rounded-lg border-white/10 bg-white/[0.06] px-2.5 text-[11px] font-bold text-white shadow-none hover:bg-white/[0.08] focus:ring-orange-400/40",
+    "h-9 w-full rounded-lg border-border/80 bg-input/90 px-2.5 text-[12px] font-semibold text-foreground shadow-none hover:bg-input focus:ring-ring/35",
     disabled && "opacity-50"
   );
 }
@@ -96,7 +96,7 @@ export function PreflopSetupControls({
             <SelectTrigger className={selectClassName()}>
               <SelectValue placeholder="Any decision" />
             </SelectTrigger>
-            <SelectContent className="z-[80] border-zinc-800 bg-zinc-950 text-zinc-100">
+            <SelectContent className="z-[80]">
               <SelectItem value={ANY_VALUE}>Any decision</SelectItem>
               {SPOT_GROUPS.map(group => (
                 <SelectItem key={group} value={group}>
@@ -117,7 +117,7 @@ export function PreflopSetupControls({
             <SelectTrigger className={selectClassName()}>
               <SelectValue placeholder="Any stack" />
             </SelectTrigger>
-            <SelectContent className="z-[80] border-zinc-800 bg-zinc-950 text-zinc-100">
+            <SelectContent className="z-[80]">
               <SelectItem value={ANY_VALUE}>Any stack up to 40bb</SelectItem>
               {STACK_DEPTHS.map(depth => (
                 <SelectItem
@@ -137,7 +137,7 @@ export function PreflopSetupControls({
             <SelectTrigger className={selectClassName()}>
               <SelectValue placeholder="9 players" />
             </SelectTrigger>
-            <SelectContent className="z-[80] border-zinc-800 bg-zinc-950 text-zinc-100">
+            <SelectContent className="z-[80]">
               <SelectItem value={PLAYER_COUNT}>9 players</SelectItem>
             </SelectContent>
           </Select>
@@ -153,7 +153,7 @@ export function PreflopSetupControls({
             <SelectTrigger className={selectClassName()}>
               <SelectValue placeholder="Any hero" />
             </SelectTrigger>
-            <SelectContent className="z-[80] border-zinc-800 bg-zinc-950 text-zinc-100">
+            <SelectContent className="z-[80]">
               <SelectItem value={ANY_VALUE}>Any hero</SelectItem>
               {POSITIONS.map(position => (
                 <SelectItem
@@ -181,7 +181,7 @@ export function PreflopSetupControls({
             >
               <SelectValue placeholder="No opener" />
             </SelectTrigger>
-            <SelectContent className="z-[80] border-zinc-800 bg-zinc-950 text-zinc-100">
+            <SelectContent className="z-[80]">
               <SelectItem value={ANY_VALUE}>Any / no opener</SelectItem>
               {POSITIONS.map(position => (
                 <SelectItem

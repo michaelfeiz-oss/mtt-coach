@@ -46,15 +46,15 @@ export default function HandsList() {
   });
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.13),transparent_26rem),linear-gradient(180deg,#09090b_0%,#18181b_48%,#0f172a_100%)] pb-24 text-white">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-zinc-950/90 backdrop-blur">
+    <div className="app-shell min-h-screen pb-24 text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/")}
-              className="gap-2 text-zinc-300 hover:bg-white/[0.08] hover:text-zinc-100"
+              className="gap-2 text-muted-foreground hover:bg-accent/60 hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
@@ -65,10 +65,10 @@ export default function HandsList() {
       </header>
 
       <main className="container max-w-5xl py-6">
-        <Card className="rounded-[1.2rem] border-white/10 bg-zinc-950/80 shadow-xl shadow-black/25">
+        <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
           <CardHeader>
-            <CardTitle className="text-zinc-100">Preflop Hand Review</CardTitle>
-            <CardDescription className="text-zinc-400">
+            <CardTitle className="text-foreground">Preflop Hand Review</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Scan logged tournament spots by hand, stack, position, decision,
               and lesson.
             </CardDescription>
@@ -82,8 +82,8 @@ export default function HandsList() {
               </div>
             ) : !hands || hands.length === 0 ? (
               <div className="py-12 text-center">
-                <p className="mb-4 text-zinc-300">No preflop hands logged yet</p>
-                <p className="text-sm text-zinc-500">
+                <p className="mb-4 text-secondary-foreground">No preflop hands logged yet</p>
+                <p className="text-sm text-muted-foreground">
                   Use quick capture after a tournament session, then review here.
                 </p>
               </div>
@@ -96,7 +96,7 @@ export default function HandsList() {
                     <div
                       key={hand.id}
                       onClick={() => setLocation(`/hands/${hand.id}`)}
-                      className="w-full cursor-pointer rounded-xl border border-white/10 bg-white/[0.04] p-4 transition-all hover:border-orange-300/40 hover:bg-white/[0.08] hover:shadow-md hover:shadow-black/20"
+                      className="w-full cursor-pointer rounded-xl border border-border/80 bg-accent/45 p-4 transition-all hover:border-border hover:bg-accent/70 hover:shadow-md hover:shadow-black/20"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
@@ -105,7 +105,7 @@ export default function HandsList() {
                               <span className="font-mono text-lg font-bold">{hand.heroHand}</span>
                             )}
                             {hand.heroPosition && (
-                              <span className="rounded bg-white/[0.06] px-2 py-1 text-xs text-zinc-300">
+                              <span className="rounded bg-accent/75 px-2 py-1 text-xs text-secondary-foreground">
                                 {hand.heroPosition}
                               </span>
                             )}
@@ -116,7 +116,7 @@ export default function HandsList() {
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             {hand.spotType && <span>{hand.spotType.replace(/_/g, " ")}</span>}
                             {hand.effectiveStackBb && <span>{hand.effectiveStackBb.toFixed(1)}bb</span>}
                             <span>BBA</span>
@@ -149,7 +149,7 @@ export default function HandsList() {
                               e.stopPropagation();
                               setEditingHandId(hand.id);
                             }}
-                            className="h-8 w-8 p-0 text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-100"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:bg-accent/70 hover:text-foreground"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -164,7 +164,7 @@ export default function HandsList() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          <ChevronRight className="h-5 w-5 text-zinc-500" />
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
                         </div>
                       </div>
                     </div>

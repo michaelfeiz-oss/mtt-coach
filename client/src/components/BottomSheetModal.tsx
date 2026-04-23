@@ -31,31 +31,31 @@ export function BottomSheetModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/75 backdrop-blur-[2px] transition-opacity"
+        className="fixed inset-0 z-40 bg-black/55 backdrop-blur-[4px] transition-opacity"
         onClick={onClose}
       />
 
       {/* Centered Modal Dialog */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-[1.25rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.08),transparent_14rem),linear-gradient(180deg,rgba(24,24,27,0.96),rgba(9,9,11,0.96))] shadow-2xl shadow-black/45">
+        <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-[1.25rem] border border-border/80 bg-popover/96 shadow-[0_16px_40px_rgba(0,0,0,0.34)]">
           {/* Header */}
-          <div className="flex flex-shrink-0 items-start justify-between border-b border-white/10 px-5 py-4 sm:px-6">
+          <div className="flex flex-shrink-0 items-start justify-between border-b border-border/80 bg-background/45 px-5 py-4 sm:px-6">
             <div className="pr-3">
-              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-orange-300">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 {eyebrow}
               </p>
-              <h2 className="text-lg font-black tracking-tight text-zinc-100">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">
                 {title}
               </h2>
               {description && (
-                <p className="mt-1 text-sm text-zinc-400">{description}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{description}</p>
               )}
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="h-8 w-8 rounded-lg border border-white/10 p-0 text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-100"
+              className="h-8 w-8 rounded-lg border border-border/80 bg-accent/45 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -68,7 +68,7 @@ export function BottomSheetModal({
 
           {/* Footer - always visible */}
           {onSubmit && (
-            <div className="flex flex-shrink-0 gap-2.5 border-t border-white/10 bg-black/20 px-5 py-3 sm:px-6">
+            <div className="flex flex-shrink-0 gap-2.5 border-t border-border/80 bg-background/40 px-5 py-3 sm:px-6">
               <Button
                 variant="outline"
                 className="h-10 flex-1 rounded-xl"

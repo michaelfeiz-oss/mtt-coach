@@ -14,8 +14,8 @@ export default function BottomNav() {
   const isActive = (path: string) => location === path;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/90 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-2xl items-center justify-around px-2">
+    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/80 bg-background/95 shadow-[0_-10px_30px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-2xl items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = isActive(tab.path);
@@ -25,17 +25,15 @@ export default function BottomNav() {
               onClick={() => setLocation(tab.path)}
               className={cn(
                 "flex h-full flex-1 items-center justify-center transition",
-                active
-                  ? "text-white"
-                  : "text-muted-foreground hover:text-foreground"
+                active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <span
                 className={cn(
                   "flex min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 transition",
                   active
-                    ? "bg-zinc-950 shadow-lg shadow-zinc-950/15"
-                    : "hover:bg-slate-100"
+                    ? "bg-accent text-foreground shadow-sm shadow-black/25"
+                    : "hover:bg-accent/70"
                 )}
               >
                 <Icon className="h-5 w-5" />

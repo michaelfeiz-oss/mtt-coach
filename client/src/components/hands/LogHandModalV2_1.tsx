@@ -148,10 +148,10 @@ function ChipButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-xl border px-3 py-2 text-left text-xs font-bold transition active:scale-[0.99]",
+        "rounded-xl border px-3 py-2 text-left text-xs font-semibold transition active:scale-[0.99]",
         active
-          ? "border-orange-400/55 bg-orange-500/15 text-orange-200 shadow-sm shadow-orange-950/25"
-          : "border-white/10 bg-white/[0.03] text-zinc-200 hover:border-white/20 hover:bg-white/[0.07]",
+          ? "border-primary/55 bg-primary/15 text-foreground shadow-sm shadow-black/20"
+          : "border-border/80 bg-accent/45 text-secondary-foreground hover:border-border hover:bg-accent/70",
         className
       )}
     >
@@ -170,13 +170,13 @@ function StepIndicator({ currentStep }: { currentStep: StepIndex }) {
         return (
           <div
             key={step}
-            className={cn(
-              "rounded-full border px-2 py-1.5 text-center text-[10px] font-black uppercase tracking-[0.12em]",
+          className={cn(
+              "rounded-full border px-2 py-1.5 text-center text-[10px] font-semibold tracking-[0.06em]",
               active
-                ? "border-orange-500 bg-orange-500 text-white"
+                ? "border-primary bg-primary text-primary-foreground"
                 : done
-                  ? "border-white/20 bg-white/[0.09] text-zinc-100"
-                  : "border-white/10 bg-white/[0.03] text-zinc-500"
+                  ? "border-border bg-accent/70 text-foreground"
+                  : "border-border/80 bg-accent/45 text-muted-foreground"
             )}
           >
             {step}
@@ -189,11 +189,11 @@ function StepIndicator({ currentStep }: { currentStep: StepIndex }) {
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
-      <span className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-border/80 bg-accent/45 px-3 py-2.5">
+      <span className="text-xs font-semibold text-muted-foreground">
         {label}
       </span>
-      <span className="text-right text-sm font-semibold text-zinc-100">
+      <span className="text-right text-sm font-semibold text-foreground">
         {value}
       </span>
     </div>
@@ -439,18 +439,18 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     <Dialog open={isOpen} onOpenChange={open => !open && closeModal()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden rounded-[1.4rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.08),transparent_15rem),linear-gradient(180deg,rgba(24,24,27,0.97),rgba(9,9,11,0.97))] p-0 shadow-2xl shadow-black/45 sm:max-h-[88dvh]"
+        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden rounded-[1.4rem] border border-border/80 bg-popover/96 p-0 shadow-[0_18px_44px_rgba(0,0,0,0.34)] sm:max-h-[88dvh]"
       >
-        <DialogHeader className="border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_17rem),linear-gradient(135deg,#18181b_0%,#09090b_100%)] p-5 text-left text-white">
+        <DialogHeader className="border-b border-border/80 bg-background/45 p-5 text-left text-foreground">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-300">
+              <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
                 Fast Hand Capture
               </p>
               <DialogTitle className="text-2xl font-black tracking-tight">
                 Log Hand
               </DialogTitle>
-              <DialogDescription className="mt-2 text-sm leading-relaxed text-zinc-400">
+              <DialogDescription className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Capture the preflop spot now. Add detail only when it helps.
               </DialogDescription>
             </div>
@@ -459,14 +459,14 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               aria-label="Close hand entry"
               variant="ghost"
               size="sm"
-              className="h-9 w-9 rounded-full p-0 text-zinc-400 hover:bg-white/10 hover:text-white"
+              className="h-9 w-9 rounded-full p-0 text-muted-foreground hover:bg-accent/70 hover:text-foreground"
               onClick={closeModal}
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.06] p-1.5">
+          <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-border/80 bg-accent/55 p-1.5">
             {(["QUICK", "FULL"] as EntryMode[]).map(mode => (
               <button
                 key={mode}
@@ -475,8 +475,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 className={cn(
                   "rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.16em] transition",
                   entryMode === mode
-                    ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
-                    : "text-zinc-400 hover:bg-white/10 hover:text-white"
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-black/20"
+                    : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
                 )}
               >
                 {mode === "QUICK" ? "Quick Log" : "Full Review"}
@@ -485,7 +485,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           </div>
         </DialogHeader>
 
-        <div className="border-b border-white/10 bg-black/20 px-5 py-3">
+        <div className="border-b border-border/80 bg-background/35 px-5 py-3">
           <StepIndicator currentStep={currentStep} />
         </div>
 
@@ -532,8 +532,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-                <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
-                  <Label className="text-sm font-black text-zinc-100">
+                <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
+                  <Label className="text-sm font-semibold text-foreground">
                     Hero Hand
                   </Label>
                   <div className="mt-2">
@@ -549,10 +549,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   />
                 </div>
 
-                <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
+                <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
                   <Label
                     htmlFor="effective-stack"
-                    className="text-sm font-black text-zinc-100"
+                    className="text-sm font-semibold text-foreground"
                   >
                     Effective Stack
                   </Label>
@@ -567,7 +567,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       placeholder="25"
                       className="h-11 rounded-xl"
                     />
-                    <span className="text-sm font-black text-zinc-500">bb</span>
+                    <span className="text-sm font-semibold text-muted-foreground">bb</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {STACK_PRESETS.map(stack => (
@@ -579,7 +579,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         className={cn(
                           "h-8 rounded-full px-3 text-xs font-bold",
                           effectiveStackBb === stack &&
-                            "border-orange-400/55 bg-orange-500/15 text-orange-200"
+                            "border-primary/55 bg-primary/15 text-foreground"
                         )}
                         onClick={() => setEffectiveStackBb(stack)}
                       >
@@ -612,7 +612,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-base font-black text-zinc-100">
@@ -623,7 +623,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       optional.
                     </p>
                   </div>
-                  <Badge className="rounded-full border border-white/10 bg-white/[0.08] text-zinc-100">
+                  <Badge className="rounded-full border border-border/80 bg-accent/60 text-secondary-foreground">
                     Required
                   </Badge>
                 </div>
@@ -679,7 +679,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 </div>
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
                 <button
                   type="button"
                   className="flex w-full items-center justify-between gap-3 text-left"
@@ -693,7 +693,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       Add opener action and player profile when useful.
                     </p>
                   </div>
-                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-xs font-bold text-zinc-300">
+                  <span className="rounded-full border border-border/80 bg-accent/60 px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
                     {fullDetailsVisible ? "Hide" : "Add"}
                   </span>
                 </button>
@@ -781,7 +781,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {currentStep === 2 && (
             <div className="space-y-6">
-              <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-4">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
                 <h3 className="text-base font-black text-zinc-100">
                   Review Signal
                 </h3>
@@ -851,7 +851,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 )}
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
                 <Label
                   htmlFor="lesson"
                   className="text-sm font-black text-zinc-100"
@@ -865,12 +865,12 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   placeholder="One sentence about what to study or do differently next time."
                   className="mt-2 min-h-24 resize-none rounded-xl"
                 />
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {300 - notes.length} characters remaining
                 </p>
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
                 <p className="text-sm font-black text-zinc-100">
                   Optional Tags
                 </p>
@@ -889,7 +889,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
 
               {entryMode === "FULL" && (
-                <div className="rounded-[1rem] border border-white/10 bg-white/[0.02] p-4">
+                <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
                   <p className="text-sm font-black text-zinc-100">
                     Tournament Context
                   </p>
@@ -962,16 +962,16 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {currentStep === 3 && (
             <div className="space-y-5">
-              <div className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-5">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-5">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/15">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
                     <Sparkles className="h-5 w-5" />
                   </span>
                   <div>
-                    <h3 className="text-lg font-black text-zinc-100">
+                    <h3 className="text-lg font-semibold text-foreground">
                       Ready to save
                     </h3>
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-muted-foreground">
                       Quick capture is complete. You can review or edit it
                       later from Hand Review.
                     </p>
@@ -1010,11 +1010,11 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/10 bg-black/20 p-4">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/80 bg-background/35 p-4">
           <Button
             type="button"
             variant="ghost"
-            className="rounded-xl text-zinc-400 hover:text-zinc-100"
+            className="rounded-xl text-muted-foreground hover:bg-accent/55 hover:text-foreground"
             onClick={currentStep === 0 ? closeModal : goBack}
           >
             {currentStep === 0 ? (
@@ -1030,7 +1030,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           {currentStep < 3 ? (
             <Button
               type="button"
-              className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
+              className="h-11 rounded-2xl bg-primary px-5 font-semibold text-primary-foreground shadow-sm shadow-black/20 hover:bg-[#FF8A1F]"
               onClick={goNext}
               disabled={!canAdvance}
             >
@@ -1040,7 +1040,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           ) : (
             <Button
               type="button"
-              className="h-11 rounded-2xl bg-orange-500 px-5 font-black text-white shadow-lg shadow-orange-950/15 hover:bg-orange-600"
+              className="h-11 rounded-2xl bg-primary px-5 font-semibold text-primary-foreground shadow-sm shadow-black/20 hover:bg-[#FF8A1F]"
               onClick={handleSave}
               disabled={!isValid || createHand.isPending}
             >

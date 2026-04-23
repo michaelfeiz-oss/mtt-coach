@@ -284,17 +284,17 @@ export default function StrategyLibrary() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] overflow-x-hidden bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.16),transparent_18rem),linear-gradient(180deg,#09090b_0%,#18181b_42%,#0f172a_100%)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-white">
+    <div className="app-shell min-h-[calc(100dvh-4rem)] overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground">
       <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
-        <header className="rounded-[1.2rem] border border-white/10 bg-zinc-950/78 p-3 shadow-xl shadow-black/20 sm:p-4">
+        <header className="app-surface p-3 sm:p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-950/30">
+                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
                   <BookOpen className="h-4 w-4" />
                 </span>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+                  <p className="text-[11px] font-semibold text-muted-foreground">
                     Hand Ranges
                   </p>
                   <h1 className="truncate text-xl font-black tracking-tight">
@@ -302,7 +302,7 @@ export default function StrategyLibrary() {
                   </h1>
                 </div>
               </div>
-              <p className="mt-1 text-xs text-zinc-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Select a setup, review the range, then train the same spot.
               </p>
             </div>
@@ -310,7 +310,7 @@ export default function StrategyLibrary() {
               <Link href={`/strategy/trainer?chartId=${chart.id}`}>
                 <Button
                   variant="outline"
-                  className="h-9 shrink-0 gap-1.5 rounded-xl border-white/15 bg-white/[0.04] px-3 text-xs font-black text-zinc-100 hover:bg-white/[0.1]"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl border-border/80 bg-accent/55 px-3 text-xs font-semibold text-secondary-foreground hover:bg-accent"
                 >
                   <Play className="h-3.5 w-3.5" />
                   Train
@@ -320,16 +320,16 @@ export default function StrategyLibrary() {
           </div>
         </header>
 
-        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/75 p-3 shadow-xl shadow-black/20 sm:p-3.5">
+        <section className="app-surface bg-card/90 p-3 sm:p-3.5">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Setup
             </p>
             <Button
               type="button"
               variant="ghost"
-              className="h-7 rounded-lg px-2 text-[11px] font-bold text-zinc-300 hover:bg-white/[0.08] hover:text-white"
+              className="h-7 rounded-lg px-2 text-[11px] font-semibold text-muted-foreground hover:bg-accent/60 hover:text-foreground"
               onClick={() => setSetupCollapsed(current => !current)}
             >
               {setupCollapsed ? "Edit setup" : "Collapse"}
@@ -346,9 +346,9 @@ export default function StrategyLibrary() {
               {setupSummary.map(item => (
                 <Badge
                   key={item.label}
-                  className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-zinc-200"
+                  className="rounded-full border border-border/75 bg-accent/55 px-2 py-1 text-[10px] font-semibold text-secondary-foreground"
                 >
-                  <span className="mr-1 text-zinc-400">{item.label}:</span>
+                  <span className="mr-1 text-muted-foreground">{item.label}:</span>
                   <span>{item.value}</span>
                 </Badge>
               ))}
@@ -370,7 +370,7 @@ export default function StrategyLibrary() {
           )}
         </section>
 
-        <section className="rounded-[1.2rem] border border-white/10 bg-zinc-950/78 p-3 shadow-xl shadow-black/20 sm:p-4">
+        <section className="app-surface p-3 sm:p-4">
           {chartLoading && selectedChartId !== undefined && (
             <div className="space-y-3">
               <Skeleton className="h-10 w-56 rounded-xl bg-white/10" />
@@ -387,10 +387,10 @@ export default function StrategyLibrary() {
           )}
 
           {!chart && !chartLoading && (
-            <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.04] p-6 text-center">
-              <BookOpen className="mx-auto h-9 w-9 text-zinc-500" />
+            <div className="rounded-2xl border border-dashed border-border/75 bg-accent/40 p-6 text-center">
+              <BookOpen className="mx-auto h-9 w-9 text-muted-foreground" />
               <p className="mt-3 text-sm font-bold">No chart selected</p>
-              <p className="mt-1 text-xs text-zinc-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {spotsError?.message ??
                   "Choose a supported setup to load a preflop chart."}
               </p>
@@ -401,37 +401,37 @@ export default function StrategyLibrary() {
             <div className="space-y-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-300">
+                  <p className="text-[11px] font-semibold text-muted-foreground">
                     Current Chart
                   </p>
                   <h2 className="mt-0.5 truncate text-lg font-black tracking-tight sm:text-2xl">
                     {chart.title}
                   </h2>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <Badge className="rounded-full bg-orange-500 text-white">
+                    <Badge className="rounded-full bg-primary text-primary-foreground">
                       {chart.stackDepth}bb
                     </Badge>
-                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-200">
+                    <Badge className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground">
                       {SPOT_GROUP_LABELS[chart.spotGroup]}
                     </Badge>
-                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-200">
+                    <Badge className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground">
                       {chart.heroPosition}
                       {chart.villainPosition
                         ? ` vs ${chart.villainPosition}`
                         : ""}
                     </Badge>
-                    <Badge className="rounded-full border-white/10 bg-white/10 text-zinc-300">
+                    <Badge className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground">
                       BBA
                     </Badge>
                   </div>
                 </div>
                 <ActionLegend
                   actions={visibleActions}
-                  className="rounded-xl border border-white/10 bg-black/20 p-1.5"
+                  className="rounded-xl border border-border/80 bg-accent/45 p-1.5"
                 />
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-zinc-950/55 p-1 shadow-inner shadow-black/25 sm:p-2.5">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/50 p-1 shadow-inner shadow-black/25 sm:p-2.5">
                 <div className="md:hidden">
                   <RangeMatrix actions={actionMap} compact size="md" />
                 </div>
@@ -440,8 +440,8 @@ export default function StrategyLibrary() {
                 </div>
               </div>
 
-              <div className="rounded-[1rem] border border-white/10 bg-white/[0.045] p-3 text-zinc-200">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-3 text-secondary-foreground">
+                <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
                   Spot Notes
                 </p>
                 {chartNotes.length > 0 ? (
@@ -451,15 +451,15 @@ export default function StrategyLibrary() {
                         key={index}
                         className="flex gap-2 text-xs leading-relaxed"
                       >
-                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-orange-500 text-[9px] font-black text-white">
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-primary-foreground">
                           {index + 1}
                         </span>
-                        <span className="text-zinc-300">{note}</span>
+                        <span className="text-secondary-foreground">{note}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     No notes saved for this spot yet.
                   </p>
                 )}
@@ -467,7 +467,7 @@ export default function StrategyLibrary() {
 
               <div className="pt-1">
                 <Link href={`/strategy/trainer?chartId=${chart.id}`}>
-                  <Button className="h-11 w-full rounded-xl bg-orange-500 text-sm font-black text-white hover:bg-orange-600">
+                  <Button className="h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#FF8A1F]">
                     Train This Spot
                   </Button>
                 </Link>

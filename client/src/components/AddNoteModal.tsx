@@ -58,8 +58,8 @@ export function AddNoteModal({
     >
       <div className="space-y-3">
         {/* Category */}
-        <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-          <Label htmlFor="category" className="text-zinc-200">
+        <div className="space-y-2 rounded-xl border border-border/80 bg-accent/45 p-3">
+          <Label htmlFor="category" className="text-secondary-foreground">
             Category
           </Label>
           <Select
@@ -81,8 +81,8 @@ export function AddNoteModal({
         </div>
 
         {/* Content */}
-        <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-          <Label htmlFor="content" className="text-zinc-200">
+        <div className="space-y-2 rounded-xl border border-border/80 bg-accent/45 p-3">
+          <Label htmlFor="content" className="text-secondary-foreground">
             Note *
           </Label>
           <Textarea
@@ -92,7 +92,7 @@ export function AddNoteModal({
             onChange={e => setFormData({ ...formData, content: e.target.value })}
             className="min-h-28"
           />
-          <div className="text-xs text-zinc-500">
+          <div className="text-xs text-muted-foreground">
             {formData.content.length} characters
           </div>
         </div>
