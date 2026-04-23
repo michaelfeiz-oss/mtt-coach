@@ -37,14 +37,14 @@ export function ActionLegend({
         return (
           <div
             key={action}
-            className="flex min-h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/85 px-2.5 py-1 shadow-sm shadow-slate-950/5"
+            className="flex min-h-7 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 shadow-sm shadow-black/20"
           >
             <span
               className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]"
               style={{ backgroundColor: style.backgroundColor }}
               aria-hidden="true"
             />
-            <span className="font-semibold leading-none text-slate-700">
+            <span className="font-semibold leading-none text-zinc-200">
               {style.label}
             </span>
           </div>

@@ -43,8 +43,8 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <label className="min-w-0 space-y-1.5">
-      <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+    <label className="min-w-0 space-y-1">
+      <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-zinc-500">
         {label}
       </span>
       {children}
@@ -54,7 +54,7 @@ function Field({
 
 function selectClassName(disabled = false) {
   return cn(
-    "h-10 w-full rounded-xl border-white/10 bg-white/[0.06] text-xs font-bold text-white shadow-none hover:bg-white/[0.08] focus:ring-orange-400/40",
+    "h-9 w-full rounded-lg border-white/10 bg-white/[0.06] px-2.5 text-[11px] font-bold text-white shadow-none hover:bg-white/[0.08] focus:ring-orange-400/40",
     disabled && "opacity-50"
   );
 }
@@ -82,8 +82,8 @@ export function PreflopSetupControls({
   const villainSet = new Set(villainOptions);
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+    <div className={cn("space-y-2", className)}>
+      <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Decision">
           <Select
             value={spotGroup ?? ANY_VALUE}
