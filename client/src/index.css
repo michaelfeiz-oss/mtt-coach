@@ -57,24 +57,24 @@
   --chart-4: #f97316;
   --chart-5: #8b5cf6;
   --radius: 0.75rem;
-  --background: #f6f2ed;
+  --background: #8f8f8f;
   --foreground: #1f2937;
   --card: #ffffff;
   --card-foreground: #111827;
   --popover: #ffffff;
   --popover-foreground: #111827;
-  --secondary: #f3eee7;
+  --secondary: #e0e0e0;
   --secondary-foreground: #4b5563;
-  --muted: #f8f4ef;
+  --muted: #d4d4d4;
   --muted-foreground: #6b7280;
-  --accent: #f6f1ea;
+  --accent: #e8e8e8;
   --accent-foreground: #374151;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e5ddd0;
-  --input: #f8f4ef;
+  --border: #c0c0c0;
+  --input: #d4d4d4;
   --ring: #f97316;
-  --sidebar: #faf6f1;
+  --sidebar: #a0a0a0;
   --sidebar-foreground: #1f2937;
   --sidebar-accent: #f6f1ea;
   --sidebar-accent-foreground: #374151;
@@ -147,13 +147,7 @@
 
 @layer components {
   .app-shell {
-    background-image:
-      radial-gradient(
-        circle at 14% 12%,
-        rgba(249, 115, 22, 0.1),
-        transparent 34%
-      ),
-      linear-gradient(180deg, #f8f4ef 0%, #f3eee7 100%);
+    background-color: #8f8f8f;
   }
 
   .app-surface {
