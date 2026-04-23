@@ -68,7 +68,7 @@ export function AddNoteModal({
     >
       <div className="space-y-3">
         {/* Category */}
-        <div className="space-y-2 rounded-xl border border-border/80 bg-accent/45 p-3">
+        <div className="space-y-2 rounded-xl border border-border bg-accent/65 p-3">
           <Label htmlFor="category" className="text-secondary-foreground">
             Category
           </Label>
@@ -91,7 +91,7 @@ export function AddNoteModal({
         </div>
 
         {/* Content */}
-        <div className="space-y-2 rounded-xl border border-border/80 bg-accent/45 p-3">
+        <div className="space-y-2 rounded-xl border border-border bg-accent/65 p-3">
           <Label htmlFor="content" className="text-secondary-foreground">
             Note *
           </Label>

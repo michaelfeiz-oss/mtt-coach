@@ -44,14 +44,14 @@ function seatTone(
   villainPosition?: string | null
 ) {
   if (position === heroPosition) {
-    return "border-primary/70 bg-primary text-primary-foreground shadow-sm shadow-black/25";
+    return "border-primary/40 bg-primary text-primary-foreground";
   }
 
   if (position === villainPosition) {
-    return "border-sky-300/65 bg-sky-500/70 text-white shadow-sm shadow-black/20";
+    return "border-sky-300 bg-sky-500 text-white";
   }
 
-  return "border-border/75 bg-accent/45 text-muted-foreground";
+  return "border-border bg-accent/80 text-muted-foreground";
 }
 
 export function TableContext({
@@ -70,7 +70,7 @@ export function TableContext({
       className={cn(
         embedded
           ? "space-y-2.5 text-foreground"
-          : "overflow-hidden rounded-[1.2rem] border border-border/80 bg-card/92 p-2.5 text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.24)] sm:p-3 xl:p-4",
+          : "overflow-hidden rounded-[1.2rem] border border-border bg-card p-2.5 text-foreground shadow-[0_10px_24px_rgba(15,23,42,0.12)] sm:p-3 xl:p-4",
         className
       )}
       aria-label="Trainer table context"
@@ -86,12 +86,12 @@ export function TableContext({
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-1">
           {stackDepth !== undefined && (
-            <Badge className="rounded-full bg-orange-500 text-white">
+            <Badge className="rounded-full bg-primary text-primary-foreground">
               {stackDepth}bb
             </Badge>
           )}
           {spotGroup && (
-            <Badge className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground">
+            <Badge className="rounded-full border-border bg-accent/80 text-secondary-foreground">
               {SPOT_GROUP_LABELS[spotGroup].replace(" (Open Raise)", "")}
             </Badge>
           )}
@@ -99,8 +99,8 @@ export function TableContext({
       </div>
 
       <div className="relative mx-auto h-[9.15rem] w-full max-w-md sm:h-[9.65rem]">
-        <div className="absolute inset-x-[16%] inset-y-[21%] rounded-[999px] border border-border/80 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.045),transparent_58%),linear-gradient(145deg,#121922,#171f29)] shadow-inner shadow-black/45" />
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-xl border border-border/70 bg-accent/70 px-2.5 py-1.5 text-center shadow-sm shadow-black/20">
+        <div className="absolute inset-x-[16%] inset-y-[21%] rounded-[999px] border border-border bg-gradient-to-br from-[#f7efe5] via-[#f3e6d4] to-[#efd8bd] shadow-inner" />
+        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-xl border border-border bg-card px-2.5 py-1.5 text-center shadow-sm">
           <span className="text-[10px] font-semibold text-foreground">
             {playerCount}P
           </span>
@@ -150,13 +150,13 @@ export function TableContext({
       </div>
 
       <div className="grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
-        <div className="rounded-lg border border-border/70 bg-accent/50 px-2.5 py-1.5">
+        <div className="rounded-lg border border-border bg-accent/80 px-2.5 py-1.5">
           <span className="font-semibold text-foreground">
             {heroPosition ? displayPosition(heroPosition) : "Mixed"}
           </span>
           <span className="ml-1">hero</span>
         </div>
-        <div className="rounded-lg border border-border/70 bg-accent/50 px-2.5 py-1.5">
+        <div className="rounded-lg border border-border bg-accent/80 px-2.5 py-1.5">
           <span className="font-semibold text-foreground">
             {villainPosition ? displayPosition(villainPosition) : "No opener"}
           </span>

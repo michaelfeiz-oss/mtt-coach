@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLocation } from "wouter";
-import { QuickAddHand } from "@/components/QuickAddHand";
 import { QuickEditHand } from "@/components/QuickEditHand";
 import { useState } from "react";
 
@@ -59,13 +58,15 @@ export default function HandsList() {
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
             </Button>
-            <QuickAddHand />
+            <Button size="sm" className="rounded-full" onClick={() => setLocation("/log")}>
+              Log a Hand
+            </Button>
           </div>
         </div>
       </header>
 
       <main className="container max-w-5xl py-6">
-        <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
+        <Card className="app-surface">
           <CardHeader>
             <CardTitle className="text-foreground">Preflop Hand Review</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -77,7 +78,7 @@ export default function HandsList() {
             {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Skeleton key={i} className="h-20 w-full rounded-xl bg-white/10" />
+                  <Skeleton key={i} className="h-20 w-full rounded-xl" />
                 ))}
               </div>
             ) : !hands || hands.length === 0 ? (
@@ -96,7 +97,7 @@ export default function HandsList() {
                     <div
                       key={hand.id}
                       onClick={() => setLocation(`/hands/${hand.id}`)}
-                      className="w-full cursor-pointer rounded-xl border border-border/80 bg-accent/45 p-4 transition-all hover:border-border hover:bg-accent/70 hover:shadow-md hover:shadow-black/20"
+                      className="w-full cursor-pointer rounded-xl border border-border bg-accent/70 p-4 transition-all hover:bg-accent/90"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
@@ -105,12 +106,12 @@ export default function HandsList() {
                               <span className="font-mono text-lg font-bold">{hand.heroHand}</span>
                             )}
                             {hand.heroPosition && (
-                              <span className="rounded bg-accent/75 px-2 py-1 text-xs text-secondary-foreground">
+                              <span className="rounded bg-accent px-2 py-1 text-xs text-secondary-foreground">
                                 {hand.heroPosition}
                               </span>
                             )}
                             {hand.reviewed && (
-                              <span className="rounded bg-green-500/20 px-2 py-1 text-xs text-green-300">
+                              <span className="rounded bg-emerald-100 px-2 py-1 text-xs text-emerald-700">
                                 Reviewed
                               </span>
                             )}
@@ -121,10 +122,10 @@ export default function HandsList() {
                             {hand.effectiveStackBb && <span>{hand.effectiveStackBb.toFixed(1)}bb</span>}
                             <span>BBA</span>
                             {hand.mistakeSeverity > 0 && (
-                              <span className="font-medium text-red-400">
-                                Mistake: {hand.mistakeSeverity}/3
-                              </span>
-                            )}
+                                <span className="font-medium text-red-600">
+                                  Mistake: {hand.mistakeSeverity}/3
+                                </span>
+                              )}
                           </div>
 
                           {tags.length > 0 && (
@@ -132,7 +133,7 @@ export default function HandsList() {
                               {tags.map((tag: string, i: number) => (
                                 <span
                                   key={i}
-                                  className="rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-300"
+                                  className="rounded bg-sky-100 px-2 py-0.5 text-xs text-sky-700"
                                 >
                                   {tag}
                                 </span>
@@ -160,7 +161,7 @@ export default function HandsList() {
                               e.stopPropagation();
                               setDeletingHandId(hand.id);
                             }}
-                            className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/15 hover:text-red-300"
+                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-100 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

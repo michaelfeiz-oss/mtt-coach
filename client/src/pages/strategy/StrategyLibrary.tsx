@@ -306,18 +306,18 @@ export default function StrategyLibrary() {
   return (
     <div className="app-shell min-h-[calc(100dvh-4rem)] overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground">
       <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
-        <header className="app-surface p-3 sm:p-4">
+        <header className="app-surface p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                   <BookOpen className="h-4 w-4" />
                 </span>
                 <div>
                   <p className="text-[11px] font-semibold text-muted-foreground">
                     Hand Ranges
                   </p>
-                  <h1 className="truncate text-xl font-black tracking-tight">
+                  <h1 className="truncate text-xl font-bold tracking-tight">
                     Preflop Chart Viewer
                   </h1>
                 </div>
@@ -330,7 +330,7 @@ export default function StrategyLibrary() {
               <Link href={`/strategy/trainer?chartId=${chart.id}`}>
                 <Button
                   variant="outline"
-                  className="h-9 shrink-0 gap-1.5 rounded-xl border-border/80 bg-accent/55 px-3 text-xs font-semibold text-secondary-foreground hover:bg-accent"
+                  className="h-9 shrink-0 gap-1.5 rounded-xl px-3 text-xs font-semibold"
                 >
                   <Play className="h-3.5 w-3.5" />
                   Train
@@ -340,7 +340,7 @@ export default function StrategyLibrary() {
           </div>
         </header>
 
-        <section className="app-surface bg-card/90 p-3 sm:p-3.5">
+        <section className="app-surface p-3 sm:p-3.5">
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -366,7 +366,7 @@ export default function StrategyLibrary() {
               {setupSummary.map(item => (
                 <Badge
                   key={item.label}
-                  className="rounded-full border border-border/75 bg-accent/55 px-2 py-1 text-[10px] font-semibold text-secondary-foreground"
+                  className="rounded-full border border-border bg-accent px-2 py-1 text-[10px] font-semibold text-secondary-foreground"
                 >
                   <span className="mr-1 text-muted-foreground">{item.label}:</span>
                   <span>{item.value}</span>
@@ -393,13 +393,13 @@ export default function StrategyLibrary() {
         <section className="app-surface p-3 sm:p-4">
           {chartLoading && selectedChartId !== undefined && (
             <div className="space-y-3">
-              <Skeleton className="h-10 w-56 rounded-xl bg-white/10" />
-              <Skeleton className="h-80 w-full rounded-2xl bg-white/10" />
+              <Skeleton className="h-10 w-56 rounded-xl" />
+              <Skeleton className="h-80 w-full rounded-2xl" />
             </div>
           )}
 
           {chartError && (
-            <Card className="border-red-500/30 bg-red-500/10 text-white">
+            <Card className="border-red-200 bg-red-50 text-red-800">
               <CardContent className="p-4 text-sm">
                 {chartError.message}
               </CardContent>
@@ -407,7 +407,7 @@ export default function StrategyLibrary() {
           )}
 
           {!chart && !chartLoading && (
-            <div className="rounded-2xl border border-dashed border-border/75 bg-accent/40 p-6 text-center">
+            <div className="rounded-2xl border border-dashed border-border bg-accent/70 p-6 text-center">
               <BookOpen className="mx-auto h-9 w-9 text-muted-foreground" />
               <p className="mt-3 text-sm font-bold">No chart selected</p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -447,11 +447,11 @@ export default function StrategyLibrary() {
                 </div>
                 <ActionLegend
                   actions={visibleActions}
-                  className="rounded-xl border border-border/80 bg-accent/45 p-1.5"
+                  className="rounded-xl border border-border bg-accent/70 p-1.5"
                 />
               </div>
 
-              <div className="rounded-[1rem] border border-border/80 bg-accent/50 p-1 shadow-inner shadow-black/25 sm:p-2.5">
+              <div className="rounded-[1rem] border border-border bg-accent/70 p-1 sm:p-2.5">
                 <div className="md:hidden">
                   <RangeMatrix actions={actionMap} compact size="md" />
                 </div>
@@ -460,7 +460,7 @@ export default function StrategyLibrary() {
                 </div>
               </div>
 
-              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-3 text-secondary-foreground">
+              <div className="rounded-[1rem] border border-border bg-accent/70 p-3 text-secondary-foreground">
                 <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
                   Spot Notes
                 </p>

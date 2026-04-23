@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   AlertCircle,
   ChevronRight,
+  Clock3,
   FileText,
   History,
-  Plus,
   Trophy,
   Zap,
 } from "lucide-react";
@@ -16,7 +16,7 @@ import { AddLeakModal, type AddLeakFormData } from "@/components/AddLeakModal";
 import { AddNoteModal, type AddNoteFormData } from "@/components/AddNoteModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,7 @@ interface TournamentFormData {
 
 type LeakCategory = "PREFLOP";
 
-const secondaryActions = [
+const supportingActions = [
   {
     id: "tournament",
     title: "Tournament Result",
@@ -43,13 +43,13 @@ const secondaryActions = [
   {
     id: "leak",
     title: "Preflop Leak",
-    helper: "Track a recurring range or spot mistake",
+    helper: "Capture recurring mistakes you can train",
     icon: AlertCircle,
   },
   {
     id: "note",
     title: "Add Note",
-    helper: "Save a thought or observation",
+    helper: "Save quick takeaways tied to study",
     icon: FileText,
   },
 ] as const;
@@ -68,6 +68,12 @@ function leakCategoryFromType(): LeakCategory {
   return "PREFLOP";
 }
 
+function reviewStatus(reviewed: boolean, mistakeSeverity: number) {
+  if (!reviewed) return "Draft";
+  if (mistakeSeverity > 0) return "Needs Review";
+  return "Reviewed";
+}
+
 export default function Log() {
   const [showLogHandModal, setShowLogHandModal] = useState(false);
   const [showLogTournamentModal, setShowLogTournamentModal] = useState(false);
@@ -76,7 +82,7 @@ export default function Log() {
 
   const utils = trpc.useUtils();
   const { data: recentHands = [], isLoading: handsLoading } =
-    trpc.hands.getByUser.useQuery({ limit: 4 });
+    trpc.hands.getByUser.useQuery({ limit: 8 });
 
   const { mutate: createTournament, isPending: isCreatingTournament } =
     trpc.tournaments.create.useMutation({
@@ -97,6 +103,17 @@ export default function Log() {
       onError: error => toast.error(`Could not save leak: ${error.message}`),
     });
 
+  const statusCounts = useMemo(() => {
+    return recentHands.reduce(
+      (accumulator, hand) => {
+        const status = reviewStatus(hand.reviewed, hand.mistakeSeverity);
+        accumulator[status] = (accumulator[status] ?? 0) + 1;
+        return accumulator;
+      },
+      { Draft: 0, "Needs Review": 0, Reviewed: 0 } as Record<string, number>
+    );
+  }, [recentHands]);
+
   function handleLogTournament(data: TournamentFormData) {
     createTournament({
       date: new Date(),
@@ -112,7 +129,7 @@ export default function Log() {
 
   function handleAddLeak(data: AddLeakFormData) {
     createLeak({
-      name: data.leakType.replace(/-/g, " ") || "Poker leak",
+      name: data.leakType.replace(/_/g, " ") || "Poker leak",
       category: leakCategoryFromType(),
       description: data.notes || "",
       status: "ACTIVE",
@@ -124,7 +141,7 @@ export default function Log() {
     setShowAddNoteModal(false);
   }
 
-  function openSecondaryAction(id: (typeof secondaryActions)[number]["id"]) {
+  function openSupportingAction(id: (typeof supportingActions)[number]["id"]) {
     if (id === "tournament") setShowLogTournamentModal(true);
     if (id === "leak") setShowAddLeakModal(true);
     if (id === "note") setShowAddNoteModal(true);
@@ -132,174 +149,178 @@ export default function Log() {
 
   return (
     <main className="app-shell min-h-screen pb-24 text-foreground">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-5 sm:px-6 lg:py-7">
-        <section className="app-surface-elevated rounded-[1.3rem] p-5 sm:p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
+        <header className="app-surface-elevated p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="app-eyebrow mb-2">
-                Fast Capture
-              </p>
-              <h1 className="text-3xl font-black tracking-tight">Log</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                Capture preflop tournament hands while the decision is fresh.
-                Keep the first pass fast, then review mistakes when you are ready.
+              <p className="app-eyebrow mb-2">Capture Hub</p>
+              <h1 className="text-3xl font-bold tracking-tight">Log</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Capture preflop hands in seconds, then review them with more
+                detail when you have time.
               </p>
             </div>
             <Button
-              className="h-12 rounded-2xl bg-primary px-5 font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]"
+              className="h-11 rounded-xl px-4"
               onClick={() => setShowLogHandModal(true)}
             >
-              <Zap className="mr-2 h-4 w-4" />
+              <Zap className="h-4 w-4" />
               Log a Hand
             </Button>
           </div>
-        </section>
+        </header>
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-          <Card
-            className="cursor-pointer rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5 hover:border-border hover:bg-card"
-            onClick={() => setShowLogHandModal(true)}
-          >
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex items-start gap-4">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
-                  <Zap className="h-7 w-7" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                        Guided Hand Entry
-                      </h2>
-                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                        Preflop context, key action, review signal, and save.
-                      </p>
-                    </div>
-                    <ChevronRight className="mt-1 h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {["Under 60 sec", "Preflop first", "Review later"].map(
-                      label => (
-                        <Badge
-                          key={label}
-                          variant="outline"
-                          className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground"
-                        >
-                          {label}
-                        </Badge>
-                      )
-                    )}
-                  </div>
+        <section className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.8fr)]">
+          <Card className="app-surface">
+            <CardContent className="space-y-4 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold">Quick Hand Log</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Under 30 seconds for the core preflop decision. Add optional
+                    detail later.
+                  </p>
                 </div>
+                <Badge variant="outline" className="rounded-full">
+                  Primary
+                </Badge>
               </div>
+
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "Fast capture", icon: Clock3 },
+                  { label: "Preflop first", icon: Zap },
+                  { label: "Review later", icon: History },
+                ].map(item => (
+                  <Badge key={item.label} variant="outline" className="rounded-full px-3">
+                    <item.icon className="h-3.5 w-3.5" />
+                    {item.label}
+                  </Badge>
+                ))}
+              </div>
+
+              <Button
+                className="h-11 w-full rounded-xl"
+                onClick={() => setShowLogHandModal(true)}
+              >
+                Open Quick Hand Log
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 gap-3">
-            {secondaryActions.map(action => {
+          <div className="grid grid-cols-1 gap-2.5">
+            {supportingActions.map(action => {
               const Icon = action.icon;
-
               return (
                 <button
                   key={action.id}
                   type="button"
-                  className="rounded-[1rem] border border-border/80 bg-card/88 p-4 text-left shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-border hover:bg-card"
-                  onClick={() => openSecondaryAction(action.id)}
+                  className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
+                  onClick={() => openSupportingAction(action.id)}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent text-primary">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground">
-                        {action.title}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{action.helper}</p>
-                    </div>
-                    <Plus className="h-4 w-4 text-muted-foreground" />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">{action.title}</p>
+                    <p className="text-xs text-muted-foreground">{action.helper}</p>
                   </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>
               );
             })}
           </div>
         </section>
 
-        <section className="space-y-3">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="mb-1 text-[11px] font-semibold text-muted-foreground">
-                Review Queue
-              </p>
-              <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                Recent Hands
-              </h2>
-            </div>
-            <Link href="/hands">
-              <Button
-                variant="ghost"
-                size="sm"
-                    className="h-8 rounded-full text-xs font-semibold text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                  >
-                    Open review
-                  </Button>
-            </Link>
-          </div>
-
-          <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
-            <CardContent className="space-y-2 p-4 sm:p-5">
+        <section className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <Card className="app-surface">
+            <CardHeader className="flex flex-row items-end justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg">Recent Hands</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Keep the queue moving with clear statuses.
+                </p>
+              </div>
+              <Link href="/hands">
+                <Button variant="outline" size="sm" className="rounded-full">
+                  Open Review Queue
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-2">
               {handsLoading && (
                 <div className="space-y-2">
                   {[1, 2, 3].map(index => (
-                    <Skeleton key={index} className="h-14 rounded-2xl" />
+                    <Skeleton key={index} className="h-14 rounded-xl" />
                   ))}
                 </div>
               )}
 
               {!handsLoading && recentHands.length === 0 && (
-                <div className="rounded-[1rem] border border-dashed border-border/75 bg-accent/45 p-6 text-center">
-                  <History className="mx-auto h-7 w-7 text-muted-foreground" />
-                  <p className="mt-3 text-sm font-semibold text-foreground">
-                    No hands logged yet
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Start with one fast capture. You can add detail later.
-                  </p>
+                <div className="rounded-xl border border-dashed border-border bg-accent/60 p-4 text-sm text-muted-foreground">
+                  No hands logged yet. Capture your next preflop decision from the
+                  button above.
                 </div>
               )}
 
               {!handsLoading &&
-                recentHands.map(hand => (
-                  <Link key={hand.id} href={`/hands/${hand.id}`}>
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:border-border hover:bg-accent/65 hover:shadow-md hover:shadow-black/20">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {hand.heroHand || "Captured hand"}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {[
-                            hand.heroPosition,
-                            hand.effectiveStackBb
-                              ? `${Math.round(hand.effectiveStackBb)}bb`
-                              : null,
-                            hand.spotType?.replace(/_/g, " "),
-                          ]
-                            .filter(Boolean)
-                            .join(" - ") || "Ready for review"}
-                        </p>
+                recentHands.map(hand => {
+                  const status = reviewStatus(hand.reviewed, hand.mistakeSeverity);
+                  return (
+                    <Link key={hand.id} href={`/hands/${hand.id}`}>
+                      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-accent/60 p-3 transition hover:bg-accent/85">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">
+                            {hand.heroHand || "Captured hand"}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {[
+                              hand.heroPosition,
+                              hand.effectiveStackBb
+                                ? `${Math.round(hand.effectiveStackBb)}bb`
+                                : null,
+                              hand.spotType?.replace(/_/g, " "),
+                            ]
+                              .filter(Boolean)
+                              .join(" • ") || "Needs review details"}
+                          </p>
+                        </div>
+                        <Badge
+                          className={cn(
+                            "rounded-full",
+                            status === "Reviewed" &&
+                              "bg-emerald-500/15 text-emerald-700",
+                            status === "Needs Review" &&
+                              "bg-amber-500/15 text-amber-700",
+                            status === "Draft" && "bg-slate-200 text-slate-700"
+                          )}
+                        >
+                          {status}
+                        </Badge>
                       </div>
-                      <Badge
-                        className={cn(
-                          "shrink-0 rounded-full",
-                          hand.reviewed
-                            ? "bg-emerald-500 text-white"
-                            : "bg-zinc-800 text-zinc-100"
-                        )}
-                      >
-                        {hand.reviewed ? "Reviewed" : "Review"}
-                      </Badge>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
+            </CardContent>
+          </Card>
+
+          <Card className="app-surface">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-sm font-semibold">Queue Status</p>
+              {[
+                { label: "Draft", value: statusCounts.Draft },
+                { label: "Needs Review", value: statusCounts["Needs Review"] },
+                { label: "Reviewed", value: statusCounts.Reviewed },
+              ].map(stat => (
+                <div
+                  key={stat.label}
+                  className="flex items-center justify-between rounded-lg border border-border bg-accent/70 px-3 py-2"
+                >
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-sm font-semibold">{stat.value}</p>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </section>

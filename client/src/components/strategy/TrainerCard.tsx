@@ -107,14 +107,14 @@ export function TrainerCard({
         {showContextBadges && (
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             {stackDepth !== undefined && (
-              <Badge className="rounded-full bg-primary px-2.5 py-0.5 text-primary-foreground shadow-sm shadow-black/20">
+              <Badge className="rounded-full bg-primary px-2.5 py-0.5 text-primary-foreground">
                 {stackDepth}bb
               </Badge>
             )}
             {heroPosition && (
               <Badge
                 variant="outline"
-                className="rounded-full border-border/80 bg-accent/55 px-2.5 py-0.5 text-secondary-foreground"
+                className="rounded-full border-border bg-accent/80 px-2.5 py-0.5 text-secondary-foreground"
               >
                 {heroPosition}
                 {villainPosition ? ` vs ${villainPosition}` : ""}
@@ -125,7 +125,7 @@ export function TrainerCard({
 
         <div
           className={cn(
-            "rounded-[1rem] border border-border/75 bg-accent/50 px-3.5 py-3 shadow-inner shadow-black/25",
+            "rounded-[1rem] border border-border bg-accent/75 px-3.5 py-3",
             compact && "px-3 py-2.5"
           )}
         >
@@ -155,10 +155,10 @@ export function TrainerCard({
           if (isRevealed) {
             if (action === correctAction) {
               extraClass =
-                "border-green-400/80 bg-green-500/20 text-green-200 shadow-[0_0_0_1px_rgba(34,197,94,0.35)]";
+                "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-[0_0_0_1px_rgba(16,185,129,0.24)]";
             } else if (action === selectedAction && action !== correctAction) {
               extraClass =
-                "border-red-400/80 bg-red-500/20 text-red-200 shadow-[0_0_0_1px_rgba(239,68,68,0.35)]";
+                "border-red-300 bg-red-50 text-red-700 shadow-[0_0_0_1px_rgba(239,68,68,0.22)]";
             } else {
               extraClass = "opacity-45";
             }
@@ -187,12 +187,12 @@ export function TrainerCard({
       </div>
 
       {isRevealed && showInlineResult && (
-        <div className="space-y-4 rounded-3xl border border-border/80 bg-accent/50 p-4">
+        <div className="space-y-4 rounded-2xl border border-border bg-accent/70 p-4">
           <div className="text-center">
             <p
               className={cn(
                 "text-base font-bold",
-                selectedAction === correctAction ? "text-green-300" : "text-red-300"
+                selectedAction === correctAction ? "text-emerald-700" : "text-red-700"
               )}
             >
               {selectedAction === correctAction ? "Correct" : "Incorrect"}
@@ -210,11 +210,11 @@ export function TrainerCard({
             )}
           </div>
           <Button
-            className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]"
+            className="h-11 w-full rounded-xl text-base font-semibold"
             onClick={handleNext}
           >
             Next Hand
-            <span className="ml-2 rounded-lg bg-white/15 px-2 py-0.5 text-xs">
+            <span className="ml-2 rounded-lg bg-primary/15 px-2 py-0.5 text-xs">
               Enter
             </span>
           </Button>
@@ -225,7 +225,7 @@ export function TrainerCard({
         <div className="flex justify-end">
           <Button
             variant="ghost"
-            className="h-7 rounded-lg px-2.5 text-[11px] font-semibold text-muted-foreground hover:bg-accent/55 hover:text-secondary-foreground"
+            className="h-7 rounded-lg px-2.5 text-[11px] font-semibold text-muted-foreground hover:bg-accent hover:text-secondary-foreground"
             onClick={onSkip}
           >
             Skip hand
@@ -254,7 +254,7 @@ export function TrainerCard({
     <div
       data-chart-id={chartId}
       className={cn(
-        "overflow-hidden rounded-[1.75rem] border border-border/80 bg-card/92 p-5 text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.24)] sm:p-7",
+        "overflow-hidden rounded-[1.75rem] border border-border bg-card p-5 text-foreground shadow-[0_10px_28px_rgba(15,23,42,0.14)] sm:p-7",
         compact && "space-y-3 p-4 sm:p-5",
         className
       )}
