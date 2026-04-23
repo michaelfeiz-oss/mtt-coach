@@ -186,6 +186,7 @@ export default function Dashboard() {
             type="button"
             onClick={() => setLocation("/strategy/library")}
             className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
+            style={{ backgroundColor: "#f9fee1" }}
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-primary">
               <Layers className="h-5 w-5" />
@@ -201,6 +202,7 @@ export default function Dashboard() {
             type="button"
             onClick={() => setLocation("/strategy/trainer")}
             className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
+            style={{ backgroundColor: "#f9fee1" }}
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Target className="h-5 w-5" />
