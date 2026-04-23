@@ -160,12 +160,12 @@ export default function HandDetail() {
           </div>
         </header>
         <main className="container py-6">
-          <Card className="app-surface">
-            <CardHeader>
-              <Skeleton className="h-8 w-56" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Skeleton className="h-14 w-full" />
+            <Card className="app-surface">
+              <CardHeader>
+                <Skeleton className="h-8 w-56" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-14 w-full" />
               <Skeleton className="h-14 w-full" />
               <Skeleton className="h-24 w-full" />
             </CardContent>
@@ -384,11 +384,11 @@ export default function HandDetail() {
               {allLeaks.length > 0 && (
                 <div className="space-y-2">
                   <Label>Link to Leaks</Label>
-                  <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-border/80 bg-accent/45 p-3">
+                  <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-border bg-accent/70 p-3">
                     {allLeaks.map(leak => (
                       <label
                         key={leak.id}
-                        className="flex items-start gap-2 rounded-lg p-2 hover:bg-accent/65"
+                        className="flex items-start gap-2 rounded-lg p-2 hover:bg-accent/90"
                       >
                         <Checkbox
                           checked={formData.selectedLeakIds.includes(leak.id)}

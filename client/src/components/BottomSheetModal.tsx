@@ -36,9 +36,9 @@ export function BottomSheetModal({
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-lg flex-col overflow-hidden rounded-[1.25rem] border border-border/80 bg-popover/96 p-0 shadow-[0_16px_40px_rgba(0,0,0,0.34)]"
+        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-xl flex-col overflow-hidden rounded-[1.25rem] border border-border bg-popover p-0 shadow-[0_18px_42px_rgba(15,23,42,0.2)]"
       >
-        <DialogHeader className="flex-shrink-0 border-b border-border/80 bg-background/45 px-5 py-4 text-left sm:px-6">
+        <DialogHeader className="flex-shrink-0 border-b border-border bg-accent/50 px-5 py-4 text-left sm:px-6">
           <div className="flex items-start justify-between gap-3">
             <div className="pr-3">
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -58,7 +58,7 @@ export function BottomSheetModal({
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="h-8 w-8 rounded-lg border border-border/80 bg-accent/45 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="h-8 w-8 rounded-lg border border-border bg-card p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Close dialog"
             >
               <X className="h-4 w-4" />
@@ -71,7 +71,7 @@ export function BottomSheetModal({
         </div>
 
         {onSubmit && (
-          <div className="flex flex-shrink-0 gap-2.5 border-t border-border/80 bg-background/40 px-5 py-3 sm:px-6">
+          <div className="flex flex-shrink-0 gap-2.5 border-t border-border bg-accent/45 px-5 py-3 sm:px-6">
             <Button
               type="button"
               variant="outline"
@@ -82,7 +82,7 @@ export function BottomSheetModal({
             </Button>
             <Button
               type="button"
-              className="h-10 flex-1 rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
+              className="h-10 flex-1 rounded-xl"
               onClick={onSubmit}
               disabled={isLoading}
             >

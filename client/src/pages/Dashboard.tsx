@@ -1,17 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import {
-  Edit2,
+  ArrowRight,
+  ClipboardCheck,
   FileText,
   Hand,
   Layers,
@@ -19,6 +10,10 @@ import {
   Trophy,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { EditTournamentModal } from "@/components/EditTournamentModal";
 
 type TournamentActivity = {
@@ -31,13 +26,6 @@ type TournamentActivity = {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [currentWeek, setCurrentWeek] = useState(1);
-  const [todayDrill, setTodayDrill] = useState<{
-    title: string;
-    description: string;
-    tool: string;
-    week: number;
-    dayName: string;
-  } | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<any>(null);
 
@@ -64,26 +52,6 @@ export default function Dashboard() {
     const weekNumber = Math.ceil(dayOfYear / 7);
     const cycleWeek = ((weekNumber - 1) % 12) + 1;
     setCurrentWeek(cycleWeek);
-
-    const dayOfWeek = today.getDay();
-    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
-    setTodayDrill({
-      title: "Preflop Range Reps",
-      description:
-        "Review one BBA chart, then drill hands from the same spot.",
-      tool: "Range Trainer",
-      week: cycleWeek,
-      dayName: [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-      ][dayIndex],
-    });
   }, []);
 
   const studyProgress = dashboardStats
@@ -96,12 +64,17 @@ export default function Dashboard() {
   const recentActivity: TournamentActivity[] =
     tournaments?.map((t: any) => ({
       id: t.id,
-      title: `Tournament - ${t.venue || "Tournament"} ${
-        t.buyIn > 0 ? "$" + t.buyIn : ""
-      } - ${t.netResult >= 0 ? "+" : ""}$${Math.abs(t.netResult).toFixed(0)}`,
+      title: `${t.venue || "Tournament"} ${
+        t.buyIn > 0 ? `$${t.buyIn}` : ""
+      }`,
       time: new Date(t.date).toLocaleDateString(),
       tournament: t,
     })) || [];
+
+  const pendingReviewCount = useMemo(
+    () => recentActivity.filter(activity => activity.tournament.netResult < 0).length,
+    [recentActivity]
+  );
 
   function handleEditTournament(data: any) {
     if (!selectedTournament) return;
@@ -118,208 +91,200 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="app-shell min-h-screen pb-24 text-foreground">
-      <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-5 sm:px-6">
-        <header className="app-surface-elevated p-5">
-          <p className="app-eyebrow mb-2">
-            MTT Coach
-          </p>
-          <h1 className="text-2xl font-black tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Preflop tournament study, hand logs, and notes in one place.
+    <main className="app-shell min-h-screen pb-24 text-foreground">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
+        <header className="app-surface-elevated p-5 sm:p-6">
+          <p className="app-eyebrow mb-2">Daily Workspace</p>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Choose the next preflop task, drill reps, and capture lessons while
+            they are still fresh.
           </p>
         </header>
 
-        {todayDrill && (
-          <Card className="overflow-hidden rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold text-foreground">
-                Today&apos;s Training
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Week {currentWeek} - {todayDrill.dayName}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+        <Card className="app-surface">
+          <CardContent className="space-y-4 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-foreground">
-                  {todayDrill.title}
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Today&apos;s Focus
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Focus: {todayDrill.description}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground/80">
-                  Tool: {todayDrill.tool} - BBA only - up to 40bb
+                <h2 className="mt-1 text-xl font-semibold">
+                  Continue Preflop Session
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Open a chart, run trainer reps, then log one hand for review.
                 </p>
               </div>
               <Button
-                className="h-11 w-full rounded-xl bg-primary font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
+                className="h-11 rounded-xl px-4"
                 onClick={() => setLocation("/study")}
               >
                 Start Session
+                <ArrowRight className="h-4 w-4" />
               </Button>
-            </CardContent>
-          </Card>
-        )}
+            </div>
 
-        <section className="space-y-2">
-          <h3 className="text-[11px] font-semibold text-muted-foreground">
-            Preflop Study
-          </h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Card
-              className="group cursor-pointer rounded-[1.2rem] border-border/80 bg-card/88 shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-border hover:bg-card"
-              onClick={() => setLocation("/strategy/library")}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                { label: "BBA", value: "Only" },
+                { label: "Stack Cap", value: "40bb" },
+                { label: "Review Queue", value: `${pendingReviewCount}` },
+                { label: "Week", value: `${currentWeek}` },
+              ].map(item => (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-border bg-accent/70 px-3 py-2"
+                >
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className="text-sm font-semibold">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            {
+              label: "Log Hand",
+              icon: Hand,
+              onClick: () => setLocation("/log"),
+            },
+            {
+              label: "Tournament",
+              icon: Trophy,
+              onClick: () => setLocation("/log"),
+            },
+            {
+              label: "Add Leak",
+              icon: ClipboardCheck,
+              onClick: () => setLocation("/log"),
+            },
+            {
+              label: "Add Note",
+              icon: FileText,
+              onClick: () => setLocation("/log"),
+            },
+          ].map(action => (
+            <button
+              key={action.label}
+              type="button"
+              onClick={action.onClick}
+              className="app-surface flex items-center gap-2 p-3 text-left transition hover:-translate-y-0.5"
             >
-              <CardContent className="flex items-center gap-3 pb-4 pt-4">
-                <div className="rounded-xl bg-accent p-2.5 text-primary shadow-md shadow-black/20 transition group-hover:scale-105">
-                  <Layers className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold leading-tight text-foreground">
-                    Hand Ranges
-                  </p>
-                  <p className="mt-0.5 text-xs leading-tight text-muted-foreground">
-                    BBA tournament charts up to 40bb
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card
-              className="group cursor-pointer rounded-[1.2rem] border-border/80 bg-card/88 shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-border hover:bg-card"
-              onClick={() => setLocation("/strategy/trainer")}
-            >
-              <CardContent className="flex items-center gap-3 pb-4 pt-4">
-                <div className="rounded-xl bg-primary p-2.5 text-primary-foreground shadow-md shadow-black/20 transition group-hover:scale-105">
-                  <Target className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold leading-tight text-foreground">
-                    Range Trainer
-                  </p>
-                  <p className="mt-0.5 text-xs leading-tight text-muted-foreground">
-                    Drill current setup or rotate random preflop spots
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
+                <action.icon className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-semibold">{action.label}</span>
+            </button>
+          ))}
         </section>
 
-        <section className="space-y-2">
-          <h3 className="text-[11px] font-semibold text-muted-foreground">
-            Quick Actions
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant="outline"
-              size="lg"
-              className="flex h-auto flex-col gap-1 rounded-xl border-border/80 bg-card/88 py-3 text-foreground shadow-sm shadow-black/20 hover:bg-card"
-              onClick={() => setLocation("/log")}
-            >
-              <Trophy className="h-5 w-5 text-orange-400" />
-              <span className="text-xs font-medium">Log Tournament</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="flex h-auto flex-col gap-1 rounded-xl border-border/80 bg-card/88 py-3 text-foreground shadow-sm shadow-black/20 hover:bg-card"
-              onClick={() => setLocation("/log")}
-            >
-              <Hand className="h-5 w-5 text-blue-300" />
-              <span className="text-xs font-medium">Log Hand</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="flex h-auto flex-col gap-1 rounded-xl border-border/80 bg-card/88 py-3 text-foreground shadow-sm shadow-black/20 hover:bg-card"
-              onClick={() => setLocation("/log")}
-            >
-              <FileText className="h-5 w-5 text-zinc-300" />
-              <span className="text-xs font-medium">My Notes</span>
-            </Button>
-          </div>
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setLocation("/strategy/library")}
+            className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-primary">
+              <Layers className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Hand Ranges</p>
+              <p className="text-xs text-muted-foreground">
+                Open the current chart setup quickly.
+              </p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocation("/strategy/trainer")}
+            className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Target className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Range Trainer</p>
+              <p className="text-xs text-muted-foreground">
+                Drill current spot and review misses.
+              </p>
+            </div>
+          </button>
         </section>
 
-        <section className="space-y-2">
-          <h3 className="text-[11px] font-semibold text-muted-foreground">
-            This Week&apos;s Progress
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <Card className="rounded-[1.2rem] border-border/80 bg-card/88 shadow-sm shadow-black/20">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-black text-blue-400">
-                  {dashboardStats?.studyHours.toFixed(0) || "0"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">Hours Studied</p>
-                <Progress value={studyProgress} className="mt-2 h-1" />
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            {
+              title: "Study Hours",
+              value: dashboardStats?.studyHours.toFixed(0) || "0",
+              progress: studyProgress,
+            },
+            {
+              title: "Tournaments",
+              value: `${dashboardStats?.tournamentsCount || 0}`,
+              progress: tournamentsProgress,
+            },
+            {
+              title: "Range Reps",
+              value: "0",
+              progress: 0,
+            },
+            {
+              title: "Max Stack",
+              value: "40bb",
+              progress: 100,
+            },
+          ].map(stat => (
+            <Card key={stat.title} className="app-surface">
+              <CardContent className="space-y-2 p-3">
+                <p className="text-xs text-muted-foreground">{stat.title}</p>
+                <p className="text-xl font-semibold">{stat.value}</p>
+                <Progress value={stat.progress} className="h-1.5" />
               </CardContent>
             </Card>
-            <Card className="rounded-[1.2rem] border-border/80 bg-card/88 shadow-sm shadow-black/20">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-black text-orange-400">0</p>
-                <p className="mt-1 text-xs text-muted-foreground">Range Reps</p>
-                <Progress value={50} className="mt-2 h-1" />
-              </CardContent>
-            </Card>
-            <Card className="rounded-[1.2rem] border-border/80 bg-card/88 shadow-sm shadow-black/20">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-black text-green-400">
-                  {dashboardStats?.tournamentsCount || "0"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">APT Sessions</p>
-                <Progress value={tournamentsProgress} className="mt-2 h-1" />
-              </CardContent>
-            </Card>
-            <Card className="rounded-[1.2rem] border-border/80 bg-card/88 shadow-sm shadow-black/20">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-black text-purple-400">40</p>
-                <p className="mt-1 text-xs text-muted-foreground">Max Stack bb</p>
-                <Progress value={75} className="mt-2 h-1" />
-              </CardContent>
-            </Card>
-          </div>
+          ))}
         </section>
 
-        <section className="space-y-2">
-          <h3 className="text-[11px] font-semibold text-muted-foreground">
-            Recent Activity
-          </h3>
-          <div className="space-y-2">
+        <Card className="app-surface">
+          <CardHeader className="flex flex-row items-end justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg">Recent Activity</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Last tournament updates and result edits.
+              </p>
+            </div>
+            <Badge variant="outline">Latest {recentActivity.length}</Badge>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {recentActivity.length === 0 && (
+              <div className="rounded-xl border border-dashed border-border bg-accent/50 p-4 text-sm text-muted-foreground">
+                No activity yet this week. Start with one quick hand log.
+              </div>
+            )}
+
             {recentActivity.map(activity => (
-              <Card
+              <button
                 key={activity.id}
-                className="rounded-xl border-border/80 bg-card/88 shadow-sm transition hover:border-border hover:bg-card"
+                type="button"
+                onClick={() => {
+                  setSelectedTournament(activity.tournament);
+                  setShowEditModal(true);
+                }}
+                className="flex w-full items-center justify-between rounded-xl border border-border bg-accent/50 p-3 text-left transition hover:bg-accent/75"
               >
-                <CardContent className="flex items-start justify-between gap-3 pt-4">
-                  <div className="flex min-w-0 flex-1 items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-orange-300">
-                      <Trophy className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {activity.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
-                    </div>
-                  </div>
-                  {activity.tournament && (
-                    <button
-                      onClick={() => {
-                        setSelectedTournament(activity.tournament);
-                        setShowEditModal(true);
-                      }}
-                      className="ml-2 flex-shrink-0 rounded-lg p-2 transition-colors hover:bg-accent/65"
-                      title="Edit tournament"
-                    >
-                      <Edit2 className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                    </button>
-                  )}
-                </CardContent>
-              </Card>
+                <div>
+                  <p className="text-sm font-semibold">{activity.title}</p>
+                  <p className="text-xs text-muted-foreground">{activity.time}</p>
+                </div>
+                <Badge variant="outline">
+                  {activity.tournament.netResult >= 0 ? "Win" : "Review"}
+                </Badge>
+              </button>
             ))}
-          </div>
-        </section>
+          </CardContent>
+        </Card>
       </div>
 
       <EditTournamentModal
@@ -329,6 +294,7 @@ export default function Dashboard() {
         isLoading={isUpdatingTournament}
         tournament={selectedTournament}
       />
-    </div>
+    </main>
   );
 }
+

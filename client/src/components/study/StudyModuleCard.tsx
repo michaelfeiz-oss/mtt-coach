@@ -20,24 +20,24 @@ const toneClasses: Record<
   { icon: string; border: string; meta: string }
 > = {
   orange: {
-    icon: "bg-primary text-primary-foreground shadow-black/20",
+    icon: "bg-primary text-primary-foreground",
     border: "hover:border-border",
-    meta: "border-border/75 bg-accent/60 text-secondary-foreground",
+    meta: "border-border bg-accent/80 text-secondary-foreground",
   },
   zinc: {
-    icon: "bg-accent text-secondary-foreground shadow-black/20",
+    icon: "bg-accent text-secondary-foreground",
     border: "hover:border-border",
-    meta: "border-border/75 bg-accent/55 text-secondary-foreground",
+    meta: "border-border bg-accent/80 text-secondary-foreground",
   },
   blue: {
-    icon: "bg-blue-500/85 text-white shadow-black/20",
+    icon: "bg-sky-500 text-white",
     border: "hover:border-border",
-    meta: "border-border/75 bg-accent/55 text-secondary-foreground",
+    meta: "border-border bg-accent/80 text-secondary-foreground",
   },
   green: {
-    icon: "bg-emerald-500/85 text-white shadow-black/20",
+    icon: "bg-emerald-500 text-white",
     border: "hover:border-border",
-    meta: "border-border/75 bg-accent/55 text-secondary-foreground",
+    meta: "border-border bg-accent/80 text-secondary-foreground",
   },
 };
 
@@ -56,7 +56,7 @@ export function StudyModuleCard({
     <Link href={href}>
       <div
         className={cn(
-          "group block h-full rounded-[1.2rem] border border-border/80 bg-card/92 p-4 shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:bg-card hover:shadow-[0_14px_28px_rgba(0,0,0,0.28)]",
+          "group block h-full rounded-[1.2rem] border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-accent/55",
           styles.border,
           className
         )}
@@ -65,7 +65,7 @@ export function StudyModuleCard({
           <div className="flex items-start justify-between gap-3">
             <span
               className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-lg",
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-sm",
                 styles.icon
               )}
             >

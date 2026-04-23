@@ -157,8 +157,8 @@ export function StudyCockpit() {
 
   return (
     <main className="app-shell min-h-screen pb-24 text-foreground">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:py-7">
-        <section className="app-surface-elevated overflow-hidden rounded-[1.4rem] p-5 sm:p-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
+        <section className="app-surface-elevated overflow-hidden p-5 sm:p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="app-eyebrow mb-2">
@@ -198,7 +198,7 @@ export function StudyCockpit() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-[1.5rem] border border-border/75 bg-accent/55 p-4">
+          <div className="mt-5 rounded-xl border border-border bg-accent/70 p-4">
             <p className="text-xs font-semibold text-muted-foreground">
               Next action
             </p>
@@ -272,7 +272,7 @@ export function StudyCockpit() {
               }
             />
 
-            <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
+            <Card className="app-surface">
               <CardContent className="space-y-4 p-4 sm:p-5">
                 {recentSpots.length > 0 ? (
                   <div className="space-y-2">
@@ -286,7 +286,7 @@ export function StudyCockpit() {
                           key={spot.id}
                           href={`/strategy/library?chartId=${spot.id}`}
                         >
-                          <div className="rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:-translate-y-0.5 hover:border-border hover:bg-accent/65 hover:shadow-md hover:shadow-black/20">
+                          <div className="rounded-xl border border-border bg-accent/65 p-3 transition hover:-translate-y-0.5 hover:bg-accent/90">
                             <p className="truncate text-sm font-semibold text-foreground">
                               {spot.title}
                             </p>
@@ -346,7 +346,7 @@ export function StudyCockpit() {
                   {!handsLoading &&
                     hands.slice(0, 3).map(hand => (
                       <Link key={hand.id} href={`/hands/${hand.id}`}>
-                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:-translate-y-0.5 hover:border-border hover:bg-accent/65 hover:shadow-md hover:shadow-black/20">
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-accent/65 p-3 transition hover:-translate-y-0.5 hover:bg-accent/90">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-foreground">
                               {hand.heroHand || "Hand captured"}
@@ -376,14 +376,14 @@ export function StudyCockpit() {
               helper="Saved trainer history and leak data drive this area."
             />
 
-            <Card className="rounded-[1.2rem] border-border/80 bg-card/92 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
+            <Card className="app-surface">
               <CardContent className="space-y-4 p-4 sm:p-5">
                 {isAuthenticated && weakSpots.length > 0 && (
                   <div className="space-y-2">
                     {weakSpots.slice(0, 4).map(spot => (
                       <div
                         key={spot.chartId}
-                        className="rounded-xl border border-border/80 bg-accent/45 p-3"
+                        className="rounded-xl border border-border bg-accent/65 p-3"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -417,7 +417,7 @@ export function StudyCockpit() {
                       </div>
                       {topLeaks.map(leak => (
                         <Link key={leak.id} href={`/leaks/${leak.id}`}>
-                          <div className="rounded-xl border border-border/80 bg-accent/45 p-3 transition hover:border-border hover:bg-accent/65">
+                          <div className="rounded-xl border border-border bg-accent/65 p-3 transition hover:bg-accent/90">
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-foreground">
@@ -445,7 +445,7 @@ export function StudyCockpit() {
                       {missedHands.slice(0, 3).map(hand => (
                         <div
                           key={`${hand.chartId}-${hand.handCode}`}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-accent/45 p-3"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border bg-accent/65 p-3"
                         >
                           <div>
                             <p className="font-mono text-base font-semibold text-foreground">
@@ -478,7 +478,7 @@ export function StudyCockpit() {
                   )}
 
                 {!isAuthenticated && (
-                  <p className="rounded-xl border border-border/80 bg-accent/45 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                  <p className="rounded-xl border border-border bg-accent/70 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
                     Range practice works while logged out. Saved weak spots
                     appear here for authenticated users.
                   </p>
@@ -523,7 +523,7 @@ export function StudyCockpit() {
               },
             ].map(item => (
               <Link key={item.href} href={item.href}>
-                <div className="group rounded-[1rem] border border-border/80 bg-card/88 p-4 shadow-sm shadow-black/20 transition hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-md hover:shadow-black/25">
+                <div className="group rounded-[1rem] border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-accent/55">
                   <item.icon className="h-5 w-5 text-primary" />
                   <p className="mt-3 text-sm font-semibold text-foreground">
                     {item.title}
@@ -548,7 +548,7 @@ export function StudyCockpit() {
               {recentAttempts.map(attempt => (
                 <div
                   key={attempt.id}
-                  className="rounded-[1rem] border border-border/80 bg-card/88 p-3 shadow-sm shadow-black/20"
+                  className="rounded-[1rem] border border-border bg-card p-3 shadow-sm"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-mono text-base font-semibold text-foreground">

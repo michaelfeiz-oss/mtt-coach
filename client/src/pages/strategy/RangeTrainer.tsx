@@ -468,16 +468,16 @@ export default function RangeTrainer() {
   return (
     <div className="app-shell min-h-[calc(100dvh-4rem)] overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground">
       <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
-        <header className="app-surface p-3 sm:p-4">
+        <header className="app-surface p-4 sm:p-5">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Target className="h-4 w-4" />
             </span>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-muted-foreground">
                 Range Trainer
               </p>
-              <h1 className="truncate text-xl font-black tracking-tight">
+              <h1 className="truncate text-xl font-bold tracking-tight">
                 Preflop Drill Flow
               </h1>
             </div>
@@ -487,7 +487,7 @@ export default function RangeTrainer() {
           </p>
         </header>
 
-        <section className="app-surface bg-card/90 p-3 sm:p-3.5">
+        <section className="app-surface p-3 sm:p-3.5">
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -513,7 +513,7 @@ export default function RangeTrainer() {
               {setupSummary.map(item => (
                 <Badge
                   key={item.label}
-                  className="rounded-full border border-border/75 bg-accent/55 px-2 py-1 text-[10px] font-semibold text-secondary-foreground"
+                  className="rounded-full border border-border bg-accent px-2 py-1 text-[10px] font-semibold text-secondary-foreground"
                 >
                   <span className="mr-1 text-muted-foreground">{item.label}:</span>
                   <span>{item.value}</span>
@@ -546,12 +546,12 @@ export default function RangeTrainer() {
               </div>
               <div className="flex items-center gap-3 text-[11px] text-secondary-foreground">
                 <span className="inline-flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                   {sessionStats.correct}/{sessionStats.total}
                 </span>
                 <span>{accuracy}%</span>
                 <span className="inline-flex items-center gap-1">
-                  <Flame className="h-3.5 w-3.5 text-amber-300" />
+                  <Flame className="h-3.5 w-3.5 text-amber-600" />
                   {sessionStats.streak}
                 </span>
               </div>
@@ -567,14 +567,14 @@ export default function RangeTrainer() {
         <section className="space-y-3">
           {trainerEnabled &&
             (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
-              <Skeleton className="h-[480px] w-full rounded-[1.2rem] bg-white/10" />
+              <Skeleton className="h-[480px] w-full rounded-[1.2rem]" />
             )}
 
           {trainerSpot && (
             <div className="space-y-3">
               <div
                 ref={questionCardRef}
-                className="space-y-2.5 rounded-[1.2rem] border border-border/80 bg-card/92 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.24)] sm:p-3.5"
+                className="space-y-2.5 rounded-[1.2rem] border border-border bg-card p-3 shadow-[0_10px_26px_rgba(15,23,42,0.12)] sm:p-3.5"
               >
                 <TableContext
                   title={trainerSpot.chart.title}
@@ -627,7 +627,7 @@ export default function RangeTrainer() {
                       className="border-border/80 bg-card/90 shadow-none"
                     />
                   </div>
-                  <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-3">
+                  <div className="rounded-[1rem] border border-border bg-accent/70 p-3">
                     <p className="text-[11px] font-semibold text-muted-foreground">
                       Takeaway
                     </p>
@@ -644,7 +644,7 @@ export default function RangeTrainer() {
             !trainerSpotLoading &&
             !trainerSpotFetching &&
             !trainerSpot && (
-              <Card className="rounded-[1.2rem] border-dashed border-border/80 bg-accent/45 text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
+              <Card className="rounded-[1.2rem] border-dashed border-border bg-accent/70 text-foreground">
                 <CardContent className="space-y-4 p-6 text-center">
                   <Target className="mx-auto h-10 w-10 text-muted-foreground" />
                   <div>

@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { PREFLOP_SCENARIOS } from "@shared/preflopScenarios";
 
 interface AddLeakModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export function AddLeakModal({
       isLoading={isLoading}
     >
       <div className="space-y-3">
-        <div className="grid gap-3 rounded-xl border border-border/80 bg-accent/45 p-3 sm:grid-cols-2">
+        <div className="grid gap-3 rounded-xl border border-border bg-accent/65 p-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="leakType">Leak Type *</Label>
             <Select
@@ -87,13 +88,11 @@ export function AddLeakModal({
                 <SelectValue placeholder="Select leak type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="preflop-ranges">Preflop Ranges</SelectItem>
-                <SelectItem value="blind-defense">Blind Defense</SelectItem>
-                <SelectItem value="3bet-defense">3-Bet / 4-Bet</SelectItem>
-                <SelectItem value="facing-3bet">Facing 3-Bet</SelectItem>
-                <SelectItem value="jam-fold">Jam / Fold Thresholds</SelectItem>
-                <SelectItem value="bvb">Blind vs Blind</SelectItem>
-                <SelectItem value="other-preflop">Other Preflop Spot</SelectItem>
+                {PREFLOP_SCENARIOS.map(scenario => (
+                  <SelectItem key={scenario.id} value={scenario.id}>
+                    {scenario.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -154,7 +153,7 @@ export function AddLeakModal({
           </div>
         </div>
 
-        <div className="space-y-2 rounded-xl border border-border/80 bg-accent/45 p-3">
+        <div className="space-y-2 rounded-xl border border-border bg-accent/65 p-3">
           <Label htmlFor="notes">Notes</Label>
           <Textarea
             id="notes"

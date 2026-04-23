@@ -1,57 +1,52 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-const SUITS = ["♠", "♥", "♦", "♣"];
-const SUIT_ABBREV = { "♠": "s", "♥": "h", "♦": "d", "♣": "c" };
-const RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { generateHandGrid, RANKS } from "@shared/strategy";
+import { normalizeHandNotation } from "@/lib/handNotation";
 
 interface HandPickerProps {
   value: string;
   onChange: (hand: string) => void;
 }
 
+const HAND_GRID = generateHandGrid();
+
+function handCellTone(handCode: string) {
+  if (handCode.length === 2) return "bg-violet-100 text-violet-800 border-violet-200";
+  if (handCode.endsWith("s")) return "bg-sky-100 text-sky-800 border-sky-200";
+  return "bg-amber-100 text-amber-800 border-amber-200";
+}
+
 export function HandPicker({ value, onChange }: HandPickerProps) {
   const [open, setOpen] = useState(false);
-  const [selectedCards, setSelectedCards] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const normalizedValue = normalizeHandNotation(value);
+  const normalizedSearch = normalizeHandNotation(search);
 
-  const handleCardClick = (card: string) => {
-    if (selectedCards.includes(card)) {
-      setSelectedCards(selectedCards.filter((c) => c !== card));
-    } else if (selectedCards.length < 2) {
-      setSelectedCards([...selectedCards, card]);
-    }
-  };
+  const filteredGrid = useMemo(() => {
+    if (!normalizedSearch) return HAND_GRID;
+    return HAND_GRID.map(row =>
+      row.map(handCode =>
+        handCode.includes(normalizedSearch) || normalizedSearch.includes(handCode)
+          ? handCode
+          : ""
+      )
+    );
+  }, [normalizedSearch]);
 
-  const handleConfirm = () => {
-    if (selectedCards.length === 2) {
-      // Format as "AhKs" (rank + suit abbreviation)
-      const hand = selectedCards
-        .map((card) => {
-          const rank = card[0];
-          const suit = card[1];
-          return rank + SUIT_ABBREV[suit as keyof typeof SUIT_ABBREV];
-        })
-        .join("");
-      onChange(hand);
-      setOpen(false);
-      setSelectedCards([]);
-    }
-  };
-
-  const generateCards = () => {
-    const cards: string[] = [];
-    for (const rank of RANKS) {
-      for (const suit of SUITS) {
-        cards.push(`${rank}${suit}`);
-      }
-    }
-    return cards;
-  };
-
-  const getSuitColor = (suit: string) => {
-    return suit === "♥" || suit === "♦" ? "text-red-600" : "text-black";
-  };
+  function choose(handCode: string) {
+    onChange(handCode);
+    setOpen(false);
+    setSearch("");
+  }
 
   return (
     <>
@@ -59,61 +54,84 @@ export function HandPicker({ value, onChange }: HandPickerProps) {
         type="button"
         variant="outline"
         onClick={() => setOpen(true)}
-        className="w-full justify-start"
+        className="h-11 w-full justify-between rounded-xl px-3"
       >
-        {value || "Select your hand"}
+        <span>{normalizedValue || "Choose hand"}</span>
+        <span className="text-xs text-muted-foreground">Matrix</span>
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Select Your Hand</DialogTitle>
+        <DialogContent className="max-h-[88dvh] w-[calc(100vw-1rem)] max-w-3xl overflow-hidden rounded-2xl p-0">
+          <DialogHeader className="border-b border-border bg-accent/60 px-4 py-3 text-left">
+            <DialogTitle className="text-lg">Select Hero Hand</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Pick from the 13x13 preflop grid or search with shorthand like AKs.
+            </p>
           </DialogHeader>
 
-          <div className="grid grid-cols-13 gap-2 max-h-96 overflow-y-auto p-4">
-            {generateCards().map((card) => {
-              const suit = card[1];
-              return (
-                <button
-                  key={card}
-                  onClick={() => handleCardClick(card)}
-                  className={`
-                    w-12 h-16 rounded border-2 flex items-center justify-center text-sm font-bold
-                    transition-all cursor-pointer
-                    ${
-                      selectedCards.includes(card)
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
-                    }
-                    ${getSuitColor(suit)}
-                  `}
-                >
-                  {card}
-                </button>
-              );
-            })}
-          </div>
+          <div className="space-y-3 px-4 py-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder="Search hand class (AKs, QQ, JTo)"
+                className="pl-9"
+              />
+            </div>
 
-          <div className="flex gap-2 justify-between items-center pt-4 px-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <span className="text-sm font-semibold">
-              {selectedCards.length === 2
-                ? `Selected: ${selectedCards
-                    .map((c) => c[0] + SUIT_ABBREV[c[1] as keyof typeof SUIT_ABBREV])
-                    .join("")}`
-                : `Select (${selectedCards.length}/2)`}
-            </span>
-            <Button
-              onClick={handleConfirm}
-              disabled={selectedCards.length !== 2}
-            >
-              Select
-            </Button>
+            <div className="max-h-[58dvh] overflow-auto rounded-xl border border-border bg-card p-2">
+              <div
+                className="grid gap-1"
+                style={{ gridTemplateColumns: `repeat(${RANKS.length}, minmax(0, 1fr))` }}
+              >
+                {filteredGrid.flat().map((handCode, index) => {
+                  if (!handCode) {
+                    return (
+                      <span
+                        key={`empty-${index}`}
+                        className="h-8 rounded-md border border-transparent bg-transparent"
+                      />
+                    );
+                  }
+
+                  const selected = normalizedValue === handCode;
+                  return (
+                    <button
+                      key={handCode}
+                      type="button"
+                      onClick={() => choose(handCode)}
+                      className={cn(
+                        "h-8 rounded-md border text-[11px] font-semibold transition",
+                        handCellTone(handCode),
+                        selected &&
+                          "border-primary bg-primary text-primary-foreground shadow-sm"
+                      )}
+                    >
+                      {handCode}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                Pair: violet • Suited: blue • Offsuit: amber
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
     </>
   );
 }
+

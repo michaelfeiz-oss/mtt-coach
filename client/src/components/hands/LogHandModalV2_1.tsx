@@ -1,8 +1,8 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { Check, ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { HandPicker } from "../HandPicker";
-import type { SpotType } from "./SpotTypeSelector";
 import type { StreetAction, SizeBucket } from "./PlayerActionsForm";
 import type { VillainRangeType, VillainType } from "./VillainProfileForm";
 import type { GameType, TournamentPhase } from "./ContextForm";
@@ -24,10 +30,13 @@ import type { HandResult } from "./OutcomeForm";
 import {
   buildStreetDataJson,
   deriveHeroDecision,
-  extractSpotPosition,
-  extractSpotSubtype,
   mapUiSpotTypeToDb,
 } from "./utils";
+import { normalizeHandNotation, isValidHandNotation } from "@/lib/handNotation";
+import {
+  PREFLOP_SCENARIOS,
+  type PreflopScenarioId,
+} from "@shared/preflopScenarios";
 
 interface LogHandModalV2_1Props {
   isOpen: boolean;
@@ -35,58 +44,34 @@ interface LogHandModalV2_1Props {
 }
 
 type EntryMode = "QUICK" | "FULL";
-type StepIndex = 0 | 1 | 2 | 3;
 type HeroActionType = NonNullable<StreetAction["heroAction"]>["type"];
 type VillainActionType = NonNullable<StreetAction["villainAction"]>["type"];
 
-const STEPS = ["Context", "Action", "Review", "Save"] as const;
-
-const SPOT_OPTIONS: Array<{
-  id: SpotType;
-  label: string;
-  helper: string;
-}> = [
-  {
-    id: "SINGLE_RAISED_POT_IP",
-    label: "RFI / Open",
-    helper: "Open or continue before the flop",
-  },
-  {
-    id: "SINGLE_RAISED_POT_OOP",
-    label: "Defend vs RFI",
-    helper: "Blind or position defend",
-  },
-  { id: "THREE_BET_POT_IP", label: "3-Bet", helper: "Apply preflop pressure" },
-  { id: "THREE_BET_POT_OOP", label: "Facing 3-Bet", helper: "Continue, fold, or jam" },
-  { id: "BLINDS_VS_BLIND", label: "BvB", helper: "Blind versus blind" },
-  { id: "LIMPED_POT", label: "Limp", helper: "Limp or iso spot" },
-  { id: "FOUR_BET_POT", label: "4-Bet / Jam", helper: "High-pressure preflop spot" },
-];
-
-const POSITIONS = ["UTG", "UTG+1", "MP", "HJ", "CO", "BTN", "SB", "BB"];
 const STACK_PRESETS = ["15", "20", "25", "40"];
-const STREETS: StreetAction["street"][] = ["PREFLOP"];
-const HERO_ACTIONS: HeroActionType[] = [
-  "CALL",
-  "RAISE",
-  "JAM",
-  "FOLD",
-];
+const POSITIONS = ["UTG", "UTG+1", "MP", "HJ", "CO", "BTN", "SB", "BB"];
+const HERO_ACTIONS: HeroActionType[] = ["FOLD", "CALL", "RAISE", "JAM"];
 const VILLAIN_ACTIONS: VillainActionType[] = ["RAISE", "JAM"];
 const SIZE_BUCKETS: SizeBucket[] = ["SMALL", "MEDIUM", "BIG"];
+const TAG_OPTIONS = [
+  "RFI",
+  "DEFEND",
+  "3BET",
+  "FACING_3BET",
+  "BVB",
+  "JAM_SPOT",
+];
 const VILLAIN_TYPES: Array<{ id: VillainType; label: string }> = [
   { id: "UNKNOWN", label: "Unknown" },
-  { id: "REC", label: "Rec" },
+  { id: "REC", label: "Recreational" },
   { id: "GOOD_REG", label: "Good reg" },
-  { id: "AGGRO_REG", label: "Aggro" },
+  { id: "AGGRO_REG", label: "Aggro reg" },
   { id: "NIT", label: "Nit" },
-  { id: "MANIAC", label: "Maniac" },
 ];
 const RANGE_TYPES: Array<{ id: VillainRangeType; label: string }> = [
   { id: "WIDE", label: "Wide" },
   { id: "STANDARD", label: "Standard" },
   { id: "TIGHT", label: "Tight" },
-  { id: "NUTS_WEIGHTED", label: "Nuts-heavy" },
+  { id: "NUTS_WEIGHTED", label: "Nuts weighted" },
 ];
 const RESULTS: Array<{ id: HandResult; label: string }> = [
   { id: "WON", label: "Won" },
@@ -106,30 +91,9 @@ const PHASES: Array<{ id: TournamentPhase; label: string }> = [
   { id: "ITM", label: "ITM" },
   { id: "FINAL_TABLE", label: "Final table" },
 ];
-const TAG_OPTIONS = [
-  "PREFLOP",
-  "BLIND_DEFENSE",
-  "3BET_POT",
-  "OVERFOLD",
-  "SPEW",
-];
 
 function needsSize(action?: HeroActionType | VillainActionType) {
-  return action === "BET" || action === "RAISE";
-}
-
-function normalizeHandInput(value: string) {
-  const clean = value.trim().replace(/\s+/g, "");
-
-  if (clean.length === 3) {
-    return `${clean.slice(0, 2).toUpperCase()}${clean[2].toLowerCase()}`;
-  }
-
-  if (clean.length === 4) {
-    return `${clean[0].toUpperCase()}${clean[1].toLowerCase()}${clean[2].toUpperCase()}${clean[3].toLowerCase()}`;
-  }
-
-  return clean.toUpperCase();
+  return action === "RAISE";
 }
 
 function ChipButton({
@@ -139,7 +103,7 @@ function ChipButton({
   className,
 }: {
   active: boolean;
-  children: ReactNode;
+  children: React.ReactNode;
   onClick: () => void;
   className?: string;
 }) {
@@ -148,10 +112,10 @@ function ChipButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-xl border px-3 py-2 text-left text-xs font-semibold transition active:scale-[0.99]",
+        "rounded-lg border px-3 py-2 text-xs font-semibold transition",
         active
-          ? "border-primary/55 bg-primary/15 text-foreground shadow-sm shadow-black/20"
-          : "border-border/80 bg-accent/45 text-secondary-foreground hover:border-border hover:bg-accent/70",
+          ? "border-primary bg-primary/12 text-primary"
+          : "border-border bg-card text-secondary-foreground hover:bg-accent/80",
         className
       )}
     >
@@ -160,81 +124,37 @@ function ChipButton({
   );
 }
 
-function StepIndicator({ currentStep }: { currentStep: StepIndex }) {
-  return (
-    <div className="grid grid-cols-4 gap-1.5">
-      {STEPS.map((step, index) => {
-        const active = index === currentStep;
-        const done = index < currentStep;
-
-        return (
-          <div
-            key={step}
-          className={cn(
-              "rounded-full border px-2 py-1.5 text-center text-[10px] font-semibold tracking-[0.06em]",
-              active
-                ? "border-primary bg-primary text-primary-foreground"
-                : done
-                  ? "border-border bg-accent/70 text-foreground"
-                  : "border-border/80 bg-accent/45 text-muted-foreground"
-            )}
-          >
-            {step}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-border/80 bg-accent/45 px-3 py-2.5">
-      <span className="text-xs font-semibold text-muted-foreground">
-        {label}
-      </span>
-      <span className="text-right text-sm font-semibold text-foreground">
-        {value}
-      </span>
-    </div>
-  );
-}
-
 export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [entryMode, setEntryMode] = useState<EntryMode>("QUICK");
-  const [currentStep, setCurrentStep] = useState<StepIndex>(0);
+  const [showOptional, setShowOptional] = useState(false);
 
-  const [spotType, setSpotType] = useState<SpotType | "">("");
-  const [heroPosition, setHeroPosition] = useState("");
+  const [scenarioId, setScenarioId] = useState<PreflopScenarioId>("OPEN_RFI");
   const [heroHand, setHeroHand] = useState("");
-  const [effectiveStackBb, setEffectiveStackBb] = useState("");
-
-  const [streetAction, setStreetAction] = useState<StreetAction | null>({
-    street: "PREFLOP",
-  });
-  const [boardRunout, setBoardRunout] = useState("");
-  const [showActionDetails, setShowActionDetails] = useState(false);
-
+  const [effectiveStackBb, setEffectiveStackBb] = useState("20");
+  const [heroPosition, setHeroPosition] = useState("");
+  const [openerPosition, setOpenerPosition] = useState("");
+  const [heroDecision, setHeroDecision] = useState<HeroActionType | "">("");
+  const [heroSizeBucket, setHeroSizeBucket] = useState<SizeBucket>("MEDIUM");
+  const [villainAction, setVillainAction] = useState<VillainActionType | "">("");
+  const [villainSizeBucket, setVillainSizeBucket] = useState<SizeBucket>("MEDIUM");
   const [villainType, setVillainType] = useState<VillainType | "">("");
   const [villainRangeType, setVillainRangeType] =
     useState<VillainRangeType | "">("");
+  const [confidence, setConfidence] = useState("MEDIUM");
+  const [reviewed, setReviewed] = useState(false);
+  const [mistakeSeverity, setMistakeSeverity] = useState(0);
+  const [tags, setTags] = useState<string[]>([]);
+  const [note, setNote] = useState("");
+  const [result, setResult] = useState<HandResult | "">("");
   const [gameType, setGameType] = useState<GameType | "">("");
   const [tournamentPhase, setTournamentPhase] =
     useState<TournamentPhase | "">("");
   const [isPko, setIsPko] = useState(false);
 
-  const [reviewed, setReviewed] = useState(false);
-  const [mistakeStreet, setMistakeStreet] =
-    useState<StreetAction["street"]>("PREFLOP");
-  const [mistakeSeverity, setMistakeSeverity] = useState(0);
-  const [result, setResult] = useState<HandResult | "">("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [notes, setNotes] = useState("");
-
   const utils = trpc.useUtils();
   const createHand = trpc.hands.create.useMutation({
     onSuccess: async () => {
-      toast.success("Hand saved");
+      toast.success("Hand saved to review queue");
       await utils.hands.getByUser.invalidate();
       resetForm();
       onClose();
@@ -244,44 +164,47 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     },
   });
 
+  const normalizedHand = normalizeHandNotation(heroHand);
   const stackNumber = Number.parseFloat(effectiveStackBb);
   const isStackValid =
     Number.isFinite(stackNumber) && stackNumber > 0 && stackNumber <= 40;
-  const isContextValid = Boolean(
-    spotType && heroPosition && heroHand && isStackValid
+  const selectedScenario = useMemo(
+    () => PREFLOP_SCENARIOS.find(item => item.id === scenarioId),
+    [scenarioId]
   );
-  const isActionValid = Boolean(streetAction?.street && streetAction.heroAction);
-  const canAdvance =
-    currentStep === 0 ? isContextValid : currentStep === 1 ? isActionValid : true;
-  const isValid = isContextValid && isActionValid;
-  const fullDetailsVisible = entryMode === "FULL" || showActionDetails;
+  const spotType = selectedScenario?.uiSpotType;
 
-  const selectedSpotLabel = useMemo(
-    () => SPOT_OPTIONS.find(option => option.id === spotType)?.label ?? "Not set",
-    [spotType]
+  const isFormValid = Boolean(
+    selectedScenario &&
+      heroPosition &&
+      heroDecision &&
+      isStackValid &&
+      isValidHandNotation(normalizedHand)
   );
 
   function resetForm() {
     setEntryMode("QUICK");
-    setCurrentStep(0);
-    setSpotType("");
-    setHeroPosition("");
+    setShowOptional(false);
+    setScenarioId("OPEN_RFI");
     setHeroHand("");
-    setEffectiveStackBb("");
-    setStreetAction({ street: "PREFLOP" });
-    setBoardRunout("");
-    setShowActionDetails(false);
+    setEffectiveStackBb("20");
+    setHeroPosition("");
+    setOpenerPosition("");
+    setHeroDecision("");
+    setHeroSizeBucket("MEDIUM");
+    setVillainAction("");
+    setVillainSizeBucket("MEDIUM");
     setVillainType("");
     setVillainRangeType("");
+    setConfidence("MEDIUM");
+    setReviewed(false);
+    setMistakeSeverity(0);
+    setTags([]);
+    setNote("");
+    setResult("");
     setGameType("");
     setTournamentPhase("");
     setIsPko(false);
-    setReviewed(false);
-    setMistakeStreet("PREFLOP");
-    setMistakeSeverity(0);
-    setResult("");
-    setSelectedTags([]);
-    setNotes("");
   }
 
   function closeModal() {
@@ -289,121 +212,43 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     onClose();
   }
 
-  function updateStreet(street: StreetAction["street"]) {
-    setStreetAction(previous => ({
-      street,
-      villainAction: previous?.villainAction,
-      heroAction: previous?.heroAction,
-    }));
-    setMistakeStreet(street);
-  }
-
-  function updateHeroAction(action: HeroActionType) {
-    setStreetAction(previous => ({
-      street: previous?.street ?? "PREFLOP",
-      villainAction: previous?.villainAction,
-      heroAction: {
-        type: action,
-        sizeBucket: needsSize(action) ? "MEDIUM" : undefined,
-      },
-    }));
-  }
-
-  function updateHeroSize(sizeBucket: SizeBucket) {
-    setStreetAction(previous => {
-      if (!previous?.heroAction) return previous;
-      return {
-        ...previous,
-        heroAction: {
-          ...previous.heroAction,
-          sizeBucket,
-        },
-      };
-    });
-  }
-
-  function updateVillainAction(action: VillainActionType) {
-    setStreetAction(previous => ({
-      street: previous?.street ?? "PREFLOP",
-      heroAction: previous?.heroAction,
-      villainAction: {
-        type: action,
-        sizeBucket: needsSize(action) ? "MEDIUM" : undefined,
-      },
-    }));
-  }
-
-  function updateVillainSize(sizeBucket: SizeBucket) {
-    setStreetAction(previous => {
-      if (!previous?.villainAction) return previous;
-      return {
-        ...previous,
-        villainAction: {
-          ...previous.villainAction,
-          sizeBucket,
-        },
-      };
-    });
-  }
-
-  function toggleTag(tag: string) {
-    setSelectedTags(previous =>
-      previous.includes(tag)
-        ? previous.filter(existing => existing !== tag)
-        : [...previous, tag]
-    );
-  }
-
-  function goNext() {
-    if (!canAdvance) {
-      toast.error(
-        currentStep === 0
-          ? "Add preflop spot, position, hand, and a stack up to 40bb first."
-          : "Select the key street and hero decision first."
-      );
-      return;
-    }
-
-    setCurrentStep(step => Math.min(3, step + 1) as StepIndex);
-  }
-
-  function goBack() {
-    setCurrentStep(step => Math.max(0, step - 1) as StepIndex);
-  }
-
   function handleSave() {
-    if (!isValid || !spotType || !streetAction) {
-      toast.error("Complete context and key decision before saving.");
+    if (!isFormValid || !spotType || !heroDecision || !selectedScenario) {
+      toast.error("Fill spot, hand, stack, position, and hero decision first.");
       return;
     }
 
-    const dbSpotType = mapUiSpotTypeToDb(spotType);
-    const spotPosition = extractSpotPosition(spotType);
-    const spotSubtype = extractSpotSubtype(spotType);
-    const heroDecision = deriveHeroDecision(streetAction);
-    const cleanNotes = notes.trim();
-    const cleanBoard = boardRunout.trim().toUpperCase();
+    const streetAction: StreetAction = {
+      street: "PREFLOP",
+      heroAction: {
+        type: heroDecision,
+        sizeBucket: needsSize(heroDecision) ? heroSizeBucket : undefined,
+      },
+      villainAction: villainAction
+        ? {
+            type: villainAction,
+            sizeBucket: needsSize(villainAction) ? villainSizeBucket : undefined,
+          }
+        : undefined,
+    };
 
     const streetDataJson = buildStreetDataJson({
       spotType,
-      spotPosition,
-      spotSubtype,
       heroPosition,
-      heroHand: normalizeHandInput(heroHand),
+      heroHand: normalizedHand,
       effectiveStackBb: stackNumber,
-      flopBoard: cleanBoard,
-      turnCard: "",
-      riverCard: "",
       streetAction,
       villainType,
       villainRangeType,
       result,
       evLossBb: mistakeSeverity,
-      notes: cleanNotes,
+      notes: note.trim(),
     });
 
     if (streetDataJson.meta) {
       streetDataJson.meta.context = {
+        openerPosition: openerPosition || undefined,
+        confidence,
         gameType: gameType || undefined,
         tournamentPhase: tournamentPhase || undefined,
         isPko,
@@ -413,25 +258,16 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
     createHand.mutate({
       heroPosition,
-      heroHand: normalizeHandInput(heroHand),
-      boardRunout: cleanBoard || undefined,
+      heroHand: normalizedHand,
       effectiveStackBb: stackNumber,
-      spotType: dbSpotType,
+      spotType: mapUiSpotTypeToDb(spotType),
       streetDataJson: JSON.stringify(streetDataJson),
-      reviewed,
-      mistakeStreet:
-        mistakeSeverity > 0 ? mistakeStreet || streetAction.street : undefined,
+      reviewed: entryMode === "FULL" ? reviewed : false,
+      mistakeStreet: mistakeSeverity > 0 ? "PREFLOP" : undefined,
       mistakeSeverity,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
-      lesson: cleanNotes || undefined,
-      heroDecisionPreflop:
-        streetAction.street === "PREFLOP" ? heroDecision : undefined,
-      heroDecisionFlop:
-        streetAction.street === "FLOP" ? heroDecision : undefined,
-      heroDecisionTurn:
-        streetAction.street === "TURN" ? heroDecision : undefined,
-      heroDecisionRiver:
-        streetAction.street === "RIVER" ? heroDecision : undefined,
+      tags: tags.length > 0 ? tags : undefined,
+      lesson: note.trim() || undefined,
+      heroDecisionPreflop: deriveHeroDecision(streetAction),
     });
   }
 
@@ -439,44 +275,42 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     <Dialog open={isOpen} onOpenChange={open => !open && closeModal()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden rounded-[1.4rem] border border-border/80 bg-popover/96 p-0 shadow-[0_18px_44px_rgba(0,0,0,0.34)] sm:max-h-[88dvh]"
+        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-4xl flex-col overflow-hidden rounded-2xl p-0"
       >
-        <DialogHeader className="border-b border-border/80 bg-background/45 p-5 text-left text-foreground">
-          <div className="flex items-start justify-between gap-4">
+        <DialogHeader className="border-b border-border bg-accent/50 p-5 text-left">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
-                Fast Hand Capture
-              </p>
-              <DialogTitle className="text-2xl font-black tracking-tight">
-                Log Hand
+              <p className="app-eyebrow mb-2">Quick Hand Capture</p>
+              <DialogTitle className="text-2xl font-bold tracking-tight">
+                Log a Hand
               </DialogTitle>
-              <DialogDescription className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Capture the preflop spot now. Add detail only when it helps.
+              <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                Required first. Optional details can be added now or later.
               </DialogDescription>
             </div>
             <Button
               type="button"
-              aria-label="Close hand entry"
               variant="ghost"
-              size="sm"
-              className="h-9 w-9 rounded-full p-0 text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+              size="icon-sm"
+              className="rounded-full"
               onClick={closeModal}
+              aria-label="Close hand entry"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-border/80 bg-accent/55 p-1.5">
-            {(["QUICK", "FULL"] as EntryMode[]).map(mode => (
+          <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1">
+            {(["QUICK", "FULL"] as const).map(mode => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setEntryMode(mode)}
                 className={cn(
-                  "rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.16em] transition",
+                  "rounded-lg px-3 py-2 text-xs font-semibold transition",
                   entryMode === mode
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-black/20"
-                    : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent/80 hover:text-foreground"
                 )}
               >
                 {mode === "QUICK" ? "Quick Log" : "Full Review"}
@@ -485,569 +319,510 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           </div>
         </DialogHeader>
 
-        <div className="border-b border-border/80 bg-background/35 px-5 py-3">
-          <StepIndicator currentStep={currentStep} />
-        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
+            <div className="space-y-4">
+              <section className="rounded-xl border border-border bg-card p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-base font-semibold">Required details</h3>
+                  <Badge variant="outline">15-30 sec</Badge>
+                </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-          {currentStep === 0 && (
-            <div className="space-y-6">
-              <div>
-                <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="space-y-4">
                   <div>
-                    <h3 className="text-base font-black text-foreground">
-                      Context
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Required: preflop spot, position, hand, and stack up to 40bb.
-                    </p>
-                  </div>
-                  <Badge className="rounded-full bg-orange-500 text-white">
-                    Required
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {SPOT_OPTIONS.map(option => (
-                    <ChipButton
-                      key={option.id}
-                      active={spotType === option.id}
-                      onClick={() => setSpotType(option.id)}
-                      className="min-h-[4.5rem]"
-                    >
-                      <span className="block text-sm">{option.label}</span>
-                      <span
-                        className={cn(
-                          "mt-1 block text-[11px] font-medium leading-tight",
-                          spotType === option.id
-                            ? "text-secondary-foreground"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {option.helper}
-                      </span>
-                    </ChipButton>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-                <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
-                  <Label className="text-sm font-semibold text-foreground">
-                    Hero Hand
-                  </Label>
-                  <div className="mt-2">
-                    <HandPicker value={heroHand} onChange={setHeroHand} />
-                  </div>
-                  <Input
-                    value={heroHand}
-                    onChange={event =>
-                      setHeroHand(normalizeHandInput(event.target.value))
-                    }
-                    placeholder="Or type AKs, QQ, AhKh"
-                    className="mt-2 h-11 rounded-xl"
-                  />
-                </div>
-
-                <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
-                  <Label
-                    htmlFor="effective-stack"
-                    className="text-sm font-semibold text-foreground"
-                  >
-                    Effective Stack
-                  </Label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Input
-                      id="effective-stack"
-                      type="number"
-                      min="1"
-                      max="40"
-                      value={effectiveStackBb}
-                      onChange={event => setEffectiveStackBb(event.target.value)}
-                      placeholder="25"
-                      className="h-11 rounded-xl"
-                    />
-                    <span className="text-sm font-semibold text-muted-foreground">bb</span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {STACK_PRESETS.map(stack => (
-                      <Button
-                        key={stack}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className={cn(
-                          "h-8 rounded-full px-3 text-xs font-bold",
-                          effectiveStackBb === stack &&
-                            "border-primary/55 bg-primary/15 text-foreground"
-                        )}
-                        onClick={() => setEffectiveStackBb(stack)}
-                      >
-                        {stack}bb
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-black text-foreground">
-                  Hero Position
-                </Label>
-                <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-8">
-                  {POSITIONS.map(position => (
-                    <ChipButton
-                      key={position}
-                      active={heroPosition === position}
-                      onClick={() => setHeroPosition(position)}
-                      className="text-center"
-                    >
-                      {position}
-                    </ChipButton>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-black text-foreground">
-                      Key Action
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Capture the preflop hero decision. Opener action is
-                      optional.
-                    </p>
-                  </div>
-                  <Badge className="rounded-full border border-border/80 bg-accent/60 text-secondary-foreground">
-                    Required
-                  </Badge>
-                </div>
-
-                <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                    Scope
-                  </Label>
-                  <div className="mt-2 grid grid-cols-4 gap-2">
-                    {STREETS.map(street => (
-                      <ChipButton
-                        key={street}
-                        active={streetAction?.street === street}
-                        onClick={() => updateStreet(street)}
-                        className="text-center"
-                      >
-                        {street}
-                      </ChipButton>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                    Hero Decision
-                  </Label>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {HERO_ACTIONS.map(action => (
-                      <ChipButton
-                        key={action}
-                        active={streetAction?.heroAction?.type === action}
-                        onClick={() => updateHeroAction(action)}
-                        className="text-center"
-                      >
-                        {action}
-                      </ChipButton>
-                    ))}
-                  </div>
-                  {needsSize(streetAction?.heroAction?.type) && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {SIZE_BUCKETS.map(size => (
+                    <Label className="text-xs font-semibold text-muted-foreground">
+                      Spot Type
+                    </Label>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {PREFLOP_SCENARIOS.map(option => (
                         <ChipButton
-                          key={size}
-                          active={streetAction?.heroAction?.sizeBucket === size}
-                          onClick={() => updateHeroSize(size)}
-                          className="px-3 py-1.5"
+                          key={option.id}
+                          active={scenarioId === option.id}
+                          onClick={() => setScenarioId(option.id)}
                         >
-                          {size}
+                          <span className="block text-left text-[11px] font-semibold">
+                            {option.label}
+                          </span>
                         </ChipButton>
                       ))}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                  onClick={() => setShowActionDetails(value => !value)}
-                >
-                  <div>
-                    <p className="text-sm font-black text-foreground">
-                      Optional action detail
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Add opener action and player profile when useful.
-                    </p>
                   </div>
-                  <span className="rounded-full border border-border/80 bg-accent/60 px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
-                    {fullDetailsVisible ? "Hide" : "Add"}
-                  </span>
-                </button>
 
-                {fullDetailsVisible && (
-                  <div className="mt-4 space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                        Opener / Villain Action
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Hero Hand
                       </Label>
-                      <div className="mt-2 grid grid-cols-4 gap-2">
-                        {VILLAIN_ACTIONS.map(action => (
-                          <ChipButton
-                            key={action}
-                            active={
-                              streetAction?.villainAction?.type === action
-                            }
-                            onClick={() => updateVillainAction(action)}
-                            className="text-center"
-                          >
-                            {action}
-                          </ChipButton>
-                        ))}
+                      <div className="mt-2 space-y-2">
+                        <HandPicker
+                          value={normalizedHand}
+                          onChange={value => setHeroHand(value)}
+                        />
+                        <Input
+                          value={heroHand}
+                          onChange={event => setHeroHand(event.target.value)}
+                          placeholder="AKs, QQ, AhKh"
+                        />
                       </div>
-                      {needsSize(streetAction?.villainAction?.type) && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {SIZE_BUCKETS.map(size => (
-                            <ChipButton
-                              key={size}
-                              active={
-                                streetAction?.villainAction?.sizeBucket === size
-                              }
-                              onClick={() => updateVillainSize(size)}
-                              className="px-3 py-1.5"
-                            >
-                              {size}
-                            </ChipButton>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                          Villain Type
-                        </Label>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {VILLAIN_TYPES.map(type => (
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Effective Stack (bb)
+                      </Label>
+                      <div className="mt-2 space-y-2">
+                        <Input
+                          value={effectiveStackBb}
+                          type="number"
+                          min={1}
+                          max={40}
+                          onChange={event => setEffectiveStackBb(event.target.value)}
+                          placeholder="20"
+                        />
+                        <div className="flex flex-wrap gap-1.5">
+                          {STACK_PRESETS.map(stack => (
                             <ChipButton
-                              key={type.id}
-                              active={villainType === type.id}
-                              onClick={() => setVillainType(type.id)}
-                              className="px-3 py-1.5"
+                              key={stack}
+                              active={effectiveStackBb === stack}
+                              onClick={() => setEffectiveStackBb(stack)}
+                              className="px-2.5 py-1"
                             >
-                              {type.label}
-                            </ChipButton>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                          Range Read
-                        </Label>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {RANGE_TYPES.map(type => (
-                            <ChipButton
-                              key={type.id}
-                              active={villainRangeType === type.id}
-                              onClick={() => setVillainRangeType(type.id)}
-                              className="px-3 py-1.5"
-                            >
-                              {type.label}
+                              {stack}bb
                             </ChipButton>
                           ))}
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
 
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-4">
-                <h3 className="text-base font-black text-foreground">
-                  Review Signal
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Keep this light. Mark the mistake and write one takeaway if
-                  there is one.
-                </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Hero Position
+                      </Label>
+                      <Select value={heroPosition} onValueChange={setHeroPosition}>
+                        <SelectTrigger className="mt-2 w-full">
+                          <SelectValue placeholder="Select hero position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {POSITIONS.map(position => (
+                            <SelectItem key={position} value={position}>
+                              {position}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <ChipButton
-                    active={!reviewed}
-                    onClick={() => setReviewed(false)}
-                    className="text-center"
-                  >
-                    Review Later
-                  </ChipButton>
-                  <ChipButton
-                    active={reviewed}
-                    onClick={() => setReviewed(true)}
-                    className="text-center"
-                  >
-                    Reviewed Now
-                  </ChipButton>
-                </div>
-
-                <div className="mt-4">
-                  <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                    Mistake Severity
-                  </Label>
-                  <div className="mt-2 grid grid-cols-4 gap-2">
-                    {[
-                      { value: 0, label: "None" },
-                      { value: 1, label: "Minor" },
-                      { value: 2, label: "Medium" },
-                      { value: 3, label: "Major" },
-                    ].map(option => (
-                      <ChipButton
-                        key={option.value}
-                        active={mistakeSeverity === option.value}
-                        onClick={() => setMistakeSeverity(option.value)}
-                        className="text-center"
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Opener / Villain (optional)
+                      </Label>
+                      <Select
+                        value={openerPosition || "NONE"}
+                        onValueChange={value =>
+                          setOpenerPosition(value === "NONE" ? "" : value)
+                        }
                       >
-                        {option.label}
-                      </ChipButton>
-                    ))}
+                        <SelectTrigger className="mt-2 w-full">
+                          <SelectValue placeholder="No opener" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NONE">No opener</SelectItem>
+                          {POSITIONS.map(position => (
+                            <SelectItem key={position} value={position}>
+                              {position}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
 
-                {mistakeSeverity > 0 && (
-                  <div className="mt-4">
-                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                      Mistake Street
+                  <div>
+                    <Label className="text-xs font-semibold text-muted-foreground">
+                      Hero Decision
                     </Label>
-                    <div className="mt-2 grid grid-cols-4 gap-2">
-                      {STREETS.map(street => (
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {HERO_ACTIONS.map(action => (
                         <ChipButton
-                          key={street}
-                          active={mistakeStreet === street}
-                          onClick={() => setMistakeStreet(street)}
+                          key={action}
+                          active={heroDecision === action}
+                          onClick={() => setHeroDecision(action)}
                           className="text-center"
                         >
-                          {street}
+                          {action}
                         </ChipButton>
                       ))}
                     </div>
+                    {needsSize(heroDecision || undefined) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {SIZE_BUCKETS.map(size => (
+                          <ChipButton
+                            key={size}
+                            active={heroSizeBucket === size}
+                            onClick={() => setHeroSizeBucket(size)}
+                            className="px-2.5 py-1"
+                          >
+                            {size}
+                          </ChipButton>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              </section>
 
-              <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
-                <Label
-                  htmlFor="lesson"
-                  className="text-sm font-black text-foreground"
+              <section className="rounded-xl border border-border bg-card p-4">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between text-left"
+                  onClick={() => setShowOptional(current => !current)}
                 >
-                  Lesson / Takeaway
-                </Label>
-                <Textarea
-                  id="lesson"
-                  value={notes}
-                  onChange={event => setNotes(event.target.value.slice(0, 300))}
-                  placeholder="One sentence about what to study or do differently next time."
-                  className="mt-2 min-h-24 resize-none rounded-xl"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {300 - notes.length} characters remaining
-                </p>
-              </div>
-
-              <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
-                  <p className="text-sm font-black text-foreground">
-                    Optional Tags
-                  </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {TAG_OPTIONS.map(tag => (
-                    <ChipButton
-                      key={tag}
-                      active={selectedTags.includes(tag)}
-                      onClick={() => toggleTag(tag)}
-                      className="px-3 py-1.5"
-                    >
-                      {tag.replace(/_/g, " ")}
-                    </ChipButton>
-                  ))}
-                </div>
-              </div>
-
-              {entryMode === "FULL" && (
-                <div className="rounded-[1rem] border border-border/80 bg-accent/40 p-4">
-                  <p className="text-sm font-black text-foreground">
-                    Tournament Context
-                  </p>
-                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                          Result
-                        </Label>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {RESULTS.map(item => (
-                          <ChipButton
-                            key={item.id}
-                            active={result === item.id}
-                            onClick={() => setResult(item.id)}
-                            className="px-3 py-1.5"
-                          >
-                            {item.label}
-                          </ChipButton>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                        <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                          Game Type
-                        </Label>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {GAME_TYPES.map(item => (
-                          <ChipButton
-                            key={item.id}
-                            active={gameType === item.id}
-                            onClick={() => setGameType(item.id)}
-                            className="px-3 py-1.5"
-                          >
-                            {item.label}
-                          </ChipButton>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <Label className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                      Tournament Phase
-                    </Label>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {PHASES.map(phase => (
-                        <ChipButton
-                          key={phase.id}
-                          active={tournamentPhase === phase.id}
-                          onClick={() => setTournamentPhase(phase.id)}
-                          className="px-3 py-1.5"
-                        >
-                          {phase.label}
-                        </ChipButton>
-                      ))}
-                      <ChipButton
-                        active={isPko}
-                        onClick={() => setIsPko(value => !value)}
-                        className="px-3 py-1.5"
-                      >
-                        PKO
-                      </ChipButton>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div className="space-y-5">
-              <div className="rounded-[1rem] border border-border/80 bg-accent/45 p-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm shadow-black/20">
-                    <Sparkles className="h-5 w-5" />
-                  </span>
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">
-                      Ready to save
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Quick capture is complete. You can review or edit it
-                      later from Hand Review.
+                    <h3 className="text-base font-semibold">Optional details</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Add reads, confidence, and deeper review context.
                     </p>
                   </div>
+                  {showOptional ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+
+                {showOptional && (
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Villain Action
+                        </Label>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {VILLAIN_ACTIONS.map(action => (
+                            <ChipButton
+                              key={action}
+                              active={villainAction === action}
+                              onClick={() => setVillainAction(action)}
+                              className="px-2.5 py-1"
+                            >
+                              {action}
+                            </ChipButton>
+                          ))}
+                        </div>
+                        {needsSize(villainAction || undefined) && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {SIZE_BUCKETS.map(size => (
+                              <ChipButton
+                                key={size}
+                                active={villainSizeBucket === size}
+                                onClick={() => setVillainSizeBucket(size)}
+                                className="px-2.5 py-1"
+                              >
+                                {size}
+                              </ChipButton>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs font-semibold text-muted-foreground">
+                            Villain Type
+                          </Label>
+                          <Select
+                            value={villainType || "NONE"}
+                            onValueChange={value =>
+                              setVillainType(value === "NONE" ? "" : (value as VillainType))
+                            }
+                          >
+                            <SelectTrigger className="mt-2 w-full">
+                              <SelectValue placeholder="Not set" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NONE">Not set</SelectItem>
+                              {VILLAIN_TYPES.map(type => (
+                                <SelectItem key={type.id} value={type.id}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs font-semibold text-muted-foreground">
+                            Range Read
+                          </Label>
+                          <Select
+                            value={villainRangeType || "NONE"}
+                            onValueChange={value =>
+                              setVillainRangeType(
+                                value === "NONE" ? "" : (value as VillainRangeType)
+                              )
+                            }
+                          >
+                            <SelectTrigger className="mt-2 w-full">
+                              <SelectValue placeholder="Not set" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NONE">Not set</SelectItem>
+                              {RANGE_TYPES.map(type => (
+                                <SelectItem key={type.id} value={type.id}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Confidence
+                        </Label>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {["LOW", "MEDIUM", "HIGH"].map(level => (
+                            <ChipButton
+                              key={level}
+                              active={confidence === level}
+                              onClick={() => setConfidence(level)}
+                              className="px-2.5 py-1"
+                            >
+                              {level}
+                            </ChipButton>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Mistake Severity
+                        </Label>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {[0, 1, 2, 3].map(level => (
+                            <ChipButton
+                              key={level}
+                              active={mistakeSeverity === level}
+                              onClick={() => setMistakeSeverity(level)}
+                              className="px-2.5 py-1"
+                            >
+                              {level === 0 ? "None" : `Level ${level}`}
+                            </ChipButton>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Tags
+                      </Label>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {TAG_OPTIONS.map(tag => (
+                          <ChipButton
+                            key={tag}
+                            active={tags.includes(tag)}
+                            onClick={() =>
+                              setTags(previous =>
+                                previous.includes(tag)
+                                  ? previous.filter(existing => existing !== tag)
+                                  : [...previous, tag]
+                              )
+                            }
+                            className="px-2.5 py-1"
+                          >
+                            {tag.replace(/_/g, " ")}
+                          </ChipButton>
+                        ))}
+                      </div>
+                    </div>
+
+                    {entryMode === "FULL" && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground">
+                            Result
+                          </Label>
+                          <Select
+                            value={result || "NONE"}
+                            onValueChange={value =>
+                              setResult(value === "NONE" ? "" : (value as HandResult))
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Not set" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NONE">Not set</SelectItem>
+                              {RESULTS.map(item => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground">
+                            Game Type
+                          </Label>
+                          <Select
+                            value={gameType || "NONE"}
+                            onValueChange={value =>
+                              setGameType(value === "NONE" ? "" : (value as GameType))
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Not set" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NONE">Not set</SelectItem>
+                              {GAME_TYPES.map(item => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground">
+                            Tournament Phase
+                          </Label>
+                          <Select
+                            value={tournamentPhase || "NONE"}
+                            onValueChange={value =>
+                              setTournamentPhase(
+                                value === "NONE" ? "" : (value as TournamentPhase)
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Not set" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NONE">Not set</SelectItem>
+                              {PHASES.map(item => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground">
+                            Review Status
+                          </Label>
+                          <div className="flex flex-wrap gap-1.5">
+                            <ChipButton
+                              active={!reviewed}
+                              onClick={() => setReviewed(false)}
+                              className="px-2.5 py-1"
+                            >
+                              Needs Review
+                            </ChipButton>
+                            <ChipButton
+                              active={reviewed}
+                              onClick={() => setReviewed(true)}
+                              className="px-2.5 py-1"
+                            >
+                              Reviewed
+                            </ChipButton>
+                            <ChipButton
+                              active={isPko}
+                              onClick={() => setIsPko(current => !current)}
+                              className="px-2.5 py-1"
+                            >
+                              PKO
+                            </ChipButton>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <Label
+                        htmlFor="quick-note"
+                        className="text-xs font-semibold text-muted-foreground"
+                      >
+                        Quick Note
+                      </Label>
+                      <Textarea
+                        id="quick-note"
+                        value={note}
+                        onChange={event => setNote(event.target.value.slice(0, 300))}
+                        placeholder="Short takeaway or reminder for review."
+                        className="mt-2 min-h-20"
+                      />
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <aside className="space-y-3">
+              <div className="rounded-xl border border-border bg-accent/60 p-3">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Live Summary
+                </p>
+                <div className="mt-2 space-y-2">
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Spot:</span>{" "}
+                    <span className="font-semibold">
+                      {selectedScenario?.label ?? "Not set"}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Hand:</span>{" "}
+                    <span className="font-semibold">{normalizedHand || "-"}</span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Position:</span>{" "}
+                    <span className="font-semibold">{heroPosition || "-"}</span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Stack:</span>{" "}
+                    <span className="font-semibold">
+                      {isStackValid ? `${stackNumber}bb` : "-"}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Action:</span>{" "}
+                    <span className="font-semibold">{heroDecision || "-"}</span>
+                  </p>
                 </div>
               </div>
-
-              <div className="grid gap-2">
-                <SummaryRow label="Spot" value={selectedSpotLabel} />
-                <SummaryRow label="Hero" value={`${heroHand || "-"} in ${heroPosition || "-"}`} />
-                <SummaryRow
-                  label="Stack"
-                  value={isStackValid ? `${stackNumber}bb` : "Not set"}
-                />
-                <SummaryRow
-                  label="Decision"
-                  value={`${streetAction?.street ?? "-"} - ${
-                    streetAction?.heroAction?.type ?? "-"
-                  }`}
-                />
-                <SummaryRow
-                  label="Review"
-                  value={
-                    mistakeSeverity > 0
-                      ? `${mistakeStreet} mistake, severity ${mistakeSeverity}/3`
-                      : reviewed
-                        ? "Reviewed, no mistake marked"
-                        : "Queued for review"
-                  }
-                />
-                {notes.trim() && (
-                  <SummaryRow label="Lesson" value={notes.trim()} />
-                )}
-              </div>
-            </div>
-          )}
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Required fields are always visible. Optional detail is collapsed so
+                quick capture stays fast.
+              </p>
+            </aside>
+          </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/80 bg-background/35 p-4">
+        <div className="flex items-center justify-between gap-2 border-t border-border bg-accent/40 p-4">
+          <Button type="button" variant="ghost" onClick={closeModal}>
+            Cancel
+          </Button>
           <Button
             type="button"
-            variant="ghost"
-            className="rounded-xl text-muted-foreground hover:bg-accent/55 hover:text-foreground"
-            onClick={currentStep === 0 ? closeModal : goBack}
+            onClick={handleSave}
+            disabled={!isFormValid || createHand.isPending}
+            className="min-w-44 rounded-xl"
           >
-            {currentStep === 0 ? (
-              "Cancel"
-            ) : (
-              <>
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Back
-              </>
-            )}
+            {createHand.isPending
+              ? "Saving..."
+              : entryMode === "QUICK"
+                ? "Save to Review Queue"
+                : "Save Full Review"}
           </Button>
-
-          {currentStep < 3 ? (
-            <Button
-              type="button"
-              className="h-11 rounded-2xl bg-primary px-5 font-semibold text-primary-foreground shadow-sm shadow-black/20 hover:bg-[#FF8A1F]"
-              onClick={goNext}
-              disabled={!canAdvance}
-            >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              className="h-11 rounded-2xl bg-primary px-5 font-semibold text-primary-foreground shadow-sm shadow-black/20 hover:bg-[#FF8A1F]"
-              onClick={handleSave}
-              disabled={!isValid || createHand.isPending}
-            >
-              {createHand.isPending ? "Saving..." : "Save Hand"}
-              {!createHand.isPending && <Check className="ml-1 h-4 w-4" />}
-            </Button>
-          )}
         </div>
       </DialogContent>
     </Dialog>

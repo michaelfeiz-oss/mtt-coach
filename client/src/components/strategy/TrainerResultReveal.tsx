@@ -66,18 +66,18 @@ export function TrainerResultReveal({
   return (
     <Card
       className={cn(
-        "overflow-hidden rounded-[1.2rem] border-border/80 bg-card/92 text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.24)]",
+        "overflow-hidden rounded-[1.2rem] border border-border bg-card text-foreground shadow-[0_10px_28px_rgba(15,23,42,0.14)]",
         className
       )}
     >
       <CardContent className="space-y-3 p-3 sm:p-4">
-        <div className="flex items-start gap-3 rounded-2xl border border-border/80 bg-accent/55 p-3">
+        <div className="flex items-start gap-3 rounded-2xl border border-border bg-accent/70 p-3">
           <div
             className={cn(
               "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm",
               isCorrect
-                ? "bg-green-500/15 text-green-300 shadow-green-950/10"
-                : "bg-red-500/15 text-red-300 shadow-red-950/10"
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-red-100 text-red-700"
             )}
           >
             {isCorrect ? (
@@ -90,7 +90,7 @@ export function TrainerResultReveal({
             <p
               className={cn(
                 "text-base font-bold",
-                isCorrect ? "text-green-300" : "text-red-300"
+                isCorrect ? "text-emerald-700" : "text-red-700"
               )}
             >
               {isCorrect ? "Correct" : "Incorrect"}
@@ -98,7 +98,7 @@ export function TrainerResultReveal({
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge
                 variant="outline"
-                className="rounded-full border-border/80 bg-accent/55 px-2.5 text-secondary-foreground"
+                className="rounded-full border-border bg-accent px-2.5 text-secondary-foreground"
               >
                 You chose: {ACTION_LABELS[selectedAction]}
               </Badge>
@@ -114,7 +114,7 @@ export function TrainerResultReveal({
           </div>
         </div>
 
-        <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-border/80 bg-accent/50 p-2.5 shadow-inner shadow-black/20 sm:p-3">
+        <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-border bg-accent/70 p-2.5 sm:p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-semibold text-muted-foreground">
@@ -154,8 +154,8 @@ export function TrainerResultReveal({
 
           {!chart && isLoadingChart && (
             <div className="space-y-2">
-              <Skeleton className="h-6 w-48 bg-white/10" />
-              <Skeleton className="h-72 w-full rounded-2xl bg-white/10" />
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-72 w-full rounded-2xl" />
             </div>
           )}
 
@@ -168,7 +168,7 @@ export function TrainerResultReveal({
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
           <Button
-            className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]"
+            className="h-11 rounded-xl text-sm font-semibold"
             onClick={onNext}
           >
             Next Hand
@@ -177,7 +177,7 @@ export function TrainerResultReveal({
           <Link href={`/strategy/library?chartId=${chartId}`}>
             <Button
               variant="outline"
-              className="h-11 w-full gap-2 rounded-xl border-border/80 bg-accent/55 text-sm font-semibold text-secondary-foreground hover:bg-accent sm:w-auto"
+              className="h-11 w-full gap-2 rounded-xl text-sm font-semibold sm:w-auto"
             >
               View Full Chart
               <ExternalLink className="h-4 w-4" />
