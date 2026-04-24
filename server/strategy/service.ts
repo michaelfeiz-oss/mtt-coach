@@ -609,6 +609,13 @@ function inferSpotFromHand(hand: Hand): SpotInference | null {
   }
 
   if (hand.spotType === "3BET_POT") {
+    if (villainPosition) {
+      return {
+        spotKey: `${heroPosition}_vs_${villainPosition}_3bet`,
+        reason: `Matched hero ${heroPosition} facing a ${villainPosition} 3-bet.`,
+      };
+    }
+
     if (heroPosition === "CO") {
       return {
         spotKey: "CO_vs_BB_3bet",
@@ -627,6 +634,41 @@ function inferSpotFromHand(hand: Hand): SpotInference | null {
       return {
         spotKey: "BTN_vs_BB_3bet",
         reason: "Matched to the closest button continue-versus-3-bet chart.",
+      };
+    }
+
+    if (heroPosition === "HJ") {
+      return {
+        spotKey: "HJ_vs_BTN_3bet",
+        reason: "Matched to the closest hijack continue-versus-late-position 3-bet chart.",
+      };
+    }
+
+    if (heroPosition === "MP") {
+      return {
+        spotKey: "MP_vs_BTN_3bet",
+        reason: "Matched to the closest middle-position continue-versus-late-position 3-bet chart.",
+      };
+    }
+
+    if (heroPosition === "UTG1") {
+      return {
+        spotKey: "UTG1_vs_CO_3bet",
+        reason: "Matched to the closest UTG+1 continue-versus-late-position 3-bet chart.",
+      };
+    }
+
+    if (heroPosition === "UTG") {
+      return {
+        spotKey: "UTG_vs_HJ_3bet",
+        reason: "Matched to the closest UTG continue-versus-late-position 3-bet chart.",
+      };
+    }
+
+    if (heroPosition === "SB") {
+      return {
+        spotKey: "SB_vs_BB_3bet",
+        reason: "Matched small blind versus big blind 3-bet.",
       };
     }
   }

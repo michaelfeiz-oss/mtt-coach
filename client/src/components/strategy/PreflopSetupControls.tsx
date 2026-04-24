@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
+  displayPositionLabel,
   POSITIONS,
   SPOT_GROUP_LABELS,
   SPOT_GROUPS,
@@ -59,10 +60,6 @@ function selectClassName(disabled = false) {
   );
 }
 
-function displayPosition(position: string) {
-  return position === "UTG1" ? "UTG+1" : position;
-}
-
 export function PreflopSetupControls({
   spotGroup,
   stackDepth,
@@ -83,7 +80,7 @@ export function PreflopSetupControls({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
         <Field label="Decision">
           <Select
             value={spotGroup ?? ANY_VALUE}
@@ -161,7 +158,7 @@ export function PreflopSetupControls({
                   value={position}
                   disabled={!heroSet.has(position)}
                 >
-                  {displayPosition(position)}
+                  {displayPositionLabel(position)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -189,7 +186,7 @@ export function PreflopSetupControls({
                   value={position}
                   disabled={!villainSet.has(position)}
                 >
-                  {displayPosition(position)}
+                  {displayPositionLabel(position)}
                 </SelectItem>
               ))}
             </SelectContent>

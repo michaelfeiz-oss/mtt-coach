@@ -25,7 +25,7 @@ export function ActionLegend({
   return (
     <div
       className={cn(
-        "flex gap-x-2 gap-y-2 text-xs text-muted-foreground",
+        "flex gap-x-1.5 gap-y-1.5 text-[11px] text-muted-foreground",
         layout === "vertical" ? "flex-col" : "flex-row flex-wrap",
         className
       )}
@@ -37,10 +37,10 @@ export function ActionLegend({
         return (
           <div
             key={action}
-            className="flex min-h-7 items-center gap-1.5 rounded-full border border-border bg-accent/80 px-2.5 py-1 shadow-sm"
+            className="flex min-h-6 items-center gap-1.5 rounded-full border border-border/80 bg-background/85 px-2 py-0.5"
           >
             <span
-              className="h-3.5 w-3.5 shrink-0 rounded-full border border-slate-200/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]"
+              className="h-3 w-3 shrink-0 rounded-full border border-slate-200/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]"
               style={{ backgroundColor: style.backgroundColor }}
               aria-hidden="true"
             />

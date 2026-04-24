@@ -90,6 +90,11 @@ export const POSITIONS = [
 ] as const;
 export type Position = (typeof POSITIONS)[number];
 
+export function displayPositionLabel(position?: string | null): string {
+  if (!position) return "No opener";
+  return position === "UTG1" ? "UTG+1" : position;
+}
+
 // ─── Hand grid ───────────────────────────────────────────────────────────────
 
 /**
@@ -137,141 +142,154 @@ export interface SpotDefinition {
   villainPosition?: Position;
 }
 
+const RFI_HERO_POSITIONS = [
+  "UTG",
+  "UTG1",
+  "MP",
+  "HJ",
+  "CO",
+  "BTN",
+  "SB",
+] as const satisfies readonly Position[];
+
+const VS_UTG_HERO_POSITIONS = [
+  "UTG1",
+  "MP",
+  "HJ",
+  "CO",
+  "BTN",
+  "SB",
+  "BB",
+] as const satisfies readonly Position[];
+
+const VS_MP_HERO_POSITIONS = [
+  "HJ",
+  "CO",
+  "BTN",
+  "SB",
+  "BB",
+] as const satisfies readonly Position[];
+
+const VS_LP_RFI_COMBINATIONS = [
+  { heroPosition: "BTN", villainPosition: "CO" },
+  { heroPosition: "SB", villainPosition: "CO" },
+  { heroPosition: "BB", villainPosition: "CO" },
+  { heroPosition: "SB", villainPosition: "BTN" },
+  { heroPosition: "BB", villainPosition: "BTN" },
+] as const satisfies readonly {
+  heroPosition: Position;
+  villainPosition: Position;
+}[];
+
+const THREE_BET_REACTION_COMBINATIONS = [
+  { heroPosition: "UTG", villainPosition: "UTG1" },
+  { heroPosition: "UTG", villainPosition: "MP" },
+  { heroPosition: "UTG", villainPosition: "HJ" },
+  { heroPosition: "UTG", villainPosition: "CO" },
+  { heroPosition: "UTG", villainPosition: "BTN" },
+  { heroPosition: "UTG", villainPosition: "SB" },
+  { heroPosition: "UTG", villainPosition: "BB" },
+  { heroPosition: "UTG1", villainPosition: "MP" },
+  { heroPosition: "UTG1", villainPosition: "HJ" },
+  { heroPosition: "UTG1", villainPosition: "CO" },
+  { heroPosition: "UTG1", villainPosition: "BTN" },
+  { heroPosition: "UTG1", villainPosition: "SB" },
+  { heroPosition: "UTG1", villainPosition: "BB" },
+  { heroPosition: "MP", villainPosition: "HJ" },
+  { heroPosition: "MP", villainPosition: "CO" },
+  { heroPosition: "MP", villainPosition: "BTN" },
+  { heroPosition: "MP", villainPosition: "SB" },
+  { heroPosition: "MP", villainPosition: "BB" },
+  { heroPosition: "HJ", villainPosition: "CO" },
+  { heroPosition: "HJ", villainPosition: "BTN" },
+  { heroPosition: "HJ", villainPosition: "SB" },
+  { heroPosition: "HJ", villainPosition: "BB" },
+  { heroPosition: "CO", villainPosition: "BTN" },
+  { heroPosition: "CO", villainPosition: "SB" },
+  { heroPosition: "CO", villainPosition: "BB" },
+  { heroPosition: "BTN", villainPosition: "SB" },
+  { heroPosition: "BTN", villainPosition: "BB" },
+  { heroPosition: "SB", villainPosition: "BB" },
+] as const satisfies readonly {
+  heroPosition: Position;
+  villainPosition: Position;
+}[];
+
+function createSpotDefinition(
+  key: string,
+  group: SpotGroup,
+  heroPosition: Position,
+  villainPosition?: Position,
+  suffix?: string
+): SpotDefinition {
+  const heroLabel = displayPositionLabel(heroPosition);
+  const villainLabel = villainPosition ? displayPositionLabel(villainPosition) : null;
+
+  if (suffix) {
+    return {
+      key,
+      label: `${heroLabel} vs ${villainLabel} ${suffix}`,
+      group,
+      heroPosition,
+      villainPosition,
+    };
+  }
+
+  return {
+    key,
+    label: `${heroLabel}${villainLabel ? ` vs ${villainLabel}` : ""}`,
+    group,
+    heroPosition,
+    villainPosition,
+  };
+}
+
 /**
  * All spots available in the strategy library.
- * CODEX TASK: Extend this list if new spots are added.
+ * This is the shared catalog that seed data and UI both depend on.
  */
 export const SPOT_DEFINITIONS: SpotDefinition[] = [
-  // RFI spots
-  { key: "UTG_RFI", label: "UTG RFI", group: "RFI", heroPosition: "UTG" },
-  { key: "UTG1_RFI", label: "UTG+1 RFI", group: "RFI", heroPosition: "UTG1" },
-  { key: "MP_RFI", label: "MP RFI", group: "RFI", heroPosition: "MP" },
-  { key: "HJ_RFI", label: "HJ RFI", group: "RFI", heroPosition: "HJ" },
-  { key: "CO_RFI", label: "CO RFI", group: "RFI", heroPosition: "CO" },
-  { key: "BTN_RFI", label: "BTN RFI", group: "RFI", heroPosition: "BTN" },
-  { key: "SB_RFI", label: "SB RFI", group: "RFI", heroPosition: "SB" },
-
-  // vs UTG RFI
-  {
-    key: "BB_vs_UTG",
-    label: "BB vs UTG",
-    group: "VS_UTG_RFI",
-    heroPosition: "BB",
-    villainPosition: "UTG",
-  },
-  {
-    key: "HJ_vs_UTG",
-    label: "HJ vs UTG",
-    group: "VS_UTG_RFI",
-    heroPosition: "HJ",
-    villainPosition: "UTG",
-  },
-  {
-    key: "CO_vs_UTG",
-    label: "CO vs UTG",
-    group: "VS_UTG_RFI",
-    heroPosition: "CO",
-    villainPosition: "UTG",
-  },
-  {
-    key: "BTN_vs_UTG",
-    label: "BTN vs UTG",
-    group: "VS_UTG_RFI",
-    heroPosition: "BTN",
-    villainPosition: "UTG",
-  },
-
-  // vs MP RFI
-  {
-    key: "BB_vs_MP",
-    label: "BB vs MP",
-    group: "VS_MP_RFI",
-    heroPosition: "BB",
-    villainPosition: "MP",
-  },
-  {
-    key: "CO_vs_MP",
-    label: "CO vs MP",
-    group: "VS_MP_RFI",
-    heroPosition: "CO",
-    villainPosition: "MP",
-  },
-  {
-    key: "BTN_vs_MP",
-    label: "BTN vs MP",
-    group: "VS_MP_RFI",
-    heroPosition: "BTN",
-    villainPosition: "MP",
-  },
-
-  // vs LP RFI
-  {
-    key: "BB_vs_CO",
-    label: "BB vs CO",
-    group: "VS_LP_RFI",
-    heroPosition: "BB",
-    villainPosition: "CO",
-  },
-  {
-    key: "BB_vs_BTN",
-    label: "BB vs BTN",
-    group: "VS_LP_RFI",
-    heroPosition: "BB",
-    villainPosition: "BTN",
-  },
-  {
-    key: "SB_vs_BTN",
-    label: "SB vs BTN",
-    group: "VS_LP_RFI",
-    heroPosition: "SB",
-    villainPosition: "BTN",
-  },
-  {
-    key: "BTN_vs_CO",
-    label: "BTN vs CO",
-    group: "VS_LP_RFI",
-    heroPosition: "BTN",
-    villainPosition: "CO",
-  },
-
-  // vs 3-Bet
-  {
-    key: "BTN_vs_BB_3bet",
-    label: "BTN vs BB 3-Bet",
-    group: "VS_3BET",
-    heroPosition: "BTN",
-    villainPosition: "BB",
-  },
-  {
-    key: "CO_vs_BB_3bet",
-    label: "CO vs BB 3-Bet",
-    group: "VS_3BET",
-    heroPosition: "CO",
-    villainPosition: "BB",
-  },
-  {
-    key: "BTN_vs_SB_3bet",
-    label: "BTN vs SB 3-Bet",
-    group: "VS_3BET",
-    heroPosition: "BTN",
-    villainPosition: "SB",
-  },
-
-  // BvB
-  {
-    key: "SB_vs_BB_limp",
-    label: "SB vs BB (limp)",
-    group: "BVB",
-    heroPosition: "SB",
-    villainPosition: "BB",
-  },
-  {
-    key: "BB_vs_SB_limp",
-    label: "BB vs SB (limp)",
-    group: "BVB",
-    heroPosition: "BB",
-    villainPosition: "SB",
-  },
+  ...RFI_HERO_POSITIONS.map(heroPosition => ({
+    key: `${heroPosition}_RFI`,
+    label: `${displayPositionLabel(heroPosition)} RFI`,
+    group: "RFI" as const,
+    heroPosition,
+  })),
+  ...VS_UTG_HERO_POSITIONS.map(heroPosition =>
+    createSpotDefinition(
+      `${heroPosition}_vs_UTG`,
+      "VS_UTG_RFI",
+      heroPosition,
+      "UTG"
+    )
+  ),
+  ...VS_MP_HERO_POSITIONS.map(heroPosition =>
+    createSpotDefinition(
+      `${heroPosition}_vs_MP`,
+      "VS_MP_RFI",
+      heroPosition,
+      "MP"
+    )
+  ),
+  ...VS_LP_RFI_COMBINATIONS.map(({ heroPosition, villainPosition }) =>
+    createSpotDefinition(
+      `${heroPosition}_vs_${villainPosition}`,
+      "VS_LP_RFI",
+      heroPosition,
+      villainPosition
+    )
+  ),
+  ...THREE_BET_REACTION_COMBINATIONS.map(({ heroPosition, villainPosition }) =>
+    createSpotDefinition(
+      `${heroPosition}_vs_${villainPosition}_3bet`,
+      "VS_3BET",
+      heroPosition,
+      villainPosition,
+      "3-Bet"
+    )
+  ),
+  createSpotDefinition("SB_vs_BB_limp", "BVB", "SB", "BB", "(limp)"),
+  createSpotDefinition("BB_vs_SB_limp", "BVB", "BB", "SB", "(limp)"),
 ];
 
 // ─── API types ────────────────────────────────────────────────────────────────

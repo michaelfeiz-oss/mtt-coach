@@ -62,32 +62,6 @@ const VALID_ACTIONS = new Set<Action>(ACTIONS);
 const VALID_STACKS = new Set<number>(STACK_DEPTHS);
 const VALID_POSITIONS = new Set<string>(POSITIONS);
 
-const SEEDED_SPOT_KEYS = [
-  "UTG_RFI",
-  "UTG1_RFI",
-  "MP_RFI",
-  "HJ_RFI",
-  "CO_RFI",
-  "BTN_RFI",
-  "SB_RFI",
-  "BB_vs_BTN",
-  "BB_vs_CO",
-  "SB_vs_BTN",
-  "BTN_vs_CO",
-  "SB_vs_BB_limp",
-  "BB_vs_SB_limp",
-  "BB_vs_UTG",
-  "HJ_vs_UTG",
-  "CO_vs_UTG",
-  "BTN_vs_UTG",
-  "BB_vs_MP",
-  "CO_vs_MP",
-  "BTN_vs_MP",
-  "BTN_vs_BB_3bet",
-  "CO_vs_BB_3bet",
-  "BTN_vs_SB_3bet",
-] as const;
-
 const BASE_OPEN_LEVEL: Record<Position, number> = {
   UTG: 1,
   UTG1: 2,
@@ -430,42 +404,126 @@ function buildVsRfiActions(
   ]);
 }
 
-function isJamVsThreeBet(hand: ParsedHand, stackDepth: number): boolean {
+function threeBetDefenseLevel(
+  heroPosition: Position,
+  villainPosition: Position | undefined,
+  stackDepth: number
+): number {
+  const aggressor = villainPosition ?? "BB";
+  let level = 2;
+
+  if (heroPosition === "SB" && aggressor === "BB") level = 8;
+  else if (heroPosition === "BTN" && (aggressor === "SB" || aggressor === "BB")) {
+    level = 7;
+  } else if (
+    heroPosition === "CO" &&
+    (aggressor === "BTN" || aggressor === "SB" || aggressor === "BB")
+  ) {
+    level = 5;
+  } else if (
+    heroPosition === "HJ" &&
+    (aggressor === "CO" || aggressor === "BTN" || aggressor === "SB" || aggressor === "BB")
+  ) {
+    level = aggressor === "CO" ? 4 : 3;
+  } else if (heroPosition === "MP") {
+    level = aggressor === "HJ" ? 3 : 2;
+  } else if (heroPosition === "UTG1") {
+    level = aggressor === "MP" ? 2 : 1;
+  } else if (heroPosition === "UTG") {
+    level = aggressor === "UTG1" || aggressor === "MP" ? 2 : 1;
+  }
+
+  return clampLevel(level + stackLevelAdjustment(stackDepth));
+}
+
+function isJamVsThreeBet(
+  hand: ParsedHand,
+  level: number,
+  stackDepth: number
+): boolean {
   if (stackDepth <= 15) {
     return (
-      isPairAtLeast(hand, "55") ||
-      ["AKs", "AKo", "AQs", "AQo", "AJs", "AJo", "ATs", "KQs"].includes(hand.code)
+      isPairAtLeast(hand, level >= 6 ? "44" : level >= 4 ? "55" : "66") ||
+      [
+        "AKs",
+        "AKo",
+        "AQs",
+        "AQo",
+        "AJs",
+        "AJo",
+        "ATs",
+        "KQs",
+      ].includes(hand.code) ||
+      (level >= 6 && ["KJs", "QJs", "A5s", "A4s"].includes(hand.code))
     );
   }
 
   if (stackDepth <= 20) {
-    return isPairAtLeast(hand, "77") || ["AKs", "AKo", "AQs", "AQo", "AJs", "KQs"].includes(hand.code);
+    return (
+      isPairAtLeast(hand, level >= 6 ? "66" : level >= 4 ? "77" : "88") ||
+      ["AKs", "AKo", "AQs", "AQo", "AJs", "KQs"].includes(hand.code) ||
+      (level >= 6 && ["ATs", "KJs", "A5s", "A4s"].includes(hand.code))
+    );
   }
 
-  return isPremium(hand) || ["JJ", "TT", "AKo"].includes(hand.code);
-}
-
-function isCallVsThreeBet(hand: ParsedHand, stackDepth: number): boolean {
-  if (stackDepth <= 15) return false;
-
   return (
-    isPairAtLeast(hand, stackDepth >= 40 ? "55" : "77") ||
-    ["AQs", "AQo", "AJs", "ATs", "KQs", "KJs", "QJs", "JTs", "T9s"].includes(hand.code) ||
-    (stackDepth >= 40 && (isSuitedConnector(hand, "7") || ["A5s", "A4s", "KTs", "QTs"].includes(hand.code)))
+    isPremium(hand) ||
+    (level >= 5 && ["JJ", "TT", "AKo", "AQs"].includes(hand.code))
   );
 }
 
-function buildVsThreeBetActions(stackDepth: number): SeedHandAction[] {
+function isCallVsThreeBet(
+  hand: ParsedHand,
+  level: number,
+  stackDepth: number
+): boolean {
+  if (stackDepth <= 15) return false;
+
+  const minimumPair =
+    stackDepth >= 40
+      ? level >= 6
+        ? "44"
+        : level >= 4
+          ? "55"
+          : "66"
+      : level >= 6
+        ? "66"
+        : "77";
+
+  return (
+    isPairAtLeast(hand, minimumPair) ||
+    ["AQs", "AQo", "AJs", "ATs", "KQs", "KJs", "QJs", "JTs"].includes(hand.code) ||
+    (level >= 5 && ["T9s", "98s", "A5s", "A4s", "KTs", "QTs"].includes(hand.code)) ||
+    (stackDepth >= 40 && level >= 6 && (isSuitedConnector(hand, "6") || ["76s", "65s", "54s"].includes(hand.code)))
+  );
+}
+
+function buildVsThreeBetActions(
+  definition: SpotDefinition,
+  stackDepth: number
+): SeedHandAction[] {
+  const level = threeBetDefenseLevel(
+    definition.heroPosition,
+    definition.villainPosition,
+    stackDepth
+  );
+
   return buildActions([
     {
       action: "JAM",
-      note: "Versus 3-bets, shallow stack continues become direct all-in decisions.",
-      matches: hand => isJamVsThreeBet(hand, stackDepth),
+      note:
+        level >= 6
+          ? "Late-position opens can jam wider against blind 3-bets because blockers and fold equity matter more."
+          : "Earlier opens continue tighter and lean toward direct all-ins only with stronger hands.",
+      matches: hand => isJamVsThreeBet(hand, level, stackDepth),
     },
     {
       action: "CALL",
-      note: "At deeper stacks, continue hands that retain equity and playability in position.",
-      matches: hand => isCallVsThreeBet(hand, stackDepth),
+      note:
+        stackDepth >= 40
+          ? "Deeper stacks keep playable suited broadways and pairs in the calling range."
+          : "Only the most stable continue hands should flat before stack depth forces jam-or-fold.",
+      matches: hand => isCallVsThreeBet(hand, level, stackDepth),
     },
   ]);
 }
@@ -576,7 +634,7 @@ function buildChartActions(
   }
 
   if (definition.group === "VS_3BET") {
-    return buildVsThreeBetActions(stackDepth);
+    return buildVsThreeBetActions(definition, stackDepth);
   }
 
   if (definition.group === "BVB") {
@@ -605,13 +663,7 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
 }
 
 function getSeedSpotDefinitions(): SpotDefinition[] {
-  return SEEDED_SPOT_KEYS.map(key => {
-    const definition = SPOT_DEFINITIONS.find(spot => spot.key === key);
-    if (!definition) {
-      throw new Error(`Missing spot definition for ${key}`);
-    }
-    return definition;
-  });
+  return SPOT_DEFINITIONS;
 }
 
 export function validateSeedCharts(charts: SeedChart[] = SEED_CHARTS): void {

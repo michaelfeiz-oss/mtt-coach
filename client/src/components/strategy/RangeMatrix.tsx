@@ -25,8 +25,8 @@ const SIZE_CONFIG: Record<
   { minCell: number; maxCell: number; font: number }
 > = {
   sm: { minCell: 20, maxCell: 28, font: 9 },
-  md: { minCell: 24, maxCell: 40, font: 10 },
-  lg: { minCell: 32, maxCell: 58, font: 12 },
+  md: { minCell: 24, maxCell: 38, font: 10.5 },
+  lg: { minCell: 32, maxCell: 54, font: 12.5 },
 };
 
 const COMPACT_SIZE_CONFIG = { minCell: 18, maxCell: 30, font: 9 };
@@ -95,10 +95,10 @@ export function RangeMatrix({
     <div className={cn("w-full", className)}>
       <div
         className={cn(
-          "mx-auto grid border border-border bg-accent/75 shadow-sm",
+          "mx-auto grid border border-border/80 bg-background/85 shadow-sm",
           compact
             ? "gap-px rounded-xl p-1"
-            : "gap-[2px] rounded-2xl p-1.5 sm:p-2"
+            : "gap-[2px] rounded-[1rem] p-1 sm:p-1.5"
         )}
         style={{
           gridTemplateColumns: "repeat(13, minmax(0, 1fr))",
@@ -130,13 +130,13 @@ export function RangeMatrix({
               title={title}
               onClick={() => selectHand(handCode)}
               className={cn(
-                "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden border border-slate-200/80 font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.22)] transition duration-150",
+                "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden border border-white/75 font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] transition duration-150",
                 compact ? "rounded-[5px]" : "rounded-md",
                 isInteractive
                   ? "cursor-pointer hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   : "cursor-default",
                 isHighlighted &&
-                  "z-10 scale-[1.04] border-primary/70 shadow-[0_0_0_1px_rgba(249,115,22,0.3),0_8px_16px_rgba(15,23,42,0.16)] ring-2 ring-primary/80 ring-offset-2 ring-offset-background"
+                  "z-10 scale-[1.04] border-primary/70 shadow-[0_0_0_1px_rgba(212,111,42,0.24),0_8px_16px_rgba(15,23,42,0.12)] ring-2 ring-primary/70 ring-offset-2 ring-offset-background"
               )}
               style={{
                 backgroundColor: style.backgroundColor,
@@ -146,7 +146,7 @@ export function RangeMatrix({
               }}
             >
               {showCellLabels && (
-                <span className="select-none drop-shadow-[0_1px_1px_rgba(255,255,255,0.2)]">
+                <span className="select-none">
                   {handCode}
                 </span>
               )}

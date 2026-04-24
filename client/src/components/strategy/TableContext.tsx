@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
+  displayPositionLabel,
   POSITIONS,
   SPOT_GROUP_LABELS,
   type SpotGroup,
@@ -34,10 +35,6 @@ const SEAT_LAYOUT: Record<string, SeatAnchor> = {
   BB: { x: 21, y: 53 },
 };
 
-function displayPosition(position: string) {
-  return position === "UTG1" ? "UTG+1" : position;
-}
-
 function seatTone(
   position: string,
   heroPosition?: string | null,
@@ -51,7 +48,7 @@ function seatTone(
     return "border-sky-300 bg-sky-500 text-white";
   }
 
-  return "border-border bg-accent/80 text-muted-foreground";
+  return "border-border/80 bg-background/90 text-muted-foreground";
 }
 
 export function TableContext({
@@ -125,12 +122,12 @@ export function TableContext({
                 left: `${anchor.x}%`,
                 top: `${anchor.y}%`,
               }}
-              className={cn(
+            className={cn(
                 "absolute flex h-9 w-[3.5rem] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-xl border px-1 text-center text-[9px] font-black leading-tight transition sm:h-10 sm:w-[3.8rem]",
                 seatTone(position, heroPosition, villainPosition)
               )}
             >
-              <span>{displayPosition(position)}</span>
+              <span>{displayPositionLabel(position)}</span>
               <span
                 className={cn(
                   "mt-0.5 min-h-[10px] text-[8px] font-bold uppercase tracking-[0.04em]",
@@ -152,13 +149,13 @@ export function TableContext({
       <div className="grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
         <div className="rounded-lg border border-border bg-accent/80 px-2.5 py-1.5">
           <span className="font-semibold text-foreground">
-            {heroPosition ? displayPosition(heroPosition) : "Mixed"}
+            {heroPosition ? displayPositionLabel(heroPosition) : "Mixed"}
           </span>
           <span className="ml-1">hero</span>
         </div>
         <div className="rounded-lg border border-border bg-accent/80 px-2.5 py-1.5">
           <span className="font-semibold text-foreground">
-            {villainPosition ? displayPosition(villainPosition) : "No opener"}
+            {villainPosition ? displayPositionLabel(villainPosition) : "No opener"}
           </span>
           <span className="ml-1">
             {villainPosition ? "opener" : "RFI/mixed"}

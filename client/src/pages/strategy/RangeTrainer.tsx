@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "wouter";
-import { CheckCircle2, ChevronDown, ChevronUp, Flame, SlidersHorizontal, Target } from "lucide-react";
+import { CheckCircle2, Flame, Target } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,10 @@ import { calcAccuracy } from "@/components/strategy/utils";
 import { trpc } from "@/lib/trpc";
 import { buildHandClassRevealNote } from "@shared/preflop";
 import {
+  buildStrategyTheorySections,
+} from "@shared/strategyTheory";
+import {
+  displayPositionLabel,
   POSITIONS,
   SPOT_GROUP_LABELS,
   SPOT_GROUPS,
@@ -183,7 +187,6 @@ export default function RangeTrainer() {
     null
   );
   const [questionVersion, setQuestionVersion] = useState(0);
-  const [setupCollapsed, setSetupCollapsed] = useState(false);
 
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const resultRevealRef = useRef<HTMLDivElement | null>(null);
@@ -291,6 +294,16 @@ export default function RangeTrainer() {
   );
 
   const activeSpot = trainerSpot?.chart ?? selectedSpot;
+  const theorySections = activeSpot
+    ? buildStrategyTheorySections({
+        spotGroup: activeSpot.spotGroup,
+        stackDepth: activeSpot.stackDepth,
+        heroPosition: activeSpot.heroPosition,
+        villainPosition: activeSpot.villainPosition,
+      })
+    : [];
+  const trainingCue =
+    theorySections.find(section => section.key === "trainingCue")?.body ?? null;
   const modeLabel = formatModeLabel(mode, activeSpot, stackDepth, spotGroup);
   const modeHelper = filterSummary(mode, stackDepth, spotGroup);
   const revealNote = answerReveal
@@ -300,26 +313,12 @@ export default function RangeTrainer() {
         answerReveal.explanation
       )
     : null;
-  const setupSummary = [
-    {
-      label: "Decision",
-      value:
-        (spotGroup
-          ? SPOT_GROUP_LABELS[spotGroup].replace(" (Open Raise)", "")
-          : undefined) ?? "Any",
-    },
-    { label: "Stack", value: stackDepth ? `${stackDepth}bb` : "Any" },
-    { label: "Players", value: "9" },
-    { label: "Hero", value: heroPosition ?? "Any" },
-    { label: "Opener", value: villainPosition ?? "Any / no opener" },
-  ];
 
   useEffect(() => {
     if (chartIdFromSearch !== null) {
       if (selectedChartId !== chartIdFromSearch || mode !== "current_spot") {
         setSelectedChartId(chartIdFromSearch);
         setMode("current_spot");
-        setSetupCollapsed(false);
         resetSessionState();
       }
       return;
@@ -330,13 +329,7 @@ export default function RangeTrainer() {
       setMode(modeForFilters(stackDepth, spotGroup));
       resetSessionState();
     }
-  }, [
-    chartIdFromSearch,
-    mode,
-    selectedChartId,
-    stackDepth,
-    spotGroup,
-  ]);
+  }, [chartIdFromSearch, mode, selectedChartId, stackDepth, spotGroup]);
 
   useEffect(() => {
     if (!answerReveal) return;
@@ -345,12 +338,6 @@ export default function RangeTrainer() {
     }, 80);
     return () => window.clearTimeout(timeout);
   }, [answerReveal]);
-
-  useEffect(() => {
-    if (trainerSpot) {
-      setSetupCollapsed(true);
-    }
-  }, [trainerSpot?.chartId]);
 
   useEffect(() => {
     if (heroPosition !== undefined && !heroOptions.includes(heroPosition)) {
@@ -468,99 +455,90 @@ export default function RangeTrainer() {
   return (
     <div className="app-shell min-h-[calc(100dvh-4rem)] overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground">
       <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
-        <header className="app-surface p-4 sm:p-5">
+        <header className="app-surface-elevated p-4 sm:p-5">
           <div className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Target className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-muted-foreground">
-                Range Trainer
-              </p>
-              <h1 className="truncate text-xl font-bold tracking-tight">
+              <p className="app-eyebrow">Range Trainer</p>
+              <h1 className="mt-1 truncate text-2xl font-bold tracking-tight">
                 Preflop Drill Flow
               </h1>
             </div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {modeLabel}. {modeHelper}
+          <p className="mt-2 text-sm text-muted-foreground">
+            Keep the setup visible, drill one decision at a time, then confirm
+            the chart immediately below the answer.
           </p>
         </header>
 
-        <section className="app-surface p-3 sm:p-3.5">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Setup
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-7 rounded-lg px-2 text-[11px] font-semibold text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-              onClick={() => setSetupCollapsed(current => !current)}
-            >
-              {setupCollapsed ? "Edit setup" : "Collapse"}
-              {setupCollapsed ? (
-                <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
-              ) : (
-                <ChevronUp className="ml-1.5 h-3.5 w-3.5" />
-              )}
-            </Button>
-          </div>
-
-          {setupCollapsed ? (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {setupSummary.map(item => (
-                <Badge
-                  key={item.label}
-                  className="rounded-full border border-border bg-accent px-2 py-1 text-[10px] font-semibold text-secondary-foreground"
-                >
-                  <span className="mr-1 text-muted-foreground">{item.label}:</span>
-                  <span>{item.value}</span>
+        <section className="app-surface p-3 sm:p-4">
+          <div className="space-y-3">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  Current Setup
+                </p>
+                <h2 className="truncate text-lg font-black tracking-tight sm:text-[1.5rem]">
+                  {modeLabel}
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {modeHelper}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge className="rounded-full bg-primary text-primary-foreground">
+                  BBA
                 </Badge>
-              ))}
-            </div>
-          ) : (
-            <PreflopSetupControls
-              spotGroup={spotGroup}
-              stackDepth={stackDepth}
-              heroPosition={heroPosition}
-              villainPosition={villainPosition}
-              availableStacks={availableStacks}
-              heroOptions={heroOptions}
-              villainOptions={villainOptions}
-              onSpotGroupChange={setFamilyFilter}
-              onStackDepthChange={setStackFilter}
-              onHeroPositionChange={setHeroFilter}
-              onVillainPositionChange={setVillainFilter}
-            />
-          )}
-
-          <div className="mt-2.5 space-y-1.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <Badge className="rounded-full bg-primary text-primary-foreground">BBA</Badge>
-                <Badge className="rounded-full border-border/80 bg-accent/55 text-secondary-foreground">
+                <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
                   Up to 40bb
                 </Badge>
+                {activeSpot && (
+                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                    {displayPositionLabel(activeSpot.heroPosition)}
+                    {activeSpot.villainPosition
+                      ? ` vs ${displayPositionLabel(activeSpot.villainPosition)}`
+                      : ""}
+                  </Badge>
+                )}
               </div>
+            </div>
+
+            <div className="rounded-[1rem] border border-border bg-background/78 p-3">
+              <PreflopSetupControls
+                spotGroup={spotGroup}
+                stackDepth={stackDepth}
+                heroPosition={heroPosition}
+                villainPosition={villainPosition}
+                availableStacks={availableStacks}
+                heroOptions={heroOptions}
+                villainOptions={villainOptions}
+                onSpotGroupChange={setFamilyFilter}
+                onStackDepthChange={setStackFilter}
+                onHeroPositionChange={setHeroFilter}
+                onVillainPositionChange={setVillainFilter}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3 text-[11px] text-secondary-foreground">
                 <span className="inline-flex items-center gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                   {sessionStats.correct}/{sessionStats.total}
                 </span>
-                <span>{accuracy}%</span>
+                <span>{accuracy}% accuracy</span>
                 <span className="inline-flex items-center gap-1">
                   <Flame className="h-3.5 w-3.5 text-amber-600" />
-                  {sessionStats.streak}
+                  {sessionStats.streak} streak
                 </span>
               </div>
+              {!isAuthenticated && (
+                <p className="text-[10px] text-muted-foreground">
+                  Logged-out practice stays local to this device.
+                </p>
+              )}
             </div>
-            {!isAuthenticated && (
-              <p className="text-[10px] text-muted-foreground">
-                Logged-out practice stays local to this device.
-              </p>
-            )}
           </div>
         </section>
 
@@ -574,7 +552,7 @@ export default function RangeTrainer() {
             <div className="space-y-3">
               <div
                 ref={questionCardRef}
-                className="space-y-2.5 rounded-[1.2rem] border border-border bg-card p-3 shadow-[0_10px_26px_rgba(15,23,42,0.12)] sm:p-3.5"
+                className="space-y-2 rounded-[1.2rem] border border-border bg-card p-3 shadow-[0_10px_26px_rgba(15,23,42,0.12)] sm:p-3.5"
               >
                 <TableContext
                   title={trainerSpot.chart.title}
@@ -627,13 +605,21 @@ export default function RangeTrainer() {
                       className="border-border/80 bg-card/90 shadow-none"
                     />
                   </div>
-                  <div className="rounded-[1rem] border border-border bg-accent/70 p-3">
+                  <div className="rounded-[1rem] border border-border bg-background/78 p-3">
                     <p className="text-[11px] font-semibold text-muted-foreground">
                       Takeaway
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-secondary-foreground">
                       {revealNote}
                     </p>
+                    {trainingCue && (
+                      <p className="mt-2 text-[11px] leading-relaxed text-secondary-foreground">
+                        <span className="font-semibold text-foreground">
+                          Training cue:
+                        </span>{" "}
+                        {trainingCue}
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -644,7 +630,7 @@ export default function RangeTrainer() {
             !trainerSpotLoading &&
             !trainerSpotFetching &&
             !trainerSpot && (
-              <Card className="rounded-[1.2rem] border-dashed border-border bg-accent/70 text-foreground">
+              <Card className="rounded-[1.2rem] border-dashed border-border bg-background/82 text-foreground">
                 <CardContent className="space-y-4 p-6 text-center">
                   <Target className="mx-auto h-10 w-10 text-muted-foreground" />
                   <div>
