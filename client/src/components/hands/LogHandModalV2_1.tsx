@@ -37,6 +37,10 @@ import {
   PREFLOP_SCENARIOS,
   type PreflopScenarioId,
 } from "@shared/preflopScenarios";
+import {
+  displayPositionLabel,
+  POSITIONS,
+} from "@shared/strategy";
 
 interface LogHandModalV2_1Props {
   isOpen: boolean;
@@ -48,18 +52,10 @@ type HeroActionType = NonNullable<StreetAction["heroAction"]>["type"];
 type VillainActionType = NonNullable<StreetAction["villainAction"]>["type"];
 
 const STACK_PRESETS = ["15", "20", "25", "40"];
-const POSITIONS = ["UTG", "UTG+1", "MP", "HJ", "CO", "BTN", "SB", "BB"];
 const HERO_ACTIONS: HeroActionType[] = ["FOLD", "CALL", "RAISE", "JAM"];
 const VILLAIN_ACTIONS: VillainActionType[] = ["RAISE", "JAM"];
 const SIZE_BUCKETS: SizeBucket[] = ["SMALL", "MEDIUM", "BIG"];
-const TAG_OPTIONS = [
-  "RFI",
-  "DEFEND",
-  "3BET",
-  "FACING_3BET",
-  "BVB",
-  "JAM_SPOT",
-];
+const TAG_OPTIONS = ["RFI", "DEFEND", "3BET", "FACING_3BET", "BVB", "JAM_SPOT"];
 const VILLAIN_TYPES: Array<{ id: VillainType; label: string }> = [
   { id: "UNKNOWN", label: "Unknown" },
   { id: "REC", label: "Recreational" },
@@ -91,6 +87,8 @@ const PHASES: Array<{ id: TournamentPhase; label: string }> = [
   { id: "ITM", label: "ITM" },
   { id: "FINAL_TABLE", label: "Final table" },
 ];
+
+const FLOW_STEPS = ["Context", "Action", "Review", "Save"] as const;
 
 function needsSize(action?: HeroActionType | VillainActionType) {
   return action === "RAISE";
@@ -124,6 +122,58 @@ function ChipButton({
   );
 }
 
+function LiveSummaryCard({
+  selectedSpotTypeLabel,
+  normalizedHand,
+  heroPosition,
+  isStackValid,
+  stackNumber,
+  heroDecision,
+  className,
+}: {
+  selectedSpotTypeLabel: string;
+  normalizedHand: string;
+  heroPosition: string;
+  isStackValid: boolean;
+  stackNumber: number;
+  heroDecision: string;
+  className?: string;
+}) {
+  return (
+    <aside
+      className={cn("rounded-xl border border-border bg-card p-3", className)}
+    >
+      <p className="text-xs font-semibold text-muted-foreground">Live Summary</p>
+      <div className="mt-2 space-y-2">
+        <p className="text-sm">
+          <span className="text-muted-foreground">Spot:</span>{" "}
+          <span className="font-semibold">{selectedSpotTypeLabel}</span>
+        </p>
+        <p className="text-sm">
+          <span className="text-muted-foreground">Hand:</span>{" "}
+          <span className="font-semibold">{normalizedHand || "-"}</span>
+        </p>
+        <p className="text-sm">
+          <span className="text-muted-foreground">Position:</span>{" "}
+          <span className="font-semibold">
+            {heroPosition ? displayPositionLabel(heroPosition) : "-"}
+          </span>
+        </p>
+        <p className="text-sm">
+          <span className="text-muted-foreground">Stack:</span>{" "}
+          <span className="font-semibold">
+            {isStackValid ? `${stackNumber}bb` : "-"}
+          </span>
+        </p>
+        <p className="text-sm">
+          <span className="text-muted-foreground">Action:</span>{" "}
+          <span className="font-semibold">{heroDecision || "-"}</span>
+        </p>
+      </div>
+    </aside>
+  );
+}
+
 export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [entryMode, setEntryMode] = useState<EntryMode>("QUICK");
   const [showOptional, setShowOptional] = useState(false);
@@ -135,11 +185,15 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [openerPosition, setOpenerPosition] = useState("");
   const [heroDecision, setHeroDecision] = useState<HeroActionType | "">("");
   const [heroSizeBucket, setHeroSizeBucket] = useState<SizeBucket>("MEDIUM");
-  const [villainAction, setVillainAction] = useState<VillainActionType | "">("");
-  const [villainSizeBucket, setVillainSizeBucket] = useState<SizeBucket>("MEDIUM");
+  const [villainAction, setVillainAction] = useState<VillainActionType | "">(
+    ""
+  );
+  const [villainSizeBucket, setVillainSizeBucket] =
+    useState<SizeBucket>("MEDIUM");
   const [villainType, setVillainType] = useState<VillainType | "">("");
-  const [villainRangeType, setVillainRangeType] =
-    useState<VillainRangeType | "">("");
+  const [villainRangeType, setVillainRangeType] = useState<
+    VillainRangeType | ""
+  >("");
   const [confidence, setConfidence] = useState("MEDIUM");
   const [reviewed, setReviewed] = useState(false);
   const [mistakeSeverity, setMistakeSeverity] = useState(0);
@@ -147,8 +201,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [note, setNote] = useState("");
   const [result, setResult] = useState<HandResult | "">("");
   const [gameType, setGameType] = useState<GameType | "">("");
-  const [tournamentPhase, setTournamentPhase] =
-    useState<TournamentPhase | "">("");
+  const [tournamentPhase, setTournamentPhase] = useState<TournamentPhase | "">(
+    ""
+  );
   const [isPko, setIsPko] = useState(false);
 
   const utils = trpc.useUtils();
@@ -181,6 +236,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
       isStackValid &&
       isValidHandNotation(normalizedHand)
   );
+  const selectedSpotTypeLabel = selectedScenario?.label ?? "Not set";
 
   function resetForm() {
     setEntryMode("QUICK");
@@ -227,7 +283,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
       villainAction: villainAction
         ? {
             type: villainAction,
-            sizeBucket: needsSize(villainAction) ? villainSizeBucket : undefined,
+            sizeBucket: needsSize(villainAction)
+              ? villainSizeBucket
+              : undefined,
           }
         : undefined,
     };
@@ -277,7 +335,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
         showCloseButton={false}
         className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-4xl flex-col overflow-hidden rounded-2xl p-0"
       >
-        <DialogHeader className="border-b border-border bg-accent/50 p-5 text-left">
+          <DialogHeader className="border-b border-border bg-accent/50 p-5 text-left">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="app-eyebrow mb-2">Quick Hand Capture</p>
@@ -319,130 +377,169 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           </div>
         </DialogHeader>
 
+        <div className="border-b border-border bg-accent/35 px-4 py-2 sm:px-5">
+          <div className="grid grid-cols-4 gap-1.5">
+            {FLOW_STEPS.map((step, index) => (
+              <div
+                key={step}
+                className={cn(
+                  "rounded-full border px-2 py-1 text-center text-[10px] font-semibold",
+                  index === 0
+                    ? "border-primary bg-primary/12 text-primary"
+                    : "border-border bg-card text-muted-foreground"
+                )}
+              >
+                {step}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          {/* On desktop: form left + Live Summary right rail. On tablet/mobile: single column, summary below form. */}
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
-            <div className="space-y-4">
-              {/* ── A. Spot ── */}
-              <section className="rounded-xl border border-border bg-card p-4">
+          <div className="space-y-4 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_15rem] 2xl:items-start 2xl:gap-4 2xl:space-y-0">
+            <section className="space-y-4">
+              <div className="rounded-xl border border-border bg-card p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-base font-semibold">Required details</h3>
-                  <Badge variant="outline">15-30 sec</Badge>
+                  <h3 className="text-base font-semibold">Quick Log</h3>
+                  <Badge variant="outline">Required first</Badge>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-xs font-semibold text-muted-foreground">
-                      Spot Type
-                    </Label>
-                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {PREFLOP_SCENARIOS.map(option => (
-                        <ChipButton
-                          key={option.id}
-                          active={scenarioId === option.id}
-                          onClick={() => setScenarioId(option.id)}
-                        >
-                          <span className="block text-left text-[11px] font-semibold">
-                            {option.label}
-                          </span>
-                        </ChipButton>
-                      ))}
+                <div className="space-y-3.5">
+                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Spot
+                    </p>
+                    <div className="mt-2">
+                      <Select
+                        value={scenarioId}
+                        onValueChange={value =>
+                          setScenarioId(value as PreflopScenarioId)
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select spot type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PREFLOP_SCENARIOS.map(option => (
+                            <SelectItem key={option.id} value={option.id}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">
-                        Hero Hand
-                      </Label>
-                      <div className="mt-2 space-y-2">
-                        <HandPicker
-                          value={normalizedHand}
-                          onChange={value => setHeroHand(value)}
-                        />
-                        <Input
-                          value={heroHand}
-                          onChange={event => setHeroHand(event.target.value)}
-                          placeholder="AKs, QQ, AhKh"
-                        />
+                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Hand & Stack
+                    </p>
+                    <div className="mt-2 grid gap-3 xl:grid-cols-[minmax(0,1.12fr)_minmax(15rem,0.88fr)]">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Hero Hand
+                        </Label>
+                        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_11rem]">
+                          <HandPicker
+                            value={normalizedHand}
+                            onChange={value => setHeroHand(value)}
+                          />
+                          <Input
+                            value={heroHand}
+                            onChange={event => setHeroHand(event.target.value)}
+                            placeholder="AKs, QQ, AhKh"
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">
-                        Effective Stack (bb)
-                      </Label>
-                      <div className="mt-2 space-y-2">
-                        <Input
-                          value={effectiveStackBb}
-                          type="number"
-                          min={1}
-                          max={40}
-                          onChange={event => setEffectiveStackBb(event.target.value)}
-                          placeholder="20"
-                        />
-                        <div className="flex flex-wrap gap-1.5">
-                          {STACK_PRESETS.map(stack => (
-                            <ChipButton
-                              key={stack}
-                              active={effectiveStackBb === stack}
-                              onClick={() => setEffectiveStackBb(stack)}
-                              className="px-2.5 py-1"
-                            >
-                              {stack}bb
-                            </ChipButton>
-                          ))}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Effective Stack (bb)
+                        </Label>
+                        <div className="space-y-2">
+                          <Input
+                            value={effectiveStackBb}
+                            type="number"
+                            min={1}
+                            max={40}
+                            onChange={event =>
+                              setEffectiveStackBb(event.target.value)
+                            }
+                            placeholder="20"
+                          />
+                          <div className="flex flex-wrap gap-1.5">
+                            {STACK_PRESETS.map(stack => (
+                              <ChipButton
+                                key={stack}
+                                active={effectiveStackBb === stack}
+                                onClick={() => setEffectiveStackBb(stack)}
+                                className="px-2.5 py-1"
+                              >
+                                {stack}bb
+                              </ChipButton>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">
-                        Hero Position
-                      </Label>
-                      <Select value={heroPosition} onValueChange={setHeroPosition}>
-                        <SelectTrigger className="mt-2 w-full">
-                          <SelectValue placeholder="Select hero position" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {POSITIONS.map(position => (
-                            <SelectItem key={position} value={position}>
-                              {position}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Positions
+                    </p>
+                    <div className="mt-2 grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Hero Position
+                        </Label>
+                        <Select
+                          value={heroPosition}
+                          onValueChange={setHeroPosition}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select hero position" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {POSITIONS.map(position => (
+                              <SelectItem key={position} value={position}>
+                                {displayPositionLabel(position)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div>
-                      <Label className="text-xs font-semibold text-muted-foreground">
-                        Opener / Villain (optional)
-                      </Label>
-                      <Select
-                        value={openerPosition || "NONE"}
-                        onValueChange={value =>
-                          setOpenerPosition(value === "NONE" ? "" : value)
-                        }
-                      >
-                        <SelectTrigger className="mt-2 w-full">
-                          <SelectValue placeholder="No opener" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">No opener</SelectItem>
-                          {POSITIONS.map(position => (
-                            <SelectItem key={position} value={position}>
-                              {position}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground">
+                          Villain / Opener
+                        </Label>
+                        <Select
+                          value={openerPosition || "NONE"}
+                          onValueChange={value =>
+                            setOpenerPosition(value === "NONE" ? "" : value)
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="No opener" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="NONE">No opener</SelectItem>
+                            {POSITIONS.map(position => (
+                              <SelectItem key={position} value={position}>
+                                {displayPositionLabel(position)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
 
-                  {/* ── D. Action ── */}
-                  <div>
+                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Action
+                    </p>
                     <Label className="text-xs font-semibold text-muted-foreground">
                       Hero Decision
                     </Label>
@@ -474,27 +571,34 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     )}
                   </div>
 
-                  {/* ── E. Quick Note (always visible, below required fields) ── */}
-                  <div>
-                    <Label
-                      htmlFor="quick-note-inline"
-                      className="text-xs font-semibold text-muted-foreground"
-                    >
-                      Quick Note{" "}
-                      <span className="font-normal text-muted-foreground/70">
-                        (optional)
-                      </span>
-                    </Label>
-                    <Textarea
-                      id="quick-note-inline"
-                      value={note}
-                      onChange={event => setNote(event.target.value.slice(0, 300))}
-                      placeholder="Short takeaway or reminder for review."
-                      className="mt-2 min-h-16"
-                    />
+                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Optional Note
+                    </p>
+                    <div className="mt-2">
+                      <Textarea
+                        id="quick-note"
+                        value={note}
+                        onChange={event =>
+                          setNote(event.target.value.slice(0, 300))
+                        }
+                        placeholder="Short takeaway or reminder."
+                        className="min-h-20"
+                      />
+                    </div>
                   </div>
                 </div>
-              </section>
+              </div>
+
+              <LiveSummaryCard
+                className="2xl:hidden"
+                selectedSpotTypeLabel={selectedSpotTypeLabel}
+                normalizedHand={normalizedHand}
+                heroPosition={heroPosition}
+                isStackValid={isStackValid}
+                stackNumber={stackNumber}
+                heroDecision={heroDecision}
+              />
 
               <section className="rounded-xl border border-border bg-card p-4">
                 <button
@@ -503,9 +607,11 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   onClick={() => setShowOptional(current => !current)}
                 >
                   <div>
-                    <h3 className="text-base font-semibold">Optional details</h3>
+                    <h3 className="text-base font-semibold">
+                      Optional review details
+                    </h3>
                     <p className="text-xs text-muted-foreground">
-                      Add reads, confidence, and deeper review context.
+                      Add reads, confidence, tags, and full-review context.
                     </p>
                   </div>
                   {showOptional ? (
@@ -558,7 +664,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                           <Select
                             value={villainType || "NONE"}
                             onValueChange={value =>
-                              setVillainType(value === "NONE" ? "" : (value as VillainType))
+                              setVillainType(
+                                value === "NONE" ? "" : (value as VillainType)
+                              )
                             }
                           >
                             <SelectTrigger className="mt-2 w-full">
@@ -582,7 +690,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                             value={villainRangeType || "NONE"}
                             onValueChange={value =>
                               setVillainRangeType(
-                                value === "NONE" ? "" : (value as VillainRangeType)
+                                value === "NONE"
+                                  ? ""
+                                  : (value as VillainRangeType)
                               )
                             }
                           >
@@ -651,7 +761,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                             onClick={() =>
                               setTags(previous =>
                                 previous.includes(tag)
-                                  ? previous.filter(existing => existing !== tag)
+                                  ? previous.filter(
+                                      existing => existing !== tag
+                                    )
                                   : [...previous, tag]
                               )
                             }
@@ -672,7 +784,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                           <Select
                             value={result || "NONE"}
                             onValueChange={value =>
-                              setResult(value === "NONE" ? "" : (value as HandResult))
+                              setResult(
+                                value === "NONE" ? "" : (value as HandResult)
+                              )
                             }
                           >
                             <SelectTrigger className="w-full">
@@ -696,7 +810,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                           <Select
                             value={gameType || "NONE"}
                             onValueChange={value =>
-                              setGameType(value === "NONE" ? "" : (value as GameType))
+                              setGameType(
+                                value === "NONE" ? "" : (value as GameType)
+                              )
                             }
                           >
                             <SelectTrigger className="w-full">
@@ -721,7 +837,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                             value={tournamentPhase || "NONE"}
                             onValueChange={value =>
                               setTournamentPhase(
-                                value === "NONE" ? "" : (value as TournamentPhase)
+                                value === "NONE"
+                                  ? ""
+                                  : (value as TournamentPhase)
                               )
                             }
                           >
@@ -769,51 +887,20 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         </div>
                       </div>
                     )}
-
-                    {/* Quick Note is now promoted above the optional section; this duplicate is removed */}
                   </div>
                 )}
               </section>
-            </div>
+            </section>
 
-            {/* Live Summary: right rail on desktop, below form on mobile/tablet */}
-            <aside className="space-y-3 lg:block">
-              <div className="rounded-xl border border-border bg-accent/60 p-3">
-                <p className="text-xs font-semibold text-muted-foreground">
-                  Live Summary
-                </p>
-                <div className="mt-2 space-y-2">
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Spot:</span>{" "}
-                    <span className="font-semibold">
-                      {selectedScenario?.label ?? "Not set"}
-                    </span>
-                  </p>
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Hand:</span>{" "}
-                    <span className="font-semibold">{normalizedHand || "-"}</span>
-                  </p>
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Position:</span>{" "}
-                    <span className="font-semibold">{heroPosition || "-"}</span>
-                  </p>
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Stack:</span>{" "}
-                    <span className="font-semibold">
-                      {isStackValid ? `${stackNumber}bb` : "-"}
-                    </span>
-                  </p>
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Action:</span>{" "}
-                    <span className="font-semibold">{heroDecision || "-"}</span>
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Required fields are always visible. Optional detail is collapsed so
-                quick capture stays fast.
-              </p>
-            </aside>
+            <LiveSummaryCard
+              className="hidden 2xl:sticky 2xl:top-1 2xl:block"
+              selectedSpotTypeLabel={selectedSpotTypeLabel}
+              normalizedHand={normalizedHand}
+              heroPosition={heroPosition}
+              isStackValid={isStackValid}
+              stackNumber={stackNumber}
+              heroDecision={heroDecision}
+            />
           </div>
         </div>
 

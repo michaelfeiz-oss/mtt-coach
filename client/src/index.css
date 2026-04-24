@@ -47,46 +47,39 @@
 }
 
 :root {
-  --primary: #ea6c0a;
+  --primary: #d46f2a;
   --primary-foreground: #ffffff;
-  --sidebar-primary: #ea6c0a;
+  --sidebar-primary: #d46f2a;
   --sidebar-primary-foreground: #ffffff;
   --chart-1: #2563eb;
   --chart-2: #16a34a;
   --chart-3: #d97706;
-  --chart-4: #ea6c0a;
+  --chart-4: #d46f2a;
   --chart-5: #8b5cf6;
   --radius: 0.75rem;
-  /* Page shell: very light warm neutral */
-  --background: #f0eeeb;
-  --foreground: #1c1917;
-  /* Cards: near-white */
-  --card: #fafaf9;
-  --card-foreground: #1c1917;
-  --popover: #fafaf9;
-  --popover-foreground: #1c1917;
-  /* Secondary surfaces: subtle warm-neutral, not orange-tinted */
-  --secondary: #e8e5e1;
-  --secondary-foreground: #44403c;
-  /* Muted: calm warm-gray with good readability */
-  --muted: #e8e5e1;
-  --muted-foreground: #78716c;
-  /* Accent: neutral warm-gray for chips/rows, not orange */
-  --accent: #ede9e4;
-  --accent-foreground: #292524;
-  --destructive: #dc2626;
+  --background: #f7f5f1;
+  --foreground: #1f2933;
+  --card: #fffdfa;
+  --card-foreground: #16202a;
+  --popover: #fffdfa;
+  --popover-foreground: #16202a;
+  --secondary: #f2eee7;
+  --secondary-foreground: #435164;
+  --muted: #f5f1eb;
+  --muted-foreground: #637182;
+  --accent: #f4f1eb;
+  --accent-foreground: #334155;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  /* Borders: soft warm gray */
-  --border: #d6d0c9;
-  --input: #e8e5e1;
-  --ring: #ea6c0a;
-  /* Sidebar: slightly darker warm-neutral */
-  --sidebar: #e4e0db;
-  --sidebar-foreground: #1c1917;
-  --sidebar-accent: #ede9e4;
-  --sidebar-accent-foreground: #292524;
-  --sidebar-border: #d6d0c9;
-  --sidebar-ring: #ea6c0a;
+  --border: #e4ddd2;
+  --input: #fbf8f3;
+  --ring: #d46f2a;
+  --sidebar: #faf8f4;
+  --sidebar-foreground: #1f2933;
+  --sidebar-accent: #f3efe8;
+  --sidebar-accent-foreground: #334155;
+  --sidebar-border: #e4ddd2;
+  --sidebar-ring: #d46f2a;
   --success: #16a34a;
   --warning: #d97706;
   --error: #dc2626;
@@ -154,19 +147,25 @@
 
 @layer components {
   .app-shell {
-    background-color: #f0eeeb;
+    background-image:
+      radial-gradient(
+        circle at 14% 12%,
+        rgba(212, 111, 42, 0.055),
+        transparent 28%
+      ),
+      linear-gradient(180deg, #faf8f4 0%, #f4f1eb 100%);
   }
 
   .app-surface {
-    @apply rounded-[1rem] border border-border bg-card shadow-[0_2px_8px_rgba(28,25,23,0.06)];
+    @apply rounded-[1rem] border border-border bg-card shadow-[0_8px_24px_rgba(15,23,42,0.06)];
   }
 
   .app-surface-elevated {
-    @apply rounded-[1rem] border border-border bg-popover shadow-[0_4px_16px_rgba(28,25,23,0.08)];
+    @apply rounded-[1rem] border border-border bg-popover shadow-[0_16px_36px_rgba(15,23,42,0.08)];
   }
 
   .app-surface-subtle {
-    @apply rounded-[0.9rem] border border-border/85 bg-accent/70;
+    @apply rounded-[0.9rem] border border-border/80 bg-background/78;
   }
 
   .app-eyebrow {
@@ -174,7 +173,19 @@
   }
 
   .app-chip {
-    @apply rounded-full border border-border bg-accent px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground;
+    @apply rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground;
+  }
+
+  .app-list-row {
+    @apply rounded-xl border border-border/80 bg-background/90 transition;
+  }
+
+  .app-list-row:hover {
+    @apply border-border bg-card;
+  }
+
+  .app-empty-state {
+    @apply rounded-xl border border-dashed border-border/80 bg-background/75 text-sm text-muted-foreground;
   }
 
   /**

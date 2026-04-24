@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { displayPositionLabel } from "@shared/strategy";
 
 interface TournamentFormData {
   buyIn: string;
@@ -74,6 +75,16 @@ function reviewStatus(reviewed: boolean, mistakeSeverity: number) {
   return "Reviewed";
 }
 
+function reviewStatusClass(status: string) {
+  if (status === "Reviewed") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+  if (status === "Needs Review") {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+  return "border-slate-200 bg-slate-100 text-slate-700";
+}
+
 export default function Log() {
   const [showLogHandModal, setShowLogHandModal] = useState(false);
   const [showLogTournamentModal, setShowLogTournamentModal] = useState(false);
@@ -90,7 +101,8 @@ export default function Log() {
         toast.success("Tournament saved");
         setShowLogTournamentModal(false);
       },
-      onError: error => toast.error(`Could not save tournament: ${error.message}`),
+      onError: error =>
+        toast.error(`Could not save tournament: ${error.message}`),
     });
 
   const { mutate: createLeak, isPending: isCreatingLeak } =
@@ -113,6 +125,7 @@ export default function Log() {
       { Draft: 0, "Needs Review": 0, Reviewed: 0 } as Record<string, number>
     );
   }, [recentHands]);
+  const recentHandPreview = recentHands.slice(0, 6);
 
   function handleLogTournament(data: TournamentFormData) {
     createTournament({
@@ -192,7 +205,11 @@ export default function Log() {
                   { label: "Preflop first", icon: Zap },
                   { label: "Review later", icon: History },
                 ].map(item => (
-                  <Badge key={item.label} variant="outline" className="rounded-full px-3">
+                  <Badge
+                    key={item.label}
+                    variant="outline"
+                    className="rounded-full px-3"
+                  >
                     <item.icon className="h-3.5 w-3.5" />
                     {item.label}
                   </Badge>
@@ -219,12 +236,14 @@ export default function Log() {
                   className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
                   onClick={() => openSupportingAction(action.id)}
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-background text-primary ring-1 ring-border/70">
                     <Icon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">{action.title}</p>
-                    <p className="text-xs text-muted-foreground">{action.helper}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {action.helper}
+                    </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -233,9 +252,9 @@ export default function Log() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section>
           <Card className="app-surface">
-            <CardHeader className="flex flex-row items-end justify-between gap-4">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <CardTitle className="text-lg">Recent Hands</CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -243,56 +262,78 @@ export default function Log() {
                 </p>
               </div>
               <Link href="/hands">
-                <Button variant="outline" size="sm" className="rounded-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="self-start rounded-full"
+                >
                   Open Review Queue
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "Draft", value: statusCounts.Draft },
+                  {
+                    label: "Needs Review",
+                    value: statusCounts["Needs Review"],
+                  },
+                  { label: "Reviewed", value: statusCounts.Reviewed },
+                ].map(stat => (
+                  <div key={stat.label} className="app-chip">
+                    {stat.label}: {stat.value}
+                  </div>
+                ))}
+              </div>
+
               {handsLoading && (
                 <div className="space-y-2">
                   {[1, 2, 3].map(index => (
-                    <Skeleton key={index} className="h-14 rounded-xl" />
+                    <Skeleton key={index} className="h-16 rounded-xl" />
                   ))}
                 </div>
               )}
 
               {!handsLoading && recentHands.length === 0 && (
-                <p className="py-2 text-sm text-muted-foreground">
-                  No hands logged yet.
-                </p>
+                <div className="app-empty-state p-4">
+                  No hands logged yet. Capture your next preflop decision from
+                  the button above.
+                </div>
               )}
 
               {!handsLoading &&
-                recentHands.map(hand => {
-                  const status = reviewStatus(hand.reviewed, hand.mistakeSeverity);
+                recentHandPreview.map(hand => {
+                  const status = reviewStatus(
+                    hand.reviewed,
+                    hand.mistakeSeverity
+                  );
                   return (
                     <Link key={hand.id} href={`/hands/${hand.id}`}>
-                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2.5 transition hover:bg-secondary/70">
-                        <div className="min-w-0">
+                      <div className="app-list-row flex items-center justify-between gap-3 p-3.5">
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold">
                             {hand.heroHand || "Captured hand"}
                           </p>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
                             {[
-                              hand.heroPosition,
+                              hand.heroPosition
+                                ? displayPositionLabel(hand.heroPosition)
+                                : null,
                               hand.effectiveStackBb
                                 ? `${Math.round(hand.effectiveStackBb)}bb`
                                 : null,
                               hand.spotType?.replace(/_/g, " "),
                             ]
                               .filter(Boolean)
-                              .join(" • ") || "Needs review details"}
+                              .join(" | ") || "Needs review details"}
                           </p>
                         </div>
                         <Badge
+                          variant="outline"
                           className={cn(
                             "rounded-full",
-                            status === "Reviewed" &&
-                              "bg-emerald-500/15 text-emerald-700",
-                            status === "Needs Review" &&
-                              "bg-amber-500/15 text-amber-700",
-                            status === "Draft" && "bg-slate-200 text-slate-700"
+                            reviewStatusClass(status)
                           )}
                         >
                           {status}
@@ -301,25 +342,6 @@ export default function Log() {
                     </Link>
                   );
                 })}
-            </CardContent>
-          </Card>
-
-          <Card className="app-surface">
-            <CardContent className="space-y-3 p-4">
-              <p className="text-sm font-semibold">Queue Status</p>
-              {[
-                { label: "Draft", value: statusCounts.Draft },
-                { label: "Needs Review", value: statusCounts["Needs Review"] },
-                { label: "Reviewed", value: statusCounts.Reviewed },
-              ].map(stat => (
-                <div
-                  key={stat.label}
-                  className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/40 px-3 py-2"
-                >
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  <p className="text-sm font-semibold">{stat.value}</p>
-                </div>
-              ))}
             </CardContent>
           </Card>
         </section>

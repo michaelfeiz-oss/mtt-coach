@@ -15,7 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { EditTournamentModal } from "@/components/EditTournamentModal";
-import { cn } from "@/lib/utils";
 
 type TournamentActivity = {
   id: number;
@@ -23,6 +22,17 @@ type TournamentActivity = {
   time: string;
   tournament: any;
 };
+
+function formatNetResult(value: number | null | undefined) {
+  if (typeof value !== "number" || Number.isNaN(value)) return "Logged";
+  if (value === 0) return "Even";
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -65,17 +75,18 @@ export default function Dashboard() {
   const recentActivity: TournamentActivity[] =
     tournaments?.map((t: any) => ({
       id: t.id,
-      title: `${t.venue || "Tournament"} ${
-        t.buyIn > 0 ? `$${t.buyIn}` : ""
-      }`,
+      title: `${t.venue || "Tournament"} ${t.buyIn > 0 ? `$${t.buyIn}` : ""}`,
       time: new Date(t.date).toLocaleDateString(),
       tournament: t,
     })) || [];
 
   const pendingReviewCount = useMemo(
-    () => recentActivity.filter(activity => activity.tournament.netResult < 0).length,
+    () =>
+      recentActivity.filter(activity => activity.tournament.netResult < 0)
+        .length,
     [recentActivity]
   );
+  const activityPreview = recentActivity.slice(0, 4);
 
   function handleEditTournament(data: any) {
     if (!selectedTournament) return;
@@ -133,10 +144,7 @@ export default function Dashboard() {
                 { label: "Review Queue", value: `${pendingReviewCount}` },
                 { label: "Week", value: `${currentWeek}` },
               ].map(item => (
-                <div
-                  key={item.label}
-                  className="rounded-xl border border-border bg-accent/70 px-3 py-2"
-                >
+                <div key={item.label} className="app-surface-subtle px-3 py-2">
                   <p className="text-xs text-muted-foreground">{item.label}</p>
                   <p className="text-sm font-semibold">{item.value}</p>
                 </div>
@@ -174,7 +182,7 @@ export default function Dashboard() {
               onClick={action.onClick}
               className="app-surface flex items-center gap-2 p-3 text-left transition hover:-translate-y-0.5"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-background text-primary ring-1 ring-border/70">
                 <action.icon className="h-4 w-4" />
               </span>
               <span className="text-sm font-semibold">{action.label}</span>
@@ -187,9 +195,8 @@ export default function Dashboard() {
             type="button"
             onClick={() => setLocation("/strategy/library")}
             className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
-            style={{ backgroundColor: "#f9fee1" }}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-background text-primary ring-1 ring-border/70">
               <Layers className="h-5 w-5" />
             </span>
             <div>
@@ -203,9 +210,8 @@ export default function Dashboard() {
             type="button"
             onClick={() => setLocation("/strategy/trainer")}
             className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
-            style={{ backgroundColor: "#f9fee1" }}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/12 text-primary ring-1 ring-primary/10">
               <Target className="h-5 w-5" />
             </span>
             <div>
@@ -251,23 +257,27 @@ export default function Dashboard() {
         </section>
 
         <Card className="app-surface">
-          <CardHeader className="flex flex-row items-end justify-between gap-3 pb-3">
+          <CardHeader className="flex flex-row items-end justify-between gap-3">
             <div>
-              <p className="app-eyebrow mb-1">This Week</p>
-              <CardTitle className="text-base">Tournament Updates</CardTitle>
+              <CardTitle className="text-lg">Tournament Updates</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Recent result logs and edits, kept quiet until there is
+                something worth reviewing.
+              </p>
             </div>
-            {recentActivity.length > 0 && (
-              <span className="text-xs text-muted-foreground">{recentActivity.length} logged</span>
+            {activityPreview.length > 0 && (
+              <Badge variant="outline">Latest {activityPreview.length}</Badge>
             )}
           </CardHeader>
-          <CardContent className="space-y-1.5">
-            {recentActivity.length === 0 && (
-              <p className="py-2 text-sm text-muted-foreground">
-                No tournaments logged this week.
-              </p>
+          <CardContent className="space-y-2">
+            {activityPreview.length === 0 && (
+              <div className="app-empty-state px-4 py-3.5">
+                No tournament updates yet. Log a result when you finish your
+                next session.
+              </div>
             )}
 
-            {recentActivity.slice(0, 4).map(activity => (
+            {activityPreview.map(activity => (
               <button
                 key={activity.id}
                 type="button"
@@ -275,21 +285,23 @@ export default function Dashboard() {
                   setSelectedTournament(activity.tournament);
                   setShowEditModal(true);
                 }}
-                className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-secondary/40 px-3 py-2.5 text-left transition hover:bg-secondary/70"
+                className="app-list-row flex w-full items-center justify-between gap-3 p-3.5 text-left"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{activity.title}</p>
-                  <p className="text-xs text-muted-foreground">{activity.time}</p>
+                  <p className="text-sm font-semibold">{activity.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {activity.time}
+                  </p>
                 </div>
                 <Badge
-                  className={cn(
-                    "ml-3 shrink-0 rounded-full text-[11px]",
+                  variant="outline"
+                  className={
                     activity.tournament.netResult >= 0
-                      ? "border-transparent bg-emerald-100 text-emerald-700"
-                      : "border-transparent bg-slate-100 text-slate-600"
-                  )}
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-amber-200 bg-amber-50 text-amber-700"
+                  }
                 >
-                  {activity.tournament.netResult >= 0 ? "Profit" : "Loss"}
+                  {formatNetResult(activity.tournament.netResult)}
                 </Badge>
               </button>
             ))}
@@ -307,4 +319,3 @@ export default function Dashboard() {
     </main>
   );
 }
-
