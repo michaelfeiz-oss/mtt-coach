@@ -24,6 +24,11 @@ import {
 } from "@/lib/strategyRecentSpots";
 import { StudyModuleCard } from "./StudyModuleCard";
 import {
+  buildPriorityPackSummary,
+  resolveAllPriorityDrillPacks,
+} from "@shared/drillPacks";
+import { findLeakFamilyByLabel } from "@shared/leakFamilies";
+import {
   ACTION_LABELS,
   SPOT_GROUP_LABELS,
   type Action,
@@ -154,6 +159,32 @@ export function StudyCockpit() {
   );
   const weakSpots = progress?.weakSpots ?? [];
   const missedHands = progress?.missedHands ?? [];
+  const priorityPacks = useMemo(
+    () =>
+      resolveAllPriorityDrillPacks(spots)
+        .filter(pack => pack.supported || pack.id === "30bb-broadways-vs-limper")
+        .slice(0, 4),
+    [spots]
+  );
+  const leakBoard = useMemo(
+    () =>
+      topLeaks.map(leak => ({
+        leak,
+        family: findLeakFamilyByLabel(leak.name),
+      })),
+    [topLeaks]
+  );
+  const suggestedNextSpotTitle = weakSpots[0]?.chartTitle ?? recentSpot?.title;
+  const suggestedNextSpotMeta = weakSpots[0]
+    ? `${weakSpots[0].accuracy}% accuracy over ${weakSpots[0].attempts} attempts`
+    : recentSpot
+      ? formatSpotMeta(recentSpot)
+      : null;
+  const suggestedNextSpotHref = weakSpots[0]
+    ? `/strategy/trainer?chartId=${weakSpots[0].chartId}`
+    : recentSpot
+      ? `/strategy/trainer?chartId=${recentSpot.id}`
+      : null;
 
   return (
     <main className="app-shell min-h-screen pb-24 text-foreground">
@@ -284,6 +315,34 @@ export function StudyCockpit() {
 
             <Card className="app-surface">
               <CardContent className="space-y-4 p-4 sm:p-5">
+                {suggestedNextSpotTitle &&
+                  suggestedNextSpotMeta &&
+                  suggestedNextSpotHref && (
+                  <div className="rounded-xl border border-border bg-accent/65 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-muted-foreground">
+                          Suggested Next Spot
+                        </p>
+                        <p className="mt-1 truncate text-sm font-semibold text-foreground">
+                          {suggestedNextSpotTitle}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {suggestedNextSpotMeta}
+                        </p>
+                      </div>
+                      <Link href={suggestedNextSpotHref}>
+                        <Button
+                          size="sm"
+                          className="h-8 shrink-0 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
+                        >
+                          Train
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
                 {isAuthenticated && weakSpots.length > 0 && (
                   <div className="space-y-2">
                     {weakSpots.slice(0, 4).map(spot => (
@@ -321,17 +380,26 @@ export function StudyCockpit() {
                         <AlertCircle className="h-3.5 w-3.5" />
                         Active Leaks
                       </div>
-                      {topLeaks.map(leak => (
+                      {leakBoard.map(({ leak, family }) => (
                         <Link key={leak.id} href={`/leaks/${leak.id}`}>
                           <div className="rounded-xl border border-border bg-accent/65 p-3 transition hover:bg-accent/90">
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-foreground">
-                                  {leak.name}
+                                  {family?.label ?? leak.name}
                                 </p>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
-                                  {leak.category} - {leak.handCount} linked hands
+                                  {family?.description ?? leak.category} ·{" "}
+                                  {leak.handCount} linked hands
                                 </p>
+                                {family?.relatedPackIds?.[0] && (
+                                  <Badge
+                                    variant="outline"
+                                    className="mt-2 rounded-full"
+                                  >
+                                    Drill: {family.relatedPackIds[0].replace(/-/g, " ")}
+                                  </Badge>
+                                )}
                               </div>
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             </div>
@@ -389,6 +457,101 @@ export function StudyCockpit() {
                     appear here for authenticated users.
                   </p>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <SectionHeader
+            label="Priority"
+            title="Priority Drill Packs"
+            helper="Curated packs target boundary hands, blind defense, and the pressure spots that leak most often."
+            action={
+              <Link href="/strategy/trainer">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-full text-xs font-semibold text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                >
+                  Open trainer
+                </Button>
+              </Link>
+            }
+          />
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+            <Card className="app-surface">
+              <CardContent className="space-y-3 p-4 sm:p-5">
+                {priorityPacks.map(pack => (
+                  <div
+                    key={pack.id}
+                    className="rounded-xl border border-border bg-accent/65 p-3"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground">
+                          {pack.title}
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          {pack.purpose}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <Badge variant="outline" className="rounded-full">
+                            {buildPriorityPackSummary(pack)}
+                          </Badge>
+                          {pack.focusTags.map(tag => (
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className="rounded-full"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Link href={`/strategy/trainer?packId=${pack.id}`}>
+                        <Button
+                          className="h-9 rounded-full px-4 text-xs font-semibold"
+                          disabled={!pack.supported}
+                        >
+                          {pack.supported ? "Start Drill" : "Needs Coverage"}
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card className="app-surface">
+              <CardContent className="space-y-3 p-4 sm:p-5">
+                <div>
+                  <p className="text-[11px] font-semibold text-muted-foreground">
+                    Push / Fold Mode
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-foreground">
+                    Short-stack reference and drill
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Dedicated up to 10bb mode for open shoves and BB call-offs, sourced from your short-stack notes.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {[5, 6, 7, 8, 9, 10].map(stack => (
+                    <Badge key={stack} variant="outline" className="rounded-full">
+                      {stack}bb
+                    </Badge>
+                  ))}
+                </div>
+
+                <Link href="/strategy/push-fold">
+                  <Button className="h-10 w-full rounded-xl text-sm font-semibold">
+                    Open Push/Fold Mode
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>

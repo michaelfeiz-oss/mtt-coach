@@ -41,10 +41,12 @@ const GetChartBySpotInput = z.object({
 
 const GetTrainerSpotInput = z.object({
   chartId: z.number().int().positive().optional(),
+  chartIds: z.array(z.number().int().positive()).max(200).optional(),
   stackDepth: StackDepthInput.optional(),
   spotGroup: z.enum(SPOT_GROUPS).optional(),
   heroPosition: z.enum(POSITIONS).optional(),
   villainPosition: z.enum(POSITIONS).optional(),
+  focusHandCodes: z.array(z.string().min(2).max(4)).max(80).optional(),
   recentChartIds: z.array(z.number().int().positive()).max(20).optional(),
   recentHandKeys: z.array(z.string().min(1).max(24)).max(60).optional(),
 });

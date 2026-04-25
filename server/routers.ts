@@ -10,6 +10,7 @@ import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveT
 import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } from "./curriculumConfig";
 import { icmRouter } from "./icm/router";
 import { strategyRouter } from "./strategy/router";
+import { getLeakFamily } from "../shared/leakFamilies";
 
 // Hardcoded user ID for single-user app
 const HARDCODED_USER_ID = 1;
@@ -208,6 +209,7 @@ export const appRouter = router({
         tags: z.array(z.string()).optional(),
         lesson: z.string().optional(),
         leakIds: z.array(z.number()).optional(),
+        leakFamilyId: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const hand = await db.createHand({
@@ -235,6 +237,33 @@ export const appRouter = router({
         if (input.leakIds && input.leakIds.length > 0) {
           for (const leakId of input.leakIds) {
             await db.linkHandToLeak(hand.id, leakId);
+          }
+        }
+
+        if (input.leakFamilyId) {
+          const family = getLeakFamily(input.leakFamilyId);
+          if (family) {
+            const existingLeaks = await db.getUserLeaks(HARDCODED_USER_ID);
+            const existingLeak = existingLeaks.find(
+              leak =>
+                leak.name.trim().toLowerCase() ===
+                family.label.trim().toLowerCase()
+            );
+
+            const leakRecord =
+              existingLeak ??
+              (await db.createLeak({
+                userId: HARDCODED_USER_ID,
+                name: family.label,
+                category: "PREFLOP",
+                description: family.description,
+                status: "ACTIVE",
+              }));
+
+            const alreadyLinked = input.leakIds?.includes(leakRecord.id);
+            if (!alreadyLinked) {
+              await db.linkHandToLeak(hand.id, leakRecord.id);
+            }
           }
         }
 
