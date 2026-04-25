@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { normalizeHandCode as normalizeCanonicalHandCode } from "@shared/handMatrix";
 import { ACTION_LABELS, POSITIONS, type Action } from "@shared/strategy";
 
 const STACK_PRESETS = [15, 20, 25, 40];
@@ -52,7 +53,10 @@ interface QuickHandForm {
 }
 
 function normalizeHandCode(value: string) {
-  return value.trim().replace(/\s+/g, "").toUpperCase();
+  return (
+    normalizeCanonicalHandCode(value) ??
+    value.trim().replace(/\s+/g, "").toUpperCase()
+  );
 }
 
 export function QuickAddHand() {

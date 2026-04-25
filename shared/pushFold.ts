@@ -7,12 +7,14 @@ import {
   getCanonicalSpotId,
   type CanonicalSpotContext,
 } from "./spotIds";
-import type { HandAction, Position } from "./strategy";
-
-interface HandCoordinate {
-  row: number;
-  col: number;
-}
+import { ALL_HANDS, type HandAction, type Position } from "./strategy";
+import {
+  getHandCoordinate,
+  handDistance,
+  isCanonicalHandCode,
+  normalizeHandCode,
+  type HandCoordinate,
+} from "./handMatrix";
 
 export const PUSH_FOLD_REFERENCE_IDS = [
   "open-shove-utg",
@@ -91,19 +93,17 @@ function connectorProgression(first: string, second: string, suited?: "s" | "o")
   const results: string[] = [];
   for (
     let currentHigh = firstIndex, currentLow = secondIndex;
-    currentLow > currentHigh;
+    currentHigh >= 1 && currentLow >= 2 && currentLow > currentHigh;
     currentHigh -= 1, currentLow -= 1
   ) {
-    if (currentHigh < 0 || currentLow < 0) break;
     const high = RANKS[currentHigh];
     const low = RANKS[currentLow];
     results.push(`${high}${low}${suited ?? ""}`);
-    if (high === "A" || low === "A") break;
   }
   return results;
 }
 
-function normalizeHandCode(handCode: string) {
+function normalizeRangeToken(handCode: string) {
   return handCode.replace(/\s+/g, "");
 }
 
@@ -116,7 +116,7 @@ export function expandPushFoldNotation(rangeText: string): string[] {
   const codes = new Set<string>();
 
   for (const token of tokens) {
-    const normalized = normalizeHandCode(token);
+    const normalized = normalizeRangeToken(token);
 
     if (/^([AKQJT98765432])\1\+$/.test(normalized)) {
       const startRank = normalized[0];
@@ -162,7 +162,7 @@ export function expandPushFoldNotation(rangeText: string): string[] {
     }
   }
 
-  return Array.from(codes);
+  return ALL_HANDS.filter(handCode => codes.has(handCode));
 }
 
 export const PUSH_FOLD_REFERENCES: PushFoldReference[] = [
@@ -303,6 +303,30 @@ export function getPushFoldReference(
   );
 }
 
+export function getPushFoldActionForHand(
+  reference: PushFoldReference,
+  handCode: string
+): HandAction | null {
+  const canonicalHand = normalizeHandCode(handCode);
+  if (!canonicalHand || !isCanonicalHandCode(canonicalHand)) {
+    return null;
+  }
+
+  const includedHands = new Set(reference.handCodes);
+  const decisionAction = reference.mode === "BB_CALL_VS_BTN_SHOVE" ? "CALL" : "JAM";
+  const isIncluded = includedHands.has(canonicalHand);
+
+  return {
+    handCode: canonicalHand,
+    primaryAction: isIncluded ? decisionAction : "FOLD",
+    note: isIncluded
+      ? `${decisionAction === "CALL" ? "Call off" : "Jam"} from the ${
+          reference.stackSource
+        }bb reference.`
+      : "Outside the current push/fold reference range.",
+  };
+}
+
 export function buildPushFoldSpotContext(
   reference: PushFoldReference,
   stackDepth: number
@@ -318,48 +342,8 @@ export function buildPushFoldSpotContext(
 }
 
 export function buildPushFoldActions(reference: PushFoldReference): HandAction[] {
-  const includedHands = new Set(reference.handCodes);
-  const decisionAction = reference.mode === "BB_CALL_VS_BTN_SHOVE" ? "CALL" : "JAM";
-
-  return RANKS.flatMap((rowRank, rowIndex) =>
-    RANKS.map((colRank, colIndex) => {
-      let handCode = "";
-      if (rowIndex === colIndex) {
-        handCode = `${rowRank}${colRank}`;
-      } else if (rowIndex < colIndex) {
-        handCode = `${rowRank}${colRank}s`;
-      } else {
-        handCode = `${colRank}${rowRank}o`;
-      }
-
-      return {
-        handCode,
-        primaryAction: includedHands.has(handCode) ? decisionAction : "FOLD",
-        note: includedHands.has(handCode)
-          ? `${decisionAction === "CALL" ? "Call off" : "Jam"} from the ${
-              reference.stackSource
-            }bb reference.`
-          : "Outside the current push/fold reference range.",
-      } satisfies HandAction;
-    })
-  );
-}
-
-function getHandCoordinate(handCode: string): HandCoordinate | null {
-  const firstRank = handCode[0];
-  const secondRank = handCode[1];
-  const firstIndex = rankIndex(firstRank);
-  const secondIndex = rankIndex(secondRank);
-
-  if (firstIndex === -1 || secondIndex === -1) return null;
-  if (handCode.length === 2) return { row: firstIndex, col: firstIndex };
-  if (handCode[2] === "s") return { row: firstIndex, col: secondIndex };
-  if (handCode[2] === "o") return { row: secondIndex, col: firstIndex };
-  return null;
-}
-
-function handDistance(left: HandCoordinate, right: HandCoordinate) {
-  return Math.max(Math.abs(left.row - right.row), Math.abs(left.col - right.col));
+  return ALL_HANDS.map(handCode => getPushFoldActionForHand(reference, handCode)!)
+    .filter((action): action is HandAction => action !== null);
 }
 
 export function getPushFoldTrainerPool(reference: PushFoldReference): HandAction[] {
@@ -377,6 +361,42 @@ export function getPushFoldTrainerPool(reference: PushFoldReference): HandAction
       continueCoordinate => handDistance(coordinate, continueCoordinate) <= 1
     );
   });
+}
+
+export function validatePushFoldReference(reference: PushFoldReference): string[] {
+  const issues: string[] = [];
+  const uniqueHands = new Set(reference.handCodes);
+  const supportedStacks = new Set<number>(PUSH_FOLD_STACK_BUCKETS);
+
+  if (uniqueHands.size !== reference.handCodes.length) {
+    issues.push(`${reference.id}: duplicate hand codes in reference.`);
+  }
+
+  for (const stackDepth of reference.supportedStacks) {
+    if (!supportedStacks.has(stackDepth)) {
+      issues.push(`${reference.id}: unsupported stack ${stackDepth}bb.`);
+    }
+  }
+
+  for (const handCode of reference.handCodes) {
+    if (!isCanonicalHandCode(handCode)) {
+      issues.push(`${reference.id}: invalid canonical hand code ${handCode}.`);
+    }
+  }
+
+  const actions = buildPushFoldActions(reference);
+  if (actions.length !== ALL_HANDS.length) {
+    issues.push(
+      `${reference.id}: expected ${ALL_HANDS.length} action cells, found ${actions.length}.`
+    );
+  }
+
+  const actionCodes = new Set(actions.map(action => action.handCode));
+  if (actionCodes.size !== ALL_HANDS.length) {
+    issues.push(`${reference.id}: action grid does not cover each canonical hand exactly once.`);
+  }
+
+  return issues;
 }
 
 export function pushFoldDecisionLabel(mode: PushFoldModeKind) {
