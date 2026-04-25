@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   rangeCharts,
@@ -40,6 +40,8 @@ export interface ListSpotsFilters {
 
 export interface TrainerSpotFilters extends ListSpotsFilters {
   chartId?: number;
+  chartIds?: number[];
+  focusHandCodes?: string[];
   recentChartIds?: number[];
   recentHandKeys?: string[];
 }
@@ -430,14 +432,22 @@ function pickHandForTrainer(
   const trainerActionPool = buildTrainerActionPool(chartActions);
   if (trainerActionPool.length === 0) return null;
 
+  const focusedHandCodes = new Set(filters.focusHandCodes ?? []);
+  const focusedActions =
+    focusedHandCodes.size > 0
+      ? trainerActionPool.filter(action => focusedHandCodes.has(action.handCode))
+      : [];
+  const prioritizedActionPool =
+    focusedActions.length > 0 ? focusedActions : trainerActionPool;
+
   const recentHands = new Set(
     (filters.recentHandKeys ?? []).slice(0, RECENT_HAND_GUARD_LIMIT)
   );
-  const repeatSafeActions = trainerActionPool.filter(
+  const repeatSafeActions = prioritizedActionPool.filter(
     action => !recentHands.has(handHistoryKey(chart.id, action.handCode))
   );
   const actionPool =
-    repeatSafeActions.length > 0 ? repeatSafeActions : trainerActionPool;
+    repeatSafeActions.length > 0 ? repeatSafeActions : prioritizedActionPool;
   const byAction = groupRowsByAction(actionPool);
   const selectedAction = pickActionBucket(byAction);
   const selectedActionRows = byAction.get(selectedAction) ?? actionPool;
@@ -482,6 +492,43 @@ function getNestedString(source: JsonObject | null, path: string[]): string | nu
   return typeof current === "string" && current.trim().length > 0
     ? current
     : null;
+}
+
+function getNestedNumber(source: JsonObject | null, path: string[]): number | null {
+  let current: unknown = source;
+
+  for (const key of path) {
+    const object = toJsonObject(current);
+    if (!object) return null;
+    current = object[key];
+  }
+
+  return typeof current === "number" && Number.isFinite(current) ? current : null;
+}
+
+function extractStudyMeta(hand: Hand) {
+  const streetData = parseJsonObject(hand.streetDataJson);
+  const study = toJsonObject(streetData?.meta);
+  const nestedStudy = toJsonObject(study?.study);
+  const chartId = getNestedNumber(streetData, ["meta", "study", "chartId"]);
+  const spotKey = getNestedString(streetData, ["meta", "study", "spotKey"]);
+  const stackDepth = getNestedNumber(streetData, ["meta", "study", "stackDepth"]);
+  const heroPosition = getNestedString(streetData, ["meta", "study", "heroPosition"]);
+  const villainPosition = getNestedString(streetData, ["meta", "study", "villainPosition"]);
+  const spotGroup = getNestedString(streetData, ["meta", "study", "spotGroup"]);
+  const canonicalSpotId = getNestedString(streetData, ["meta", "study", "canonicalSpotId"]);
+
+  return {
+    source: streetData,
+    meta: nestedStudy,
+    chartId,
+    spotKey,
+    stackDepth,
+    heroPosition,
+    villainPosition,
+    spotGroup,
+    canonicalSpotId,
+  };
 }
 
 function normalizePosition(value: string | null | undefined): Position | null {
@@ -587,6 +634,16 @@ function isPreflopMistake(hand: Hand): boolean {
 }
 
 function inferSpotFromHand(hand: Hand): SpotInference | null {
+  const studyMeta = extractStudyMeta(hand);
+  if (studyMeta.spotKey) {
+    return {
+      spotKey: studyMeta.spotKey,
+      reason: studyMeta.canonicalSpotId
+        ? `Matched from the saved canonical study spot (${studyMeta.canonicalSpotId}).`
+        : "Matched from the saved study spot metadata.",
+    };
+  }
+
   const heroPosition = normalizePosition(hand.heroPosition);
   if (!heroPosition) return null;
 
@@ -829,6 +886,11 @@ export async function getTrainerSpot(
 
   if (filters.chartId !== undefined) {
     conditions.push(eq(rangeCharts.id, filters.chartId));
+  }
+
+  if (filters.chartIds !== undefined) {
+    if (filters.chartIds.length === 0) return null;
+    conditions.push(inArray(rangeCharts.id, filters.chartIds));
   }
 
   const rows = await db
@@ -1079,14 +1141,33 @@ export async function getHandStrategyRecommendation(
 
   if (!hand || !isPreflopMistake(hand)) return null;
 
+  const studyMeta = extractStudyMeta(hand);
   const inference = inferSpotFromHand(hand);
   if (!inference) return null;
 
-  const targetStackDepth = nearestStackDepth(hand.effectiveStackBb);
-  const match = await findNearestChartBySpotKey(
-    inference.spotKey,
-    targetStackDepth
+  const targetStackDepth = nearestStackDepth(
+    studyMeta.stackDepth ?? hand.effectiveStackBb
   );
+
+  let match:
+    | { chart: RangeChart; confidence: "exact" | "nearest" }
+    | null = null;
+
+  if (studyMeta.chartId) {
+    const [exactChart] = await db
+      .select()
+      .from(rangeCharts)
+      .where(and(eq(rangeCharts.id, studyMeta.chartId), eq(rangeCharts.isActive, true)))
+      .limit(1);
+
+    if (exactChart) {
+      match = { chart: exactChart, confidence: "exact" };
+    }
+  }
+
+  if (!match) {
+    match = await findNearestChartBySpotKey(inference.spotKey, targetStackDepth);
+  }
 
   if (!match) return null;
 

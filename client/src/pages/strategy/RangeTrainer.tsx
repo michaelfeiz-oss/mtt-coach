@@ -15,8 +15,15 @@ import { calcAccuracy } from "@/components/strategy/utils";
 import { trpc } from "@/lib/trpc";
 import { buildHandClassRevealNote } from "@shared/preflop";
 import {
-  buildStrategyTheorySections,
-} from "@shared/strategyTheory";
+  getPriorityDrillPack,
+  resolvePriorityDrillPack,
+} from "@shared/drillPacks";
+import {
+  getLeakFamily,
+  suggestLeakFamilyFromTrainerMiss,
+} from "@shared/leakFamilies";
+import { canonicalSpotContextFromChart } from "@shared/spotIds";
+import { getSpotNote } from "@shared/spotNotes";
 import {
   displayPositionLabel,
   POSITIONS,
@@ -28,7 +35,11 @@ import {
   type SpotGroup,
 } from "@shared/strategy";
 
-type TrainerMode = "current_spot" | "decision_family" | "random_spot";
+type TrainerMode =
+  | "current_spot"
+  | "decision_family"
+  | "random_spot"
+  | "priority_pack";
 
 interface SessionStats {
   total: number;
@@ -97,8 +108,12 @@ function formatModeLabel(
   mode: TrainerMode,
   selectedSpot: SpotSummary | undefined,
   stackDepth: number | undefined,
-  spotGroup: SpotGroup | undefined
+  spotGroup: SpotGroup | undefined,
+  packId?: string | null
 ) {
+  if (mode === "priority_pack" && packId) {
+    return getPriorityDrillPack(packId)?.title ?? "Priority drill pack";
+  }
   if (mode === "current_spot") {
     return selectedSpot?.title ?? "Current setup";
   }
@@ -113,8 +128,15 @@ function formatModeLabel(
 function filterSummary(
   mode: TrainerMode,
   stackDepth: number | undefined,
-  spotGroup: SpotGroup | undefined
+  spotGroup: SpotGroup | undefined,
+  packId?: string | null
 ) {
+  if (mode === "priority_pack" && packId) {
+    return (
+      getPriorityDrillPack(packId)?.purpose ??
+      "Focused drill pack built from supported preflop spots."
+    );
+  }
   if (mode === "current_spot") {
     return "Drilling this chart one hand at a time.";
   }
@@ -141,32 +163,44 @@ function scrollElementIntoComfortView(element: HTMLElement | null) {
   element.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function replaceTrainerUrl(chartId: number | null) {
+function replaceTrainerUrl(options: { chartId?: number | null; packId?: string | null }) {
   if (typeof window === "undefined") return;
-  const nextUrl =
-    chartId === null
-      ? "/strategy/trainer"
-      : `/strategy/trainer?chartId=${chartId}`;
+  const params = new URLSearchParams();
+  if (options.chartId) params.set("chartId", String(options.chartId));
+  if (options.packId) params.set("packId", options.packId);
+  const nextUrl = params.size > 0 ? `/strategy/trainer?${params}` : "/strategy/trainer";
   window.history.replaceState(window.history.state, "", nextUrl);
 }
 
 export default function RangeTrainer() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
-  const chartIdFromSearch = useMemo(() => {
+  const { chartIdFromSearch, packIdFromSearch } = useMemo(() => {
     const params = new URLSearchParams(search);
     const chartIdParamRaw = params.get("chartId");
     const chartIdParam = chartIdParamRaw ? Number(chartIdParamRaw) : undefined;
-    return chartIdParam !== undefined && Number.isFinite(chartIdParam)
-      ? chartIdParam
-      : null;
+    const packIdParam = params.get("packId");
+    return {
+      chartIdFromSearch:
+        chartIdParam !== undefined && Number.isFinite(chartIdParam)
+          ? chartIdParam
+          : null,
+      packIdFromSearch: packIdParam,
+    };
   }, [search]);
 
   const [mode, setMode] = useState<TrainerMode>(
-    chartIdFromSearch !== null ? "current_spot" : "random_spot"
+    chartIdFromSearch !== null
+      ? "current_spot"
+      : packIdFromSearch
+        ? "priority_pack"
+        : "random_spot"
   );
   const [selectedChartId, setSelectedChartId] = useState<number | null>(
     chartIdFromSearch
+  );
+  const [selectedPackId, setSelectedPackId] = useState<string | null>(
+    packIdFromSearch
   );
   const [stackDepth, setStackDepth] = useState<number | undefined>(undefined);
   const [spotGroup, setSpotGroup] = useState<SpotGroup | undefined>(undefined);
@@ -183,6 +217,9 @@ export default function RangeTrainer() {
   });
   const [recentChartIds, setRecentChartIds] = useState<number[]>([]);
   const [recentHandKeys, setRecentHandKeys] = useState<string[]>([]);
+  const [missLeakCounts, setMissLeakCounts] = useState<
+    Record<string, number>
+  >({});
   const [answerReveal, setAnswerReveal] = useState<AnswerRevealState | null>(
     null
   );
@@ -191,22 +228,30 @@ export default function RangeTrainer() {
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const resultRevealRef = useRef<HTMLDivElement | null>(null);
 
+  const { data: allSpots = [] } = trpc.strategy.listSpots.useQuery({});
   const { data: spots = [] } = trpc.strategy.listSpots.useQuery({
     stackDepth,
     spotGroup,
   });
+  const resolvedPack = useMemo(() => {
+    if (!selectedPackId) return null;
+    const pack = getPriorityDrillPack(selectedPackId);
+    return pack ? resolvePriorityDrillPack(pack.id, allSpots) : null;
+  }, [allSpots, selectedPackId]);
   const selectedSpot = useMemo(
-    () => spots.find(spot => spot.id === selectedChartId),
-    [selectedChartId, spots]
+    () => allSpots.find(spot => spot.id === selectedChartId),
+    [allSpots, selectedChartId]
   );
 
   const trainerInput = useMemo(() => {
     const input: {
       chartId?: number;
+      chartIds?: number[];
       stackDepth?: number;
       spotGroup?: SpotGroup;
       heroPosition?: Position;
       villainPosition?: Position;
+      focusHandCodes?: string[];
       recentChartIds: number[];
       recentHandKeys: string[];
     } = {
@@ -218,6 +263,12 @@ export default function RangeTrainer() {
 
     if (mode === "current_spot") {
       if (selectedChartId !== null) input.chartId = selectedChartId;
+      return input;
+    }
+
+    if (mode === "priority_pack" && resolvedPack?.supported) {
+      input.chartIds = resolvedPack.chartIds;
+      input.focusHandCodes = resolvedPack.focusHandCodes;
       return input;
     }
 
@@ -240,12 +291,16 @@ export default function RangeTrainer() {
     recentChartIds,
     recentHandKeys,
     selectedChartId,
+    resolvedPack,
     stackDepth,
     spotGroup,
     villainPosition,
   ]);
 
-  const trainerEnabled = mode !== "current_spot" || selectedChartId !== null;
+  const trainerEnabled =
+    mode === "priority_pack"
+      ? Boolean(resolvedPack?.supported)
+      : mode !== "current_spot" || selectedChartId !== null;
   const {
     data: trainerSpot,
     isLoading: trainerSpotLoading,
@@ -294,18 +349,16 @@ export default function RangeTrainer() {
   );
 
   const activeSpot = trainerSpot?.chart ?? selectedSpot;
-  const theorySections = activeSpot
-    ? buildStrategyTheorySections({
-        spotGroup: activeSpot.spotGroup,
-        stackDepth: activeSpot.stackDepth,
-        heroPosition: activeSpot.heroPosition,
-        villainPosition: activeSpot.villainPosition,
-      })
-    : [];
-  const trainingCue =
-    theorySections.find(section => section.key === "trainingCue")?.body ?? null;
-  const modeLabel = formatModeLabel(mode, activeSpot, stackDepth, spotGroup);
-  const modeHelper = filterSummary(mode, stackDepth, spotGroup);
+  const activeSpotNote = activeSpot ? getSpotNote(activeSpot) : null;
+  const trainingCue = activeSpotNote?.drillCue ?? null;
+  const modeLabel = formatModeLabel(
+    mode,
+    activeSpot,
+    stackDepth,
+    spotGroup,
+    selectedPackId
+  );
+  const modeHelper = filterSummary(mode, stackDepth, spotGroup, selectedPackId);
   const revealNote = answerReveal
     ? buildHandClassRevealNote(
         answerReveal.handCode,
@@ -313,12 +366,47 @@ export default function RangeTrainer() {
         answerReveal.explanation
       )
     : null;
+  const currentLeakHintId =
+    answerReveal && trainerSpot
+      ? (() => {
+          const context = canonicalSpotContextFromChart(trainerSpot.chart);
+          return context
+            ? suggestLeakFamilyFromTrainerMiss({
+                context,
+                handCode: answerReveal.handCode,
+                selectedAction: answerReveal.selectedAction,
+                correctAction: answerReveal.correctAction,
+              })
+            : null;
+        })()
+      : null;
+  const repeatedLeakHintId = Object.entries(missLeakCounts)
+    .filter(([, count]) => count >= 2)
+    .sort((left, right) => right[1] - left[1])[0]?.[0];
+  const leakHint = getLeakFamily(repeatedLeakHintId ?? currentLeakHintId);
+  const recommendedPack = useMemo(() => {
+    const nextPackId = leakHint?.relatedPackIds?.[0];
+    if (!nextPackId) return null;
+    const pack = getPriorityDrillPack(nextPackId);
+    return pack ? resolvePriorityDrillPack(pack.id, allSpots) : null;
+  }, [allSpots, leakHint]);
 
   useEffect(() => {
     if (chartIdFromSearch !== null) {
       if (selectedChartId !== chartIdFromSearch || mode !== "current_spot") {
         setSelectedChartId(chartIdFromSearch);
+        setSelectedPackId(null);
         setMode("current_spot");
+        resetSessionState();
+      }
+      return;
+    }
+
+    if (packIdFromSearch) {
+      if (selectedPackId !== packIdFromSearch || mode !== "priority_pack") {
+        setSelectedChartId(null);
+        setSelectedPackId(packIdFromSearch);
+        setMode("priority_pack");
         resetSessionState();
       }
       return;
@@ -326,10 +414,19 @@ export default function RangeTrainer() {
 
     if (mode === "current_spot" && selectedChartId !== null) {
       setSelectedChartId(null);
+      setSelectedPackId(null);
       setMode(modeForFilters(stackDepth, spotGroup));
       resetSessionState();
     }
-  }, [chartIdFromSearch, mode, selectedChartId, stackDepth, spotGroup]);
+  }, [
+    chartIdFromSearch,
+    mode,
+    packIdFromSearch,
+    selectedChartId,
+    selectedPackId,
+    stackDepth,
+    spotGroup,
+  ]);
 
   useEffect(() => {
     if (!answerReveal) return;
@@ -358,6 +455,7 @@ export default function RangeTrainer() {
     setSessionStats({ total: 0, correct: 0, streak: 0 });
     setRecentChartIds([]);
     setRecentHandKeys([]);
+    setMissLeakCounts({});
     setAnswerReveal(null);
     setQuestionVersion(0);
   }
@@ -365,16 +463,18 @@ export default function RangeTrainer() {
   function setStackFilter(nextStackDepth: number | undefined) {
     setStackDepth(nextStackDepth);
     setSelectedChartId(null);
+    setSelectedPackId(null);
     setMode(modeForFilters(nextStackDepth, spotGroup));
-    replaceTrainerUrl(null);
+    replaceTrainerUrl({});
     resetSessionState();
   }
 
   function setFamilyFilter(nextSpotGroup: SpotGroup | undefined) {
     setSpotGroup(nextSpotGroup);
     setSelectedChartId(null);
+    setSelectedPackId(null);
     setMode(modeForFilters(stackDepth, nextSpotGroup));
-    replaceTrainerUrl(null);
+    replaceTrainerUrl({});
     resetSessionState();
   }
 
@@ -382,16 +482,18 @@ export default function RangeTrainer() {
     setHeroPosition(nextHeroPosition);
     setVillainPosition(undefined);
     setSelectedChartId(null);
+    setSelectedPackId(null);
     setMode(modeForFilters(stackDepth, spotGroup));
-    replaceTrainerUrl(null);
+    replaceTrainerUrl({});
     resetSessionState();
   }
 
   function setVillainFilter(nextVillainPosition: string | undefined) {
     setVillainPosition(nextVillainPosition);
     setSelectedChartId(null);
+    setSelectedPackId(null);
     setMode(modeForFilters(stackDepth, spotGroup));
-    replaceTrainerUrl(null);
+    replaceTrainerUrl({});
     resetSessionState();
   }
 
@@ -433,6 +535,25 @@ export default function RangeTrainer() {
       correct: previous.correct + (isCorrect ? 1 : 0),
       streak: isCorrect ? previous.streak + 1 : 0,
     }));
+
+    if (!isCorrect) {
+      const canonicalSpotContext = canonicalSpotContextFromChart(trainerSpot.chart);
+      if (canonicalSpotContext) {
+        const leakId = suggestLeakFamilyFromTrainerMiss({
+          context: canonicalSpotContext,
+          handCode: trainerSpot.handCode,
+          selectedAction,
+          correctAction: trainerSpot.correctAction,
+        });
+
+        if (leakId) {
+          setMissLeakCounts(previous => ({
+            ...previous,
+            [leakId]: (previous[leakId] ?? 0) + 1,
+          }));
+        }
+      }
+    }
   }
 
   function handleNext() {
@@ -446,8 +567,9 @@ export default function RangeTrainer() {
 
   function unlockCurrentSpotAndContinue() {
     setSelectedChartId(null);
+    setSelectedPackId(null);
     setMode(modeForFilters(stackDepth, spotGroup));
-    replaceTrainerUrl(null);
+    replaceTrainerUrl({});
     resetSessionState();
     void refetchTrainerSpot();
   }
@@ -494,6 +616,11 @@ export default function RangeTrainer() {
                 <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
                   Up to 40bb
                 </Badge>
+                {resolvedPack?.supported && (
+                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                    Pack · {resolvedPack.spotCount} spots
+                  </Badge>
+                )}
                 {activeSpot && (
                   <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
                     {displayPositionLabel(activeSpot.heroPosition)}
@@ -543,6 +670,19 @@ export default function RangeTrainer() {
         </section>
 
         <section className="space-y-3">
+          {mode === "priority_pack" && resolvedPack && !resolvedPack.supported && (
+            <Card className="border-amber-200 bg-amber-50 text-amber-900">
+              <CardContent className="space-y-2 p-4 text-sm">
+                <p className="font-semibold">{resolvedPack.title}</p>
+                <p>
+                  {resolvedPack.purpose} This pack is visible so it stays on the
+                  study roadmap, but the current chart dataset does not include
+                  the required spots yet.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {trainerEnabled &&
             (trainerSpotLoading || (trainerSpotFetching && !trainerSpot)) && (
               <Skeleton className="h-[480px] w-full rounded-[1.2rem]" />
@@ -601,6 +741,9 @@ export default function RangeTrainer() {
                       correctAction={answerReveal.correctAction}
                       isCorrect={answerReveal.isCorrect}
                       explanation={answerReveal.explanation}
+                      spotNote={getSpotNote(trainerSpot.chart)}
+                      leakHint={leakHint}
+                      recommendedPack={recommendedPack}
                       onNext={handleNext}
                       className="border-border/80 bg-card/90 shadow-none"
                     />

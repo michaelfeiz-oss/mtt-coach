@@ -2,6 +2,12 @@ import { SpotType } from "./SpotTypeSelector";
 import { StreetAction, SizeBucket } from "./PlayerActionsForm";
 import { VillainType, VillainRangeType } from "./VillainProfileForm";
 import { HandResult } from "./OutcomeForm";
+import type { PreflopScenarioId } from "@shared/preflopScenarios";
+import {
+  getCanonicalSpotId,
+  getStrategyChartSelector,
+  inferCanonicalSpotContextFromLog,
+} from "@shared/spotIds";
 
 /**
  * Map UI SpotType to database spotType enum
@@ -123,7 +129,9 @@ export function buildStreetDataJson({
   spotType,
   spotPosition,
   spotSubtype,
+  scenarioId,
   heroPosition,
+  openerPosition,
   heroHand,
   effectiveStackBb,
   flopBoard,
@@ -139,7 +147,9 @@ export function buildStreetDataJson({
   spotType: SpotType;
   spotPosition?: "IP" | "OOP";
   spotSubtype?: string;
+  scenarioId?: PreflopScenarioId;
   heroPosition: string;
+  openerPosition?: string;
   heroHand: string;
   effectiveStackBb: number;
   flopBoard?: string;
@@ -152,6 +162,19 @@ export function buildStreetDataJson({
   evLossBb?: number;
   notes?: string;
 }): Record<string, any> {
+  const canonicalSpot =
+    scenarioId && heroPosition
+      ? inferCanonicalSpotContextFromLog({
+          scenarioId,
+          effectiveStackBb,
+          heroPosition,
+          openerPosition,
+        })
+      : null;
+  const strategyChartSelector = canonicalSpot
+    ? getStrategyChartSelector(canonicalSpot)
+    : null;
+
   const boardTurn = turnCard
     ? turnCard[0] + String.fromCharCode(parseInt(turnCard.substring(1)))
     : null;
@@ -175,6 +198,17 @@ export function buildStreetDataJson({
       result: result || undefined,
       evLossEstimateBb: evLossBb && evLossBb > 0 ? evLossBb : undefined,
       actionsSummary: generateActionSummary(streetAction || null),
+      study: canonicalSpot
+        ? {
+            canonicalSpotId: getCanonicalSpotId(canonicalSpot),
+            family: canonicalSpot.family,
+            stackDepth: canonicalSpot.stackDepth,
+            heroPosition: canonicalSpot.heroPosition,
+            villainPosition: canonicalSpot.villainPosition ?? undefined,
+            spotGroup: strategyChartSelector?.spotGroup,
+            spotKey: strategyChartSelector?.spotKey,
+          }
+        : undefined,
     },
     board: {
       flop: flopBoard || null,
@@ -183,6 +217,8 @@ export function buildStreetDataJson({
     },
     preflop: {
       actions: streetAction?.street === "PREFLOP" ? generateActionSummary(streetAction) : null,
+      openerPosition: openerPosition || null,
+      villainPosition: openerPosition || null,
       notes: null,
     },
     flop: {

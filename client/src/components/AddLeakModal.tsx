@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PREFLOP_SCENARIOS } from "@shared/preflopScenarios";
+import { LEAK_FAMILIES } from "@shared/leakFamilies";
 
 interface AddLeakModalProps {
   isOpen: boolean;
@@ -88,9 +88,9 @@ export function AddLeakModal({
                 <SelectValue placeholder="Select leak type" />
               </SelectTrigger>
               <SelectContent>
-                {PREFLOP_SCENARIOS.map(scenario => (
-                  <SelectItem key={scenario.id} value={scenario.id}>
-                    {scenario.label}
+                {LEAK_FAMILIES.map(family => (
+                  <SelectItem key={family.id} value={family.id}>
+                    {family.label}
                   </SelectItem>
                 ))}
               </SelectContent>

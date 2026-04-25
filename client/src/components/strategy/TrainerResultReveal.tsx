@@ -7,6 +7,9 @@ import {
   type RangeChartWithActions,
 } from "../../../../shared/strategy";
 import { buildHandClassRevealNote } from "../../../../shared/preflop";
+import type { ResolvedPriorityDrillPack } from "../../../../shared/drillPacks";
+import type { LeakFamilyDefinition } from "../../../../shared/leakFamilies";
+import type { StudySpotNote } from "../../../../shared/spotNotes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +28,9 @@ interface TrainerResultRevealProps {
   correctAction: Action;
   isCorrect: boolean;
   explanation?: string | null;
+  spotNote?: StudySpotNote | null;
+  leakHint?: LeakFamilyDefinition | null;
+  recommendedPack?: ResolvedPriorityDrillPack | null;
   onNext: () => void;
   className?: string;
 }
@@ -38,6 +44,9 @@ export function TrainerResultReveal({
   correctAction,
   isCorrect,
   explanation,
+  spotNote,
+  leakHint,
+  recommendedPack,
   onNext,
   className = "",
 }: TrainerResultRevealProps) {
@@ -165,6 +174,65 @@ export function TrainerResultReveal({
             </div>
           )}
         </div>
+
+        {(spotNote || leakHint || recommendedPack) && (
+          <div className="space-y-2 rounded-[1rem] border border-border bg-background/78 p-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {leakHint && (
+                <Badge variant="outline" className="rounded-full">
+                  Likely leak: {leakHint.label}
+                </Badge>
+              )}
+              {recommendedPack && (
+                <Badge variant="outline" className="rounded-full">
+                  Suggested pack: {recommendedPack.title}
+                </Badge>
+              )}
+            </div>
+
+            {spotNote && (
+              <div className="grid gap-2 md:grid-cols-2">
+                {(
+                  [
+                  ["Core Idea", spotNote.coreIdea],
+                  ["Default", spotNote.defaultLine],
+                  ["Exploit Lever", spotNote.exploitLever],
+                  ["Common Punt", spotNote.commonPunt],
+                  ["Drill Cue", spotNote.drillCue],
+                  spotNote.stageAdjustment
+                    ? ["Stage Adjustment", spotNote.stageAdjustment]
+                    : null,
+                ] as Array<[string, string] | null>
+                )
+                  .filter((section): section is [string, string] => Boolean(section))
+                  .map(([title, body]) => (
+                    <div
+                      key={title as string}
+                      className="rounded-xl border border-border bg-card px-3 py-2.5"
+                    >
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        {title as string}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
+                        {body as string}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {recommendedPack && (
+              <Link href={`/strategy/trainer?packId=${recommendedPack.id}`}>
+                <Button
+                  variant="outline"
+                  className="h-10 rounded-xl text-sm font-semibold"
+                >
+                  Drill Recommended Pack
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
           <Button

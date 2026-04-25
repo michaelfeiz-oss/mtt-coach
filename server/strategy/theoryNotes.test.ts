@@ -12,15 +12,15 @@ describe("strategy theory notes", () => {
     expect(sections).toHaveLength(6);
     expect(sections.map(section => section.title)).toEqual([
       "Core Idea",
-      "Range Shape",
-      "Why This Spot Works",
-      "Common Mistakes",
-      "Exploit Reminder",
-      "Training Cue",
+      "Default",
+      "Exploit Lever",
+      "Common Punt",
+      "Drill Cue",
+      "Stage Adjustment",
     ]);
   });
 
-  it("includes tournament overlays in exploit reminders", () => {
+  it("keeps exploit notes tournament-aware", () => {
     const sections = buildStrategyTheorySections({
       spotGroup: "VS_3BET",
       stackDepth: 15,
@@ -28,9 +28,8 @@ describe("strategy theory notes", () => {
       villainPosition: "BB",
     });
 
-    const exploit = sections.find(section => section.key === "exploit");
-    expect(exploit?.body).toContain("ICM");
-    expect(exploit?.body).toContain("PKO");
+    const exploit = sections.find(section => section.key === "exploitLever");
+    expect(exploit?.body).toContain("Population");
   });
 
   it("uses human-readable position labels in training cues", () => {
@@ -41,7 +40,7 @@ describe("strategy theory notes", () => {
       villainPosition: "UTG",
     });
 
-    const cue = sections.find(section => section.key === "trainingCue");
+    const cue = sections.find(section => section.key === "drillCue");
     expect(cue?.body).toContain("UTG");
     expect(cue?.body).toContain("UTG+1");
   });

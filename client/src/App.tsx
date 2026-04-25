@@ -19,6 +19,7 @@ import Study from "./pages/Study";
 import StudyHub from "./pages/strategy/StudyHub";
 import StrategyLibrary from "./pages/strategy/StrategyLibrary";
 import RangeTrainer from "./pages/strategy/RangeTrainer";
+import PushFoldMode from "./pages/strategy/PushFoldMode";
 import IcmPacks from "./pages/icm/IcmPacks";
 import IcmPackDetail from "./pages/icm/IcmPackDetail";
 import IcmSpotDetail from "./pages/icm/IcmSpotDetail";
@@ -43,6 +44,7 @@ function Router() {
       <Route key="strategy" path={"/strategy"} component={StudyHub} />
       <Route key="strategy-library" path={"/strategy/library"} component={StrategyLibrary} />
       <Route key="strategy-trainer" path={"/strategy/trainer"} component={RangeTrainer} />
+      <Route key="strategy-push-fold" path={"/strategy/push-fold"} component={PushFoldMode} />
       <Route key="not-found-404" path={"/404"} component={NotFound} />
       <Route key="not-found-default" component={NotFound} />
     </Switch>

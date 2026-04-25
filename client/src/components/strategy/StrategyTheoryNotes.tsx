@@ -24,10 +24,10 @@ export function StrategyTheoryNotes({
     >
       <div className="mb-3">
         <p className="text-[11px] font-semibold text-muted-foreground">
-          Theory Notes
+          Spot Notes
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Study the perimeter, not just the headline action.
+          Core idea, default, exploit lever, the common punt, and the exact drill cue for this node.
         </p>
       </div>
 

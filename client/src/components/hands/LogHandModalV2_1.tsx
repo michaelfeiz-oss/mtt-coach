@@ -37,6 +37,13 @@ import {
   PREFLOP_SCENARIOS,
   type PreflopScenarioId,
 } from "@shared/preflopScenarios";
+import { getPriorityDrillPack } from "@shared/drillPacks";
+import {
+  LEAK_FAMILIES,
+  getLeakFamily,
+  suggestLeakFamilyFromHandLog,
+} from "@shared/leakFamilies";
+import { inferCanonicalSpotContextFromLog } from "@shared/spotIds";
 import {
   displayPositionLabel,
   POSITIONS,
@@ -216,6 +223,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [reviewed, setReviewed] = useState(false);
   const [mistakeSeverity, setMistakeSeverity] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
+  const [leakFamilyId, setLeakFamilyId] = useState("");
   const [note, setNote] = useState("");
   const [result, setResult] = useState<HandResult | "">("");
   const [gameType, setGameType] = useState<GameType | "">("");
@@ -255,6 +263,27 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
       isValidHandNotation(normalizedHand)
   );
   const selectedSpotTypeLabel = selectedScenario?.label ?? "Not set";
+  const canonicalSpotContext =
+    selectedScenario && heroPosition
+      ? inferCanonicalSpotContextFromLog({
+          scenarioId,
+          effectiveStackBb: stackNumber,
+          heroPosition,
+          openerPosition,
+          tournamentPhase,
+        })
+      : null;
+  const suggestedLeakFamilyId =
+    canonicalSpotContext && isValidHandNotation(normalizedHand)
+      ? suggestLeakFamilyFromHandLog({
+          context: canonicalSpotContext,
+          handCode: normalizedHand,
+        })
+      : null;
+  const selectedLeakFamily = getLeakFamily(leakFamilyId || suggestedLeakFamilyId);
+  const suggestedDrillPack = getPriorityDrillPack(
+    selectedLeakFamily?.relatedPackIds[0]
+  );
 
   function resetForm() {
     setEntryMode("QUICK");
@@ -274,6 +303,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     setReviewed(false);
     setMistakeSeverity(0);
     setTags([]);
+    setLeakFamilyId("");
     setNote("");
     setResult("");
     setGameType("");
@@ -310,7 +340,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
     const streetDataJson = buildStreetDataJson({
       spotType,
+      scenarioId,
       heroPosition,
+      openerPosition,
       heroHand: normalizedHand,
       effectiveStackBb: stackNumber,
       streetAction,
@@ -344,6 +376,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
       tags: tags.length > 0 ? tags : undefined,
       lesson: note.trim() || undefined,
       heroDecisionPreflop: deriveHeroDecision(streetAction),
+      leakFamilyId: leakFamilyId || undefined,
     });
   }
 
@@ -636,6 +669,38 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 heroDecision={heroDecision}
               />
 
+              {(canonicalSpotContext || selectedLeakFamily || suggestedDrillPack) && (
+                <section className="rounded-xl border border-border/80 bg-card/95 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canonicalSpotContext && (
+                      <Badge variant="outline" className="rounded-full">
+                        {Math.round(canonicalSpotContext.stackDepth)}bb ·{" "}
+                        {displayPositionLabel(canonicalSpotContext.heroPosition)}
+                        {canonicalSpotContext.villainPosition
+                          ? ` vs ${displayPositionLabel(
+                              canonicalSpotContext.villainPosition
+                            )}`
+                          : ""}
+                      </Badge>
+                    )}
+                    {selectedLeakFamily && (
+                      <Badge variant="outline" className="rounded-full">
+                        Leak focus: {selectedLeakFamily.label}
+                      </Badge>
+                    )}
+                  </div>
+                  {suggestedDrillPack && (
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      Suggested next drill:{" "}
+                      <span className="font-semibold text-foreground">
+                        {suggestedDrillPack.title}
+                      </span>{" "}
+                      · {suggestedDrillPack.purpose}
+                    </p>
+                  )}
+                </section>
+              )}
+
               <section className="rounded-xl border border-border bg-card p-4">
                 <button
                   type="button"
@@ -783,6 +848,38 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                           ))}
                         </div>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground">
+                        Leak Family
+                      </Label>
+                      <Select
+                        value={leakFamilyId || "NONE"}
+                        onValueChange={value =>
+                          setLeakFamilyId(value === "NONE" ? "" : value)
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Attach a leak family" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NONE">No leak family</SelectItem>
+                          {LEAK_FAMILIES.map(family => (
+                            <SelectItem key={family.id} value={family.id}>
+                              {family.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {!leakFamilyId && suggestedLeakFamilyId && selectedLeakFamily && (
+                        <p className="text-xs text-muted-foreground">
+                          Suggested from this spot:{" "}
+                          <span className="font-semibold text-foreground">
+                            {selectedLeakFamily.label}
+                          </span>
+                        </p>
+                      )}
                     </div>
 
                     <div>

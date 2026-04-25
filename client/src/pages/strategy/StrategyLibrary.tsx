@@ -17,6 +17,10 @@ import {
 } from "@/lib/strategyRecentSpots";
 import { trpc } from "@/lib/trpc";
 import {
+  buildPriorityPackSummary,
+  getRelatedPriorityDrillPacksForSpot,
+} from "@shared/drillPacks";
+import {
   displayPositionLabel,
   POSITIONS,
   SPOT_GROUP_LABELS,
@@ -183,6 +187,15 @@ export default function StrategyLibrary() {
         new Set(chart.actions.map(action => action.primaryAction))
       ) as Action[])
     : undefined;
+  const relatedDrillPacks = useMemo(
+    () =>
+      chart
+        ? getRelatedPriorityDrillPacksForSpot(chart, allSpots).filter(
+            pack => pack.supported
+          )
+        : [],
+    [allSpots, chart]
+  );
 
   useEffect(() => {
     if (chartIdFromSearch !== undefined && chartIdFromSearch !== selectedChartId) {
@@ -401,6 +414,57 @@ export default function StrategyLibrary() {
                   heroPosition={chart.heroPosition}
                   villainPosition={chart.villainPosition}
                 />
+
+                {relatedDrillPacks.length > 0 && (
+                  <section className="rounded-[1rem] border border-border bg-background/78 p-3 sm:p-4">
+                    <div className="mb-3">
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        Related Drill Packs
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Launch a focused drill pack when this spot sits inside a high-value leak zone.
+                      </p>
+                    </div>
+                    <div className="grid gap-2.5">
+                      {relatedDrillPacks.map(pack => (
+                        <div
+                          key={pack.id}
+                          className="rounded-xl border border-border bg-card p-3"
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground">
+                                {pack.title}
+                              </p>
+                              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                {pack.purpose}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                <Badge variant="outline" className="rounded-full">
+                                  {buildPriorityPackSummary(pack)}
+                                </Badge>
+                                {pack.focusTags.map(tag => (
+                                  <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    className="rounded-full"
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <Link href={`/strategy/trainer?packId=${pack.id}`}>
+                              <Button className="h-10 rounded-xl px-4 text-sm font-semibold">
+                                Start Drill
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 <div className="pt-1">
                   <Link href={`/strategy/trainer?chartId=${chart.id}`}>

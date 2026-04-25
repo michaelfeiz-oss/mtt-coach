@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { getLeakFamily } from "@shared/leakFamilies";
 import { displayPositionLabel } from "@shared/strategy";
 
 interface TournamentFormData {
@@ -141,10 +142,14 @@ export default function Log() {
   }
 
   function handleAddLeak(data: AddLeakFormData) {
+    const family = getLeakFamily(data.leakType);
     createLeak({
-      name: data.leakType.replace(/_/g, " ") || "Poker leak",
+      name: family?.label ?? (data.leakType.replace(/_/g, " ") || "Poker leak"),
       category: leakCategoryFromType(),
-      description: data.notes || "",
+      description:
+        data.notes ||
+        family?.description ||
+        "Recurring preflop leak tracked for future study.",
       status: "ACTIVE",
     });
   }
