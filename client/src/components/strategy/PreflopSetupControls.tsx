@@ -33,19 +33,27 @@ interface PreflopSetupControlsProps {
   onStackDepthChange: SelectValueChange<number>;
   onHeroPositionChange: SelectValueChange<string>;
   onVillainPositionChange: SelectValueChange<string>;
+  compact?: boolean;
   className?: string;
 }
 
 function Field({
   label,
+  compact = false,
   children,
 }: {
   label: string;
+  compact?: boolean;
   children: ReactNode;
 }) {
   return (
-    <label className="min-w-0 space-y-1">
-      <span className="block text-[11px] font-semibold text-muted-foreground">
+    <label className={cn("min-w-0", compact ? "space-y-0.5" : "space-y-1")}>
+      <span
+        className={cn(
+          "block font-semibold text-muted-foreground",
+          compact ? "text-[10px]" : "text-[11px]"
+        )}
+      >
         {label}
       </span>
       {children}
@@ -53,9 +61,11 @@ function Field({
   );
 }
 
-function selectClassName(disabled = false) {
+function selectClassName(disabled = false, compact = false) {
   return cn(
-    "h-9 w-full rounded-lg border-border/80 bg-input/90 px-2.5 text-[12px] font-semibold text-foreground shadow-none hover:bg-input focus:ring-ring/35",
+    compact
+      ? "h-8 w-full rounded-lg border-border/80 bg-input/90 px-2 text-[11.5px] font-semibold text-foreground shadow-none hover:bg-input focus:ring-ring/35"
+      : "h-9 w-full rounded-lg border-border/80 bg-input/90 px-2.5 text-[12px] font-semibold text-foreground shadow-none hover:bg-input focus:ring-ring/35",
     disabled && "opacity-50"
   );
 }
@@ -72,6 +82,7 @@ export function PreflopSetupControls({
   onStackDepthChange,
   onHeroPositionChange,
   onVillainPositionChange,
+  compact = false,
   className,
 }: PreflopSetupControlsProps) {
   const stackSet = new Set(availableStacks);
@@ -79,9 +90,14 @@ export function PreflopSetupControls({
   const villainSet = new Set(villainOptions);
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-        <Field label="Decision">
+    <div className={cn(compact ? "space-y-1.5" : "space-y-2", className)}>
+      <div
+        className={cn(
+          "grid sm:grid-cols-2",
+          compact ? "gap-1.5 lg:grid-cols-5" : "gap-2 xl:grid-cols-5"
+        )}
+      >
+        <Field label="Decision" compact={compact}>
           <Select
             value={spotGroup ?? ANY_VALUE}
             onValueChange={value =>
@@ -90,7 +106,7 @@ export function PreflopSetupControls({
               )
             }
           >
-            <SelectTrigger className={selectClassName()}>
+            <SelectTrigger className={selectClassName(false, compact)}>
               <SelectValue placeholder="Any decision" />
             </SelectTrigger>
             <SelectContent className="z-[80]">
@@ -104,14 +120,16 @@ export function PreflopSetupControls({
           </Select>
         </Field>
 
-        <Field label="Stack">
+        <Field label="Stack" compact={compact}>
           <Select
             value={stackDepth?.toString() ?? ANY_VALUE}
             onValueChange={value =>
-              onStackDepthChange(value === ANY_VALUE ? undefined : Number(value))
+              onStackDepthChange(
+                value === ANY_VALUE ? undefined : Number(value)
+              )
             }
           >
-            <SelectTrigger className={selectClassName()}>
+            <SelectTrigger className={selectClassName(false, compact)}>
               <SelectValue placeholder="Any stack" />
             </SelectTrigger>
             <SelectContent className="z-[80]">
@@ -129,9 +147,9 @@ export function PreflopSetupControls({
           </Select>
         </Field>
 
-        <Field label="Players">
+        <Field label="Players" compact={compact}>
           <Select value={PLAYER_COUNT}>
-            <SelectTrigger className={selectClassName()}>
+            <SelectTrigger className={selectClassName(false, compact)}>
               <SelectValue placeholder="9 players" />
             </SelectTrigger>
             <SelectContent className="z-[80]">
@@ -140,14 +158,14 @@ export function PreflopSetupControls({
           </Select>
         </Field>
 
-        <Field label="Hero">
+        <Field label="Hero" compact={compact}>
           <Select
             value={heroPosition ?? ANY_VALUE}
             onValueChange={value =>
               onHeroPositionChange(value === ANY_VALUE ? undefined : value)
             }
           >
-            <SelectTrigger className={selectClassName()}>
+            <SelectTrigger className={selectClassName(false, compact)}>
               <SelectValue placeholder="Any hero" />
             </SelectTrigger>
             <SelectContent className="z-[80]">
@@ -165,7 +183,7 @@ export function PreflopSetupControls({
           </Select>
         </Field>
 
-        <Field label="Opener / Villain">
+        <Field label="Opener / Villain" compact={compact}>
           <Select
             value={villainPosition ?? ANY_VALUE}
             onValueChange={value =>
@@ -174,7 +192,7 @@ export function PreflopSetupControls({
             disabled={villainOptions.length === 0}
           >
             <SelectTrigger
-              className={selectClassName(villainOptions.length === 0)}
+              className={selectClassName(villainOptions.length === 0, compact)}
             >
               <SelectValue placeholder="No opener" />
             </SelectTrigger>
