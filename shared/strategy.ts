@@ -56,7 +56,7 @@ export type SpotGroup = (typeof SPOT_GROUPS)[number];
 export const SPOT_GROUP_LABELS: Record<SpotGroup, string> = {
   RFI: "RFI (Open Raise)",
   VS_UTG_RFI: "vs UTG RFI",
-  VS_MP_RFI: "vs MP RFI",
+  VS_MP_RFI: "vs Mid-Position RFI",
   VS_LP_RFI: "vs LP RFI",
   VS_3BET: "vs 3-Bet",
   BVB: "BvB",
@@ -73,7 +73,7 @@ export const SPOT_GROUP_SUBTITLES: Record<SpotGroup, string> = {
 
 // ─── Stack depths ─────────────────────────────────────────────────────────────
 
-export const STACK_DEPTHS = [15, 20, 25, 40] as const;
+export const STACK_DEPTHS = [15, 25, 40] as const;
 export type StackDepth = (typeof STACK_DEPTHS)[number];
 
 // ─── Positions ───────────────────────────────────────────────────────────────
@@ -288,8 +288,8 @@ export const SPOT_DEFINITIONS: SpotDefinition[] = [
       "3-Bet"
     )
   ),
-  createSpotDefinition("SB_vs_BB_limp", "BVB", "SB", "BB", "(limp)"),
-  createSpotDefinition("BB_vs_SB_limp", "BVB", "BB", "SB", "(limp)"),
+  createSpotDefinition("SB_vs_BB_limp", "BVB", "SB", "BB"),
+  createSpotDefinition("BB_vs_SB_limp", "BVB", "BB", "SB"),
 ];
 
 // ─── API types ────────────────────────────────────────────────────────────────

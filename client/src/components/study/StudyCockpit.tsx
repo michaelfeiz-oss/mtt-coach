@@ -244,7 +244,7 @@ export function StudyCockpit() {
             href="/strategy/library"
             icon={BookOpen}
             title="Hand Ranges"
-            subtitle="Browse BBA tournament charts through 40bb."
+            subtitle="Browse BBA tournament charts at 15bb, 25bb, and 40bb."
             meta={
               spotsLoading ? "Loading charts" : `${chartCount} charts available`
             }

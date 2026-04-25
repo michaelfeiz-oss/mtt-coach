@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   getPriorityDrillPack,
+  PRIORITY_DRILL_PACKS,
   resolvePriorityDrillPack,
 } from "../../shared/drillPacks";
-import { getLeakFamily, suggestLeakFamilyFromTrainerMiss } from "../../shared/leakFamilies";
+import {
+  getLeakFamily,
+  LEAK_FAMILIES,
+  suggestLeakFamilyFromTrainerMiss,
+} from "../../shared/leakFamilies";
 import {
   buildPushFoldSpotContext,
   expandPushFoldNotation,
@@ -48,7 +53,7 @@ describe("preflop study intelligence layer", () => {
     });
   });
 
-  it("returns structured spot notes for boundary blind defense", () => {
+  it("returns structured spot notes without unsupported stage adjustments", () => {
     const note = getSpotNote({
       family: "DEFEND_VS_RFI",
       stackDepth: 40,
@@ -59,30 +64,31 @@ describe("preflop study intelligence layer", () => {
     expect(note?.coreIdea).toContain("realization");
     expect(note?.commonPunt).toContain("offsuit");
     expect(note?.drillCue).toContain("BTN");
+    expect(note?.stageAdjustment).toBeUndefined();
   });
 
-  it("resolves priority drill packs against real spot coverage", () => {
-    const pack = resolvePriorityDrillPack("bb-co-btn-boundary-defense", [
+  it("resolves the source-backed blind-defense drill pack against real spot coverage", () => {
+    const pack = resolvePriorityDrillPack("bb-vs-sb-marginal-defense", [
       {
         id: 1,
-        title: "BB vs CO",
+        title: "BB vs SB",
         stackDepth: 25,
-        spotGroup: "VS_LP_RFI",
+        spotGroup: "BVB",
         heroPosition: "BB",
-        villainPosition: "CO",
+        villainPosition: "SB",
       },
       {
         id: 2,
-        title: "BB vs BTN",
-        stackDepth: 40,
-        spotGroup: "VS_LP_RFI",
-        heroPosition: "BB",
-        villainPosition: "BTN",
+        title: "SB vs BB",
+        stackDepth: 15,
+        spotGroup: "BVB",
+        heroPosition: "SB",
+        villainPosition: "BB",
       },
     ]);
 
     expect(pack?.supported).toBe(true);
-    expect(pack?.spotCount).toBe(2);
+    expect(pack?.spotCount).toBe(1);
     expect(pack?.focusHandCodes).toContain("K9o");
   });
 
@@ -130,7 +136,7 @@ describe("preflop study intelligence layer", () => {
 
     const note = getSpotNote(buildPushFoldSpotContext(reference!, 10));
     expect(note?.title).toContain("Push / Fold");
-    expect(note?.drillCue).toContain("blockers");
+    expect(note?.drillCue).toContain("threshold");
   });
 
   it("keeps unavailable packs visible as explicit coverage gaps", () => {
@@ -139,5 +145,15 @@ describe("preflop study intelligence layer", () => {
 
     expect(resolved?.supported).toBe(false);
     expect(resolved?.spotCount).toBe(0);
+  });
+
+  it("keeps leak drill recommendations aligned with real pack ids", () => {
+    const packIds = new Set(PRIORITY_DRILL_PACKS.map(pack => pack.id));
+
+    for (const leak of LEAK_FAMILIES) {
+      for (const packId of leak.relatedPackIds) {
+        expect(packIds.has(packId)).toBe(true);
+      }
+    }
   });
 });

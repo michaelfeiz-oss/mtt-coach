@@ -18,6 +18,7 @@ import {
   type SpotDefinition,
   type SpotGroup,
 } from "../../shared/strategy";
+import { isSourceSupportedStrategyChart } from "../../shared/sourceTruth";
 
 export interface SeedHandAction {
   handCode: string;
@@ -662,8 +663,16 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
   };
 }
 
-function getSeedSpotDefinitions(): SpotDefinition[] {
-  return SPOT_DEFINITIONS;
+function getSeedSpotDefinitions(stackDepth: number): SpotDefinition[] {
+  return SPOT_DEFINITIONS.filter(definition =>
+    isSourceSupportedStrategyChart({
+      stackDepth,
+      spotGroup: definition.group,
+      heroPosition: definition.heroPosition,
+      villainPosition: definition.villainPosition,
+      spotKey: definition.key,
+    })
+  );
 }
 
 export function validateSeedCharts(charts: SeedChart[] = SEED_CHARTS): void {
@@ -715,7 +724,9 @@ export function validateSeedCharts(charts: SeedChart[] = SEED_CHARTS): void {
 }
 
 export const SEED_CHARTS: SeedChart[] = STACK_DEPTHS.flatMap(stackDepth =>
-  getSeedSpotDefinitions().map(definition => buildSeedChart(definition, stackDepth))
+  getSeedSpotDefinitions(stackDepth).map(definition =>
+    buildSeedChart(definition, stackDepth)
+  )
 );
 
 validateSeedCharts(SEED_CHARTS);

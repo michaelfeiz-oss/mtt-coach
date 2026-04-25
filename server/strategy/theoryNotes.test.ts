@@ -2,25 +2,24 @@ import { describe, expect, it } from "vitest";
 import { buildStrategyTheorySections } from "../../shared/strategyTheory";
 
 describe("strategy theory notes", () => {
-  it("builds the full structured study note set", () => {
+  it("builds the structured study note set without unsupported stage claims", () => {
     const sections = buildStrategyTheorySections({
       spotGroup: "RFI",
-      stackDepth: 20,
+      stackDepth: 25,
       heroPosition: "CO",
     });
 
-    expect(sections).toHaveLength(6);
+    expect(sections).toHaveLength(5);
     expect(sections.map(section => section.title)).toEqual([
       "Core Idea",
       "Default",
       "Exploit Lever",
       "Common Punt",
       "Drill Cue",
-      "Stage Adjustment",
     ]);
   });
 
-  it("keeps exploit notes tournament-aware", () => {
+  it("keeps the notes grounded in the source-backed preflop material", () => {
     const sections = buildStrategyTheorySections({
       spotGroup: "VS_3BET",
       stackDepth: 15,
@@ -29,7 +28,12 @@ describe("strategy theory notes", () => {
     });
 
     const exploit = sections.find(section => section.key === "exploitLever");
-    expect(exploit?.body).toContain("Population");
+    const stageAdjustment = sections.find(
+      section => section.key === "stageAdjustment"
+    );
+    expect(exploit?.body).not.toContain("Population");
+    expect(exploit?.body).not.toContain("PKO");
+    expect(stageAdjustment).toBeUndefined();
   });
 
   it("uses human-readable position labels in training cues", () => {
