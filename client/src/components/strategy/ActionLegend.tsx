@@ -6,6 +6,7 @@ import { ACTION_CELL_STYLES, STRATEGY_ACTION_ORDER } from "./actionStyles";
 interface ActionLegendProps {
   actions?: Action[];
   layout?: "horizontal" | "vertical";
+  compact?: boolean;
   className?: string;
 }
 
@@ -18,6 +19,7 @@ function getVisibleActions(actions: Action[] | undefined): Action[] {
 export function ActionLegend({
   actions,
   layout = "horizontal",
+  compact = false,
   className = "",
 }: ActionLegendProps) {
   const visibleActions = getVisibleActions(actions);
@@ -25,7 +27,9 @@ export function ActionLegend({
   return (
     <div
       className={cn(
-        "flex gap-x-1.5 gap-y-1.5 text-[11px] text-muted-foreground",
+        compact
+          ? "flex gap-x-1 gap-y-1 text-[10px] text-muted-foreground"
+          : "flex gap-x-1.5 gap-y-1.5 text-[11px] text-muted-foreground",
         layout === "vertical" ? "flex-col" : "flex-row flex-wrap",
         className
       )}
@@ -37,10 +41,18 @@ export function ActionLegend({
         return (
           <div
             key={action}
-            className="flex min-h-6 items-center gap-1.5 rounded-full border border-border/80 bg-background/85 px-2 py-0.5"
+            className={cn(
+              "flex items-center rounded-full border border-border/80 bg-background/85",
+              compact
+                ? "min-h-5 gap-1 px-1.5 py-0.5"
+                : "min-h-6 gap-1.5 px-2 py-0.5"
+            )}
           >
             <span
-              className="h-3 w-3 shrink-0 rounded-full border border-slate-200/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]"
+              className={cn(
+                "shrink-0 rounded-full border border-slate-200/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]",
+                compact ? "h-2.5 w-2.5" : "h-3 w-3"
+              )}
               style={{ backgroundColor: style.backgroundColor }}
               aria-hidden="true"
             />

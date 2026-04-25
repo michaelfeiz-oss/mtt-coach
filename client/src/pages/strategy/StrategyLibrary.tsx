@@ -10,12 +10,14 @@ import { PreflopSetupControls } from "@/components/strategy/PreflopSetupControls
 import { RangeMatrix } from "@/components/strategy/RangeMatrix";
 import { StrategyTheoryNotes } from "@/components/strategy/StrategyTheoryNotes";
 import { buildActionMap } from "@/components/strategy/utils";
+import { getChartViewerDensity } from "@/lib/chartLayout";
 import {
   addRecentStrategySpot,
   loadRecentStrategySpots,
   saveRecentStrategySpots,
 } from "@/lib/strategyRecentSpots";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import {
   buildPriorityPackSummary,
   getRelatedPriorityDrillPacksForSpot,
@@ -108,6 +110,7 @@ export default function StrategyLibrary() {
   const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
     chartIdFromSearch
   );
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
   const {
     data: allSpots = [],
@@ -196,9 +199,16 @@ export default function StrategyLibrary() {
         : [],
     [allSpots, chart]
   );
+  const chartViewerDensity = useMemo(
+    () => getChartViewerDensity(viewportHeight),
+    [viewportHeight]
+  );
 
   useEffect(() => {
-    if (chartIdFromSearch !== undefined && chartIdFromSearch !== selectedChartId) {
+    if (
+      chartIdFromSearch !== undefined &&
+      chartIdFromSearch !== selectedChartId
+    ) {
       setSelectedChartId(chartIdFromSearch);
     }
   }, [chartIdFromSearch, selectedChartId]);
@@ -239,6 +249,24 @@ export default function StrategyLibrary() {
       window.history.replaceState(window.history.state, "", nextUrl);
     }
   }, [selectedChartId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateViewportHeight = () => {
+      setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
+    };
+
+    updateViewportHeight();
+    const visualViewport = window.visualViewport;
+    window.addEventListener("resize", updateViewportHeight);
+    visualViewport?.addEventListener("resize", updateViewportHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateViewportHeight);
+      visualViewport?.removeEventListener("resize", updateViewportHeight);
+    };
+  }, []);
 
   useEffect(() => {
     if (spotsLoading) return;
@@ -290,36 +318,58 @@ export default function StrategyLibrary() {
 
   return (
     <div className="app-shell min-h-[calc(100dvh-4rem)] overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground">
-      <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
-        <header className="app-surface-elevated p-4 sm:p-5">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <BookOpen className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <p className="app-eyebrow">Hand Ranges</p>
-              <h1 className="mt-1 truncate text-2xl font-bold tracking-tight">
-                Preflop Chart Viewer
-              </h1>
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Adjust the setup inline, study the exact matrix, then train the same
-            spot without leaving the flow.
-          </p>
-        </header>
+      <main
+        className={cn(
+          "mx-auto w-full max-w-4xl px-3 sm:px-5",
+          chartViewerDensity.tight
+            ? "space-y-2.5 py-2.5 sm:space-y-3 sm:py-4"
+            : chartViewerDensity.condensed
+              ? "space-y-3 py-3 sm:space-y-3.5 sm:py-4"
+              : "space-y-3 py-3 sm:space-y-4 sm:py-5"
+        )}
+      >
+        <section
+          className={cn(
+            "app-surface",
+            chartViewerDensity.tight ? "p-3 sm:p-3.5" : "p-3 sm:p-4"
+          )}
+        >
+          <div
+            className={cn(
+              chartViewerDensity.condensed ? "space-y-2.5" : "space-y-3"
+            )}
+          >
+            <div
+              className={cn(
+                "space-y-2",
+                chartViewerDensity.tight && "space-y-1.5"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-primary text-primary-foreground sm:h-9 sm:w-9">
+                  <BookOpen className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="app-eyebrow">Hand Ranges</p>
+                  <h1 className="mt-0.5 truncate text-xl font-bold tracking-tight sm:text-[1.65rem]">
+                    Preflop Chart Viewer
+                  </h1>
+                </div>
+              </div>
 
-        <section className="app-surface p-3 sm:p-4">
-          <div className="space-y-3.5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-muted-foreground">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Current Chart
                 </p>
-                <h2 className="mt-0.5 truncate text-lg font-black tracking-tight sm:text-[1.65rem]">
+                <h2
+                  className={cn(
+                    "mt-0.5 truncate text-lg font-black tracking-tight sm:text-[1.55rem]",
+                    chartViewerDensity.tight && "sm:text-[1.45rem]"
+                  )}
+                >
                   {chart?.title ?? "Choose a supported preflop spot"}
                 </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {chart
                     ? `${SPOT_GROUP_LABELS[chart.spotGroup]} · ${displayPositionLabel(
                         chart.heroPosition
@@ -329,7 +379,12 @@ export default function StrategyLibrary() {
               </div>
             </div>
 
-            <div className="rounded-[1rem] border border-border bg-background/78 p-3">
+            <div
+              className={cn(
+                "rounded-[0.95rem] border border-border bg-background/78",
+                chartViewerDensity.tight ? "p-2.5" : "p-3"
+              )}
+            >
               <PreflopSetupControls
                 spotGroup={spotGroup}
                 stackDepth={stackDepth}
@@ -342,32 +397,37 @@ export default function StrategyLibrary() {
                 onStackDepthChange={setStack}
                 onHeroPositionChange={setHero}
                 onVillainPositionChange={setVillain}
+                compact={chartViewerDensity.condensed}
               />
             </div>
 
             {chart && (
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge className="rounded-full bg-primary text-primary-foreground">
+              <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap gap-1">
+                  <Badge className="h-6 rounded-full bg-primary px-2.5 text-[10.5px] font-semibold text-primary-foreground">
                     {chart.stackDepth}bb
                   </Badge>
-                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                  <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     {SPOT_GROUP_LABELS[chart.spotGroup].replace(
                       " (Open Raise)",
                       ""
                     )}
                   </Badge>
-                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                  <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     {displayPositionLabel(chart.heroPosition)}
                     {chart.villainPosition
                       ? ` vs ${displayPositionLabel(chart.villainPosition)}`
                       : ""}
                   </Badge>
-                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                  <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     BBA
                   </Badge>
                 </div>
-                <ActionLegend actions={visibleActions} />
+                <ActionLegend
+                  actions={visibleActions}
+                  compact
+                  className="justify-start lg:justify-end"
+                />
               </div>
             )}
 
@@ -399,12 +459,19 @@ export default function StrategyLibrary() {
 
             {chart && (
               <>
-                <div className="rounded-[1rem] border border-border/80 bg-background/88 p-1 sm:p-1.5">
-                  <div className="md:hidden">
-                    <RangeMatrix actions={actionMap} compact size="md" />
-                  </div>
-                  <div className="hidden md:block">
-                    <RangeMatrix actions={actionMap} size="lg" />
+                <div className="rounded-[0.95rem] border border-border/80 bg-background/88 p-1">
+                  <div
+                    className="mx-auto w-full"
+                    style={{
+                      maxWidth: `${chartViewerDensity.desktopMatrixMaxWidthRem}rem`,
+                    }}
+                  >
+                    <div className="md:hidden">
+                      <RangeMatrix actions={actionMap} compact size="md" />
+                    </div>
+                    <div className="hidden md:block">
+                      <RangeMatrix actions={actionMap} size="lg" />
+                    </div>
                   </div>
                 </div>
 
@@ -422,7 +489,8 @@ export default function StrategyLibrary() {
                         Related Drill Packs
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Launch a focused drill pack when this spot sits inside a high-value leak zone.
+                        Launch a focused drill pack when this spot sits inside a
+                        high-value leak zone.
                       </p>
                     </div>
                     <div className="grid gap-2.5">
@@ -440,7 +508,10 @@ export default function StrategyLibrary() {
                                 {pack.purpose}
                               </p>
                               <div className="mt-2 flex flex-wrap gap-1.5">
-                                <Badge variant="outline" className="rounded-full">
+                                <Badge
+                                  variant="outline"
+                                  className="rounded-full"
+                                >
                                   {buildPriorityPackSummary(pack)}
                                 </Badge>
                                 {pack.focusTags.map(tag => (
