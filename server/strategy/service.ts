@@ -34,6 +34,7 @@ import {
   handDistance as getCanonicalHandDistance,
   normalizeHandCode as normalizeCanonicalHandCode,
 } from "../../shared/handMatrix";
+import { isSourceSupportedStrategyChart } from "../../shared/sourceTruth";
 
 export interface ListSpotsFilters {
   stackDepth?: number;
@@ -194,6 +195,16 @@ function buildChartConditions(filters: ListSpotsFilters): SQL[] {
   }
 
   return conditions;
+}
+
+function isSupportedChart(chart: {
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  heroPosition: string;
+  villainPosition?: string | null;
+  spotKey?: string | null;
+}) {
+  return isSourceSupportedStrategyChart(chart);
 }
 
 function buildTrainerChoices(correctAction: Action): Action[] {
@@ -707,12 +718,16 @@ async function findNearestChartBySpotKey(
     .where(and(eq(rangeCharts.spotKey, spotKey), eq(rangeCharts.isActive, true)))
     .orderBy(asc(rangeCharts.stackDepth), asc(rangeCharts.title));
 
-  if (charts.length === 0) return null;
+  const supportedCharts = charts.filter(isSupportedChart);
 
-  const exact = charts.find(chart => chart.stackDepth === targetStackDepth);
+  if (supportedCharts.length === 0) return null;
+
+  const exact = supportedCharts.find(
+    chart => chart.stackDepth === targetStackDepth
+  );
   if (exact) return { chart: exact, confidence: "exact" };
 
-  const [nearest] = [...charts].sort(
+  const [nearest] = [...supportedCharts].sort(
     (a, b) =>
       Math.abs(a.stackDepth - targetStackDepth) -
         Math.abs(b.stackDepth - targetStackDepth) ||
@@ -729,7 +744,7 @@ export async function getChartsBySpot(
 ) {
   const db = await requireDb();
 
-  return db
+  const charts = await db
     .select()
     .from(rangeCharts)
     .where(
@@ -741,6 +756,8 @@ export async function getChartsBySpot(
       )
     )
     .orderBy(asc(rangeCharts.stackDepth), asc(rangeCharts.title));
+
+  return charts.filter(isSupportedChart);
 }
 
 export async function getChartWithActions(
@@ -753,7 +770,7 @@ export async function getChartWithActions(
     .where(and(eq(rangeCharts.id, chartId), eq(rangeCharts.isActive, true)))
     .limit(1);
 
-  if (!chart) return null;
+  if (!chart || !isSupportedChart(chart)) return null;
 
   const actions = await db
     .select()
@@ -777,7 +794,7 @@ export async function listAvailableSpots(filters: ListSpotsFilters = {}) {
   const db = await requireDb();
   const conditions = buildChartConditions(filters);
 
-  return db
+  const spots = await db
     .select({
       id: rangeCharts.id,
       title: rangeCharts.title,
@@ -795,6 +812,8 @@ export async function listAvailableSpots(filters: ListSpotsFilters = {}) {
       asc(rangeCharts.spotGroup),
       asc(rangeCharts.title)
     );
+
+  return spots.filter(isSupportedChart);
 }
 
 export async function createChart(data: InsertRangeChart): Promise<number> {
@@ -844,8 +863,10 @@ export async function getTrainerSpot(
 
   const trainableRows = rows
     .filter(
-      ({ action }) =>
-        action.handCode.length > 0 && isAction(action.primaryAction)
+      ({ chart, action }) =>
+        action.handCode.length > 0 &&
+        isAction(action.primaryAction) &&
+        isSupportedChart(chart)
     )
     .sort((a, b) => compareHandCode(a.action.handCode, b.action.handCode));
 
@@ -934,21 +955,29 @@ export async function logTrainerAttempt(
 export async function getTrainerStats(userId: number): Promise<TrainerStats> {
   const db = await requireDb();
   const rows = await db
-    .select()
+    .select({
+      attempt: trainerAttempts,
+      chart: rangeCharts,
+    })
     .from(trainerAttempts)
+    .innerJoin(rangeCharts, eq(trainerAttempts.chartId, rangeCharts.id))
     .where(eq(trainerAttempts.userId, userId));
 
-  const total = rows.length;
-  const correct = rows.filter(row => row.isCorrect).length;
+  const supportedRows = rows.filter(({ chart }) => isSupportedChart(chart));
+
+  const total = supportedRows.length;
+  const correct = supportedRows.filter(row => row.attempt.isCorrect).length;
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
   const byAction = createEmptyActionStats();
 
-  for (const row of rows) {
-    const action = ACTIONS.find(candidate => candidate === row.correctAction);
+  for (const row of supportedRows) {
+    const action = ACTIONS.find(
+      candidate => candidate === row.attempt.correctAction
+    );
     if (!action) continue;
 
     byAction[action].total += 1;
-    if (row.isCorrect) {
+    if (row.attempt.isCorrect) {
       byAction[action].correct += 1;
     }
   }
@@ -970,10 +999,12 @@ export async function getTrainerProgress(
     .where(eq(trainerAttempts.userId, userId))
     .orderBy(desc(trainerAttempts.createdAt));
 
+  const supportedRows = rows.filter(({ chart }) => isSupportedChart(chart));
+
   const bySpot = new Map<number, StrategySpotProgress>();
   const byHand = new Map<string, HandStatsAccumulator>();
 
-  for (const { attempt, chart } of rows) {
+  for (const { attempt, chart } of supportedRows) {
     const existingSpot = bySpot.get(chart.id);
     const spotProgress: StrategySpotProgress = existingSpot ?? {
       chartId: chart.id,
@@ -1094,7 +1125,7 @@ export async function getHandStrategyRecommendation(
       .where(and(eq(rangeCharts.id, studyMeta.chartId), eq(rangeCharts.isActive, true)))
       .limit(1);
 
-    if (exactChart) {
+    if (exactChart && isSupportedChart(exactChart)) {
       match = { chart: exactChart, confidence: "exact" };
     }
   }

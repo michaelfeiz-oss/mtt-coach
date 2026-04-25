@@ -147,7 +147,7 @@ function filterSummary(
     return `Drilling ${SPOT_GROUP_LABELS[spotGroup]} across supported stacks.`;
   }
   if (stackDepth) return `Drilling preflop spots at ${stackDepth}bb.`;
-  return "Drilling preflop spots up to 40bb.";
+  return "Drilling source-backed 15bb / 25bb / 40bb preflop spots.";
 }
 
 function scrollElementIntoComfortView(element: HTMLElement | null) {
@@ -614,7 +614,7 @@ export default function RangeTrainer() {
                   BBA
                 </Badge>
                 <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
-                  Up to 40bb
+                    15bb / 25bb / 40bb
                 </Badge>
                 {resolvedPack?.supported && (
                   <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">

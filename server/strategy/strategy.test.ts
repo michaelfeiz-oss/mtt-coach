@@ -33,8 +33,8 @@ async function seedTestChart() {
   }
 
   const chartId = await createChart({
-    title: "Test BTN RFI @ 20bb",
-    stackDepth: 20,
+    title: "Test BTN RFI @ 25bb",
+    stackDepth: 25,
     spotGroup: "RFI",
     spotKey: "TEST_BTN_RFI",
     heroPosition: "BTN",
@@ -71,13 +71,13 @@ describeDb("Strategy Module", () => {
       expect(spots.length).toBeGreaterThan(0);
       const testSpot = spots.find(s => s.spotKey === "TEST_BTN_RFI");
       expect(testSpot).toBeDefined();
-      expect(testSpot?.title).toBe("Test BTN RFI @ 20bb");
-      expect(testSpot?.stackDepth).toBe(20);
+      expect(testSpot?.title).toBe("Test BTN RFI @ 25bb");
+      expect(testSpot?.stackDepth).toBe(25);
     });
 
     it("filters by stackDepth", async () => {
-      const spots = await listAvailableSpots({ stackDepth: 20 });
-      expect(spots.every(s => s.stackDepth === 20)).toBe(true);
+      const spots = await listAvailableSpots({ stackDepth: 25 });
+      expect(spots.every(s => s.stackDepth === 25)).toBe(true);
     });
 
     it("filters by spotGroup", async () => {
@@ -90,7 +90,7 @@ describeDb("Strategy Module", () => {
     it("returns chart with all seeded actions", async () => {
       const chart = await getChartWithActions(testChartId);
       expect(chart).not.toBeNull();
-      expect(chart!.title).toBe("Test BTN RFI @ 20bb");
+      expect(chart!.title).toBe("Test BTN RFI @ 25bb");
       expect(chart!.actions.length).toBe(4);
       const aaPrimary = chart!.actions.find(a => a.handCode === "AA")?.primaryAction;
       expect(aaPrimary).toBe("RAISE");
@@ -136,17 +136,17 @@ describeDb("Strategy Module", () => {
     it("includes chart metadata", async () => {
       const spot = await getTrainerSpot({ chartId: testChartId });
       expect(spot!.chart.id).toBe(testChartId);
-      expect(spot!.chart.title).toBe("Test BTN RFI @ 20bb");
+      expect(spot!.chart.title).toBe("Test BTN RFI @ 25bb");
     });
 
     it("supports current decision family setup filters", async () => {
       const spot = await getTrainerSpot({
-        stackDepth: 20,
+        stackDepth: 25,
         spotGroup: "RFI",
       });
 
       expect(spot).not.toBeNull();
-      expect(spot!.chart.stackDepth).toBe(20);
+      expect(spot!.chart.stackDepth).toBe(25);
       expect(spot!.chart.spotGroup).toBe("RFI");
     });
 

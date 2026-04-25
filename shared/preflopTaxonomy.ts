@@ -16,8 +16,6 @@ export const CANONICAL_SPOT_FAMILIES = [
 ] as const;
 export type CanonicalSpotFamily = (typeof CANONICAL_SPOT_FAMILIES)[number];
 
-// We keep 20bb in the shared stack taxonomy because the current study data and
-// trainer already support it, and several drill packs explicitly target 15-20bb.
 export const CANONICAL_STACK_BUCKETS = [
   5,
   6,
@@ -26,13 +24,12 @@ export const CANONICAL_STACK_BUCKETS = [
   9,
   10,
   15,
-  20,
   25,
   40,
 ] as const;
 export type CanonicalStackBucket = (typeof CANONICAL_STACK_BUCKETS)[number];
 
-export const MAIN_STUDY_STACK_BUCKETS = [15, 20, 25, 40] as const;
+export const MAIN_STUDY_STACK_BUCKETS = [15, 25, 40] as const;
 export const PUSH_FOLD_STACK_BUCKETS = [5, 6, 7, 8, 9, 10] as const;
 
 export const STUDY_STAGE_CONTEXTS = [

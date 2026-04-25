@@ -115,7 +115,7 @@ export function PreflopSetupControls({
               <SelectValue placeholder="Any stack" />
             </SelectTrigger>
             <SelectContent className="z-[80]">
-              <SelectItem value={ANY_VALUE}>Any stack up to 40bb</SelectItem>
+              <SelectItem value={ANY_VALUE}>Any source-backed stack</SelectItem>
               {STACK_DEPTHS.map(depth => (
                 <SelectItem
                   key={depth}
