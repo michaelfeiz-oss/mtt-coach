@@ -88,8 +88,6 @@ const PHASES: Array<{ id: TournamentPhase; label: string }> = [
   { id: "FINAL_TABLE", label: "Final table" },
 ];
 
-const FLOW_STEPS = ["Context", "Action", "Review", "Save"] as const;
-
 function needsSize(action?: HeroActionType | VillainActionType) {
   return action === "RAISE";
 }
@@ -126,6 +124,7 @@ function LiveSummaryCard({
   selectedSpotTypeLabel,
   normalizedHand,
   heroPosition,
+  openerPosition,
   isStackValid,
   stackNumber,
   heroDecision,
@@ -134,43 +133,62 @@ function LiveSummaryCard({
   selectedSpotTypeLabel: string;
   normalizedHand: string;
   heroPosition: string;
+  openerPosition: string;
   isStackValid: boolean;
   stackNumber: number;
   heroDecision: string;
   className?: string;
 }) {
+  const summaryItems = [
+    { label: "Spot", value: selectedSpotTypeLabel },
+    { label: "Hand", value: normalizedHand || "-" },
+    {
+      label: "Stack",
+      value: isStackValid ? `${stackNumber}bb` : "-",
+    },
+    {
+      label: "Hero",
+      value: heroPosition ? displayPositionLabel(heroPosition) : "-",
+    },
+    {
+      label: "Opener",
+      value: openerPosition ? displayPositionLabel(openerPosition) : "No opener",
+    },
+    { label: "Action", value: heroDecision || "-" },
+  ];
+
   return (
-    <aside
-      className={cn("rounded-xl border border-border bg-card p-3", className)}
+    <section
+      className={cn(
+        "rounded-xl border border-border/80 bg-card/95 p-4",
+        className
+      )}
     >
-      <p className="text-xs font-semibold text-muted-foreground">Live Summary</p>
-      <div className="mt-2 space-y-2">
-        <p className="text-sm">
-          <span className="text-muted-foreground">Spot:</span>{" "}
-          <span className="font-semibold">{selectedSpotTypeLabel}</span>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-foreground">
+          Live Summary
         </p>
-        <p className="text-sm">
-          <span className="text-muted-foreground">Hand:</span>{" "}
-          <span className="font-semibold">{normalizedHand || "-"}</span>
-        </p>
-        <p className="text-sm">
-          <span className="text-muted-foreground">Position:</span>{" "}
-          <span className="font-semibold">
-            {heroPosition ? displayPositionLabel(heroPosition) : "-"}
-          </span>
-        </p>
-        <p className="text-sm">
-          <span className="text-muted-foreground">Stack:</span>{" "}
-          <span className="font-semibold">
-            {isStackValid ? `${stackNumber}bb` : "-"}
-          </span>
-        </p>
-        <p className="text-sm">
-          <span className="text-muted-foreground">Action:</span>{" "}
-          <span className="font-semibold">{heroDecision || "-"}</span>
-        </p>
+        <Badge variant="outline" className="rounded-full text-[11px]">
+          Optional
+        </Badge>
       </div>
-    </aside>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Review the essentials before saving. This stays secondary to the main
+        form.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {summaryItems.map(item => (
+          <div key={item.label} className="rounded-lg bg-background/75 px-3 py-2.5">
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              {item.label}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -333,83 +351,79 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     <Dialog open={isOpen} onOpenChange={open => !open && closeModal()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-4xl flex-col overflow-hidden rounded-2xl p-0"
+        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl p-0 sm:max-w-[60rem] xl:max-w-[64rem]"
       >
-          <DialogHeader className="border-b border-border bg-accent/50 p-5 text-left">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="app-eyebrow mb-2">Quick Hand Capture</p>
-              <DialogTitle className="text-2xl font-bold tracking-tight">
-                Log a Hand
-              </DialogTitle>
-              <DialogDescription className="mt-1 text-sm text-muted-foreground">
-                Required first. Optional details can be added now or later.
-              </DialogDescription>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full"
-              onClick={closeModal}
-              aria-label="Close hand entry"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1">
-            {(["QUICK", "FULL"] as const).map(mode => (
-              <button
-                key={mode}
+        <DialogHeader className="border-b border-border bg-accent/50 p-5 text-left sm:p-6">
+          <div className="mx-auto w-full max-w-3xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="app-eyebrow mb-2">Quick Hand Capture</p>
+                <DialogTitle className="text-2xl font-bold tracking-tight">
+                  Log a Hand
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                  Capture the core preflop decision first, then add optional
+                  review detail if you need it.
+                </DialogDescription>
+              </div>
+              <Button
                 type="button"
-                onClick={() => setEntryMode(mode)}
-                className={cn(
-                  "rounded-lg px-3 py-2 text-xs font-semibold transition",
-                  entryMode === mode
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent/80 hover:text-foreground"
-                )}
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full"
+                onClick={closeModal}
+                aria-label="Close hand entry"
               >
-                {mode === "QUICK" ? "Quick Log" : "Full Review"}
-              </button>
-            ))}
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl border border-border bg-card p-1">
+              {(["QUICK", "FULL"] as const).map(mode => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setEntryMode(mode)}
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-xs font-semibold transition",
+                    entryMode === mode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+                  )}
+                >
+                  {mode === "QUICK" ? "Quick Log" : "Full Review"}
+                </button>
+              ))}
+            </div>
           </div>
         </DialogHeader>
 
-        <div className="border-b border-border bg-accent/35 px-4 py-2 sm:px-5">
-          <div className="grid grid-cols-4 gap-1.5">
-            {FLOW_STEPS.map((step, index) => (
-              <div
-                key={step}
-                className={cn(
-                  "rounded-full border px-2 py-1 text-center text-[10px] font-semibold",
-                  index === 0
-                    ? "border-primary bg-primary/12 text-primary"
-                    : "border-border bg-card text-muted-foreground"
-                )}
-              >
-                {step}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          <div className="space-y-4 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_15rem] 2xl:items-start 2xl:gap-4 2xl:space-y-0">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl space-y-4 p-4 sm:p-5">
             <section className="space-y-4">
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-base font-semibold">Quick Log</h3>
+              <div className="rounded-2xl border border-border bg-card">
+                <div className="mb-3 flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
+                  <div>
+                    <h3 className="text-base font-semibold">Quick Log</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Move top to bottom: spot, hand, stack, positions, action,
+                      then save.
+                    </p>
+                  </div>
                   <Badge variant="outline">Required first</Badge>
                 </div>
 
-                <div className="space-y-3.5">
-                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      Spot
-                    </p>
-                    <div className="mt-2">
+                <div className="divide-y divide-border/80">
+                  <section className="space-y-2 p-4 sm:p-5">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Spot Type
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Start with the preflop spot you want to capture.
+                      </p>
+                    </div>
+                    <div>
                       <Select
                         value={scenarioId}
                         onValueChange={value =>
@@ -428,18 +442,23 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      Hand & Stack
-                    </p>
-                    <div className="mt-2 grid gap-3 xl:grid-cols-[minmax(0,1.12fr)_minmax(15rem,0.88fr)]">
+                  <section className="space-y-3 p-4 sm:p-5">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Hand & Stack
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Log the actual hand first, then the effective stack.
+                      </p>
+                    </div>
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(15rem,0.85fr)]">
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold text-muted-foreground">
                           Hero Hand
                         </Label>
-                        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_11rem]">
+                        <div className="space-y-2">
                           <HandPicker
                             value={normalizedHand}
                             onChange={value => setHeroHand(value)}
@@ -448,6 +467,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                             value={heroHand}
                             onChange={event => setHeroHand(event.target.value)}
                             placeholder="AKs, QQ, AhKh"
+                            className="font-medium"
                           />
                         </div>
                       </div>
@@ -482,13 +502,19 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      Positions
-                    </p>
-                    <div className="mt-2 grid gap-3 md:grid-cols-2">
+                  <section className="space-y-3 p-4 sm:p-5">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Positions
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Establish who you were and who opened or pressured the
+                        spot.
+                      </p>
+                    </div>
+                    <div className="grid gap-4 lg:grid-cols-2">
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold text-muted-foreground">
                           Hero Position
@@ -512,7 +538,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold text-muted-foreground">
-                          Villain / Opener
+                          Opener / Villain Position
                         </Label>
                         <Select
                           value={openerPosition || "NONE"}
@@ -534,22 +560,27 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         </Select>
                       </div>
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      Action
-                    </p>
-                    <Label className="text-xs font-semibold text-muted-foreground">
+                  <section className="space-y-3 p-4 sm:p-5">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Action
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Once the context is set, record the decision you made.
+                      </p>
+                    </div>
+                    <Label className="block text-xs font-semibold text-muted-foreground">
                       Hero Decision
                     </Label>
-                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       {HERO_ACTIONS.map(action => (
                         <ChipButton
                           key={action}
                           active={heroDecision === action}
                           onClick={() => setHeroDecision(action)}
-                          className="text-center"
+                          className="min-h-11 text-center"
                         >
                           {action}
                         </ChipButton>
@@ -569,13 +600,18 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </section>
 
-                  <div className="rounded-xl border border-border/80 bg-background/80 p-3">
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      Optional Note
-                    </p>
-                    <div className="mt-2">
+                  <section className="space-y-3 p-4 sm:p-5">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Quick Note
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Optional takeaway or reminder for later review.
+                      </p>
+                    </div>
+                    <div>
                       <Textarea
                         id="quick-note"
                         value={note}
@@ -586,15 +622,15 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         className="min-h-20"
                       />
                     </div>
-                  </div>
+                  </section>
                 </div>
               </div>
 
               <LiveSummaryCard
-                className="2xl:hidden"
                 selectedSpotTypeLabel={selectedSpotTypeLabel}
                 normalizedHand={normalizedHand}
                 heroPosition={heroPosition}
+                openerPosition={openerPosition}
                 isStackValid={isStackValid}
                 stackNumber={stackNumber}
                 heroDecision={heroDecision}
@@ -891,35 +927,27 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 )}
               </section>
             </section>
-
-            <LiveSummaryCard
-              className="hidden 2xl:sticky 2xl:top-1 2xl:block"
-              selectedSpotTypeLabel={selectedSpotTypeLabel}
-              normalizedHand={normalizedHand}
-              heroPosition={heroPosition}
-              isStackValid={isStackValid}
-              stackNumber={stackNumber}
-              heroDecision={heroDecision}
-            />
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-border bg-accent/40 p-4">
-          <Button type="button" variant="ghost" onClick={closeModal}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={!isFormValid || createHand.isPending}
-            className="min-w-44 rounded-xl"
-          >
-            {createHand.isPending
-              ? "Saving..."
-              : entryMode === "QUICK"
-                ? "Save to Review Queue"
-                : "Save Full Review"}
-          </Button>
+        <div className="border-t border-border bg-accent/40 p-4">
+          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2">
+            <Button type="button" variant="ghost" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={!isFormValid || createHand.isPending}
+              className="min-w-44 rounded-xl"
+            >
+              {createHand.isPending
+                ? "Saving..."
+                : entryMode === "QUICK"
+                  ? "Save to Review Queue"
+                  : "Save Full Review"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
