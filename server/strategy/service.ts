@@ -16,7 +16,6 @@ import {
   ACTIONS,
   ALL_HANDS,
   POSITIONS,
-  RANKS,
   STACK_DEPTHS,
   type Action,
   type HandAction,
@@ -30,6 +29,11 @@ import {
   type TrainerQuestion,
   type TrainerStats,
 } from "../../shared/strategy";
+import {
+  getHandCoordinate as getCanonicalHandCoordinate,
+  handDistance as getCanonicalHandDistance,
+  normalizeHandCode as normalizeCanonicalHandCode,
+} from "../../shared/handMatrix";
 
 export interface ListSpotsFilters {
   stackDepth?: number;
@@ -79,14 +83,10 @@ const TRAINER_ACTION_ORDER: Action[] = [
   "FOLD",
 ];
 const VALID_POSITIONS = new Set<string>(POSITIONS);
-const VALID_HANDS = new Set<string>(ALL_HANDS);
 const RECENT_CHART_GUARD_LIMIT = 8;
 const RECENT_HAND_GUARD_LIMIT = 20;
 const FOLD_SAMPLE_TARGET = 0.32;
 const MARGINAL_FOLD_DISTANCE = 2;
-const RANK_INDEX: Map<string, number> = new Map(
-  RANKS.map((rank, index) => [rank, index])
-);
 
 type JsonObject = Record<string, unknown>;
 
@@ -339,25 +339,11 @@ function groupRowsByAction(rows: RangeChartAction[]) {
 }
 
 export function getHandCoordinate(handCode: string): HandCoordinate | null {
-  if (!VALID_HANDS.has(handCode)) return null;
-
-  const firstRank = handCode[0];
-  const secondRank = handCode[1];
-  const firstIndex = RANK_INDEX.get(firstRank);
-  const secondIndex = RANK_INDEX.get(secondRank);
-
-  if (firstIndex === undefined || secondIndex === undefined) return null;
-  if (handCode.length === 2) return { row: firstIndex, col: firstIndex };
-
-  const suffix = handCode[2];
-  if (suffix === "s") return { row: firstIndex, col: secondIndex };
-  if (suffix === "o") return { row: secondIndex, col: firstIndex };
-
-  return null;
+  return getCanonicalHandCoordinate(handCode);
 }
 
 export function handDistance(a: HandCoordinate, b: HandCoordinate): number {
-  return Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
+  return getCanonicalHandDistance(a, b);
 }
 
 export function getMarginalFoldActions(
@@ -544,60 +530,8 @@ function normalizePosition(value: string | null | undefined): Position | null {
   return VALID_POSITIONS.has(normalized) ? (normalized as Position) : null;
 }
 
-function rankSortIndex(rank: string): number {
-  const index = RANKS.findIndex(candidate => candidate === rank);
-  return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
-}
-
-function canonicalHandFromRanks(
-  firstRank: string,
-  secondRank: string,
-  suffix?: "s" | "o"
-): string | null {
-  const first = firstRank.toUpperCase();
-  const second = secondRank.toUpperCase();
-
-  if (first === second) {
-    const pair = `${first}${second}`;
-    return VALID_HANDS.has(pair) ? pair : null;
-  }
-
-  const [high, low] =
-    rankSortIndex(first) <= rankSortIndex(second)
-      ? [first, second]
-      : [second, first];
-  const handCode = suffix ? `${high}${low}${suffix}` : null;
-
-  return handCode && VALID_HANDS.has(handCode) ? handCode : null;
-}
-
 export function normalizeHandCode(value: string | null | undefined): string | null {
-  if (!value) return null;
-
-  const raw = value.trim();
-  const cardMatches = Array.from(raw.matchAll(/([AKQJT98765432])([SHDC])/gi));
-
-  if (cardMatches.length === 2) {
-    const firstRank = cardMatches[0][1];
-    const firstSuit = cardMatches[0][2].toLowerCase();
-    const secondRank = cardMatches[1][1];
-    const secondSuit = cardMatches[1][2].toLowerCase();
-    const suffix = firstSuit === secondSuit ? "s" : "o";
-    return canonicalHandFromRanks(firstRank, secondRank, suffix);
-  }
-
-  const compact = raw.replace(/[^AKQJT98765432SO]/gi, "").toUpperCase();
-
-  if (compact.length === 2) {
-    return canonicalHandFromRanks(compact[0], compact[1]);
-  }
-
-  if (compact.length === 3) {
-    const suffix = compact[2] === "S" ? "s" : compact[2] === "O" ? "o" : null;
-    return suffix ? canonicalHandFromRanks(compact[0], compact[1], suffix) : null;
-  }
-
-  return null;
+  return normalizeCanonicalHandCode(value);
 }
 
 function nearestStackDepth(stackDepth: number | null | undefined): number {

@@ -4,6 +4,7 @@ import {
   RANKS,
   type Action,
 } from "./strategy";
+import { normalizeHandCode } from "./handMatrix";
 
 export type HandClassKind = "pair" | "suited" | "offsuit";
 export type DisplaySuit = "spades" | "hearts" | "diamonds" | "clubs";
@@ -36,15 +37,6 @@ const RANK_NAMES: Record<string, string> = {
   "2": "two",
 };
 
-function normalizeHandCode(handCode: string): string {
-  const trimmed = handCode.trim();
-  if (trimmed.length < 2) return trimmed.toUpperCase();
-
-  const ranks = trimmed.slice(0, 2).toUpperCase();
-  const suffix = trimmed.slice(2).toLowerCase();
-  return `${ranks}${suffix}`;
-}
-
 function rankName(rank: string): string {
   return RANK_NAMES[rank] ?? rank;
 }
@@ -61,6 +53,7 @@ function pairLabel(rank: string): string {
 
 export function parseHandClass(handCode: string): ParsedHandClass | null {
   const code = normalizeHandCode(handCode);
+  if (!code) return null;
   const firstRank = code[0];
   const secondRank = code[1];
 
