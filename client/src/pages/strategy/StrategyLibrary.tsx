@@ -41,6 +41,7 @@ type SpotSummary = {
   spotKey: string;
   heroPosition: string;
   villainPosition?: string | null;
+  sourceLabel?: string | null;
 };
 
 const GROUP_ORDER = new Map(SPOT_GROUPS.map((group, index) => [group, index]));
@@ -422,6 +423,12 @@ export default function StrategyLibrary() {
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     BBA
                   </Badge>
+                  {chart.sourceLabel &&
+                    chart.sourceLabel !== "Exact source-backed chart" && (
+                      <Badge className="h-6 rounded-full border-amber-200 bg-amber-50 px-2.5 text-[10.5px] font-semibold text-amber-900">
+                        {chart.sourceLabel}
+                      </Badge>
+                    )}
                 </div>
                 <ActionLegend
                   actions={visibleActions}

@@ -29,6 +29,18 @@ function villainText(context: CanonicalSpotContext) {
     : "the field behind you";
 }
 
+function facingThreeBetBranch(context: CanonicalSpotContext) {
+  if (context.villainPosition === "SB") {
+    return "in position versus the small blind 3-bet";
+  }
+
+  if (context.villainPosition === "BB") {
+    return "in position versus the big blind 3-bet";
+  }
+
+  return "out of position versus an in-position 3-bet";
+}
+
 function stackTexture(stackDepth: number) {
   if (stackDepth <= 15) {
     return "15bb is a commitment-heavy node. Clean thresholds matter more than speculative realization.";
@@ -99,16 +111,46 @@ function buildDefendVsRfiNote(context: CanonicalSpotContext): StudySpotNote {
 function buildFacing3BetNote(context: CanonicalSpotContext): StudySpotNote {
   const hero = heroText(context);
   const villain = villainText(context);
-  const sourceSpecific =
-    context.stackDepth === 15
-      ? "The attached 15bb charts cover this pressure node directly, so use them to separate jam, continue, and fold thresholds cleanly."
-      : "The attached main-chart PDFs do not give exact 25bb or 40bb facing-3-bet pages, so treat any non-15bb guidance here as unresolved rather than solved.";
+  const branch = facingThreeBetBranch(context);
+
+  if (context.stackDepth === 25) {
+    return {
+      spotId: getCanonicalSpotId(context),
+      title: buildCanonicalSpotLabel(context),
+      coreIdea: `${hero} ${branch} at 25bb is a simplified population threshold node. The goal is to separate the jam spine from the stable call bucket instead of defending by feel.`,
+      defaultLine:
+        "This simplified population 25bb layer keeps OOP versus in-position 3-bets on a tighter jam spine, while in-position blind-defense branches let medium pairs, suited aces, and ATo-type hands survive as calls more often.",
+      exploitLever:
+        "Classify the branch first: OOP versus IP stays more commitment-heavy, while IP versus blind 3-bets keeps more room for disciplined flats.",
+      commonPunt:
+        "Turning medium pairs or pretty broadways into automatic jams when the simplified 25bb layer wants them in the call bucket instead.",
+      drillCue:
+        "At 25bb facing a 3-bet, decide whether the hand is a clear jam, a clean realization call, or a fold. Do not blur medium pairs and broadways together.",
+    };
+  }
+
+  if (context.stackDepth >= 40) {
+    return {
+      spotId: getCanonicalSpotId(context),
+      title: buildCanonicalSpotLabel(context),
+      coreIdea: `${hero} ${branch} at 40bb is a disciplined stack-off test. The simplified population layer keeps QQ+ and AK at the center, then makes the rest earn their continue.`,
+      defaultLine:
+        "This simplified population 40bb layer keeps default stack-offs centered on QQ+ and AK. JJ, some medium pairs, and AQ-class hands live in the conditional call bucket more often than the default jam bucket.",
+      exploitLever:
+        "Respect the population baseline first: do not upgrade JJ, AQ, or broadway strength into automatic stack-offs unless the 3-bettor profile is clearly over-aggressive.",
+      commonPunt:
+        "Stacking off too lightly because the pot is already large, or collapsing the whole conditional bucket into one automatic jam rule.",
+      drillCue:
+        "At 40bb facing a 3-bet, ask whether this hand truly clears the default stack-off center or whether it belongs in the controlled call bucket instead.",
+    };
+  }
 
   return {
     spotId: getCanonicalSpotId(context),
     title: buildCanonicalSpotLabel(context),
     coreIdea: `${hero} facing a 3-bet from ${villain} is a threshold test, not a spot to defend by feel.`,
-    defaultLine: sourceSpecific,
+    defaultLine:
+      "The attached 15bb charts cover this pressure node directly, so use them to separate jam, continue, and fold thresholds cleanly.",
     exploitLever:
       "Respect stack pressure before ego. If the hand does not stack off cleanly or realize well enough, the disciplined line is to let it go.",
     commonPunt:

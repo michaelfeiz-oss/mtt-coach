@@ -63,6 +63,7 @@ type SpotSummary = {
   spotGroup: SpotGroup;
   heroPosition: string;
   villainPosition?: string | null;
+  sourceLabel?: string | null;
 };
 
 const RECENT_CHART_LIMIT = 10;
@@ -147,7 +148,7 @@ function filterSummary(
     return `Drilling ${SPOT_GROUP_LABELS[spotGroup]} across supported stacks.`;
   }
   if (stackDepth) return `Drilling preflop spots at ${stackDepth}bb.`;
-  return "Drilling source-backed 15bb / 25bb / 40bb preflop spots.";
+  return "Drilling supported 15bb / 25bb / 40bb preflop spots.";
 }
 
 function scrollElementIntoComfortView(element: HTMLElement | null) {
@@ -629,6 +630,12 @@ export default function RangeTrainer() {
                       : ""}
                   </Badge>
                 )}
+                {activeSpot?.sourceLabel &&
+                  activeSpot.sourceLabel !== "Exact source-backed chart" && (
+                    <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
+                      {activeSpot.sourceLabel}
+                    </Badge>
+                  )}
               </div>
             </div>
 

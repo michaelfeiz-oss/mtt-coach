@@ -18,7 +18,10 @@ import {
   type SpotDefinition,
   type SpotGroup,
 } from "../../shared/strategy";
-import { isSourceSupportedStrategyChart } from "../../shared/sourceTruth";
+import {
+  getStrategySourceLabel,
+  isSourceSupportedStrategyChart,
+} from "../../shared/sourceTruth";
 
 export interface SeedHandAction {
   handCode: string;
@@ -57,7 +60,12 @@ interface ActionRule {
   matches: (hand: ParsedHand) => boolean;
 }
 
-const SOURCE_LABEL = "MTT Coach structured baseline";
+type VsThreeBetNodeFamily =
+  | "oop_vs_ip"
+  | "ip_vs_sb"
+  | "ip_vs_bb"
+  | "unsupported";
+
 const VALID_HANDS = new Set(ALL_HANDS);
 const VALID_ACTIONS = new Set<Action>(ACTIONS);
 const VALID_STACKS = new Set<number>(STACK_DEPTHS);
@@ -218,8 +226,117 @@ function isPremium(hand: ParsedHand): boolean {
   );
 }
 
+function isExactVsThreeBetJam(hand: ParsedHand, level: number): boolean {
+  return (
+    isPairAtLeast(hand, level >= 6 ? "44" : level >= 4 ? "55" : "66") ||
+    [
+      "AKs",
+      "AKo",
+      "AQs",
+      "AQo",
+      "AJs",
+      "AJo",
+      "ATs",
+      "KQs",
+    ].includes(hand.code) ||
+    (level >= 6 && ["KJs", "QJs", "A5s", "A4s"].includes(hand.code))
+  );
+}
+
 function isStrongBroadway(hand: ParsedHand): boolean {
   return ["AKs", "AKo", "AQs", "AQo", "AJs", "KQs"].includes(hand.code);
+}
+
+function getVsThreeBetNodeFamily(definition: SpotDefinition): VsThreeBetNodeFamily {
+  const aggressor = definition.villainPosition;
+
+  if (!aggressor || definition.heroPosition === "SB") {
+    return "unsupported";
+  }
+
+  if (aggressor === "SB") return "ip_vs_sb";
+  if (aggressor === "BB") return "ip_vs_bb";
+  return "oop_vs_ip";
+}
+
+function isPopulation25JamVsThreeBet(
+  hand: ParsedHand,
+  family: VsThreeBetNodeFamily
+): boolean {
+  if (family === "oop_vs_ip") {
+    return (
+      isPairAtLeast(hand, "77") ||
+      ["AKs", "AKo", "AQs", "AQo", "A5s", "A4s"].includes(hand.code)
+    );
+  }
+
+  return (
+    isPairAtLeast(hand, "QQ") ||
+    ["AKs", "AKo", "AQs", "AQo"].includes(hand.code)
+  );
+}
+
+function isPopulation25CallVsThreeBet(
+  hand: ParsedHand,
+  family: VsThreeBetNodeFamily
+): boolean {
+  if (family === "oop_vs_ip") {
+    return (
+      isPairAtLeast(hand, "22") ||
+      isSuitedAce(hand, "2") ||
+      ["AJo", "ATs", "KQs", "KJs", "QJs", "JTs", "T9s", "98s"].includes(
+        hand.code
+      )
+    );
+  }
+
+  const familyWideners =
+    family === "ip_vs_bb"
+      ? ["ATo", "KQo", "KTs", "QTs", "87s", "76s"]
+      : ["ATo", "KQo", "KTs", "QTs", "87s"];
+
+  return (
+    isPairAtLeast(hand, "22") ||
+    isSuitedAce(hand, "2") ||
+    ["AJo", "ATs", "KQs", "KJs", "QJs", "JTs", "T9s", "98s"].includes(
+      hand.code
+    ) ||
+    familyWideners.includes(hand.code)
+  );
+}
+
+function isPopulation40JamVsThreeBet(hand: ParsedHand): boolean {
+  return isPairAtLeast(hand, "QQ") || ["AKs", "AKo"].includes(hand.code);
+}
+
+function isPopulation40CallVsThreeBet(
+  hand: ParsedHand,
+  family: VsThreeBetNodeFamily
+): boolean {
+  const minimumPair = family === "oop_vs_ip" ? "55" : "22";
+  const broadwayCalls = [
+    "AQs",
+    "AQo",
+    "AJs",
+    "AJo",
+    "KQs",
+    "KJs",
+    "QJs",
+    "JTs",
+  ];
+  const familyWideners =
+    family === "ip_vs_bb"
+      ? ["ATs", "KTs", "QTs", "T9s", "98s", "87s", "76s", "A5s", "A4s"]
+      : family === "ip_vs_sb"
+        ? ["ATs", "KTs", "QTs", "T9s", "98s", "87s", "A5s", "A4s"]
+        : ["ATs", "T9s", "98s", "A5s", "A4s"];
+
+  return (
+    isPairAtLeast(hand, minimumPair) ||
+    isSuitedAce(hand, "2") ||
+    broadwayCalls.includes(hand.code) ||
+    familyWideners.includes(hand.code)
+  );
 }
 
 function stackLevelAdjustment(stackDepth: number): number {
@@ -443,34 +560,10 @@ function isJamVsThreeBet(
   stackDepth: number
 ): boolean {
   if (stackDepth <= 15) {
-    return (
-      isPairAtLeast(hand, level >= 6 ? "44" : level >= 4 ? "55" : "66") ||
-      [
-        "AKs",
-        "AKo",
-        "AQs",
-        "AQo",
-        "AJs",
-        "AJo",
-        "ATs",
-        "KQs",
-      ].includes(hand.code) ||
-      (level >= 6 && ["KJs", "QJs", "A5s", "A4s"].includes(hand.code))
-    );
+    return isExactVsThreeBetJam(hand, level);
   }
 
-  if (stackDepth <= 20) {
-    return (
-      isPairAtLeast(hand, level >= 6 ? "66" : level >= 4 ? "77" : "88") ||
-      ["AKs", "AKo", "AQs", "AQo", "AJs", "KQs"].includes(hand.code) ||
-      (level >= 6 && ["ATs", "KJs", "A5s", "A4s"].includes(hand.code))
-    );
-  }
-
-  return (
-    isPremium(hand) ||
-    (level >= 5 && ["JJ", "TT", "AKo", "AQs"].includes(hand.code))
-  );
+  return false;
 }
 
 function isCallVsThreeBet(
@@ -479,24 +572,7 @@ function isCallVsThreeBet(
   stackDepth: number
 ): boolean {
   if (stackDepth <= 15) return false;
-
-  const minimumPair =
-    stackDepth >= 40
-      ? level >= 6
-        ? "44"
-        : level >= 4
-          ? "55"
-          : "66"
-      : level >= 6
-        ? "66"
-        : "77";
-
-  return (
-    isPairAtLeast(hand, minimumPair) ||
-    ["AQs", "AQo", "AJs", "ATs", "KQs", "KJs", "QJs", "JTs"].includes(hand.code) ||
-    (level >= 5 && ["T9s", "98s", "A5s", "A4s", "KTs", "QTs"].includes(hand.code)) ||
-    (stackDepth >= 40 && level >= 6 && (isSuitedConnector(hand, "6") || ["76s", "65s", "54s"].includes(hand.code)))
-  );
+  return false;
 }
 
 function buildVsThreeBetActions(
@@ -508,6 +584,47 @@ function buildVsThreeBetActions(
     definition.villainPosition,
     stackDepth
   );
+  const family = getVsThreeBetNodeFamily(definition);
+
+  if (stackDepth === 25) {
+    return buildActions([
+      {
+        action: "JAM",
+        note:
+          family === "oop_vs_ip"
+            ? "OOP versus in-position 3-bets, the simplified 25bb jam spine stays around 77+, AQo+, AK, and selected wheel suited aces."
+            : "In position versus blind 3-bets, the 25bb simplified layer keeps the stack-off bucket tighter and leaves medium pairs to call more often.",
+        matches: hand => isPopulation25JamVsThreeBet(hand, family),
+      },
+      {
+        action: "CALL",
+        note:
+          family === "oop_vs_ip"
+            ? "Use the 25bb call bucket for pairs, suited aces, and stable suited broadways that realize well enough without bloating the pot."
+            : "In position versus blind 3-bets, medium pairs and ATo-type hands survive as calls more often than as jams.",
+        matches: hand => isPopulation25CallVsThreeBet(hand, family),
+      },
+    ]);
+  }
+
+  if (stackDepth >= 40) {
+    return buildActions([
+      {
+        action: "JAM",
+        note:
+          "At 40bb, the simplified population stack-off center stays disciplined: default jams are QQ+ and AK.",
+        matches: hand => isPopulation40JamVsThreeBet(hand),
+      },
+      {
+        action: "CALL",
+        note:
+          family === "oop_vs_ip"
+            ? "Out of position at 40bb, keep JJ-to-medium-pair strength, AQ, suited aces, and suited broadways in the call bucket instead of auto-stacking off."
+            : "In position versus blind 3-bets, 40bb keeps a broad call bucket of pairs, suited aces, and strong broadways while JJ/AQ stay conditional rather than default jams.",
+        matches: hand => isPopulation40CallVsThreeBet(hand, family),
+      },
+    ]);
+  }
 
   return buildActions([
     {
@@ -614,6 +731,24 @@ function chartNotes(definition: SpotDefinition, stackDepth: number): string[] {
   }
 
   if (definition.group === "VS_3BET") {
+    const family = getVsThreeBetNodeFamily(definition);
+
+    if (stackDepth === 25) {
+      return [
+        family === "oop_vs_ip"
+          ? "25bb OOP versus in-position 3-bets is a simplified population node: the jam spine stays around 77+, AQo+, AK, and selected wheel suited aces."
+          : "25bb in position versus blind 3-bets is a simplified population node: medium pairs and ATo-type hands survive as calls more often than as jams.",
+        "This layer is intentionally labeled as simplified population guidance, not an exact-source 25bb facing-3-bet chart.",
+      ];
+    }
+
+    if (stackDepth >= 40) {
+      return [
+        "40bb facing-3-bets is handled as a simplified population layer: default stack-offs stay centered on QQ+ and AK.",
+        "JJ, some medium pairs, and AQ-class hands stay in the conditional call bucket more often than the default jam bucket unless the 3-bettor is clearly over-aggressive.",
+      ];
+    }
+
     return [
       "Shallow stacks simplify versus 3-bets: continue mostly by jamming strong equity.",
       "At 40bb, suited broadways and some pairs can continue without committing the stack.",
@@ -657,7 +792,14 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
     spotKey: definition.key,
     heroPosition: definition.heroPosition,
     villainPosition: definition.villainPosition,
-    sourceLabel: SOURCE_LABEL,
+    sourceLabel:
+      getStrategySourceLabel({
+        stackDepth,
+        spotGroup: definition.group,
+        heroPosition: definition.heroPosition,
+        villainPosition: definition.villainPosition,
+        spotKey: definition.key,
+      }) ?? "MTT Coach structured baseline",
     notes: chartNotes(definition, stackDepth),
     actions: buildChartActions(definition, stackDepth),
   };

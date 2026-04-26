@@ -20,7 +20,10 @@ export const PRIORITY_DRILL_PACK_IDS = [
 ] as const;
 export type PriorityDrillPackId = (typeof PRIORITY_DRILL_PACK_IDS)[number];
 
-export type PriorityPackSourceStatus = "source_backed" | "coverage_gap";
+export type PriorityPackSourceStatus =
+  | "source_backed"
+  | "hybrid_supported"
+  | "coverage_gap";
 
 export interface DrillPackSpotLike extends ChartLikeSpotContext {
   id: number;
@@ -54,8 +57,8 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
     id: "sub-premiums-vs-ep-pressure",
     title: "Sub-premiums vs Early-Position Pressure",
     purpose:
-      "Built from the challenging spot theme around 99-JJ and AQ-type hands facing stronger early-position pressure.",
-    focusTags: ["Source-backed", "EP pressure", "99-JJ / AQ"],
+      "Built from the challenging spot theme around 99-JJ and AQ-type hands facing stronger early-position pressure, then extended through the simplified 25bb/40bb facing-3-bet layer.",
+    focusTags: ["Hybrid", "EP pressure", "99-JJ / AQ"],
     focusHandCodes: ["99", "TT", "JJ", "AQs", "AQo", "AJs", "KQs"],
     relatedLeakFamilyIds: [
       "sub_premium_vs_pressure_mistakes",
@@ -63,14 +66,15 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
       "facing_3bet_overfolds",
     ],
     families: ["DEFEND_VS_RFI", "FACING_3BET"],
-    sourceStatus: "source_backed",
+    sourceStatus: "hybrid_supported",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
         context &&
           ((context.family === "DEFEND_VS_RFI" &&
             ["UTG", "MP"].includes(context.villainPosition ?? "")) ||
-            (context.family === "FACING_3BET" && context.stackDepth === 15))
+            (context.family === "FACING_3BET" &&
+              [15, 25, 40].includes(context.stackDepth)))
       );
     },
   },
@@ -185,8 +189,8 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
     id: "facing-3bet-threshold-pack",
     title: "Facing 3-Bet Threshold Pack",
     purpose:
-      "Uses the exact 15bb facing-3-bet pages where jam, continue, and fold thresholds are explicitly charted.",
-    focusTags: ["Source-backed", "15bb", "Facing 3-bet"],
+      "Combines the exact 15bb facing-3-bet pages with the simplified 25bb/40bb population upgrade so threshold hands can be drilled across the main stacks.",
+    focusTags: ["Hybrid", "15bb exact", "25/40 simplified"],
     focusHandCodes: ["77", "88", "99", "TT", "JJ", "AQs", "AQo", "A5s", "KQs"],
     relatedLeakFamilyIds: [
       "facing_3bet_overcalls",
@@ -194,13 +198,13 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
       "four_bet_jam_threshold_errors",
     ],
     families: ["FACING_3BET"],
-    sourceStatus: "source_backed",
+    sourceStatus: "hybrid_supported",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
         context &&
           context.family === "FACING_3BET" &&
-          context.stackDepth === 15
+          [15, 25, 40].includes(context.stackDepth)
       );
     },
   },

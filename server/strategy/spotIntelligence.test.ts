@@ -67,6 +67,26 @@ describe("preflop study intelligence layer", () => {
     expect(note?.stageAdjustment).toBeUndefined();
   });
 
+  it("upgrades 25bb/40bb facing-3bet notes from unresolved to explicit simplified guidance", () => {
+    const note25 = getSpotNote({
+      family: "FACING_3BET",
+      stackDepth: 25,
+      heroPosition: "BTN",
+      villainPosition: "BB",
+    });
+    const note40 = getSpotNote({
+      family: "FACING_3BET",
+      stackDepth: 40,
+      heroPosition: "CO",
+      villainPosition: "BTN",
+    });
+
+    expect(note25?.defaultLine).toContain("simplified population");
+    expect(note25?.defaultLine).toContain("ATo");
+    expect(note40?.defaultLine).toContain("QQ+ and AK");
+    expect(note40?.commonPunt).toContain("Stacking off too lightly");
+  });
+
   it("resolves the source-backed blind-defense drill pack against real spot coverage", () => {
     const pack = resolvePriorityDrillPack("bb-vs-sb-marginal-defense", [
       {
@@ -155,5 +175,29 @@ describe("preflop study intelligence layer", () => {
         expect(packIds.has(packId)).toBe(true);
       }
     }
+  });
+
+  it("extends the facing-3bet threshold pack across the new 25bb and 40bb nodes", () => {
+    const resolved = resolvePriorityDrillPack("facing-3bet-threshold-pack", [
+      {
+        id: 1,
+        title: "CO vs BB 3-Bet @ 25bb",
+        stackDepth: 25,
+        spotGroup: "VS_3BET",
+        heroPosition: "CO",
+        villainPosition: "BB",
+      },
+      {
+        id: 2,
+        title: "BTN vs SB 3-Bet @ 40bb",
+        stackDepth: 40,
+        spotGroup: "VS_3BET",
+        heroPosition: "BTN",
+        villainPosition: "SB",
+      },
+    ]);
+
+    expect(resolved?.supported).toBe(true);
+    expect(resolved?.spotCount).toBe(2);
   });
 });
