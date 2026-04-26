@@ -134,9 +134,7 @@ export default function PushFoldMode() {
               </h1>
             </div>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Short-stack push/fold thresholds for tournament play. Ranges are population-derived from standard principles — practical and consistent, not solver-exact.
-          </p>
+
         </header>
 
         <section className="app-surface p-3 sm:p-4">
@@ -243,14 +241,7 @@ export default function PushFoldMode() {
                       }`
                     : "No supported push/fold reference"}
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {reference
-                    ? `${reference.rangeText}. ${reference.tacticalNote}`
-                    : "The current short-stack source only covers specific open-shove and BB call-off spots."}
-                </p>
-                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                  {pushFoldSourceNote(stackDepth)}
-                </p>
+
               </div>
             </div>
           </div>
@@ -263,9 +254,6 @@ export default function PushFoldMode() {
                 <div>
                   <p className="text-[11px] font-semibold text-muted-foreground">
                     Push / Fold Chart
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {reference.rangeText}
                   </p>
                 </div>
                 <ActionLegend actions={visibleActions} />
@@ -287,9 +275,7 @@ export default function PushFoldMode() {
                   <p className="text-[11px] font-semibold text-muted-foreground">
                     Tactical Notes
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Short-stack reminders for this exact push/fold node.
-                  </p>
+
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
                   {[
@@ -321,9 +307,7 @@ export default function PushFoldMode() {
                   <p className="text-[11px] font-semibold text-muted-foreground">
                     Push / Fold Drill
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Quick reps for the current short-stack reference.
-                  </p>
+
                 </div>
                 <div className="flex items-center gap-3 text-[11px] text-secondary-foreground">
                   <span className="inline-flex items-center gap-1">

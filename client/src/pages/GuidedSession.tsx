@@ -129,9 +129,6 @@ export default function GuidedSession() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle className="text-xl">{currentDrill.title}</CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {todayDrills.focusDescription}
-                </p>
               </div>
               {completedDrills.includes(currentDrill.drillId) && (
                 <CheckCircle2 className="mt-1 h-5 w-5 text-emerald-300" />

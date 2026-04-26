@@ -38,9 +38,7 @@ export function StrategyTheoryNotes({
           <p className="text-[11px] font-semibold text-muted-foreground">
             Spot Notes
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground hidden sm:block">
-            Core idea, default line, exploit lever, common punt, and drill cue.
-          </p>
+
         </div>
         {sourceStatus && sourceLabel && (
           <span

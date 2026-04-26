@@ -92,9 +92,7 @@ export default function IcmSpotDetail() {
                   <Layers3 className="h-4 w-4 text-orange-500" />
                   Structured Metadata
                 </CardTitle>
-                <CardDescription>
-                  Filename-derived metadata for this advanced ICM scenario.
-                </CardDescription>
+
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -160,9 +158,7 @@ export default function IcmSpotDetail() {
                   <Info className="h-4 w-4 text-orange-500" />
                   Study Notes
                 </CardTitle>
-                <CardDescription>
-                  Short heuristics for reviewing the spot before deeper parsing exists.
-                </CardDescription>
+
               </CardHeader>
               <CardContent>
                 {notes.length > 0 ? (
@@ -187,9 +183,7 @@ export default function IcmSpotDetail() {
                   <FileCode2 className="h-4 w-4 text-orange-500" />
                   Source File
                 </CardTitle>
-                <CardDescription>
-                  Metadata-only now, with a limited HTML extraction preview where available.
-                </CardDescription>
+
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm">

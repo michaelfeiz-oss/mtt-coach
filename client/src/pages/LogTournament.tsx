@@ -94,9 +94,7 @@ export default function LogTournament() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Log Tournament Result</CardTitle>
-            <CardDescription>
-              Quick BBA tournament capture so hand review stays in context.
-            </CardDescription>
+
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

@@ -121,11 +121,7 @@ export default function LogStudySession() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Log Study Session</CardTitle>
-            <CardDescription>
-              {fromPlan
-                ? `From Study Plan - ${planTypeLabel}`
-                : "Capture your preflop study effort and takeaways."}
-            </CardDescription>
+
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

@@ -106,12 +106,7 @@ export default function Dashboard() {
     <main className="app-shell min-h-screen pb-24 text-foreground">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
         <header className="app-surface-elevated p-5 sm:p-6">
-          <p className="app-eyebrow mb-2">Daily Workspace</p>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Choose the next preflop task, drill reps, and capture lessons while
-            they are still fresh.
-          </p>
         </header>
 
         <Card className="app-surface">
@@ -124,9 +119,7 @@ export default function Dashboard() {
                 <h2 className="mt-1 text-xl font-semibold">
                   Continue Preflop Session
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Open a chart, run trainer reps, then log one hand for review.
-                </p>
+
               </div>
               <Button
                 className="h-11 rounded-xl px-4"
@@ -201,9 +194,7 @@ export default function Dashboard() {
             </span>
             <div>
               <p className="text-sm font-semibold">Hand Ranges</p>
-              <p className="text-xs text-muted-foreground">
-                Open the current chart setup quickly.
-              </p>
+
             </div>
           </button>
           <button
@@ -216,9 +207,7 @@ export default function Dashboard() {
             </span>
             <div>
               <p className="text-sm font-semibold">Range Trainer</p>
-              <p className="text-xs text-muted-foreground">
-                Drill current spot and review misses.
-              </p>
+
             </div>
           </button>
         </section>
@@ -260,10 +249,7 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-end justify-between gap-3">
             <div>
               <CardTitle className="text-lg">Tournament Updates</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Recent result logs and edits, kept quiet until there is
-                something worth reviewing.
-              </p>
+
             </div>
             {activityPreview.length > 0 && (
               <Badge variant="outline">Latest {activityPreview.length}</Badge>

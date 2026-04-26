@@ -171,12 +171,7 @@ export default function Log() {
         <header className="app-surface-elevated p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="app-eyebrow mb-2">Capture Hub</p>
               <h1 className="text-3xl font-bold tracking-tight">Log</h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Capture preflop hands in seconds, then review them with more
-                detail when you have time.
-              </p>
             </div>
             <Button
               className="h-11 rounded-xl px-4"
@@ -194,10 +189,6 @@ export default function Log() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">Quick Hand Log</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Under 30 seconds for the core preflop decision. Add optional
-                    detail later.
-                  </p>
                 </div>
                 <Badge variant="outline" className="rounded-full">
                   Primary
@@ -262,9 +253,6 @@ export default function Log() {
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <CardTitle className="text-lg">Recent Hands</CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Keep the queue moving with clear statuses.
-                </p>
               </div>
               <Link href="/hands">
                 <Button

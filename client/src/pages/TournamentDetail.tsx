@@ -189,9 +189,7 @@ export default function TournamentDetail() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Preflop Review Summary</CardTitle>
-            <CardDescription>
-              Hand logs and mistakes from this tournament session.
-            </CardDescription>
+
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -239,7 +237,7 @@ export default function TournamentDetail() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Hands in This Session</CardTitle>
-                <CardDescription>Open any hand to review and tag takeaways.</CardDescription>
+                
               </div>
               <Select value={handFilter} onValueChange={setHandFilter}>
                 <SelectTrigger className="w-44">

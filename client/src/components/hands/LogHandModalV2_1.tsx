@@ -384,20 +384,15 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     <Dialog open={isOpen} onOpenChange={open => !open && closeModal()}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl p-0 sm:max-w-[60rem] xl:max-w-[64rem]"
+        className="flex max-h-[92dvh] w-full max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl p-0 sm:max-w-[60rem] xl:max-w-[64rem]"
       >
         <DialogHeader className="border-b border-border bg-accent/50 p-5 text-left sm:p-6">
           <div className="mx-auto w-full max-w-3xl">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="app-eyebrow mb-2">Quick Hand Capture</p>
                 <DialogTitle className="text-2xl font-bold tracking-tight">
                   Log a Hand
                 </DialogTitle>
-                <DialogDescription className="mt-1 text-sm text-muted-foreground">
-                  Capture the core preflop decision first, then add optional
-                  review detail if you need it.
-                </DialogDescription>
               </div>
               <Button
                 type="button"
@@ -438,10 +433,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 <div className="mb-3 flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
                   <div>
                     <h3 className="text-base font-semibold">Quick Log</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Move top to bottom: spot, hand, stack, positions, action,
-                      then save.
-                    </p>
                   </div>
                   <Badge variant="outline">Required first</Badge>
                 </div>
@@ -452,9 +443,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       <h4 className="text-sm font-semibold text-foreground">
                         Spot Type
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        Start with the preflop spot you want to capture.
-                      </p>
                     </div>
                     <div>
                       <Select
@@ -482,9 +470,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       <h4 className="text-sm font-semibold text-foreground">
                         Hand & Stack
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        Log the actual hand first, then the effective stack.
-                      </p>
                     </div>
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(15rem,0.85fr)]">
                       <div className="space-y-2">
@@ -542,10 +527,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       <h4 className="text-sm font-semibold text-foreground">
                         Positions
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        Establish who you were and who opened or pressured the
-                        spot.
-                      </p>
                     </div>
                     <div className="grid gap-4 lg:grid-cols-2">
                       <div className="space-y-2">
@@ -600,9 +581,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       <h4 className="text-sm font-semibold text-foreground">
                         Action
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        Once the context is set, record the decision you made.
-                      </p>
                     </div>
                     <Label className="block text-xs font-semibold text-muted-foreground">
                       Hero Decision
@@ -640,9 +618,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       <h4 className="text-sm font-semibold text-foreground">
                         Quick Note
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        Optional takeaway or reminder for later review.
-                      </p>
                     </div>
                     <div>
                       <Textarea
@@ -709,11 +684,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 >
                   <div>
                     <h3 className="text-base font-semibold">
-                      Optional review details
+                      Optional details
                     </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Add reads, confidence, tags, and full-review context.
-                    </p>
                   </div>
                   {showOptional ? (
                     <ChevronUp className="h-4 w-4 text-muted-foreground" />

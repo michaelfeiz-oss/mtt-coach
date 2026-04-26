@@ -171,9 +171,7 @@ export default function LeakDetail() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Linked Hands</CardTitle>
-                <CardDescription>
-                  Review recent hands tied to this preflop leak.
-                </CardDescription>
+
               </div>
               <Select value={severityFilter} onValueChange={setSeverityFilter}>
                 <SelectTrigger className="w-44">

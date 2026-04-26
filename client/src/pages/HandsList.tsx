@@ -69,10 +69,7 @@ export default function HandsList() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle className="text-foreground">Preflop Hand Review</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Scan logged tournament spots by hand, stack, position, decision,
-              and lesson.
-            </CardDescription>
+
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -84,9 +81,7 @@ export default function HandsList() {
             ) : !hands || hands.length === 0 ? (
               <div className="py-12 text-center">
                 <p className="mb-4 text-secondary-foreground">No preflop hands logged yet</p>
-                <p className="text-sm text-muted-foreground">
-                  Use quick capture after a tournament session, then review here.
-                </p>
+
               </div>
             ) : (
               <div className="space-y-2">

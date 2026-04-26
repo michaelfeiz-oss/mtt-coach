@@ -213,11 +213,7 @@ export default function HandDetail() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Hand Details</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              {[hand.heroPosition, hand.spotType?.replace(/_/g, " ")]
-                .filter(Boolean)
-                .join(" - ") || "Preflop hand log"}
-            </CardDescription>
+
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -248,7 +244,7 @@ export default function HandDetail() {
                 <Target className="h-4 w-4 text-primary" />
                 Recommended Preflop Study
               </CardTitle>
-              <CardDescription>{strategyRecommendation.reason}</CardDescription>
+  
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="app-surface-subtle p-3 text-sm">
@@ -293,9 +289,7 @@ export default function HandDetail() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Review and Notes</CardTitle>
-            <CardDescription>
-              Keep this focused on preflop mistakes and repeatable takeaways.
-            </CardDescription>
+
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

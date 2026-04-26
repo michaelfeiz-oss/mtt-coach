@@ -94,9 +94,7 @@ export default function IcmPackDetail() {
                   <SlidersHorizontal className="h-4 w-4 text-orange-500" />
                   Filters
                 </CardTitle>
-                <CardDescription>
-                  Narrow the curated pack by table size, pressure type, or tag.
-                </CardDescription>
+
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>

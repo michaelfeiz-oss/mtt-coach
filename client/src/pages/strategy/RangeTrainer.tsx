@@ -589,10 +589,7 @@ export default function RangeTrainer() {
               </h1>
             </div>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Keep the setup visible, drill one decision at a time, then confirm
-            the chart immediately below the answer.
-          </p>
+
         </header>
 
         <section className="app-surface p-3 sm:p-4">
@@ -605,9 +602,7 @@ export default function RangeTrainer() {
                 <h2 className="truncate text-lg font-black tracking-tight sm:text-[1.5rem]">
                   {modeLabel}
                 </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {modeHelper}
-                </p>
+
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <Badge className="rounded-full bg-primary text-primary-foreground">

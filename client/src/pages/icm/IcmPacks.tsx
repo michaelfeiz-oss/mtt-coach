@@ -32,9 +32,7 @@ export default function IcmPacks() {
               </span>
               ICM Packs
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-              Advanced payout-pressure study, separate from everyday preflop ranges.
-            </p>
+
           </div>
         </div>
       </header>
@@ -80,9 +78,7 @@ export default function IcmPacks() {
                         </Badge>
                       </div>
                       <CardTitle className="text-lg">{pack.title}</CardTitle>
-                      <CardDescription className="mt-1 leading-relaxed">
-                        {pack.description}
-                      </CardDescription>
+
                     </div>
                     <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" />
                   </div>

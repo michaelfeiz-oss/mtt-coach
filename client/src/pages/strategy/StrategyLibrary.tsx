@@ -513,10 +513,6 @@ export default function StrategyLibrary() {
                       <p className="text-[11px] font-semibold text-muted-foreground">
                         Related Drill Packs
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Launch a focused drill pack when this spot sits inside a
-                        high-value leak zone.
-                      </p>
                     </div>
                     <div className="grid gap-2.5">
                       {relatedDrillPacks.map(pack => (
