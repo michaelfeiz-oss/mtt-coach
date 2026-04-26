@@ -135,7 +135,7 @@ export default function PushFoldMode() {
             </div>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Dedicated up to 10bb reference and drill flow for tournament push/fold decisions and blind call-offs.
+            Short-stack push/fold thresholds for tournament play. Ranges are population-derived from standard principles — practical and consistent, not solver-exact.
           </p>
         </header>
 
@@ -230,6 +230,9 @@ export default function PushFoldMode() {
                   <Badge variant="outline" className="rounded-full">
                     {reference?.stackSource ?? "Reference pending"}bb source
                   </Badge>
+                  <span className="inline-flex items-center rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                    Simplified Population
+                  </span>
                 </div>
                 <p className="mt-3 text-sm font-semibold text-foreground">
                   {reference

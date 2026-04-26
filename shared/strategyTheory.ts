@@ -1,5 +1,6 @@
 import { getSpotNote } from "./spotNotes";
 import type { ChartLikeSpotContext } from "./spotIds";
+import type { StrategySourceStatus } from "./sourceTruth";
 
 export interface StrategyTheoryContext extends ChartLikeSpotContext {}
 
@@ -14,6 +15,25 @@ export interface StrategyTheorySection {
   title: string;
   body: string;
   accent?: boolean;
+}
+
+export interface StrategyTheoryResult {
+  sections: StrategyTheorySection[];
+  sourceStatus: StrategySourceStatus | null;
+  sourceLabel: string | null;
+}
+
+export function buildStrategyTheoryResult(
+  context: StrategyTheoryContext
+): StrategyTheoryResult {
+  const note = getSpotNote(context);
+  if (!note) return { sections: [], sourceStatus: null, sourceLabel: null };
+
+  return {
+    sections: buildStrategyTheorySections(context),
+    sourceStatus: note.sourceStatus,
+    sourceLabel: note.sourceLabel,
+  };
 }
 
 export function buildStrategyTheorySections(

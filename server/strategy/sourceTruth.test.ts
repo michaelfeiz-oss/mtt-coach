@@ -46,7 +46,8 @@ describe("source-of-truth chart coverage", () => {
     ).toBe(false);
   });
 
-  it("keeps blind-vs-blind spots visible as explicit proxy coverage", () => {
+  it("keeps blind-vs-blind spots visible as source-backed coverage", () => {
+    // BvB is covered in all three PDFs (15/25/40bb) — it is source_backed, not proxy
     expect(
       getStrategySourceStatus({
         stackDepth: 25,
@@ -55,6 +56,6 @@ describe("source-of-truth chart coverage", () => {
         villainPosition: "BB",
         spotKey: "SB_vs_BB_limp",
       })
-    ).toBe("proxy");
+    ).toBe("source_backed");
   });
 });

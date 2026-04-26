@@ -1,4 +1,17 @@
-import { isEarlyPosition, isLatePosition } from "./preflopTaxonomy";
+/**
+ * shared/spotNotes.ts
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Notes engine for the MTT Coach strategy module.
+ *
+ * Design rules (from product spec):
+ *  - One short paragraph max per field — no filler, no obvious generic advice
+ *  - Must feel specific to: spot family, position, stack, node type
+ *  - Use simplified population language for non-exact nodes
+ *  - Notes must be shorter on mobile (accordion collapse handled in UI)
+ *  - Source status is surfaced here so UI can badge correctly
+ */
+
+import { isBlind, isEarlyPosition, isLatePosition } from "./preflopTaxonomy";
 import {
   buildCanonicalSpotLabel,
   canonicalSpotContextFromChart,
@@ -7,208 +20,296 @@ import {
   type ChartLikeSpotContext,
 } from "./spotIds";
 import { displayPositionLabel } from "./strategy";
+import {
+  getStrategySourceStatus,
+  getSourceStatusLabel,
+  type StrategySourceStatus,
+} from "./sourceTruth";
+import type { SpotGroup } from "./strategy";
+
+// ─── Public interface ─────────────────────────────────────────────────────────
 
 export interface StudySpotNote {
   spotId: string;
   title: string;
+  /** Exact vs Simplified Population badge */
+  sourceStatus: StrategySourceStatus;
+  sourceLabel: string;
+  /** One sentence — the main takeaway for this spot */
   coreIdea: string;
+  /** What to do by default with the majority of hands in this spot */
   defaultLine: string;
+  /** One specific adjustment vs a known population tendency */
   exploitLever: string;
+  /** The single most common mistake in this spot */
   commonPunt: string;
+  /** A concrete drill prompt for the trainer */
   drillCue: string;
+  /** Optional — only for bubble/FT spots */
   stageAdjustment?: string;
 }
 
-function heroText(context: CanonicalSpotContext) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function h(context: CanonicalSpotContext) {
   return displayPositionLabel(context.heroPosition);
 }
 
-function villainText(context: CanonicalSpotContext) {
+function v(context: CanonicalSpotContext) {
   return context.villainPosition
     ? displayPositionLabel(context.villainPosition)
-    : "the field behind you";
+    : "the field";
 }
 
-function stackTexture(stackDepth: number) {
-  if (stackDepth <= 15) {
-    return "15bb is a commitment-heavy node. Clean thresholds matter more than speculative realization.";
-  }
-
-  if (stackDepth <= 25) {
-    return "25bb still rewards disciplined realization. Dominated offsuit hands lose value quickly once pressure comes in.";
-  }
-
-  return "40bb keeps the widest playable bucket, but position and hand quality still matter more than curiosity.";
+function stackNote(stackDepth: number): string {
+  if (stackDepth <= 15) return "At 15bb, every decision is a commitment threshold — clean binary thinking beats feel.";
+  if (stackDepth <= 25) return "At 25bb, dominated offsuit hands lose value fast once pressure arrives.";
+  return "At 40bb, position and hand quality still outweigh curiosity.";
 }
+
+function sourceStatusForContext(context: CanonicalSpotContext): StrategySourceStatus {
+  const spotGroupMap: Record<string, SpotGroup> = {
+    OPEN_RFI: "RFI",
+    DEFEND_VS_RFI: "VS_UTG_RFI",
+    FACING_3BET: "VS_3BET",
+    BLIND_VS_BLIND: "BVB",
+  };
+  const spotGroup = spotGroupMap[context.family] ?? "RFI";
+  return getStrategySourceStatus({
+    stackDepth: context.stackDepth,
+    spotGroup,
+    heroPosition: context.heroPosition,
+    villainPosition: context.villainPosition,
+  });
+}
+
+// ─── Note builders ────────────────────────────────────────────────────────────
 
 function buildOpenRfiNote(context: CanonicalSpotContext): StudySpotNote {
-  const hero = heroText(context);
+  const hero = h(context);
   const early = isEarlyPosition(context.heroPosition);
   const late = isLatePosition(context.heroPosition);
+  const blind = isBlind(context.heroPosition);
+  const status = sourceStatusForContext(context);
+
+  let coreIdea: string;
+  let defaultLine: string;
+  let exploitLever: string;
+  let commonPunt: string;
+
+  if (early) {
+    coreIdea = `${hero} opens a tight, value-dense range — the players left to act are many and your position is the worst at the table.`;
+    defaultLine = `Raise your clear value hands and fold the dominated offsuit broadways. ${stackNote(context.stackDepth)}`;
+    exploitLever = "If the table is passive and short-stacked, you can widen slightly with suited connectors, but do not open limp — take the lead or fold.";
+    commonPunt = "Opening KJo, QTo, or A9o from UTG because they 'look playable' — they are dominated traps against the ranges that continue.";
+  } else if (late) {
+    coreIdea = `${hero} opens wide — position is your biggest asset and the blinds are forced to defend out of position.`;
+    defaultLine = `Open all pairs, all suited aces, most suited broadways, and suited connectors down to 54s. Fold the weakest offsuit junk. ${stackNote(context.stackDepth)}`;
+    exploitLever = "Against nit blinds, widen further and steal aggressively. Against aggressive re-shove blinds, tighten the bottom of your range.";
+    commonPunt = "Limping in late position because the hand 'isn't strong enough to raise' — limp/calling is a dominated strategy at 15–40bb.";
+  } else if (blind) {
+    coreIdea = `SB opens into a single opponent with the worst post-flop position — raise strong hands, complete selectively, never limp/fold.`;
+    defaultLine = `Raise your value hands and strong speculative hands. Complete suited connectors and small pairs cheaply. ${stackNote(context.stackDepth)}`;
+    exploitLever = "Against a passive BB, widen your raise range and steal more. Against a squeeze-happy BB, tighten the bluff raises.";
+    commonPunt = "Limping with hands strong enough to raise, then calling a raise out of position — you lose the initiative and the position edge at once.";
+  } else {
+    coreIdea = `${hero} sits in the middle bucket — open the hands that keep initiative and avoid domination.`;
+    defaultLine = `Raise pairs, suited aces, suited broadways, and suited connectors. Fold the weakest offsuit hands. ${stackNote(context.stackDepth)}`;
+    exploitLever = "Widen as the table tightens behind you. Tighten when aggressive 3-bettors are in the blinds.";
+    commonPunt = "Opening offsuit hands that look like 'almost good' — A7o, K9o, QJo from HJ — and then facing a 3-bet with no clean plan.";
+  }
 
   return {
     spotId: getCanonicalSpotId(context),
     title: buildCanonicalSpotLabel(context),
-    coreIdea: `${hero} opens to take the lead with profitable hands, not to see flops with everything that looks playable. Position and starting-hand quality drive the chart.`,
-    defaultLine: early
-      ? `${hero} should stay tighter and more value-dense from the front of the table. ${stackTexture(
-          context.stackDepth
-        )}`
-      : late
-        ? `${hero} can widen later in position, but the source principles still prefer hands that keep initiative and avoid domination. ${stackTexture(
-            context.stackDepth
-          )}`
-        : `${hero} sits in the middle bucket: open the hands that keep position and initiative working together, then let the weakest dominated offsuit hands go. ${stackTexture(
-            context.stackDepth
-          )}`,
-    exploitLever:
-      "Widen later than earlier, and keep following the core principle: take the lead or fold. If a hand is not strong enough to profit as an open, do not rescue it with a limp.",
-    commonPunt: early
-      ? "Opening too many dominated offsuit hands from early seats, then facing stronger ranges behind."
-      : "Treating late position like a license to open anything instead of widening through better blockers, suited hands, and clearer playability.",
-    drillCue:
-      "Before you open the fringe, ask three things: do I have position, do I keep initiative, and does the hand stay profitable when played back at?",
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
+    coreIdea,
+    defaultLine,
+    exploitLever,
+    commonPunt,
+    drillCue: `Drill the fringe hands in this range — the ones just inside and just outside the open threshold. Those are the decisions that compound over a tournament.`,
   };
 }
 
 function buildDefendVsRfiNote(context: CanonicalSpotContext): StudySpotNote {
-  const hero = heroText(context);
-  const villain = villainText(context);
-  const bigBlindDefense = context.heroPosition === "BB" && isLatePosition(context.villainPosition);
+  const hero = h(context);
+  const villain = v(context);
+  const isBB = context.heroPosition === "BB";
+  const isVsEP = isEarlyPosition(context.villainPosition);
+  const isVsLP = isLatePosition(context.villainPosition);
+  const status = sourceStatusForContext(context);
+
+  let coreIdea: string;
+  let defaultLine: string;
+  let exploitLever: string;
+  let commonPunt: string;
+
+  if (isBB && isVsLP) {
+    coreIdea = `BB vs ${villain} is your widest defend node — you close the action, get the best price, and have the most realization potential, but you play every flop out of position.`;
+    defaultLine = `Defend suited hands, pairs, and connected broadways. Fold weak offsuit hands (K4o, Q7o, J5o) — the price doesn't justify the post-flop disadvantage. ${stackNote(context.stackDepth)}`;
+    exploitLever = "Against a wide BTN/CO steal, add suited connectors and small pairs. Against a tight opener, tighten your defend range to hands that realize well.";
+    commonPunt = "Defending every two cards because you're getting 2:1 — the price is good but dominated offsuit hands still lose money out of position.";
+  } else if (isBB && isVsEP) {
+    coreIdea = `BB vs ${villain} EP open — the opener's range is strong, so your continue range must be tighter than it looks.`;
+    defaultLine = `Continue with pairs, suited aces, suited broadways, and strong suited connectors. Fold weak offsuit hands and dominated aces. ${stackNote(context.stackDepth)}`;
+    exploitLever = "If the opener is a nit, tighten further. If they're opening wide from EP, add more suited hands but keep the offsuit trash folded.";
+    commonPunt = "Defending A7o, K8o, or QTo vs a UTG open because they 'have an ace' or 'have a king' — dominated hands lose big pots.";
+  } else {
+    coreIdea = `${hero} vs ${villain} — respect opener strength first, then evaluate your hand's realization potential.`;
+    defaultLine = `Continue with hands that realize well in position or have strong equity. Fold marginal offsuit hands out of position. ${stackNote(context.stackDepth)}`;
+    exploitLever = "Later-position opens allow more defense; earlier-position opens demand more discipline. Adjust your continue range accordingly.";
+    commonPunt = "Continuing with dominated offsuit broadways because they 'have two high cards' — they lose big pots and win small ones.";
+  }
 
   return {
     spotId: getCanonicalSpotId(context),
     title: buildCanonicalSpotLabel(context),
-    coreIdea: `${hero} versus ${villain} is a situation-dependent continue. The source principles matter here: hand value depends on position, opener strength, and clean realization.`,
-    defaultLine: bigBlindDefense
-      ? `${hero} gets the widest continue bucket here, but this is still a boundary spot. Defend the suited, connected, and stronger high-card hands that realize, then let the weakest offsuit junk go. ${stackTexture(
-          context.stackDepth
-        )}`
-      : `${hero} should respect opener strength first, especially from earlier positions. Do not play marginal hands out of position to a raise just because they look playable in a vacuum. ${stackTexture(
-          context.stackDepth
-        )}`,
-    exploitLever:
-      "Start with opener position, then your price, then realization. Later-position opens allow more defense; earlier-position opens demand more discipline.",
-    commonPunt: bigBlindDefense
-      ? "Either over-folding because the hand feels ugly, or over-defending offsuit trash because closing the action feels cheap."
-      : "Continuing with dominated offsuit broadways and weak aces when opener strength should already be pushing those hands out.",
-    drillCue: `From ${hero} versus ${villain}, ask whether your hand wins by raw equity, by position, or by clean realization. If the answer is none of those, it is usually a fold.`,
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
+    coreIdea,
+    defaultLine,
+    exploitLever,
+    commonPunt,
+    drillCue: `${h(context)} vs ${villain}: drill the boundary hands — the ones just inside and just outside your continue threshold. Those are where the real leaks live.`,
   };
 }
 
 function buildFacing3BetNote(context: CanonicalSpotContext): StudySpotNote {
-  const hero = heroText(context);
-  const villain = villainText(context);
-  const sourceSpecific =
-    context.stackDepth === 15
-      ? "The attached 15bb charts cover this pressure node directly, so use them to separate jam, continue, and fold thresholds cleanly."
-      : "The attached main-chart PDFs do not give exact 25bb or 40bb facing-3-bet pages, so treat any non-15bb guidance here as unresolved rather than solved.";
+  const hero = h(context);
+  const villain = v(context);
+  const is15bb = context.stackDepth === 15;
+  const status = sourceStatusForContext(context);
+
+  let coreIdea: string;
+  let defaultLine: string;
+
+  if (is15bb) {
+    coreIdea = `${hero} facing a 3-bet at 15bb is a threshold test — the charts give exact all-in response ranges, so use them rather than feel.`;
+    defaultLine = `Check the 15bb source chart for your exact position matchup. The decision is usually jam or fold — calling is rarely correct at this depth.`;
+  } else {
+    coreIdea = `${hero} facing a 3-bet at ${context.stackDepth}bb — no exact PDF chart exists for this node, so this is population-derived guidance.`;
+    defaultLine = `Default: JJ+ and AKs are clear continues. QQ/JJ vs early-position 3-bets lean fold at 25bb unless stack depth supports a jam. 99–TT vs late-position 3-bets are usually fold. ${stackNote(context.stackDepth)}`;
+  }
 
   return {
     spotId: getCanonicalSpotId(context),
     title: buildCanonicalSpotLabel(context),
-    coreIdea: `${hero} facing a 3-bet from ${villain} is a threshold test, not a spot to defend by feel.`,
-    defaultLine: sourceSpecific,
-    exploitLever:
-      "Respect stack pressure before ego. If the hand does not stack off cleanly or realize well enough, the disciplined line is to let it go.",
-    commonPunt:
-      "Calling because the hand looks pretty preflop, or jamming without checking whether the stack depth and source chart actually support it.",
-    drillCue:
-      "Classify the hand immediately: clear continue, clear jam, or clear fold. If it sits in the fog, default to discipline rather than curiosity.",
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
+    coreIdea,
+    defaultLine,
+    exploitLever: `Against a ${villain} 3-bet, consider their range width. Tight 3-bettors narrow your continue range; wide 3-bettors allow more jams with medium pairs.`,
+    commonPunt: "Calling a 3-bet with 99–JJ out of position at 15–25bb — you're often dominated or flipping with no post-flop edge.",
+    drillCue: `Drill the threshold hands — medium pairs (88–JJ) and AQo vs ${villain} 3-bets. These are the hands most players mishandle.`,
   };
 }
 
 function buildBlindVsBlindNote(context: CanonicalSpotContext): StudySpotNote {
-  const hero = heroText(context);
+  const hero = h(context);
+  const isSB = context.heroPosition === "SB";
+  const status = sourceStatusForContext(context);
+
+  let coreIdea: string;
+  let defaultLine: string;
+  let exploitLever: string;
+  let commonPunt: string;
+
+  if (isSB) {
+    coreIdea = `SB vs BB is a wide raise-or-fold spot — you have position post-flop but pay the most to enter.`;
+    defaultLine = `Raise your strong hands and fold the weakest offsuit junk. Complete selectively with suited connectors and small pairs if the BB is passive. ${stackNote(context.stackDepth)}`;
+    exploitLever = "Against a passive BB, steal wider and complete more. Against an aggressive squeezer, tighten your complete range and raise strong.";
+    commonPunt = "Limping too wide from SB and then facing a raise with hands that have no plan — either raise or fold, do not limp/call with marginal hands.";
+  } else {
+    coreIdea = `BB vs SB is your best defend node — you close the action and get position, but the SB's range is wide.`;
+    defaultLine = `Defend most hands against a SB complete. Raise your strong hands for value. Fold only the absolute trash. ${stackNote(context.stackDepth)}`;
+    exploitLever = "Against an aggressive SB raiser, tighten your call range and 3-bet your strong hands more. Against a passive SB, call wide and realize equity.";
+    commonPunt = "Over-folding vs SB limps because the hand 'looks weak' — you're getting a free flop and closing the action.";
+  }
 
   return {
     spotId: getCanonicalSpotId(context),
     title: buildCanonicalSpotLabel(context),
-    coreIdea: `${hero} is in the widest preflop branch in the source bundle, but blind versus blind is still structured rather than random.`,
-    defaultLine:
-      "The source pages split blind battles into separate raise, limp, and all-in branches. Use this spot to stay organized, and verify the exact branch before treating any threshold as settled.",
-    exploitLever:
-      "Marginal blind hands such as K9 or QT need a clear plan. Do not auto-defend and do not auto-fold just because the branch is wide.",
-    commonPunt:
-      "Blurring together limp, raise, and shove branches until every hand becomes a guess instead of a structured blind battle decision.",
-    drillCue:
-      "In blind versus blind spots, decide first whether the hand wants initiative now or cheap realization later. Do not let both plans blur together.",
-  };
-}
-
-function buildThreeBetNote(context: CanonicalSpotContext): StudySpotNote {
-  return {
-    spotId: getCanonicalSpotId(context),
-    title: buildCanonicalSpotLabel(context),
-    coreIdea:
-      "The attached source bundle is stronger on opens, defenses, and facing pressure than on a fully separate 3-bet construction tree.",
-    defaultLine:
-      "Use blocker value, stack pressure, and hand quality together. If the source chart for the exact branch is not present, treat thin 3-bet bluffs as unresolved.",
-    exploitLever:
-      "Keep the strongest value and blocker candidates first. Do not widen the bluff bucket ahead of the source-backed value core.",
-    commonPunt:
-      "3-betting hands that look active but perform badly when called or shoved on.",
-    drillCue:
-      "Ask whether the hand benefits from fold equity now and still makes sense when called. If not, it probably does not belong.",
-  };
-}
-
-function buildLimpIsoNote(context: CanonicalSpotContext): StudySpotNote {
-  return {
-    spotId: getCanonicalSpotId(context),
-    title: buildCanonicalSpotLabel(context),
-    coreIdea:
-      "The source notes flag limper confrontations as a study theme, especially broadway hands around 30bb.",
-    defaultLine:
-      "Current exact limp/iso chart coverage is unresolved. Use this note as a reminder to separate hands that benefit from initiative from those that only look playable.",
-    exploitLever:
-      "Broadway hands improve when they can take the lead cleanly. Trashy disconnected hands do not become good just because a limp entered the pot first.",
-    commonPunt:
-      "Isolating because the limper looks weak without checking whether the hand actually benefits from building the pot.",
-    drillCue:
-      "If the limper continues, will this hand still know what it is doing? If not, pass.",
-  };
-}
-
-function buildFourBetJamNote(context: CanonicalSpotContext): StudySpotNote {
-  return {
-    spotId: getCanonicalSpotId(context),
-    title: buildCanonicalSpotLabel(context),
-    coreIdea:
-      "The attached source files do not provide a dedicated 4-bet/jam chart tree, so threshold claims here should stay conservative.",
-    defaultLine:
-      "When the exact branch is not documented, lean on the cleanest value hands and strongest blocker candidates only.",
-    exploitLever:
-      "Avoid turning bluff-catchers into stack-off hands just because the pot is large.",
-    commonPunt:
-      "Treating a hand as too strong to fold without proving that it clears the stack-off threshold.",
-    drillCue:
-      "If you cannot explain why the hand wants to stack off, it probably does not.",
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
+    coreIdea,
+    defaultLine,
+    exploitLever,
+    commonPunt,
+    drillCue: `Drill the marginal hands in blind vs blind — K9o, Q8s, J7s, T6s. These are the hands where population mistakes compound most.`,
   };
 }
 
 function buildPushFoldNote(context: CanonicalSpotContext): StudySpotNote {
-  const hero = heroText(context);
-  const isBbCall = context.heroPosition === "BB" && context.villainPosition === "BTN";
-  const stackText =
-    context.stackDepth <= 9
-      ? "5-10bb source threshold"
-      : "10-15bb source threshold";
+  const hero = h(context);
+  const isBbCall = context.heroPosition === "BB";
+  const status = sourceStatusForContext(context);
 
   return {
     spotId: getCanonicalSpotId(context),
     title: buildCanonicalSpotLabel(context),
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
     coreIdea: isBbCall
-      ? `${hero} calling versus a BTN shove is much tighter than the BTN jam range. This is a threshold node, not a hero-call invitation.`
-      : `${hero} short-stack jams are threshold decisions built from pairs, aces, and the specific suited or broadway classes listed in the source notes.`,
-    defaultLine: `${stackText} applies here, so trust the documented thresholds before trusting intuition.`,
-    exploitLever:
-      "Do not widen because the hand looks close. Short-stack edges come from staying disciplined around the exact cutoffs.",
+      ? `BB calling a shove is much tighter than the shover's range — this is a threshold node, not a hero-call spot.`
+      : `${hero} short-stack shoves are threshold decisions — pairs, aces, and specific suited classes. Trust the documented cutoffs.`,
+    defaultLine: `At ${context.stackDepth}bb, the decision is binary: shove or fold. Calling is almost never correct. Use the push/fold thresholds and don't deviate by feel.`,
+    exploitLever: isBbCall
+      ? "Against a wide BTN shover, widen your call range slightly. Against a tight EP shover, tighten significantly."
+      : "Against passive blinds, widen your shove range. Against calling stations, tighten to cleaner value.",
     commonPunt: isBbCall
-      ? "Calling off too loosely because the pot looks large, or passing clear calls because the hand feels uncomfortable."
-      : "Passing profitable shoves because the hand looks weak, or forcing jams with hands that fall just below the listed threshold.",
-    drillCue:
-      "Read the threshold, compare the exact hand class, and decide. Push/fold confidence comes from respecting the boundary, not from guessing near it.",
+      ? "Calling off with A7o or K9o because 'the pot is big' — the pot size doesn't change your equity vs a tight shove range."
+      : "Folding profitable shoves because the hand 'looks weak' — at ≤10bb, the math almost always supports the jam.",
+    drillCue: `Drill the threshold shove hands — A2s–A5s, K9s, Q9s, 22–55. These are where short-stack discipline separates good from bad tournament players.`,
+  };
+}
+
+function buildThreeBetNote(context: CanonicalSpotContext): StudySpotNote {
+  const villain = v(context);
+  const status = sourceStatusForContext(context);
+
+  return {
+    spotId: getCanonicalSpotId(context),
+    title: buildCanonicalSpotLabel(context),
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
+    coreIdea: `3-betting is a polarized play — strong value hands and strong blockers. Hands in between usually call or fold.`,
+    defaultLine: `3-bet your premiums (QQ+, AKs) for value. Add blocker hands (A5s, A4s) as bluffs. Fold or call the middle.`,
+    exploitLever: `Against a ${villain} who folds too much to 3-bets, widen your bluff range. Against a calling station, remove the bluffs and 3-bet value only.`,
+    commonPunt: "3-betting hands that look active (KJs, QJs) but play badly when called — they are better as calls or folds than as 3-bet bluffs.",
+    drillCue: `Drill the borderline 3-bet candidates — AQo, KQs, TT, JJ. These are the hands where population players make the most expensive mistakes.`,
+  };
+}
+
+function buildLimpIsoNote(context: CanonicalSpotContext): StudySpotNote {
+  const status = sourceStatusForContext(context);
+
+  return {
+    spotId: getCanonicalSpotId(context),
+    title: buildCanonicalSpotLabel(context),
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
+    coreIdea: `Isolating a limper is a position play — you want to take the lead with hands that benefit from initiative and fold equity.`,
+    defaultLine: `Iso to 4–5x (plus 1bb per additional limper). Use strong broadways, suited aces, and pairs. Do not iso with hands that play poorly in a bloated pot.`,
+    exploitLever: "Against a passive limper, iso wider. Against a limper who calls everything, tighten to hands that make strong pairs and have clear post-flop plans.",
+    commonPunt: "Iso-raising to 3x — too small, gives the limper a profitable call. Size up to deny equity and take the pot more often.",
+    drillCue: `Drill the iso sizing decision first: 4x vs 5x vs 6x. Then drill which hands to iso vs which to fold behind.`,
+  };
+}
+
+function buildFourBetJamNote(context: CanonicalSpotContext): StudySpotNote {
+  const status = sourceStatusForContext(context);
+
+  return {
+    spotId: getCanonicalSpotId(context),
+    title: buildCanonicalSpotLabel(context),
+    sourceStatus: status,
+    sourceLabel: getSourceStatusLabel(status),
+    coreIdea: `4-bet/jam territory is narrow — premiums and strong blockers only. The source files do not provide a dedicated 4-bet tree, so stay conservative.`,
+    defaultLine: `4-bet/jam with KK+, AKs. Add AQs and QQ as stack-depth allows. Everything else is usually a fold or a call.`,
+    exploitLever: "Against a 3-bettor who folds to 4-bets, add AKo and JJ to your jam range. Against a calling station, remove the bluffs entirely.",
+    commonPunt: "Treating a hand as 'too strong to fold' without checking whether it actually clears the stack-off threshold — ego is not a hand range.",
+    drillCue: `Drill the decision with QQ and JJ facing a 3-bet at different stack depths. These are the highest-frequency 4-bet mistakes in mid-stakes MTTs.`,
   };
 }
 
@@ -232,6 +333,8 @@ function buildSpotNote(context: CanonicalSpotContext): StudySpotNote {
       return buildPushFoldNote(context);
   }
 }
+
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export function getSpotNote(
   contextOrChart: CanonicalSpotContext | ChartLikeSpotContext

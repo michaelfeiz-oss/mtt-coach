@@ -404,9 +404,10 @@ export function pushFoldDecisionLabel(mode: PushFoldModeKind) {
 }
 
 export function pushFoldSourceNote(stackDepth: number) {
-  return stackDepth === 10
-    ? "10bb currently uses the 10-15bb short-stack reference when the exact 10bb chart is not provided."
-    : "Stacks 5-9bb use the shared 5-10bb push/fold reference from your source notes.";
+  if (stackDepth <= 9) {
+    return "5–9bb ranges are population-derived from standard push/fold principles. These are practical thresholds, not solver-exact charts.";
+  }
+  return "10bb uses a population-derived 10-15bb reference. No exact 10bb chart exists in the source PDFs — treat these as practical guidelines.";
 }
 
 export function getPushFoldSpotId(reference: PushFoldReference, stackDepth: number) {

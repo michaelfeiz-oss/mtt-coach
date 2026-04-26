@@ -1,3 +1,16 @@
+/**
+ * shared/drillPacks.ts
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Priority drill packs aligned with Challenging Poker Situations (Tier 3 source)
+ * and the 15/25/40bb GTO PDFs (Tier 1 source).
+ *
+ * Each pack is tagged as either:
+ *   "exact_source"   — backed by a specific chart in the 15/25/40bb PDFs
+ *   "simplified"     — population-derived from principles; no exact PDF chart
+ *
+ * Do NOT mix these invisibly. The UI must surface the tag on every pack card.
+ */
+
 import {
   CANONICAL_SPOT_FAMILY_LABELS,
   type CanonicalSpotFamily,
@@ -16,11 +29,15 @@ export const PRIORITY_DRILL_PACK_IDS = [
   "40bb-weak-ax-discipline",
   "bb-vs-sb-marginal-defense",
   "blind-vs-blind-execution",
-  "facing-3bet-threshold-pack",
+  "range-perimeter-pack",
 ] as const;
 export type PriorityDrillPackId = (typeof PRIORITY_DRILL_PACK_IDS)[number];
 
-export type PriorityPackSourceStatus = "source_backed" | "coverage_gap";
+/**
+ * exact_source  — directly backed by a chart in the 15/25/40bb PDF files
+ * simplified    — population-derived from principles; no exact PDF chart
+ */
+export type PriorityPackSourceStatus = "exact_source" | "simplified";
 
 export interface DrillPackSpotLike extends ChartLikeSpotContext {
   id: number;
@@ -30,11 +47,15 @@ export interface DrillPackSpotLike extends ChartLikeSpotContext {
 export interface PriorityDrillPackDefinition {
   id: PriorityDrillPackId;
   title: string;
+  /** One-sentence purpose — shown on mobile in place of full description */
   purpose: string;
+  /** Short description for desktop cards */
+  description: string;
   focusTags: string[];
   focusHandCodes: string[];
   relatedLeakFamilyIds: CanonicalLeakFamilyId[];
   families: CanonicalSpotFamily[];
+  /** Exact PDF chart or simplified population guidance */
   sourceStatus: PriorityPackSourceStatus;
   match: (spot: DrillPackSpotLike) => boolean;
 }
@@ -45,17 +66,14 @@ export interface ResolvedPriorityDrillPack extends PriorityDrillPackDefinition {
   supported: boolean;
 }
 
-const LIMPER_BROADWAY_MATCHER = (spot: DrillPackSpotLike) =>
-  canonicalSpotContextFromChart(spot)?.family === "LIMP_ISO" &&
-  [25].includes(spot.stackDepth);
-
 export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
   {
     id: "sub-premiums-vs-ep-pressure",
-    title: "Sub-premiums vs Early-Position Pressure",
-    purpose:
-      "Built from the challenging spot theme around 99-JJ and AQ-type hands facing stronger early-position pressure.",
-    focusTags: ["Source-backed", "EP pressure", "99-JJ / AQ"],
+    title: "Sub-premiums vs EP Pressure",
+    purpose: "99–JJ and AQ facing early-position opens and 3-bets.",
+    description:
+      "The most expensive recurring mistake in mid-stakes MTTs: calling or jamming with 99–JJ when the early-position range crushes you. Drill the exact 15bb all-in response charts and the 25/40bb population defaults.",
+    focusTags: ["EP pressure", "99–JJ", "AQ"],
     focusHandCodes: ["99", "TT", "JJ", "AQs", "AQo", "AJs", "KQs"],
     relatedLeakFamilyIds: [
       "sub_premium_vs_pressure_mistakes",
@@ -63,27 +81,28 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
       "facing_3bet_overfolds",
     ],
     families: ["DEFEND_VS_RFI", "FACING_3BET"],
-    sourceStatus: "source_backed",
+    sourceStatus: "exact_source",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
         context &&
           ((context.family === "DEFEND_VS_RFI" &&
-            ["UTG", "MP"].includes(context.villainPosition ?? "")) ||
+            ["UTG", "UTG1", "MP"].includes(context.villainPosition ?? "")) ||
             (context.family === "FACING_3BET" && context.stackDepth === 15))
       );
     },
   },
   {
     id: "15-20bb-small-pair-decisions",
-    title: "15-20bb Small Pair Decisions",
-    purpose:
-      "Tracks the source theme around 66-88 in the shallow rejam zone. Exact chart support is currently anchored to the 15bb chart set.",
-    focusTags: ["Source-backed", "15bb exact charts", "66-88"],
+    title: "15–20bb Small Pair Decisions",
+    purpose: "66–88 in the shallow rejam zone — jam or fold, never call.",
+    description:
+      "Small pairs at 15bb are jam-heavy but position-sensitive. 66–88 vs early-position opens should usually fold; vs late-position opens they often jam. The 15bb PDF gives exact thresholds — drill them.",
+    focusTags: ["15bb exact", "66–88", "Rejam zone"],
     focusHandCodes: ["66", "77", "88"],
     relatedLeakFamilyIds: ["small_pair_jam_errors"],
     families: ["OPEN_RFI", "DEFEND_VS_RFI", "FACING_3BET", "BLIND_VS_BLIND"],
-    sourceStatus: "source_backed",
+    sourceStatus: "exact_source",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
@@ -98,65 +117,58 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
   {
     id: "30bb-broadways-vs-limper",
     title: "30bb Broadways vs Limper",
-    purpose:
-      "This challenging spot is explicitly in the source material, but exact main-chart limp/iso coverage is still unresolved in the current dataset.",
-    focusTags: ["Coverage gap", "30bb theme", "Broadways vs limper"],
-    focusHandCodes: ["KQs", "KQo", "QJs", "QJo", "JTs", "JTo"],
+    purpose: "Iso sizing and hand selection when a limper enters the pot.",
+    description:
+      "Broadway hands around 30bb benefit from isolating limpers — but only with the right hands and the right sizing (4–5x + 1bb per limper). This pack is population-derived; no exact limp/iso chart exists in the PDFs.",
+    focusTags: ["Simplified", "30bb", "Iso sizing"],
+    focusHandCodes: ["KQs", "KQo", "QJs", "QJo", "JTs", "JTo", "AJo", "KJo"],
     relatedLeakFamilyIds: ["iso_vs_limper_selection_errors"],
     families: ["LIMP_ISO"],
-    sourceStatus: "coverage_gap",
-    match: LIMPER_BROADWAY_MATCHER,
+    sourceStatus: "simplified",
+    match: spot => {
+      const context = canonicalSpotContextFromChart(spot);
+      return Boolean(
+        context?.family === "LIMP_ISO" && [25, 40].includes(spot.stackDepth)
+      );
+    },
   },
   {
     id: "40bb-weak-ax-discipline",
     title: "40bb Weak Ax Discipline",
-    purpose:
-      "Built from the source theme around A2-A9 in late-position, 40bb decision spots facing late-position pressure.",
-    focusTags: ["Source-backed", "40bb", "Weak Ax"],
+    purpose: "A2–A9 at 40bb: mostly fold vs EP; suited wheel aces are bluff candidates.",
+    description:
+      "Weak aces at 40bb are dominated traps vs early-position opens. A2s–A5s have blocker value as 3-bet bluffs in position; A6o–A9o vs UTG are usually folds. The 40bb PDF gives exact defend ranges — drill the boundary.",
+    focusTags: ["40bb exact", "Weak Ax", "Discipline"],
     focusHandCodes: [
-      "A2s",
-      "A3s",
-      "A4s",
-      "A5s",
-      "A6s",
-      "A7s",
-      "A8s",
-      "A9s",
-      "A2o",
-      "A3o",
-      "A4o",
-      "A5o",
-      "A6o",
-      "A7o",
-      "A8o",
-      "A9o",
+      "A2s", "A3s", "A4s", "A5s", "A6s", "A7s", "A8s", "A9s",
+      "A2o", "A3o", "A4o", "A5o", "A6o", "A7o", "A8o", "A9o",
     ],
     relatedLeakFamilyIds: ["weak_ax_overplay"],
     families: ["DEFEND_VS_RFI"],
-    sourceStatus: "source_backed",
+    sourceStatus: "exact_source",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
         context &&
           context.stackDepth === 40 &&
-          context.family === "DEFEND_VS_RFI" &&
-          ["CO", "BTN"].includes(context.villainPosition ?? "")
+          context.family === "DEFEND_VS_RFI"
       );
     },
   },
   {
     id: "bb-vs-sb-marginal-defense",
-    title: "BB vs SB Marginal Defense",
-    purpose:
-      "Built from the source theme around K9/QT-type marginal big-blind decisions versus small-blind pressure.",
-    focusTags: ["Source-backed", "BvB", "Marginal hands"],
-    focusHandCodes: ["K9o", "QTo", "Q9o", "J9o", "K8s", "Q8s", "J8s", "T8s"],
+    title: "BB Marginal Defense vs SB",
+    purpose: "K9o, QTo, J8s — the hands that split the BB defend range.",
+    description:
+      "BB vs SB is the widest defend node but not a license to call everything. Marginal offsuit hands (K9o, Q8o) are close; marginal suited hands (K8s, J7s) usually defend. The BvB PDF pages give exact ranges for all three stacks.",
+    focusTags: ["BvB exact", "Marginal hands", "BB defend"],
+    focusHandCodes: ["K9o", "QTo", "Q9o", "J9o", "K8s", "Q8s", "J8s", "T8s", "97s"],
     relatedLeakFamilyIds: [
       "blind_defense_too_tight",
       "blind_defense_too_loose",
     ],
     families: ["BLIND_VS_BLIND"],
-    sourceStatus: "source_backed",
+    sourceStatus: "exact_source",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
@@ -169,38 +181,42 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
   {
     id: "blind-vs-blind-execution",
     title: "Blind vs Blind Execution",
-    purpose:
-      "Keeps the dedicated blind-versus-blind source pages in one repeatable drill surface.",
-    focusTags: ["Source-backed", "Blind vs blind", "Execution"],
-    focusHandCodes: ["A5o", "K9o", "Q8s", "J7s", "76s", "55", "22"],
+    purpose: "SB open, BB defend, limp/raise, and all-in branches.",
+    description:
+      "BvB is the most complex preflop node — separate raise, limp, and all-in branches exist in all three PDFs. Drill the SB open range, BB defend vs raise, and the limp/jam thresholds as distinct decisions.",
+    focusTags: ["BvB exact", "All stacks", "Execution"],
+    focusHandCodes: ["A5o", "K9o", "Q8s", "J7s", "76s", "55", "22", "T8s"],
     relatedLeakFamilyIds: ["sb_vs_bb_incomplete_strategy"],
     families: ["BLIND_VS_BLIND"],
-    sourceStatus: "source_backed",
+    sourceStatus: "exact_source",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(context && context.family === "BLIND_VS_BLIND");
     },
   },
   {
-    id: "facing-3bet-threshold-pack",
-    title: "Facing 3-Bet Threshold Pack",
-    purpose:
-      "Uses the exact 15bb facing-3-bet pages where jam, continue, and fold thresholds are explicitly charted.",
-    focusTags: ["Source-backed", "15bb", "Facing 3-bet"],
-    focusHandCodes: ["77", "88", "99", "TT", "JJ", "AQs", "AQo", "A5s", "KQs"],
-    relatedLeakFamilyIds: [
-      "facing_3bet_overcalls",
-      "facing_3bet_overfolds",
-      "four_bet_jam_threshold_errors",
+    id: "range-perimeter-pack",
+    title: "Range Perimeter Pack",
+    purpose: "The hands just inside and just outside every open/defend threshold.",
+    description:
+      "The perimeter of a range is where population players leak the most chips. This pack targets the boundary hands across all positions and stacks — the ones that are correct in one spot and wrong in the next.",
+    focusTags: ["All stacks", "Boundary hands", "High-frequency"],
+    focusHandCodes: [
+      "A9o", "KJo", "QJo", "JTo", "T9s", "98s", "87s", "76s",
+      "A5s", "K9s", "Q9s", "J9s", "55", "44",
     ],
-    families: ["FACING_3BET"],
-    sourceStatus: "source_backed",
+    relatedLeakFamilyIds: [
+      "sub_premium_vs_pressure_mistakes",
+      "blind_defense_too_loose",
+      "btn_steal_too_tight",
+    ],
+    families: ["OPEN_RFI", "DEFEND_VS_RFI", "BLIND_VS_BLIND"],
+    sourceStatus: "exact_source",
     match: spot => {
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
         context &&
-          context.family === "FACING_3BET" &&
-          context.stackDepth === 15
+          ["OPEN_RFI", "DEFEND_VS_RFI", "BLIND_VS_BLIND"].includes(context.family)
       );
     },
   },
@@ -263,4 +279,16 @@ export function getCanonicalSpotIdsForPack(
     .map(spot => canonicalSpotContextFromChart(spot))
     .filter(Boolean)
     .map(context => getCanonicalSpotId(context!));
+}
+
+/** Human-readable badge label for the pack source status */
+export function getDrillPackSourceLabel(status: PriorityPackSourceStatus): string {
+  return status === "exact_source" ? "Exact Chart" : "Simplified Population";
+}
+
+/** Badge colour class for the pack source status */
+export function getDrillPackSourceBadgeClass(status: PriorityPackSourceStatus): string {
+  return status === "exact_source"
+    ? "bg-emerald-600 text-white"
+    : "bg-amber-500 text-white";
 }

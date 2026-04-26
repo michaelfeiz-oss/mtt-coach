@@ -20,8 +20,15 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
   buildPriorityPackSummary,
+  getDrillPackSourceBadgeClass,
+  getDrillPackSourceLabel,
   getRelatedPriorityDrillPacksForSpot,
 } from "@shared/drillPacks";
+import {
+  getStrategySourceStatus,
+  getSourceStatusBadgeClass,
+  getSourceStatusLabel,
+} from "@shared/sourceTruth";
 import {
   displayPositionLabel,
   POSITIONS,
@@ -407,6 +414,24 @@ export default function StrategyLibrary() {
                   <Badge className="h-6 rounded-full bg-primary px-2.5 text-[10.5px] font-semibold text-primary-foreground">
                     {chart.stackDepth}bb
                   </Badge>
+                  {(() => {
+                    const status = getStrategySourceStatus(chart);
+                    return (
+                      <span
+                        className={cn(
+                          "inline-flex h-6 items-center rounded-full px-2.5 text-[10.5px] font-semibold",
+                          getSourceStatusBadgeClass(status)
+                        )}
+                        title={
+                          status === "source_backed"
+                            ? `Backed by the ${chart.stackDepth}bb GTO chart PDF. Actions are exact.`
+                            : "No exact chart for this spot. Guidance is population-derived."
+                        }
+                      >
+                        {getSourceStatusLabel(status)}
+                      </span>
+                    );
+                  })()}
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     {SPOT_GROUP_LABELS[chart.spotGroup].replace(
                       " (Open Raise)",
@@ -508,6 +533,14 @@ export default function StrategyLibrary() {
                                 {pack.purpose}
                               </p>
                               <div className="mt-2 flex flex-wrap gap-1.5">
+                                <span
+                                  className={cn(
+                                    "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold",
+                                    getDrillPackSourceBadgeClass(pack.sourceStatus)
+                                  )}
+                                >
+                                  {getDrillPackSourceLabel(pack.sourceStatus)}
+                                </span>
                                 <Badge
                                   variant="outline"
                                   className="rounded-full"
