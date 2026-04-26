@@ -19,6 +19,7 @@ import {
   type SpotGroup,
 } from "../../shared/strategy";
 import { isSourceSupportedStrategyChart } from "../../shared/sourceTruth";
+import { getSourceChart } from "./sourceChartData";
 
 export interface SeedHandAction {
   handCode: string;
@@ -650,6 +651,26 @@ function buildChartActions(
 }
 
 function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedChart {
+  // Prefer source-verified chart data over heuristic generation
+  const sourceChart = getSourceChart(stackDepth, definition.key);
+  if (sourceChart) {
+    return {
+      title: `${definition.label} @ ${stackDepth}bb`,
+      stackDepth,
+      spotGroup: definition.group,
+      spotKey: definition.key,
+      heroPosition: definition.heroPosition,
+      villainPosition: definition.villainPosition,
+      sourceLabel: sourceChart.sourceLabel,
+      notes: chartNotes(definition, stackDepth),
+      actions: sourceChart.actions.map(a => ({
+        handCode: a.handCode,
+        primaryAction: a.primaryAction,
+        weightPercent: a.weightPercent,
+      })),
+    };
+  }
+  // Fallback: heuristic generation for spots without source data
   return {
     title: `${definition.label} @ ${stackDepth}bb`,
     stackDepth,
