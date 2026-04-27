@@ -58,7 +58,7 @@ describe("strategy theory notes", () => {
     });
 
     const defaultLine = sections.find(section => section.key === "defaultLine");
-    expect(defaultLine?.body).toContain("simplified population");
-    expect(defaultLine?.body).toContain("ATo");
+    expect(defaultLine?.body).toContain("playable middle");
+    expect(defaultLine?.body).toContain("dominated offsuit broadways");
   });
 });

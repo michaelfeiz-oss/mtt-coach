@@ -10,6 +10,7 @@ import { buildHandClassRevealNote } from "../../../../shared/preflop";
 import type { ResolvedPriorityDrillPack } from "../../../../shared/drillPacks";
 import type { LeakFamilyDefinition } from "../../../../shared/leakFamilies";
 import type { StudySpotNote } from "../../../../shared/spotNotes";
+import type { StrategyChartPresentation } from "@shared/strategyPresentation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { ActionLegend } from "./ActionLegend";
 import { RangeMatrix } from "./RangeMatrix";
 import { buildActionMap } from "./utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface TrainerResultRevealProps {
   chart?: RangeChartWithActions;
@@ -31,6 +33,7 @@ interface TrainerResultRevealProps {
   spotNote?: StudySpotNote | null;
   leakHint?: LeakFamilyDefinition | null;
   recommendedPack?: ResolvedPriorityDrillPack | null;
+  chartPresentation?: StrategyChartPresentation | null;
   onNext: () => void;
   className?: string;
 }
@@ -47,6 +50,7 @@ export function TrainerResultReveal({
   spotNote,
   leakHint,
   recommendedPack,
+  chartPresentation,
   onNext,
   className = "",
 }: TrainerResultRevealProps) {
@@ -66,6 +70,24 @@ export function TrainerResultReveal({
   const chartActionNote = chart?.actions.find(
     action => action.handCode === handCode
   )?.note;
+  const primaryNoteSections = spotNote
+    ? [
+        ["Core Idea", spotNote.coreIdea],
+        ["Default", spotNote.defaultLine],
+      ]
+    : [];
+  const secondaryNoteSections = spotNote
+    ? ([
+        ["Exploit Lever", spotNote.exploitLever],
+        ["Common Punt", spotNote.commonPunt],
+        ["Drill Cue", spotNote.drillCue],
+        spotNote.stageAdjustment
+          ? ["Stage Adjustment", spotNote.stageAdjustment]
+          : null,
+      ] as Array<[string, string] | null>).filter(
+        (section): section is [string, string] => Boolean(section)
+      )
+    : [];
   const revealNote = buildHandClassRevealNote(
     handCode,
     correctAction,
@@ -130,13 +152,33 @@ export function TrainerResultReveal({
                 Chart
               </p>
               <p className="text-sm font-semibold text-foreground">
-                {chart?.title ?? "Loading chart"}
+                {chartPresentation?.title ?? chart?.title ?? "Loading chart"}
               </p>
+              {chartPresentation?.sourceHelper && (
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {chartPresentation.sourceHelper}
+                </p>
+              )}
             </div>
-            <ActionLegend
-              actions={visibleActions}
-              className="rounded-xl border border-border/80 bg-accent/45 p-1.5"
-            />
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              <div className="flex flex-wrap gap-1.5">
+                {chartPresentation?.sourceStatus !== "source_backed" &&
+                  chartPresentation?.sourceBadge && (
+                    <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
+                      {chartPresentation.sourceBadge}
+                    </Badge>
+                  )}
+                {chartPresentation?.sharedFamilyLabel && (
+                  <Badge variant="outline" className="rounded-full">
+                    {chartPresentation.sharedFamilyLabel}
+                  </Badge>
+                )}
+              </div>
+              <ActionLegend
+                actions={visibleActions}
+                className="rounded-xl border border-border/80 bg-accent/45 p-1.5"
+              />
+            </div>
           </div>
 
           {chart && (
@@ -191,34 +233,64 @@ export function TrainerResultReveal({
             </div>
 
             {spotNote && (
-              <div className="grid gap-2 md:grid-cols-2">
-                {(
-                  [
-                  ["Core Idea", spotNote.coreIdea],
-                  ["Default", spotNote.defaultLine],
-                  ["Exploit Lever", spotNote.exploitLever],
-                  ["Common Punt", spotNote.commonPunt],
-                  ["Drill Cue", spotNote.drillCue],
-                  spotNote.stageAdjustment
-                    ? ["Stage Adjustment", spotNote.stageAdjustment]
-                    : null,
-                ] as Array<[string, string] | null>
-                )
-                  .filter((section): section is [string, string] => Boolean(section))
-                  .map(([title, body]) => (
+              <>
+                <div className="grid gap-2 md:hidden">
+                  {primaryNoteSections.map(([title, body]) => (
                     <div
-                      key={title as string}
+                      key={title}
                       className="rounded-xl border border-border bg-card px-3 py-2.5"
                     >
                       <p className="text-[11px] font-semibold text-muted-foreground">
-                        {title as string}
+                        {title}
                       </p>
                       <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
-                        {body as string}
+                        {body}
                       </p>
                     </div>
                   ))}
-              </div>
+                  {secondaryNoteSections.length > 0 && (
+                    <Accordion type="single" collapsible className="rounded-xl border border-border bg-card">
+                      <AccordionItem value="trainer-more-coaching" className="border-none">
+                        <AccordionTrigger className="px-3 py-2.5 text-sm font-semibold text-foreground hover:no-underline">
+                          More coaching
+                        </AccordionTrigger>
+                        <AccordionContent className="px-3 pb-3">
+                          <div className="grid gap-2">
+                            {secondaryNoteSections.map(([title, body]) => (
+                              <div
+                                key={title}
+                                className="rounded-xl border border-border bg-background px-3 py-2.5"
+                              >
+                                <p className="text-[11px] font-semibold text-muted-foreground">
+                                  {title}
+                                </p>
+                                <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
+                                  {body}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  )}
+                </div>
+                <div className="hidden gap-2 md:grid md:grid-cols-2">
+                  {[...primaryNoteSections, ...secondaryNoteSections].map(([title, body]) => (
+                    <div
+                      key={title}
+                      className="rounded-xl border border-border bg-card px-3 py-2.5"
+                    >
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        {title}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
+                        {body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
 
             {recommendedPack && (

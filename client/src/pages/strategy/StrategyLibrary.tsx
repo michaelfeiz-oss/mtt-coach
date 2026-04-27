@@ -25,13 +25,13 @@ import {
 import {
   displayPositionLabel,
   POSITIONS,
-  SPOT_GROUP_LABELS,
   SPOT_GROUPS,
   STACK_DEPTHS,
   type Action,
   type Position,
   type SpotGroup,
 } from "@shared/strategy";
+import { buildStrategyChartPresentation } from "@shared/strategyPresentation";
 
 type SpotSummary = {
   id: number;
@@ -186,6 +186,10 @@ export default function StrategyLibrary() {
   );
 
   const actionMap = chart ? buildActionMap(chart.actions) : {};
+  const chartPresentation = useMemo(
+    () => (chart ? buildStrategyChartPresentation(chart) : null),
+    [chart]
+  );
   const visibleActions = chart
     ? (Array.from(
         new Set(chart.actions.map(action => action.primaryAction))
@@ -368,15 +372,17 @@ export default function StrategyLibrary() {
                     chartViewerDensity.tight && "sm:text-[1.45rem]"
                   )}
                 >
-                  {chart?.title ?? "Choose a supported preflop spot"}
+                  {chartPresentation?.title ?? "Choose a supported preflop spot"}
                 </h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {chart
-                    ? `${SPOT_GROUP_LABELS[chart.spotGroup]} · ${displayPositionLabel(
-                        chart.heroPosition
-                      )}${chart.villainPosition ? ` vs ${displayPositionLabel(chart.villainPosition)}` : ""} · 9 players · BBA`
-                    : "Decision, stack, hero, and opener stay visible here so you can move around the chart library quickly."}
+                  {chartPresentation?.contextLine ??
+                    "Decision, stack, hero, and opener stay visible here so you can move around the chart library quickly."}
                 </p>
+                {chartPresentation?.sourceHelper && (
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    {chartPresentation.sourceHelper}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -409,10 +415,7 @@ export default function StrategyLibrary() {
                     {chart.stackDepth}bb
                   </Badge>
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
-                    {SPOT_GROUP_LABELS[chart.spotGroup].replace(
-                      " (Open Raise)",
-                      ""
-                    )}
+                    {chartPresentation?.decisionLabel ?? chart.spotGroup}
                   </Badge>
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     {displayPositionLabel(chart.heroPosition)}
@@ -423,12 +426,17 @@ export default function StrategyLibrary() {
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     BBA
                   </Badge>
-                  {chart.sourceLabel &&
-                    chart.sourceLabel !== "Exact source-backed chart" && (
+                  {chartPresentation?.sourceStatus !== "source_backed" &&
+                    chartPresentation?.sourceBadge && (
                       <Badge className="h-6 rounded-full border-amber-200 bg-amber-50 px-2.5 text-[10.5px] font-semibold text-amber-900">
-                        {chart.sourceLabel}
+                        {chartPresentation.sourceBadge}
                       </Badge>
                     )}
+                  {chartPresentation?.sharedFamilyLabel && (
+                    <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
+                      {chartPresentation.sharedFamilyLabel}
+                    </Badge>
+                  )}
                 </div>
                 <ActionLegend
                   actions={visibleActions}

@@ -47,13 +47,16 @@ describe("strategy seed coverage", () => {
       chart => chart.stackDepth === 40 && chart.spotKey === "BTN_vs_SB_3bet"
     );
 
-    expect(upgraded25?.sourceLabel).toBe("Simplified population vs 3-bet");
-    expect(upgraded40?.sourceLabel).toBe("Simplified population vs 3-bet");
+    expect(upgraded25?.sourceLabel).toBe("Simplified Population");
+    expect(upgraded40?.sourceLabel).toBe("Simplified Population");
   });
 
   it("uses the new 25bb simplified-vs-3bet family rules instead of leaving nodes empty", () => {
     const oop25 = SEED_CHARTS.find(
       chart => chart.stackDepth === 25 && chart.spotKey === "HJ_vs_BTN_3bet"
+    );
+    const ipSmallBlind25 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 25 && chart.spotKey === "BTN_vs_SB_3bet"
     );
     const ipBlind25 = SEED_CHARTS.find(
       chart => chart.stackDepth === 25 && chart.spotKey === "BTN_vs_BB_3bet"
@@ -66,17 +69,31 @@ describe("strategy seed coverage", () => {
       oop25?.actions.find(action => action.handCode === "ATo")?.primaryAction
     ).toBe("FOLD");
     expect(
-      ipBlind25?.actions.find(action => action.handCode === "ATo")
+      ipSmallBlind25?.actions.find(action => action.handCode === "ATo")
         ?.primaryAction
     ).toBe("CALL");
     expect(
-      ipBlind25?.actions.find(action => action.handCode === "77")?.primaryAction
+      ipBlind25?.actions.find(action => action.handCode === "ATo")
+        ?.primaryAction
+    ).toBe("FOLD");
+    expect(
+      ipSmallBlind25?.actions.find(action => action.handCode === "88")
+        ?.primaryAction
+    ).toBe("JAM");
+    expect(
+      ipBlind25?.actions.find(action => action.handCode === "88")?.primaryAction
     ).toBe("CALL");
+    expect(
+      ipBlind25?.actions.find(action => action.handCode === "AQo")?.primaryAction
+    ).toBe("JAM");
   });
 
-  it("keeps 40bb facing-3bet defaults disciplined around QQ+ and AK", () => {
+  it("separates the 40bb simplified blind branches instead of cloning them", () => {
     const ipBlind40 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 40 && chart.spotKey === "BTN_vs_BB_3bet"
+      chart => chart.stackDepth === 40 && chart.spotKey === "CO_vs_BB_3bet"
+    );
+    const ipSmallBlind40 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 40 && chart.spotKey === "CO_vs_SB_3bet"
     );
 
     expect(
@@ -87,6 +104,13 @@ describe("strategy seed coverage", () => {
     ).toBe("CALL");
     expect(
       ipBlind40?.actions.find(action => action.handCode === "JJ")?.primaryAction
+    ).toBe("CALL");
+    expect(
+      ipBlind40?.actions.find(action => action.handCode === "KTs")?.primaryAction
+    ).toBe("FOLD");
+    expect(
+      ipSmallBlind40?.actions.find(action => action.handCode === "KTs")
+        ?.primaryAction
     ).toBe("CALL");
   });
 

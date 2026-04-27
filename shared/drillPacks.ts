@@ -72,8 +72,9 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
       return Boolean(
         context &&
           ((context.family === "DEFEND_VS_RFI" &&
-            ["UTG", "MP"].includes(context.villainPosition ?? "")) ||
+            ["UTG", "UTG1", "MP"].includes(context.villainPosition ?? "")) ||
             (context.family === "FACING_3BET" &&
+              ["UTG", "UTG1", "MP"].includes(context.heroPosition) &&
               [15, 25, 40].includes(context.stackDepth)))
       );
     },
@@ -92,7 +93,7 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
       const context = canonicalSpotContextFromChart(spot);
       return Boolean(
         context &&
-          context.stackDepth === 15 &&
+          [15, 25].includes(context.stackDepth) &&
           ["OPEN_RFI", "DEFEND_VS_RFI", "FACING_3BET", "BLIND_VS_BLIND"].includes(
             context.family
           )
@@ -243,12 +244,9 @@ export function getRelatedPriorityDrillPacksForSpot(
   spot: DrillPackSpotLike,
   spots: DrillPackSpotLike[]
 ): ResolvedPriorityDrillPack[] {
-  const context = canonicalSpotContextFromChart(spot);
-  if (!context) return [];
-
   return resolveAllPriorityDrillPacks(spots)
-    .filter(pack => pack.families.includes(context.family))
-    .filter(pack => pack.chartIds.includes(spot.id) || pack.supported)
+    .filter(pack => pack.supported)
+    .filter(pack => pack.match(spot))
     .slice(0, 3);
 }
 

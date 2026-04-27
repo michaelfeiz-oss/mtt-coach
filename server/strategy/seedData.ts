@@ -19,9 +19,11 @@ import {
   type SpotGroup,
 } from "../../shared/strategy";
 import {
+  getSimplifiedVsThreeBetFamily,
   getStrategySourceLabel,
   isSourceSupportedStrategyChart,
 } from "../../shared/sourceTruth";
+import { formatStrategyChartTitle } from "../../shared/strategyPresentation";
 
 export interface SeedHandAction {
   handCode: string;
@@ -59,12 +61,6 @@ interface ActionRule {
   note?: string;
   matches: (hand: ParsedHand) => boolean;
 }
-
-type VsThreeBetNodeFamily =
-  | "oop_vs_ip"
-  | "ip_vs_sb"
-  | "ip_vs_bb"
-  | "unsupported";
 
 const VALID_HANDS = new Set(ALL_HANDS);
 const VALID_ACTIONS = new Set<Action>(ACTIONS);
@@ -247,60 +243,69 @@ function isStrongBroadway(hand: ParsedHand): boolean {
   return ["AKs", "AKo", "AQs", "AQo", "AJs", "KQs"].includes(hand.code);
 }
 
-function getVsThreeBetNodeFamily(definition: SpotDefinition): VsThreeBetNodeFamily {
-  const aggressor = definition.villainPosition;
-
-  if (!aggressor || definition.heroPosition === "SB") {
-    return "unsupported";
-  }
-
-  if (aggressor === "SB") return "ip_vs_sb";
-  if (aggressor === "BB") return "ip_vs_bb";
-  return "oop_vs_ip";
-}
-
 function isPopulation25JamVsThreeBet(
   hand: ParsedHand,
-  family: VsThreeBetNodeFamily
+  family: ReturnType<typeof getSimplifiedVsThreeBetFamily>
 ): boolean {
-  if (family === "oop_vs_ip") {
+  if (family === "OOP_VS_IP_3BET") {
     return (
-      isPairAtLeast(hand, "77") ||
+      isPairAtLeast(hand, "88") ||
       ["AKs", "AKo", "AQs", "AQo", "A5s", "A4s"].includes(hand.code)
     );
   }
 
   return (
-    isPairAtLeast(hand, "QQ") ||
-    ["AKs", "AKo", "AQs", "AQo"].includes(hand.code)
+    isPairAtLeast(hand, family === "IP_VS_SB_3BET" ? "88" : "99") ||
+    ["AKs", "AKo", "AQs", "AQo", "A5s", "A4s"].includes(hand.code)
   );
 }
 
 function isPopulation25CallVsThreeBet(
   hand: ParsedHand,
-  family: VsThreeBetNodeFamily
+  family: ReturnType<typeof getSimplifiedVsThreeBetFamily>
 ): boolean {
-  if (family === "oop_vs_ip") {
+  if (family === "OOP_VS_IP_3BET") {
     return (
-      isPairAtLeast(hand, "22") ||
+      isPairBetween(hand, "22", "77") ||
       isSuitedAce(hand, "2") ||
-      ["AJo", "ATs", "KQs", "KJs", "QJs", "JTs", "T9s", "98s"].includes(
-        hand.code
-      )
+      ["KQs", "KJs", "QJs", "JTs", "T9s", "98s", "87s"].includes(hand.code)
     );
   }
 
   const familyWideners =
-    family === "ip_vs_bb"
-      ? ["ATo", "KQo", "KTs", "QTs", "87s", "76s"]
-      : ["ATo", "KQo", "KTs", "QTs", "87s"];
+    family === "IP_VS_SB_3BET"
+      ? [
+          "AJo",
+          "ATo",
+          "ATs",
+          "KQo",
+          "KQs",
+          "KJs",
+          "KTs",
+          "QJs",
+          "QTs",
+          "JTs",
+          "T9s",
+          "98s",
+          "87s",
+        ]
+      : [
+          "AJo",
+          "ATs",
+          "KQs",
+          "KJs",
+          "KTs",
+          "QJs",
+          "QTs",
+          "JTs",
+          "T9s",
+          "98s",
+          "87s",
+        ];
 
   return (
-    isPairAtLeast(hand, "22") ||
+    isPairBetween(hand, "22", family === "IP_VS_SB_3BET" ? "77" : "88") ||
     isSuitedAce(hand, "2") ||
-    ["AJo", "ATs", "KQs", "KJs", "QJs", "JTs", "T9s", "98s"].includes(
-      hand.code
-    ) ||
     familyWideners.includes(hand.code)
   );
 }
@@ -311,31 +316,73 @@ function isPopulation40JamVsThreeBet(hand: ParsedHand): boolean {
 
 function isPopulation40CallVsThreeBet(
   hand: ParsedHand,
-  family: VsThreeBetNodeFamily
+  family: ReturnType<typeof getSimplifiedVsThreeBetFamily>
 ): boolean {
-  const minimumPair = family === "oop_vs_ip" ? "55" : "22";
-  const broadwayCalls = [
-    "AQs",
-    "AQo",
-    "AJs",
-    "AJo",
-    "KQs",
-    "KJs",
-    "QJs",
-    "JTs",
-  ];
-  const familyWideners =
-    family === "ip_vs_bb"
-      ? ["ATs", "KTs", "QTs", "T9s", "98s", "87s", "76s", "A5s", "A4s"]
-      : family === "ip_vs_sb"
-        ? ["ATs", "KTs", "QTs", "T9s", "98s", "87s", "A5s", "A4s"]
-        : ["ATs", "T9s", "98s", "A5s", "A4s"];
+  if (family === "OOP_VS_IP_3BET") {
+    return (
+      isPairBetween(hand, "77", "JJ") ||
+      [
+        "AQs",
+        "AQo",
+        "AJs",
+        "ATs",
+        "KQs",
+        "KJs",
+        "QJs",
+        "JTs",
+        "A5s",
+        "A4s",
+        "A3s",
+        "A2s",
+        "T9s",
+        "98s",
+      ].includes(hand.code)
+    );
+  }
+
+  if (family === "IP_VS_SB_3BET") {
+    return (
+      isPairBetween(hand, "55", "JJ") ||
+      isSuitedAce(hand, "2") ||
+      [
+        "AQs",
+        "AQo",
+        "AJs",
+        "AJo",
+        "ATs",
+        "KQs",
+        "KJs",
+        "KTs",
+        "QJs",
+        "QTs",
+        "JTs",
+        "T9s",
+        "98s",
+        "87s",
+      ].includes(hand.code)
+    );
+  }
 
   return (
-    isPairAtLeast(hand, minimumPair) ||
+    isPairBetween(hand, "66", "JJ") ||
     isSuitedAce(hand, "2") ||
-    broadwayCalls.includes(hand.code) ||
-    familyWideners.includes(hand.code)
+    [
+      "AQs",
+      "AQo",
+      "AJs",
+      "ATs",
+      "KQs",
+      "KJs",
+      "QJs",
+      "QTs",
+      "JTs",
+      "T9s",
+      "98s",
+      "A5s",
+      "A4s",
+      "A3s",
+      "A2s",
+    ].includes(hand.code)
   );
 }
 
@@ -584,24 +631,34 @@ function buildVsThreeBetActions(
     definition.villainPosition,
     stackDepth
   );
-  const family = getVsThreeBetNodeFamily(definition);
+  const family = getSimplifiedVsThreeBetFamily({
+    stackDepth,
+    spotGroup: definition.group,
+    heroPosition: definition.heroPosition,
+    villainPosition: definition.villainPosition,
+    spotKey: definition.key,
+  });
 
   if (stackDepth === 25) {
     return buildActions([
       {
         action: "JAM",
         note:
-          family === "oop_vs_ip"
-            ? "OOP versus in-position 3-bets, the simplified 25bb jam spine stays around 77+, AQo+, AK, and selected wheel suited aces."
-            : "In position versus blind 3-bets, the 25bb simplified layer keeps the stack-off bucket tighter and leaves medium pairs to call more often.",
+          family === "OOP_VS_IP_3BET"
+            ? "OOP versus an in-position 3-bet at 25bb, the simplified jam spine stays around 88+, AQo+, AK, and selected wheel aces."
+            : family === "IP_VS_SB_3BET"
+              ? "In position versus a small-blind 3-bet at 25bb, strong pairs, AQ+, AK, and wheel-ace blockers make up the clean jam bucket."
+              : "In position versus a big-blind 3-bet at 25bb, keep the jam bucket value-heavy and let the weaker perimeter continue by calling or folding.",
         matches: hand => isPopulation25JamVsThreeBet(hand, family),
       },
       {
         action: "CALL",
         note:
-          family === "oop_vs_ip"
-            ? "Use the 25bb call bucket for pairs, suited aces, and stable suited broadways that realize well enough without bloating the pot."
-            : "In position versus blind 3-bets, medium pairs and ATo-type hands survive as calls more often than as jams.",
+          family === "OOP_VS_IP_3BET"
+            ? "Use the 25bb OOP call bucket for small pairs, suited aces, and sturdy suited broadways that can realize without forcing a stack-off."
+            : family === "IP_VS_SB_3BET"
+              ? "Versus a small-blind 3-bet, position keeps more pairs, suited aces, and broadways alive as calls."
+              : "Versus a big-blind 3-bet, keep the in-position call bucket disciplined and trim the weakest offsuit continues.",
         matches: hand => isPopulation25CallVsThreeBet(hand, family),
       },
     ]);
@@ -618,9 +675,11 @@ function buildVsThreeBetActions(
       {
         action: "CALL",
         note:
-          family === "oop_vs_ip"
+          family === "OOP_VS_IP_3BET"
             ? "Out of position at 40bb, keep JJ-to-medium-pair strength, AQ, suited aces, and suited broadways in the call bucket instead of auto-stacking off."
-            : "In position versus blind 3-bets, 40bb keeps a broad call bucket of pairs, suited aces, and strong broadways while JJ/AQ stay conditional rather than default jams.",
+            : family === "IP_VS_SB_3BET"
+              ? "In position versus a small-blind 3-bet, 40bb keeps the widest call bucket of pairs, suited aces, and strong broadways."
+              : "In position versus a big-blind 3-bet, 40bb still allows clean calls, but trims the weakest perimeter hands compared with the SB branch.",
         matches: hand => isPopulation40CallVsThreeBet(hand, family),
       },
     ]);
@@ -731,13 +790,21 @@ function chartNotes(definition: SpotDefinition, stackDepth: number): string[] {
   }
 
   if (definition.group === "VS_3BET") {
-    const family = getVsThreeBetNodeFamily(definition);
+    const family = getSimplifiedVsThreeBetFamily({
+      stackDepth,
+      spotGroup: definition.group,
+      heroPosition: definition.heroPosition,
+      villainPosition: definition.villainPosition,
+      spotKey: definition.key,
+    });
 
     if (stackDepth === 25) {
       return [
-        family === "oop_vs_ip"
-          ? "25bb OOP versus in-position 3-bets is a simplified population node: the jam spine stays around 77+, AQo+, AK, and selected wheel suited aces."
-          : "25bb in position versus blind 3-bets is a simplified population node: medium pairs and ATo-type hands survive as calls more often than as jams.",
+        family === "OOP_VS_IP_3BET"
+          ? "25bb OOP versus an in-position 3-bet is the tightest simplified family: strong jams first, disciplined calls second."
+          : family === "IP_VS_SB_3BET"
+            ? "25bb in position versus a small-blind 3-bet is the widest simplified family because position keeps more calls alive."
+            : "25bb in position versus a big-blind 3-bet stays disciplined: keep the strong calls, trim the weakest perimeter hands.",
         "This layer is intentionally labeled as simplified population guidance, not an exact-source 25bb facing-3-bet chart.",
       ];
     }
@@ -786,7 +853,13 @@ function buildChartActions(
 
 function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedChart {
   return {
-    title: `${definition.label} @ ${stackDepth}bb`,
+    title: formatStrategyChartTitle({
+      stackDepth,
+      spotGroup: definition.group,
+      heroPosition: definition.heroPosition,
+      villainPosition: definition.villainPosition,
+      spotKey: definition.key,
+    }),
     stackDepth,
     spotGroup: definition.group,
     spotKey: definition.key,

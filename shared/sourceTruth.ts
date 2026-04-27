@@ -13,6 +13,23 @@ export type StrategySourceStatus =
   | "simplified_population"
   | "unsupported";
 
+export const SIMPLIFIED_VS_3BET_FAMILIES = [
+  "OOP_VS_IP_3BET",
+  "IP_VS_SB_3BET",
+  "IP_VS_BB_3BET",
+] as const;
+export type SimplifiedVsThreeBetFamily =
+  (typeof SIMPLIFIED_VS_3BET_FAMILIES)[number];
+
+const SIMPLIFIED_VS_3BET_FAMILY_LABELS: Record<
+  SimplifiedVsThreeBetFamily,
+  string
+> = {
+  OOP_VS_IP_3BET: "OOP vs IP 3-Bet",
+  IP_VS_SB_3BET: "IP vs SB 3-Bet",
+  IP_VS_BB_3BET: "IP vs BB 3-Bet",
+};
+
 export interface StrategyChartLike {
   stackDepth: number;
   spotGroup: SpotGroup;
@@ -40,6 +57,22 @@ function isSimplifiedPopulationThreeBetStack(
 
 function supportsFacingThreeBetHero(heroPosition: string) {
   return SOURCE_BACKED_3BET_HEROES.has(heroPosition as Position);
+}
+
+export function getSimplifiedVsThreeBetFamily(
+  chart: StrategyChartLike
+): SimplifiedVsThreeBetFamily | null {
+  if (chart.spotGroup !== "VS_3BET") return null;
+
+  if (chart.villainPosition === "SB") {
+    return "IP_VS_SB_3BET";
+  }
+
+  if (chart.villainPosition === "BB") {
+    return "IP_VS_BB_3BET";
+  }
+
+  return "OOP_VS_IP_3BET";
 }
 
 export function isSourceBackedMainStack(
@@ -81,14 +114,51 @@ export function getStrategySourceStatus(
 export function getStrategySourceLabel(chart: StrategyChartLike): string | null {
   switch (getStrategySourceStatus(chart)) {
     case "source_backed":
-      return "Exact source-backed chart";
+      return "Exact PDF Chart";
     case "proxy":
-      return "Structured proxy coverage";
+      return "Structured Proxy";
     case "simplified_population":
-      return "Simplified population vs 3-bet";
+      return "Simplified Population";
     case "unsupported":
       return null;
   }
+}
+
+export function getStrategySourceHelperText(
+  chart: StrategyChartLike
+): string | null {
+  switch (getStrategySourceStatus(chart)) {
+    case "source_backed":
+      return null;
+    case "proxy":
+      return "Structured branch view for blind-versus-blind decisions.";
+    case "simplified_population":
+      return "Practical simplified model - not exact PDF chart.";
+    case "unsupported":
+      return null;
+  }
+}
+
+export function getSimplifiedVsThreeBetFamilyLabel(
+  familyOrChart: SimplifiedVsThreeBetFamily | StrategyChartLike
+): string | null {
+  const family =
+    typeof familyOrChart === "string"
+      ? familyOrChart
+      : getSimplifiedVsThreeBetFamily(familyOrChart);
+
+  return family ? SIMPLIFIED_VS_3BET_FAMILY_LABELS[family] : null;
+}
+
+export function getSharedFamilySourceLabel(
+  chart: StrategyChartLike
+): string | null {
+  if (getStrategySourceStatus(chart) !== "simplified_population") {
+    return null;
+  }
+
+  const familyLabel = getSimplifiedVsThreeBetFamilyLabel(chart);
+  return familyLabel ? `Shared ${familyLabel} family` : null;
 }
 
 export function isSourceSupportedStrategyChart(chart: StrategyChartLike) {

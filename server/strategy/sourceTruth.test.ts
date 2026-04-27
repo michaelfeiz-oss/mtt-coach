@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   SOURCE_BACKED_MAIN_STACKS,
   SIMPLIFIED_POPULATION_3BET_STACKS,
+  getSharedFamilySourceLabel,
+  getStrategySourceHelperText,
   getStrategySourceLabel,
   getStrategySourceStatus,
   isSourceSupportedStrategyChart,
@@ -60,15 +62,23 @@ describe("source-of-truth chart coverage", () => {
 
   it("exposes the new simplified 3-bet stack set and labels it honestly", () => {
     expect(SIMPLIFIED_POPULATION_3BET_STACKS).toEqual([25, 40]);
+    const chart = {
+      stackDepth: 25,
+      spotGroup: "VS_3BET" as const,
+      heroPosition: "CO",
+      villainPosition: "BB",
+      spotKey: "CO_vs_BB_3bet",
+    };
+
     expect(
-      getStrategySourceLabel({
-        stackDepth: 25,
-        spotGroup: "VS_3BET",
-        heroPosition: "CO",
-        villainPosition: "BB",
-        spotKey: "CO_vs_BB_3bet",
-      })
-    ).toBe("Simplified population vs 3-bet");
+      getStrategySourceLabel(chart)
+    ).toBe("Simplified Population");
+    expect(getSharedFamilySourceLabel(chart)).toBe(
+      "Shared IP vs BB 3-Bet family"
+    );
+    expect(getStrategySourceHelperText(chart)).toBe(
+      "Practical simplified model - not exact PDF chart."
+    );
   });
 
   it("keeps blind-vs-blind spots visible as explicit proxy coverage", () => {

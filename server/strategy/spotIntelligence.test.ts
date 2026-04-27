@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getRelatedPriorityDrillPacksForSpot,
   getPriorityDrillPack,
   PRIORITY_DRILL_PACKS,
   resolvePriorityDrillPack,
@@ -61,8 +62,8 @@ describe("preflop study intelligence layer", () => {
       villainPosition: "BTN",
     });
 
-    expect(note?.coreIdea).toContain("realization");
-    expect(note?.commonPunt).toContain("offsuit");
+    expect(note?.coreIdea).toContain("closing the action");
+    expect(note?.commonPunt).toContain("offsuit junk");
     expect(note?.drillCue).toContain("BTN");
     expect(note?.stageAdjustment).toBeUndefined();
   });
@@ -81,10 +82,10 @@ describe("preflop study intelligence layer", () => {
       villainPosition: "BTN",
     });
 
-    expect(note25?.defaultLine).toContain("simplified population");
-    expect(note25?.defaultLine).toContain("ATo");
-    expect(note40?.defaultLine).toContain("QQ+ and AK");
-    expect(note40?.commonPunt).toContain("Stacking off too lightly");
+    expect(note25?.coreIdea).toContain("BB branch");
+    expect(note25?.defaultLine).toContain("playable middle");
+    expect(note40?.defaultLine).toContain("QQ+/AK");
+    expect(note40?.commonPunt).toContain("speculative suited hands");
   });
 
   it("resolves the source-backed blind-defense drill pack against real spot coverage", () => {
@@ -199,5 +200,45 @@ describe("preflop study intelligence layer", () => {
 
     expect(resolved?.supported).toBe(true);
     expect(resolved?.spotCount).toBe(2);
+  });
+
+  it("keeps EP drill packs out of non-EP late-position 3-bet spots", () => {
+    const spot = {
+      id: 1,
+      title: "CO vs BB 3-Bet @ 40bb",
+      stackDepth: 40,
+      spotGroup: "VS_3BET" as const,
+      heroPosition: "CO",
+      villainPosition: "BB",
+    };
+
+    const packs = getRelatedPriorityDrillPacksForSpot(spot, [
+      spot,
+      {
+        id: 2,
+        title: "UTG vs CO 3-Bet @ 15bb",
+        stackDepth: 15,
+        spotGroup: "VS_3BET",
+        heroPosition: "UTG",
+        villainPosition: "CO",
+      },
+    ]);
+
+    expect(packs.map(pack => pack.id)).not.toContain("sub-premiums-vs-ep-pressure");
+  });
+
+  it("keeps the EP pressure pack available when early-position pressure is actually involved", () => {
+    const spot = {
+      id: 1,
+      title: "UTG vs CO 3-Bet @ 15bb",
+      stackDepth: 15,
+      spotGroup: "VS_3BET" as const,
+      heroPosition: "UTG",
+      villainPosition: "CO",
+    };
+
+    const packs = getRelatedPriorityDrillPacksForSpot(spot, [spot]);
+
+    expect(packs.map(pack => pack.id)).toContain("sub-premiums-vs-ep-pressure");
   });
 });
