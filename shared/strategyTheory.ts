@@ -1,6 +1,10 @@
 import { getSpotNote } from "./spotNotes";
 import type { ChartLikeSpotContext } from "./spotIds";
-import type { StrategySourceStatus } from "./sourceTruth";
+import {
+  getStrategySourceLabel,
+  getStrategySourceStatus,
+  type StrategySourceStatus,
+} from "./sourceTruth";
 
 export interface StrategyTheoryContext extends ChartLikeSpotContext {}
 
@@ -31,8 +35,8 @@ export function buildStrategyTheoryResult(
 
   return {
     sections: buildStrategyTheorySections(context),
-    sourceStatus: note.sourceStatus,
-    sourceLabel: note.sourceLabel,
+    sourceStatus: getStrategySourceStatus(context),
+    sourceLabel: getStrategySourceLabel(context),
   };
 }
 

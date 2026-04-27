@@ -24,6 +24,7 @@ import {
 } from "@shared/leakFamilies";
 import { canonicalSpotContextFromChart } from "@shared/spotIds";
 import { getSpotNote } from "@shared/spotNotes";
+import { buildStrategyChartPresentation } from "@shared/strategyPresentation";
 import {
   displayPositionLabel,
   POSITIONS,
@@ -63,6 +64,7 @@ type SpotSummary = {
   spotGroup: SpotGroup;
   heroPosition: string;
   villainPosition?: string | null;
+  sourceLabel?: string | null;
 };
 
 const RECENT_CHART_LIMIT = 10;
@@ -147,7 +149,7 @@ function filterSummary(
     return `Drilling ${SPOT_GROUP_LABELS[spotGroup]} across supported stacks.`;
   }
   if (stackDepth) return `Drilling preflop spots at ${stackDepth}bb.`;
-  return "Drilling source-backed 15bb / 25bb / 40bb preflop spots.";
+  return "Drilling supported 15bb / 25bb / 40bb preflop spots.";
 }
 
 function scrollElementIntoComfortView(element: HTMLElement | null) {
@@ -350,14 +352,26 @@ export default function RangeTrainer() {
 
   const activeSpot = trainerSpot?.chart ?? selectedSpot;
   const activeSpotNote = activeSpot ? getSpotNote(activeSpot) : null;
+  const activeSpotPresentation = useMemo(
+    () => (activeSpot ? buildStrategyChartPresentation(activeSpot) : null),
+    [activeSpot]
+  );
+  const revealChartPresentation = useMemo(
+    () => (revealChart ? buildStrategyChartPresentation(revealChart) : null),
+    [revealChart]
+  );
   const trainingCue = activeSpotNote?.drillCue ?? null;
-  const modeLabel = formatModeLabel(
+  const fallbackModeLabel = formatModeLabel(
     mode,
     activeSpot,
     stackDepth,
     spotGroup,
     selectedPackId
   );
+  const modeLabel =
+    mode === "current_spot" && activeSpotPresentation
+      ? activeSpotPresentation.title
+      : fallbackModeLabel;
   const modeHelper = filterSummary(mode, stackDepth, spotGroup, selectedPackId);
   const revealNote = answerReveal
     ? buildHandClassRevealNote(
@@ -589,7 +603,10 @@ export default function RangeTrainer() {
               </h1>
             </div>
           </div>
-
+          <p className="mt-2 text-sm text-muted-foreground">
+            Keep the setup visible, drill one decision at a time, then confirm
+            the chart immediately below the answer.
+          </p>
         </header>
 
         <section className="app-surface p-3 sm:p-4">
@@ -602,7 +619,14 @@ export default function RangeTrainer() {
                 <h2 className="truncate text-lg font-black tracking-tight sm:text-[1.5rem]">
                   {modeLabel}
                 </h2>
-
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {modeHelper}
+                </p>
+                {activeSpotPresentation?.sourceHelper && (
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    {activeSpotPresentation.sourceHelper}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <Badge className="rounded-full bg-primary text-primary-foreground">
@@ -611,17 +635,28 @@ export default function RangeTrainer() {
                 <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
                     15bb / 25bb / 40bb
                 </Badge>
-                {resolvedPack?.supported && (
-                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
-                    Pack · {resolvedPack.spotCount} spots
-                  </Badge>
-                )}
                 {activeSpot && (
                   <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
                     {displayPositionLabel(activeSpot.heroPosition)}
                     {activeSpot.villainPosition
                       ? ` vs ${displayPositionLabel(activeSpot.villainPosition)}`
                       : ""}
+                  </Badge>
+                )}
+                {activeSpotPresentation?.sourceStatus !== "source_backed" &&
+                  activeSpotPresentation?.sourceBadge && (
+                    <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
+                      {activeSpotPresentation.sourceBadge}
+                    </Badge>
+                  )}
+                {activeSpotPresentation?.sharedFamilyLabel && (
+                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                    {activeSpotPresentation.sharedFamilyLabel}
+                  </Badge>
+                )}
+                {resolvedPack?.supported && (
+                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                    Pack - {resolvedPack.spotCount} spots
                   </Badge>
                 )}
               </div>
@@ -690,7 +725,7 @@ export default function RangeTrainer() {
                 className="space-y-2 rounded-[1.2rem] border border-border bg-card p-3 shadow-[0_10px_26px_rgba(15,23,42,0.12)] sm:p-3.5"
               >
                 <TableContext
-                  title={trainerSpot.chart.title}
+                  title={activeSpotPresentation?.title ?? trainerSpot.chart.title}
                   stackDepth={trainerSpot.chart.stackDepth}
                   heroPosition={trainerSpot.chart.heroPosition}
                   villainPosition={trainerSpot.chart.villainPosition}
@@ -704,8 +739,11 @@ export default function RangeTrainer() {
                   key={`${trainerSpot.chartId}-${trainerSpot.handCode}-${questionVersion}`}
                   chartId={trainerSpot.chartId}
                   handCode={trainerSpot.handCode}
-                  spotLabel={trainerSpot.chart.title}
-                  spotContext={SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]}
+                  spotLabel={activeSpotPresentation?.title ?? trainerSpot.chart.title}
+                  spotContext={
+                    activeSpotPresentation?.contextLine ??
+                    SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]
+                  }
                   stackDepth={trainerSpot.chart.stackDepth}
                   heroPosition={trainerSpot.chart.heroPosition}
                   villainPosition={trainerSpot.chart.villainPosition}
@@ -740,6 +778,7 @@ export default function RangeTrainer() {
                       leakHint={leakHint}
                       recommendedPack={recommendedPack}
                       onNext={handleNext}
+                      chartPresentation={revealChartPresentation}
                       className="border-border/80 bg-card/90 shadow-none"
                     />
                   </div>

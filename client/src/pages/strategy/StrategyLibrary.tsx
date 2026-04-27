@@ -20,25 +20,18 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
   buildPriorityPackSummary,
-  getDrillPackSourceBadgeClass,
-  getDrillPackSourceLabel,
   getRelatedPriorityDrillPacksForSpot,
 } from "@shared/drillPacks";
 import {
-  getStrategySourceStatus,
-  getSourceStatusBadgeClass,
-  getSourceStatusLabel,
-} from "@shared/sourceTruth";
-import {
   displayPositionLabel,
   POSITIONS,
-  SPOT_GROUP_LABELS,
   SPOT_GROUPS,
   STACK_DEPTHS,
   type Action,
   type Position,
   type SpotGroup,
 } from "@shared/strategy";
+import { buildStrategyChartPresentation } from "@shared/strategyPresentation";
 
 type SpotSummary = {
   id: number;
@@ -48,6 +41,7 @@ type SpotSummary = {
   spotKey: string;
   heroPosition: string;
   villainPosition?: string | null;
+  sourceLabel?: string | null;
 };
 
 const GROUP_ORDER = new Map(SPOT_GROUPS.map((group, index) => [group, index]));
@@ -192,6 +186,10 @@ export default function StrategyLibrary() {
   );
 
   const actionMap = chart ? buildActionMap(chart.actions) : {};
+  const chartPresentation = useMemo(
+    () => (chart ? buildStrategyChartPresentation(chart) : null),
+    [chart]
+  );
   const visibleActions = chart
     ? (Array.from(
         new Set(chart.actions.map(action => action.primaryAction))
@@ -374,15 +372,17 @@ export default function StrategyLibrary() {
                     chartViewerDensity.tight && "sm:text-[1.45rem]"
                   )}
                 >
-                  {chart?.title ?? "Choose a supported preflop spot"}
+                  {chartPresentation?.title ?? "Choose a supported preflop spot"}
                 </h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {chart
-                    ? `${SPOT_GROUP_LABELS[chart.spotGroup]} · ${displayPositionLabel(
-                        chart.heroPosition
-                      )}${chart.villainPosition ? ` vs ${displayPositionLabel(chart.villainPosition)}` : ""} · 9 players · BBA`
-                    : "Decision, stack, hero, and opener stay visible here so you can move around the chart library quickly."}
+                  {chartPresentation?.contextLine ??
+                    "Decision, stack, hero, and opener stay visible here so you can move around the chart library quickly."}
                 </p>
+                {chartPresentation?.sourceHelper && (
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    {chartPresentation.sourceHelper}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -414,29 +414,8 @@ export default function StrategyLibrary() {
                   <Badge className="h-6 rounded-full bg-primary px-2.5 text-[10.5px] font-semibold text-primary-foreground">
                     {chart.stackDepth}bb
                   </Badge>
-                  {(() => {
-                    const status = getStrategySourceStatus(chart);
-                    return (
-                      <span
-                        className={cn(
-                          "inline-flex h-6 items-center rounded-full px-2.5 text-[10.5px] font-semibold",
-                          getSourceStatusBadgeClass(status)
-                        )}
-                        title={
-                          status === "source_backed"
-                            ? `Backed by the ${chart.stackDepth}bb GTO chart PDF. Actions are exact.`
-                            : "No exact chart for this spot. Guidance is population-derived."
-                        }
-                      >
-                        {getSourceStatusLabel(status)}
-                      </span>
-                    );
-                  })()}
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
-                    {SPOT_GROUP_LABELS[chart.spotGroup].replace(
-                      " (Open Raise)",
-                      ""
-                    )}
+                    {chartPresentation?.decisionLabel ?? chart.spotGroup}
                   </Badge>
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     {displayPositionLabel(chart.heroPosition)}
@@ -447,6 +426,17 @@ export default function StrategyLibrary() {
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     BBA
                   </Badge>
+                  {chartPresentation?.sourceStatus !== "source_backed" &&
+                    chartPresentation?.sourceBadge && (
+                      <Badge className="h-6 rounded-full border-amber-200 bg-amber-50 px-2.5 text-[10.5px] font-semibold text-amber-900">
+                        {chartPresentation.sourceBadge}
+                      </Badge>
+                    )}
+                  {chartPresentation?.sharedFamilyLabel && (
+                    <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
+                      {chartPresentation.sharedFamilyLabel}
+                    </Badge>
+                  )}
                 </div>
                 <ActionLegend
                   actions={visibleActions}
@@ -513,6 +503,10 @@ export default function StrategyLibrary() {
                       <p className="text-[11px] font-semibold text-muted-foreground">
                         Related Drill Packs
                       </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Launch a focused drill pack when this spot sits inside a
+                        high-value leak zone.
+                      </p>
                     </div>
                     <div className="grid gap-2.5">
                       {relatedDrillPacks.map(pack => (
@@ -529,14 +523,6 @@ export default function StrategyLibrary() {
                                 {pack.purpose}
                               </p>
                               <div className="mt-2 flex flex-wrap gap-1.5">
-                                <span
-                                  className={cn(
-                                    "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold",
-                                    getDrillPackSourceBadgeClass(pack.sourceStatus)
-                                  )}
-                                >
-                                  {getDrillPackSourceLabel(pack.sourceStatus)}
-                                </span>
                                 <Badge
                                   variant="outline"
                                   className="rounded-full"

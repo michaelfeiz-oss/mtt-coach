@@ -48,4 +48,17 @@ describe("strategy theory notes", () => {
     expect(cue?.body).toContain("UTG");
     expect(cue?.body).toContain("UTG+1");
   });
+
+  it("surfaces the simplified 25bb facing-3bet upgrade in the structured note sections", () => {
+    const sections = buildStrategyTheorySections({
+      spotGroup: "VS_3BET",
+      stackDepth: 25,
+      heroPosition: "BTN",
+      villainPosition: "BB",
+    });
+
+    const defaultLine = sections.find(section => section.key === "defaultLine");
+    expect(defaultLine?.body).toContain("playable middle");
+    expect(defaultLine?.body).toContain("dominated offsuit broadways");
+  });
 });
