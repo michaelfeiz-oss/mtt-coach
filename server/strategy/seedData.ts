@@ -18,7 +18,7 @@ import {
   type SpotDefinition,
   type SpotGroup,
 } from "../../shared/strategy";
-import { isSourceSupportedStrategyChart } from "../../shared/sourceTruth";
+import { isSourceSupportedStrategyChart, getStrategySourceStatus } from "../../shared/sourceTruth";
 import { getSourceChart } from "./sourceChartData";
 
 export interface SeedHandAction {
@@ -59,6 +59,7 @@ interface ActionRule {
 }
 
 const SOURCE_LABEL = "MTT Coach structured baseline";
+const SIMPLIFIED_POPULATION_LABEL = "Simplified Population";
 const VALID_HANDS = new Set(ALL_HANDS);
 const VALID_ACTIONS = new Set<Action>(ACTIONS);
 const VALID_STACKS = new Set<number>(STACK_DEPTHS);
@@ -500,6 +501,149 @@ function isCallVsThreeBet(
   );
 }
 
+// ─── Simplified population VS_3BET helpers (25bb / 40bb) ──────────────────────
+
+type VsThreeBetFamily = "oop_vs_ip" | "ip_vs_sb" | "ip_vs_bb" | "unsupported";
+
+function getVsThreeBetFamily(
+  heroPosition: string,
+  villainPosition: string | undefined
+): VsThreeBetFamily {
+  if (!villainPosition || ["SB", "BB"].includes(heroPosition)) return "unsupported";
+  if (villainPosition === "SB") return "ip_vs_sb";
+  if (villainPosition === "BB") return "ip_vs_bb";
+  return "oop_vs_ip";
+}
+
+// 25bb simplified population matrices
+function is25JamVsThreeBet(hand: ParsedHand): boolean {
+  // Core jam spine: 77+, AQo+, AKs/AQs, A5s/A4s (blockers)
+  return (
+    isPairAtLeast(hand, "77") ||
+    ["AKs", "AKo", "AQs", "AQo", "A5s", "A4s"].includes(hand.code)
+  );
+}
+
+function is25CallVsThreeBet(hand: ParsedHand, family: VsThreeBetFamily): boolean {
+  if (family === "oop_vs_ip") {
+    // OOP: pairs 22-66, suited aces, suited broadways, T9s/98s/87s
+    return (
+      isPairBetween(hand, "22", "66") ||
+      isSuitedAce(hand, "2") ||
+      ["KQs", "KJs", "QJs", "JTs", "T9s", "98s", "87s"].includes(hand.code)
+    );
+  }
+  if (family === "ip_vs_sb") {
+    // IP vs SB: widest — add AJo/ATo/KQo
+    return (
+      isPairBetween(hand, "22", "66") ||
+      isSuitedAce(hand, "2") ||
+      ["KQs", "KJs", "QJs", "JTs", "T9s", "98s", "87s",
+       "AJo", "ATo", "KQo"].includes(hand.code)
+    );
+  }
+  // IP vs BB: trim weakest perimeter vs SB
+  return (
+    isPairBetween(hand, "22", "66") ||
+    isSuitedAce(hand, "2") ||
+    ["KQs", "KJs", "QJs", "JTs", "T9s", "98s",
+     "AJo", "ATo"].includes(hand.code)
+  );
+}
+
+// 40bb simplified population matrices
+function is40JamVsThreeBet(hand: ParsedHand): boolean {
+  // Default stack-off spine: QQ+, AK only
+  return (
+    isPairAtLeast(hand, "QQ") ||
+    ["AKs", "AKo"].includes(hand.code)
+  );
+}
+
+function is40CallVsThreeBet(hand: ParsedHand, family: VsThreeBetFamily): boolean {
+  // Conditional zone: JJ/TT/99/AQs/AQo — always call (not auto-jam vs population)
+  const conditionalZone = ["JJ", "TT", "99", "AQs", "AQo"];
+  const suitedBroadways = ["KQs", "KJs", "QJs", "JTs"];
+  const suitedConnectors = ["T9s", "98s", "87s"];
+
+  if (family === "oop_vs_ip") {
+    // OOP: tightest — pairs 55-88, suited aces A4+, suited broadways, connectors
+    return (
+      isPairBetween(hand, "55", "88") ||
+      conditionalZone.includes(hand.code) ||
+      isSuitedAce(hand, "4") ||
+      suitedBroadways.includes(hand.code) ||
+      suitedConnectors.includes(hand.code)
+    );
+  }
+  if (family === "ip_vs_sb") {
+    // IP vs SB: widest — pairs 22+, suited aces A2+, AJo/ATo/KQo
+    return (
+      isPairBetween(hand, "22", "88") ||
+      conditionalZone.includes(hand.code) ||
+      isSuitedAce(hand, "2") ||
+      suitedBroadways.includes(hand.code) ||
+      suitedConnectors.includes(hand.code) ||
+      ["AJo", "ATo", "KQo"].includes(hand.code)
+    );
+  }
+  // IP vs BB: slightly tighter than SB
+  return (
+    isPairBetween(hand, "22", "88") ||
+    conditionalZone.includes(hand.code) ||
+    isSuitedAce(hand, "2") ||
+    suitedBroadways.includes(hand.code) ||
+    suitedConnectors.includes(hand.code) ||
+    ["AJo", "ATo"].includes(hand.code)
+  );
+}
+
+function buildSimplifiedVsThreeBetActions(
+  definition: SpotDefinition,
+  stackDepth: number
+): SeedHandAction[] {
+  const family = getVsThreeBetFamily(definition.heroPosition, definition.villainPosition);
+  if (stackDepth === 25) {
+    return buildActions([
+      {
+        action: "JAM",
+        note: family === "oop_vs_ip"
+          ? "Jam strong equity: 77+, AK, AQ, and blocker aces (A5s/A4s)."
+          : "In position, jam the same spine but lean toward calling medium pairs instead.",
+        matches: hand => is25JamVsThreeBet(hand),
+      },
+      {
+        action: "CALL",
+        note: family === "oop_vs_ip"
+          ? "Call pairs 22-66, suited aces, suited broadways, and T9s/98s/87s."
+          : family === "ip_vs_sb"
+          ? "Position widens calls: add ATo, KQo, and suited connectors."
+          : "Call pairs, suited aces, suited broadways, and AJo/ATo in position.",
+        matches: hand => is25CallVsThreeBet(hand, family),
+      },
+    ]);
+  }
+  // 40bb
+  return buildActions([
+    {
+      action: "JAM",
+      note: "Default stack-off: QQ+, AK. JJ/TT/99/AQ are opponent-dependent — call versus nits.",
+      matches: hand => is40JamVsThreeBet(hand),
+    },
+    {
+      action: "CALL",
+      note: family === "oop_vs_ip"
+        ? "OOP: call JJ-99, AQ, suited broadways, suited aces, and strong connectors."
+        : family === "ip_vs_sb"
+        ? "Widest 40bb family: position lets you call pairs, suited aces, broadways, and connectors."
+        : "IP vs BB: similar to SB but trim weakest perimeter calls.",
+      matches: hand => is40CallVsThreeBet(hand, family),
+    },
+  ]);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 function buildVsThreeBetActions(
   definition: SpotDefinition,
   stackDepth: number
@@ -668,6 +812,27 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
         primaryAction: a.primaryAction,
         weightPercent: a.weightPercent,
       })),
+    };
+  }
+  // Simplified population VS_3BET nodes (25bb/40bb)
+  const sourceStatus = getStrategySourceStatus({
+    stackDepth,
+    spotGroup: definition.group,
+    heroPosition: definition.heroPosition,
+    villainPosition: definition.villainPosition,
+    spotKey: definition.key,
+  });
+  if (definition.group === "VS_3BET" && sourceStatus === "simplified") {
+    return {
+      title: `${definition.label} @ ${stackDepth}bb`,
+      stackDepth,
+      spotGroup: definition.group,
+      spotKey: definition.key,
+      heroPosition: definition.heroPosition,
+      villainPosition: definition.villainPosition,
+      sourceLabel: SIMPLIFIED_POPULATION_LABEL,
+      notes: chartNotes(definition, stackDepth),
+      actions: buildSimplifiedVsThreeBetActions(definition, stackDepth),
     };
   }
   // Fallback: heuristic generation for spots without source data

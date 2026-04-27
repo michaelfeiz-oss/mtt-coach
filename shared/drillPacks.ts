@@ -25,6 +25,8 @@ import type { CanonicalLeakFamilyId } from "./leakFamilies";
 export const PRIORITY_DRILL_PACK_IDS = [
   "sub-premiums-vs-ep-pressure",
   "15-20bb-small-pair-decisions",
+  "25bb-vs-3bet-decisions",
+  "40bb-vs-3bet-decisions",
   "30bb-broadways-vs-limper",
   "40bb-weak-ax-discipline",
   "bb-vs-sb-marginal-defense",
@@ -112,6 +114,46 @@ export const PRIORITY_DRILL_PACKS: PriorityDrillPackDefinition[] = [
             context.family
           )
       );
+    },
+  },
+  {
+    id: "25bb-vs-3bet-decisions",
+    title: "25bb vs 3-Bet Decisions",
+    purpose: "Jam vs call vs fold when facing a 3-bet at 25bb — three families, one framework.",
+    description:
+      "No exact PDF chart exists for 25bb vs 3-bets. This pack uses simplified population defaults: jam 77+/AK/AQ/A5s-A4s, call pairs 22-66/suited aces/suited broadways/T9s-87s, fold the rest. Adjust by family: IP vs SB is widest, OOP is tightest.",
+    focusTags: ["Simplified", "25bb", "vs 3-bet"],
+    focusHandCodes: ["77", "88", "99", "AQs", "AQo", "AJs", "A5s", "A4s", "KQs", "T9s"],
+    relatedLeakFamilyIds: [
+      "sub_premium_vs_pressure_mistakes",
+      "facing_3bet_overcalls",
+      "facing_3bet_overfolds",
+    ],
+    families: ["FACING_3BET"],
+    sourceStatus: "simplified" as PriorityPackSourceStatus,
+    match: spot => {
+      const context = canonicalSpotContextFromChart(spot);
+      return Boolean(context?.family === "FACING_3BET" && spot.stackDepth === 25);
+    },
+  },
+  {
+    id: "40bb-vs-3bet-decisions",
+    title: "40bb vs 3-Bet Decisions",
+    purpose: "Stack-off spine at 40bb: QQ+/AK jam, JJ/TT/99 call, small pairs fold or call by position.",
+    description:
+      "No exact PDF chart exists for 40bb vs 3-bets. This pack uses simplified population defaults: jam QQ+/AK, call JJ/TT/99/AQs/AQo plus pairs and suited hands by family. IP vs SB is widest; OOP is tightest. JJ/TT are calls vs most 3-bets at this depth — do not jam them.",
+    focusTags: ["Simplified", "40bb", "vs 3-bet"],
+    focusHandCodes: ["QQ", "JJ", "TT", "99", "AKs", "AKo", "AQs", "AQo", "KQs", "88"],
+    relatedLeakFamilyIds: [
+      "sub_premium_vs_pressure_mistakes",
+      "facing_3bet_overcalls",
+      "facing_3bet_overfolds",
+    ],
+    families: ["FACING_3BET"],
+    sourceStatus: "simplified" as PriorityPackSourceStatus,
+    match: spot => {
+      const context = canonicalSpotContextFromChart(spot);
+      return Boolean(context?.family === "FACING_3BET" && spot.stackDepth === 40);
     },
   },
   {

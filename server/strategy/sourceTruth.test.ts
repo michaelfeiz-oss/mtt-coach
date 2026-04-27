@@ -14,7 +14,8 @@ describe("source-of-truth chart coverage", () => {
     expect(SOURCE_BACKED_MAIN_STACKS).toEqual([15, 25, 40]);
   });
 
-  it("marks 15bb facing-3bet spots as supported and trims unsupported stacks", () => {
+  it("marks 15bb facing-3bet spots as source_backed, 25/40bb as simplified, and blind heroes as unsupported", () => {
+    // 15bb has exact all-in response charts in the PDF
     expect(
       getStrategySourceStatus({
         stackDepth: 15,
@@ -25,6 +26,17 @@ describe("source-of-truth chart coverage", () => {
       })
     ).toBe("source_backed");
 
+    // 25bb VS_3BET: simplified population (no exact PDF chart, but now supported)
+    expect(
+      getStrategySourceStatus({
+        stackDepth: 25,
+        spotGroup: "VS_3BET",
+        heroPosition: "CO",
+        villainPosition: "BB",
+        spotKey: "CO_vs_BB_3bet",
+      })
+    ).toBe("simplified");
+
     expect(
       isSourceSupportedStrategyChart({
         stackDepth: 25,
@@ -33,8 +45,30 @@ describe("source-of-truth chart coverage", () => {
         villainPosition: "BB",
         spotKey: "CO_vs_BB_3bet",
       })
-    ).toBe(false);
+    ).toBe(true);
 
+    // 40bb VS_3BET: simplified population (no exact PDF chart, but now supported)
+    expect(
+      getStrategySourceStatus({
+        stackDepth: 40,
+        spotGroup: "VS_3BET",
+        heroPosition: "HJ",
+        villainPosition: "SB",
+        spotKey: "HJ_vs_SB_3bet",
+      })
+    ).toBe("simplified");
+
+    expect(
+      isSourceSupportedStrategyChart({
+        stackDepth: 40,
+        spotGroup: "VS_3BET",
+        heroPosition: "HJ",
+        villainPosition: "SB",
+        spotKey: "HJ_vs_SB_3bet",
+      })
+    ).toBe(true);
+
+    // Blind heroes in VS_3BET remain unsupported at all stacks
     expect(
       isSourceSupportedStrategyChart({
         stackDepth: 15,

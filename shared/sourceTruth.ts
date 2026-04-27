@@ -81,17 +81,21 @@ export function getStrategySourceStatus(
       return "source_backed";
 
     case "VS_3BET":
-      // Only 15bb has exact all-in response charts (pages 6–7 of 15bb PDF).
-      // 25bb and 40bb do NOT have vs-3bet trees in their PDFs — treat as unsupported
-      // so they are excluded from seeding and the trainer pool.
-      // Blind heroes (SB/BB) are also excluded even at 15bb.
+      // Blind heroes (SB/BB) are never in the facing-3bet pages at any stack.
+      if (["SB", "BB"].includes(chart.heroPosition)) {
+        return "unsupported";
+      }
+      // 15bb has exact all-in response charts (pages 6–7 of 15bb PDF).
       if (
         chart.stackDepth === 15 &&
         EXACT_15BB_3BET_HEROES.has(chart.heroPosition as Position)
       ) {
         return "source_backed";
       }
-      // 25bb/40bb vs-3bet, or blind hero at 15bb: not seeded
+      // 25bb/40bb VS_3BET: not in PDFs — simplified population layer.
+      if (chart.stackDepth === 25 || chart.stackDepth === 40) {
+        return "simplified";
+      }
       return "unsupported";
 
     case "BVB":

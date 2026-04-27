@@ -179,17 +179,56 @@ function buildFacing3BetNote(context: CanonicalSpotContext): StudySpotNote {
   const hero = h(context);
   const villain = v(context);
   const is15bb = context.stackDepth === 15;
+  const is25bb = context.stackDepth === 25;
+  const isIP = context.villainPosition === "SB" || context.villainPosition === "BB";
+  const isVsSB = context.villainPosition === "SB";
   const status = sourceStatusForContext(context);
 
   let coreIdea: string;
   let defaultLine: string;
+  let exploitLever: string;
+  let commonPunt: string;
+  let drillCue: string;
 
   if (is15bb) {
     coreIdea = `${hero} facing a 3-bet at 15bb is a threshold test — the charts give exact all-in response ranges, so use them rather than feel.`;
     defaultLine = `Check the 15bb source chart for your exact position matchup. The decision is usually jam or fold — calling is rarely correct at this depth.`;
+    exploitLever = `Against a ${villain} 3-bet, consider their range width. Tight 3-bettors narrow your continue range; wide 3-bettors allow more jams with medium pairs.`;
+    commonPunt = "Calling a 3-bet at 15bb — the stack depth forces jam or fold. Calling off 15bb and seeing a flop is almost always a mistake.";
+    drillCue = `Drill the threshold hands — medium pairs (88–JJ) and AQo vs ${villain} 3-bets. These are the hands most players mishandle.`;
+  } else if (is25bb) {
+    if (isIP) {
+      coreIdea = isVsSB
+        ? `${hero} in position vs SB 3-bet at 25bb — the widest continue family. Position lets you call medium pairs and suited hands profitably.`
+        : `${hero} in position vs BB 3-bet at 25bb — similar to SB but trim the weakest perimeter calls.`;
+      defaultLine = `Jam: 77+, AK, AQ, A5s/A4s. Call: pairs 22–66, suited aces, suited broadways, T9s/98s/87s${isVsSB ? ", AJo/ATo/KQo" : ", AJo/ATo"}. Fold everything else.`;
+      exploitLever = `Against a wide ${villain} 3-bet, widen your call range with suited connectors. Against a tight 3-bettor, cut the small pairs and connectors.`;
+      commonPunt = "Jamming medium pairs (55–66) in position when calling is more profitable — position has value, don't burn it with a premature jam.";
+      drillCue = `Drill the call vs jam decision with 77–99 in position vs ${villain} 3-bets at 25bb.`;
+    } else {
+      coreIdea = `${hero} OOP vs ${villain} 3-bet at 25bb — tightest continue family. No position, no exact chart, so lean on the jam spine and fold the rest.`;
+      defaultLine = `Jam: 77+, AK, AQ, A5s/A4s. Call: pairs 22–66, suited aces, suited broadways, T9s/98s/87s. Fold dominated offsuit hands.`;
+      exploitLever = `Against a tight ${villain} 3-bettor, tighten your jam range. Against a wide 3-bettor, add 66 to the jam range and widen calls slightly.`;
+      commonPunt = "Calling OOP with medium pairs (77–99) at 25bb — you're often in a flip or dominated spot with no post-flop edge.";
+      drillCue = `Drill the OOP jam vs fold decision with 77–99 and AQo vs ${villain} 3-bets at 25bb.`;
+    }
   } else {
-    coreIdea = `${hero} facing a 3-bet at ${context.stackDepth}bb — no exact PDF chart exists for this node, so this is population-derived guidance.`;
-    defaultLine = `Default: JJ+ and AKs are clear continues. QQ/JJ vs early-position 3-bets lean fold at 25bb unless stack depth supports a jam. 99–TT vs late-position 3-bets are usually fold. ${stackNote(context.stackDepth)}`;
+    // 40bb
+    if (isIP) {
+      coreIdea = isVsSB
+        ? `${hero} in position vs SB 3-bet at 40bb — widest 40bb family. Stack depth allows a real calling range.`
+        : `${hero} in position vs BB 3-bet at 40bb — call JJ–99, AQ, suited broadways, and suited aces.`;
+      defaultLine = `Jam: QQ+, AK. Call: JJ/TT/99, AQs/AQo, pairs 22–88, suited aces, suited broadways, T9s/98s/87s${isVsSB ? ", AJo/ATo/KQo" : ", AJo/ATo"}. Fold the rest.`;
+      exploitLever = `Against a wide ${villain} 3-bet, widen your call range. Against a tight 3-bettor, cut the small pairs and connectors from your call range.`;
+      commonPunt = "Jamming JJ or TT at 40bb when calling is clearly better — at this depth, JJ/TT are calls vs most 3-bets, not jams.";
+      drillCue = `Drill the jam vs call decision with JJ/TT/99 in position vs ${villain} 3-bets at 40bb.`;
+    } else {
+      coreIdea = `${hero} OOP vs ${villain} 3-bet at 40bb — tightest 40bb family. Default is QQ+/AK jam, then a structured call range.`;
+      defaultLine = `Jam: QQ+, AK. Call: JJ/TT/99, AQs/AQo, pairs 55–88, suited aces A4+, suited broadways, T9s/98s/87s. Fold weak offsuit hands.`;
+      exploitLever = `Against a tight ${villain} 3-bettor, tighten your call range to JJ+ and AQ. Against a wide 3-bettor, add TT and suited connectors.`;
+      commonPunt = "Calling OOP with small pairs (22–44) at 40bb — they don't realize enough equity without position.";
+      drillCue = `Drill the OOP call vs fold decision with 55–88 and AQo vs ${villain} 3-bets at 40bb.`;
+    }
   }
 
   return {
@@ -199,9 +238,9 @@ function buildFacing3BetNote(context: CanonicalSpotContext): StudySpotNote {
     sourceLabel: getSourceStatusLabel(status),
     coreIdea,
     defaultLine,
-    exploitLever: `Against a ${villain} 3-bet, consider their range width. Tight 3-bettors narrow your continue range; wide 3-bettors allow more jams with medium pairs.`,
-    commonPunt: "Calling a 3-bet with 99–JJ out of position at 15–25bb — you're often dominated or flipping with no post-flop edge.",
-    drillCue: `Drill the threshold hands — medium pairs (88–JJ) and AQo vs ${villain} 3-bets. These are the hands most players mishandle.`,
+    exploitLever,
+    commonPunt,
+    drillCue,
   };
 }
 
