@@ -13,7 +13,6 @@ import { TrainerCard } from "@/components/strategy/TrainerCard";
 import { TrainerResultReveal } from "@/components/strategy/TrainerResultReveal";
 import { calcAccuracy } from "@/components/strategy/utils";
 import { trpc } from "@/lib/trpc";
-import { buildHandClassRevealNote } from "@shared/preflop";
 import {
   getPriorityDrillPack,
   resolvePriorityDrillPack,
@@ -54,7 +53,6 @@ interface AnswerRevealState {
   selectedAction: Action;
   correctAction: Action;
   isCorrect: boolean;
-  explanation?: string | null;
 }
 
 type SpotSummary = {
@@ -351,7 +349,6 @@ export default function RangeTrainer() {
   );
 
   const activeSpot = trainerSpot?.chart ?? selectedSpot;
-  const activeSpotNote = activeSpot ? getSpotNote(activeSpot) : null;
   const activeSpotPresentation = useMemo(
     () => (activeSpot ? buildStrategyChartPresentation(activeSpot) : null),
     [activeSpot]
@@ -360,7 +357,6 @@ export default function RangeTrainer() {
     () => (revealChart ? buildStrategyChartPresentation(revealChart) : null),
     [revealChart]
   );
-  const trainingCue = activeSpotNote?.drillCue ?? null;
   const fallbackModeLabel = formatModeLabel(
     mode,
     activeSpot,
@@ -373,13 +369,6 @@ export default function RangeTrainer() {
       ? activeSpotPresentation.title
       : fallbackModeLabel;
   const modeHelper = filterSummary(mode, stackDepth, spotGroup, selectedPackId);
-  const revealNote = answerReveal
-    ? buildHandClassRevealNote(
-        answerReveal.handCode,
-        answerReveal.correctAction,
-        answerReveal.explanation
-      )
-    : null;
   const currentLeakHintId =
     answerReveal && trainerSpot
       ? (() => {
@@ -535,7 +524,6 @@ export default function RangeTrainer() {
       selectedAction,
       correctAction: trainerSpot.correctAction,
       isCorrect,
-      explanation: trainerSpot.correctNote,
     });
 
     submitAttempt.mutate({
@@ -767,36 +755,19 @@ export default function RangeTrainer() {
                   <div ref={resultRevealRef} className="scroll-mt-4 sm:scroll-mt-6">
                     <TrainerResultReveal
                       chart={revealChart}
+                      contextChart={trainerSpot.chart}
                       isLoadingChart={revealChartLoading || revealChartFetching}
                       chartId={answerReveal.chartId}
                       handCode={answerReveal.handCode}
                       selectedAction={answerReveal.selectedAction}
                       correctAction={answerReveal.correctAction}
                       isCorrect={answerReveal.isCorrect}
-                      explanation={answerReveal.explanation}
                       spotNote={getSpotNote(trainerSpot.chart)}
-                      leakHint={leakHint}
                       recommendedPack={recommendedPack}
                       onNext={handleNext}
                       chartPresentation={revealChartPresentation}
                       className="border-border/80 bg-card/90 shadow-none"
                     />
-                  </div>
-                  <div className="rounded-[1rem] border border-border bg-background/78 p-3">
-                    <p className="text-[11px] font-semibold text-muted-foreground">
-                      Takeaway
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-secondary-foreground">
-                      {revealNote}
-                    </p>
-                    {trainingCue && (
-                      <p className="mt-2 text-[11px] leading-relaxed text-secondary-foreground">
-                        <span className="font-semibold text-foreground">
-                          Training cue:
-                        </span>{" "}
-                        {trainingCue}
-                      </p>
-                    )}
                   </div>
                 </>
               )}

@@ -72,7 +72,7 @@ function buildOpenRfiNote(context: CanonicalSpotContext): StudySpotNote {
       ? "Opening dominated offsuit hands from the front because they look too pretty to fold."
       : "Treating late position like a license to open anything instead of widening through better blockers and cleaner playability.",
     drillCue:
-      "Before you open the fringe, ask whether the hand wins by initiative, position, or blocker value. If it does none of them, let it go.",
+      "Open the fringe through suited pressure and clean connectivity, not through weak offsuit hands that only make bad top pairs.",
   };
 }
 
@@ -91,12 +91,12 @@ function buildDefendVsRfiNote(context: CanonicalSpotContext): StudySpotNote {
     spotId: getCanonicalSpotId(context),
     title: buildCanonicalSpotLabel(context),
     coreIdea: closingAction
-      ? `${hero} is closing the action versus a ${villain} open. This is the classic late-position blind-defense node: defend the hands that realize, not the hands that just look close.`
+      ? `${hero} is closing the action versus a ${villain} open. Defend the hands that keep equity cleanly; fold the junk that only looks close preflop.`
       : inPositionLateDefense
-        ? `${hero} is in position versus a ${villain} open. This is a late-position continue node where strong calls and selective pressure beat loose curiosity flats.`
+        ? `${hero} is in position versus a ${villain} open. Position lets more hands continue, but dominated offsuit broadways still fail first.`
         : facingLateOpen
-          ? `${hero} is defending against a late-position open from ${villain}. The opener is wider than EP/MP, but that does not make dominated offsuit hands magically profitable.`
-          : `${hero} is facing a ${villain} open from the stronger part of the formation. This node is about disciplined continues, not refusing to fold because the hand has paint on it.`,
+          ? `${hero} is defending against a late-position open from ${villain}. The opener is wider than EP or MP, but dominated offsuit hands still lose their value fast.`
+          : `${hero} is facing a ${villain} open from a stronger range. Continue the hands that keep equity and position; cut the dominated broadways first.`,
     defaultLine: closingAction
       ? `Defend the suited, connected, and stronger high-card hands that keep equity. Mix in the better offsuit broadways the chart allows, then fold the weakest junk without apology. ${stackTexture(
           context.stackDepth
@@ -123,8 +123,8 @@ function buildDefendVsRfiNote(context: CanonicalSpotContext): StudySpotNote {
         ? "Convincing yourself that position alone rescues dominated offsuit broadways."
         : "Calling dominated broadways or weak aces because they feel too strong to fold versus an early open.",
     drillCue: closingAction
-      ? `From ${hero} versus ${villain}, ask whether the hand keeps equity when the opener c-bets. If not, do not defend it just because the price looks tempting.`
-      : `From ${hero} versus ${villain}, classify the hand quickly: clear continue, selective pressure hand, or dominated fold.`,
+      ? `From ${hero} versus ${villain}, keep the continues that can survive a c-bet and fold the hands that only look cheap preflop.`
+      : `From ${hero} versus ${villain}, sort the hand into a clean continue, a pressure raise, or a dominated fold.`,
   };
 }
 
@@ -236,17 +236,17 @@ function buildFacing3BetNote(context: CanonicalSpotContext): StudySpotNote {
   }
 
   return {
-    spotId: getCanonicalSpotId(context),
-    title: buildCanonicalSpotLabel(context),
-    coreIdea: `${hero} is facing a 3-bet from ${villain} at 15bb. This is an exact threshold page from the chart pack, so treat it as a jam-or-fold test rather than a flatting contest.`,
-    defaultLine:
-      "At 15bb, most continues are direct jams and the fold line matters. Flatting is rarely the clean answer once stacks are this compressed.",
-    exploitLever:
-      "Against players who rarely 3-bet, do not invent marginal stack-offs. Against active players, protect the exact jam threshold instead of panic-folding the clear continues.",
-    commonPunt:
-      "Calling because the hand feels too strong to fold, even though the 15bb source page wants a binary jam-or-fold answer.",
-    drillCue:
-      "Read the 15bb threshold and decide: jam or fold. Do not blur it into a call.",
+        spotId: getCanonicalSpotId(context),
+        title: buildCanonicalSpotLabel(context),
+        coreIdea: `${hero} is facing a 3-bet from ${villain} at 15bb. The stack is compressed enough that this becomes a jam-or-fold threshold spot, not a flatting contest.`,
+        defaultLine:
+      "At 15bb, most continues are direct jams and the fold line matters. Flatting is rarely the clean answer once stacks get this short.",
+        exploitLever:
+      "Against players who rarely 3-bet, do not invent marginal stack-offs. Against active players, keep the clear jams instead of panic-folding the edge.",
+        commonPunt:
+      "Calling because the hand looks too strong to fold, even though the stack depth leaves little room to realize.",
+        drillCue:
+      "At 15bb, remove the flat call unless the line clearly keeps it.",
   };
 }
 

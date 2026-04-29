@@ -10,6 +10,16 @@ import {
   type StrategyTheoryContext,
 } from "@shared/strategyTheory";
 
+function limitToTwoSentences(text: string) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  const sentences = normalized.match(/[^.!?]+[.!?]?/g);
+  if (!sentences) return normalized;
+  return sentences
+    .slice(0, 2)
+    .map(sentence => sentence.trim())
+    .join(" ");
+}
+
 interface StrategyTheoryNotesProps extends StrategyTheoryContext {
   className?: string;
 }
@@ -52,7 +62,7 @@ export function StrategyTheoryNotes({
               {section.title}
             </h3>
             <p className="mt-1.5 text-sm leading-relaxed text-secondary-foreground">
-              {section.body}
+              {limitToTwoSentences(section.body)}
             </p>
           </article>
         ))}
@@ -77,7 +87,7 @@ export function StrategyTheoryNotes({
                         {section.title}
                       </h3>
                       <p className="mt-1.5 text-sm leading-relaxed text-secondary-foreground">
-                        {section.body}
+                        {limitToTwoSentences(section.body)}
                       </p>
                     </article>
                   ))}
@@ -101,7 +111,7 @@ export function StrategyTheoryNotes({
               {section.title}
             </h3>
             <p className="mt-1.5 text-sm leading-relaxed text-secondary-foreground">
-              {section.body}
+              {limitToTwoSentences(section.body)}
             </p>
           </article>
         ))}
