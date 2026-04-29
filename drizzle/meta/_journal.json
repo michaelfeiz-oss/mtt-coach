@@ -43,6 +43,27 @@
       "when": 1776728619000,
       "tag": "0005_icm_study_packs",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1777434339540,
+      "tag": "0006_wakeful_the_twelve",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1777434373281,
+      "tag": "0007_graceful_rage",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1777434404255,
+      "tag": "0008_bent_pixie",
+      "breakpoints": true
     }
   ]
 }

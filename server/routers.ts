@@ -198,7 +198,7 @@ export const appRouter = router({
         boardRunout: z.string().optional(),
         effectiveStackBb: z.number().optional(),
         spr: z.number().optional(),
-        spotType: z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BvB', 'ICM_SPOT', 'LIMPED_POT']).optional(),
+        spotType: z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BVB', 'ICM_SPOT', 'LIMPED_POT', 'RFI', 'DEFEND_VS_RFI', 'THREE_BET', 'FACING_3BET', 'LIMP_ISO', 'FOUR_BET_JAM', 'OTHER_PREFLOP']).optional(),
         heroDecisionPreflop: z.string().optional(),
         heroDecisionFlop: z.string().optional(),
         heroDecisionTurn: z.string().optional(),
@@ -210,27 +210,70 @@ export const appRouter = router({
         lesson: z.string().optional(),
         leakIds: z.array(z.number()).optional(),
         leakFamilyId: z.string().optional(),
+        // New structured fields
+        heroCard1: z.string().optional(),
+        heroCard2: z.string().optional(),
+        handClass: z.string().optional(),
+        exactSuitsKnown: z.boolean().optional(),
+        actualStackBB: z.number().optional(),
+        openerPosition: z.string().optional(),
+        villainPosition: z.string().optional(),
+        villainType: z.string().optional(),
+        rangeRead: z.string().optional(),
+        tournamentStage: z.string().optional(),
+        preflopDecision: z.string().optional(),
+        actionsJson: z.string().optional(),
+        boardJson: z.string().optional(),
+        confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+        reviewStatus: z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED']).optional(),
       }))
       .mutation(async ({ input }) => {
+        // Auto-derive tags from structured fields
+        const autoTags: string[] = input.tags ? [...input.tags] : [];
+        if (input.spotType === 'DEFEND_VS_RFI' || input.spotType === 'FACING_3BET') autoTags.push('BB_DEFENCE');
+        if (input.spotType === 'RFI') autoTags.push('RFI');
+        if (input.spotType === 'THREE_BET') autoTags.push('3BET');
+        if (input.spotType === 'FACING_3BET') autoTags.push('FACING_3BET');
+        if (input.actualStackBB && input.actualStackBB <= 15) autoTags.push('SHORT_STACK');
+        if (input.mistakeStreet === 'PREFLOP') autoTags.push('PREFLOP_MISTAKE');
+        const uniqueTags = Array.from(new Set(autoTags));
+
         const hand = await db.createHand({
           userId: HARDCODED_USER_ID,
           tournamentId: input.tournamentId,
           heroPosition: input.position || input.heroPosition,
-          heroHand: input.heroHand,
+          heroHand: input.handClass || input.heroHand,
           boardRunout: input.boardRunout,
-          effectiveStackBb: input.effectiveStackBb,
+          effectiveStackBb: input.actualStackBB || input.effectiveStackBb,
           spr: input.spr,
-          spotType: input.spotType,
-          heroDecisionPreflop: input.heroDecisionPreflop,
+          spotType: input.spotType as any,
+          heroDecisionPreflop: input.preflopDecision || input.heroDecisionPreflop,
           heroDecisionFlop: input.heroDecisionFlop,
           heroDecisionTurn: input.heroDecisionTurn,
           heroDecisionRiver: input.heroDecisionRiver,
           reviewed: input.reviewed,
           mistakeStreet: input.mistakeStreet,
           mistakeSeverity: input.mistakeSeverity,
-          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
+          tagsJson: uniqueTags.length > 0 ? JSON.stringify(uniqueTags) : undefined,
           lesson: input.lesson,
           streetDataJson: input.streetDataJson,
+          // New fields
+          heroCard1: input.heroCard1,
+          heroCard2: input.heroCard2,
+          handClass: input.handClass,
+          exactSuitsKnown: input.exactSuitsKnown ?? false,
+          actualStackBB: input.actualStackBB,
+          openerPosition: input.openerPosition,
+          villainPosition: input.villainPosition,
+          villainType: input.villainType,
+          rangeRead: input.rangeRead,
+          tournamentStage: input.tournamentStage,
+          preflopDecision: input.preflopDecision,
+          actionsJson: input.actionsJson,
+          boardJson: input.boardJson,
+          leakFamilyId: input.leakFamilyId,
+          confidence: input.confidence,
+          reviewStatus: input.reviewStatus ?? 'NEEDS_REVIEW',
         });
 
         // Link leaks if provided

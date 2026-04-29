@@ -14,7 +14,7 @@ import {
  */
 export function mapUiSpotTypeToDb(
   uiSpotType: SpotType
-): "SINGLE_RAISED_POT" | "3BET_POT" | "BvB" | "ICM_SPOT" | "LIMPED_POT" {
+): "SINGLE_RAISED_POT" | "3BET_POT" | "BVB" | "ICM_SPOT" | "LIMPED_POT" {
   switch (uiSpotType) {
     case "SINGLE_RAISED_POT_IP":
     case "SINGLE_RAISED_POT_OOP":
@@ -24,7 +24,7 @@ export function mapUiSpotTypeToDb(
     case "FOUR_BET_POT":
       return "3BET_POT";
     case "BLINDS_VS_BLIND":
-      return "BvB";
+      return "BVB";
     case "ICM_SPOT":
       return "ICM_SPOT";
     case "LIMPED_POT":

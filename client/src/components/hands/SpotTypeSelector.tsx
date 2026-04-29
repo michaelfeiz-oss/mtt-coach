@@ -36,7 +36,7 @@ const SPOT_TYPES: Array<{ id: SpotType; label: string; description: string }> = 
   },
   {
     id: "BLINDS_VS_BLIND",
-    label: "BvB",
+    label: "BVB",
     description: "Small blind and big blind preflop spots",
   },
   {

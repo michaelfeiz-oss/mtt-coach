@@ -122,16 +122,47 @@ export const hands = mysqlTable("hands", {
   boardRunout: varchar("boardRunout", { length: 50 }),
   effectiveStackBb: float("effectiveStackBb"),
   spr: float("spr"),
-  
+
+  // Exact card fields (new)
+  heroCard1: varchar("heroCard1", { length: 4 }),       // e.g. "Ah"
+  heroCard2: varchar("heroCard2", { length: 4 }),       // e.g. "Kh"
+  handClass: varchar("handClass", { length: 10 }),     // e.g. "AKs" (derived or entered)
+  exactSuitsKnown: boolean("exactSuitsKnown").default(false).notNull(),
+  actualStackBB: float("actualStackBB"),               // free-form stack, e.g. 37.5
+
+  // Position and context (new)
+  openerPosition: varchar("openerPosition", { length: 10 }),
+  villainPosition: varchar("villainPosition", { length: 10 }),
+  villainType: varchar("villainType", { length: 50 }),
+  rangeRead: varchar("rangeRead", { length: 100 }),
+  tournamentStage: varchar("tournamentStage", { length: 20 }),
+  preflopDecision: varchar("preflopDecision", { length: 30 }),
+
+  // Structured action line and board (new)
+  actionsJson: text("actionsJson"),   // JSON: HandAction[]
+  boardJson: text("boardJson"),       // JSON: BoardRunout
+
+  // Review fields (new)
+  leakFamilyId: varchar("leakFamilyId", { length: 100 }),  // canonical leak family id
+  confidence: mysqlEnum("confidence", ["LOW", "MEDIUM", "HIGH"]),
+  reviewStatus: mysqlEnum("reviewStatus", ["DRAFT", "NEEDS_REVIEW", "REVIEWED"]).default("NEEDS_REVIEW").notNull(),
+
   // Structured JSON as text for full hand history
   streetDataJson: text("streetDataJson"),
   
   spotType: mysqlEnum("spotType", [
     "SINGLE_RAISED_POT",
     "3BET_POT",
-    "BvB",
+    "BVB",
     "ICM_SPOT",
-    "LIMPED_POT"
+    "LIMPED_POT",
+    "RFI",
+    "DEFEND_VS_RFI",
+    "THREE_BET",
+    "FACING_3BET",
+    "LIMP_ISO",
+    "FOUR_BET_JAM",
+    "OTHER_PREFLOP"
   ]),
   
   // Decision tracking

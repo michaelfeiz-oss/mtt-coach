@@ -594,7 +594,7 @@ function inferSpotFromHand(hand: Hand): SpotInference | null {
 
   const villainPosition = extractVillainPosition(hand);
 
-  if (hand.spotType === "BvB") {
+  if (hand.spotType === "BVB") {
     if (heroPosition === "SB") {
       return {
         spotKey: "SB_vs_BB_limp",
