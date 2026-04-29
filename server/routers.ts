@@ -320,15 +320,28 @@ export const appRouter = router({
         mistakeSeverity: z.number().optional(),
         tags: z.array(z.string()).optional(),
         lesson: z.string().optional(),
+        // Review metadata fields
+        leakFamilyId: z.string().optional(),
+        confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+        reviewStatus: z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED']).optional(),
+        villainType: z.string().optional(),
+        rangeRead: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        return db.updateHand(input.id, {
-          reviewed: input.reviewed,
-          mistakeStreet: input.mistakeStreet,
-          mistakeSeverity: input.mistakeSeverity,
-          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
-          lesson: input.lesson,
-        });
+        const updates: Record<string, unknown> = {};
+        if (input.reviewed !== undefined) updates.reviewed = input.reviewed;
+        if (input.mistakeStreet !== undefined) updates.mistakeStreet = input.mistakeStreet;
+        if (input.mistakeSeverity !== undefined) updates.mistakeSeverity = input.mistakeSeverity;
+        if (input.tags !== undefined) updates.tagsJson = JSON.stringify(input.tags);
+        if (input.lesson !== undefined) updates.lesson = input.lesson;
+        if (input.leakFamilyId !== undefined) updates.leakFamilyId = input.leakFamilyId || null;
+        if (input.confidence !== undefined) updates.confidence = input.confidence;
+        if (input.reviewStatus !== undefined) updates.reviewStatus = input.reviewStatus;
+        if (input.villainType !== undefined) updates.villainType = input.villainType;
+        if (input.rangeRead !== undefined) updates.rangeRead = input.rangeRead;
+        // Sync reviewed flag with reviewStatus
+        if (input.reviewStatus === 'REVIEWED') updates.reviewed = true;
+        return db.updateHand(input.id, updates as any);
       }),
     getById: publicProcedure
       .input(z.object({ id: z.number() }))

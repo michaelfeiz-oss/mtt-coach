@@ -163,6 +163,7 @@ export default function HandDetail() {
     updateHand.mutate({
       id: handId,
       lesson: editLesson.trim() || undefined,
+      leakFamilyId: editLeakFamilyId && editLeakFamilyId !== "none" ? editLeakFamilyId : "",
     });
   };
 
