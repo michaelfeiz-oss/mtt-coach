@@ -6,11 +6,11 @@ import {
   type Action,
   type RangeChartWithActions,
 } from "../../../../shared/strategy";
-import { buildHandClassRevealNote } from "../../../../shared/preflop";
 import type { ResolvedPriorityDrillPack } from "../../../../shared/drillPacks";
-import type { LeakFamilyDefinition } from "../../../../shared/leakFamilies";
 import type { StudySpotNote } from "../../../../shared/spotNotes";
 import type { StrategyChartPresentation } from "@shared/strategyPresentation";
+import { buildTrainerSpotInsight, type TrainerSpotInsight as TrainerSpotInsightModel } from "../../../../shared/trainerInsight";
+import type { ChartLikeSpotContext } from "../../../../shared/spotIds";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,20 +18,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ActionLegend } from "./ActionLegend";
 import { RangeMatrix } from "./RangeMatrix";
+import { TrainerSpotInsight } from "./TrainerSpotInsight";
 import { buildActionMap } from "./utils";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface TrainerResultRevealProps {
   chart?: RangeChartWithActions;
+  contextChart: ChartLikeSpotContext;
   isLoadingChart?: boolean;
   chartId: number;
   handCode: string;
   selectedAction: Action;
   correctAction: Action;
   isCorrect: boolean;
-  explanation?: string | null;
   spotNote?: StudySpotNote | null;
-  leakHint?: LeakFamilyDefinition | null;
   recommendedPack?: ResolvedPriorityDrillPack | null;
   chartPresentation?: StrategyChartPresentation | null;
   onNext: () => void;
@@ -40,15 +39,14 @@ interface TrainerResultRevealProps {
 
 export function TrainerResultReveal({
   chart,
+  contextChart,
   isLoadingChart = false,
   chartId,
   handCode,
   selectedAction,
   correctAction,
   isCorrect,
-  explanation,
   spotNote,
-  leakHint,
   recommendedPack,
   chartPresentation,
   onNext,
@@ -67,37 +65,30 @@ export function TrainerResultReveal({
         : undefined,
     [chart]
   );
-  const chartActionNote = chart?.actions.find(
-    action => action.handCode === handCode
-  )?.note;
-  const primaryNoteSections = spotNote
-    ? [
-        ["Core Idea", spotNote.coreIdea],
-        ["Default", spotNote.defaultLine],
-      ]
-    : [];
-  const secondaryNoteSections = spotNote
-    ? ([
-        ["Exploit Lever", spotNote.exploitLever],
-        ["Common Punt", spotNote.commonPunt],
-        ["Drill Cue", spotNote.drillCue],
-        spotNote.stageAdjustment
-          ? ["Stage Adjustment", spotNote.stageAdjustment]
-          : null,
-      ] as Array<[string, string] | null>).filter(
-        (section): section is [string, string] => Boolean(section)
-      )
-    : [];
-  const revealNote = buildHandClassRevealNote(
-    handCode,
-    correctAction,
-    explanation ?? chartActionNote
+  const insight = React.useMemo<TrainerSpotInsightModel | null>(
+    () =>
+      buildTrainerSpotInsight({
+        chart: contextChart,
+        handCode,
+        selectedAction,
+        correctAction,
+        isCorrect,
+        spotNote,
+      }),
+    [
+      contextChart,
+      correctAction,
+      handCode,
+      isCorrect,
+      selectedAction,
+      spotNote,
+    ]
   );
 
   return (
     <Card
       className={cn(
-        "overflow-hidden rounded-[1.2rem] border border-border bg-card text-foreground shadow-[0_10px_28px_rgba(15,23,42,0.14)]",
+        "rounded-[1.2rem] border border-border bg-card text-foreground shadow-[0_10px_28px_rgba(15,23,42,0.14)]",
         className
       )}
     >
@@ -137,13 +128,15 @@ export function TrainerResultReveal({
                 Correct: {ACTION_LABELS[correctAction]}
               </Badge>
             </div>
-            {revealNote && (
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {revealNote}
-              </p>
-            )}
           </div>
         </div>
+
+        {insight && (
+          <TrainerSpotInsight
+            insight={insight}
+            recommendedPack={recommendedPack?.supported ? recommendedPack : null}
+          />
+        )}
 
         <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-border bg-accent/70 p-2.5 sm:p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -217,112 +210,25 @@ export function TrainerResultReveal({
           )}
         </div>
 
-        {(spotNote || leakHint || recommendedPack) && (
-          <div className="space-y-2 rounded-[1rem] border border-border bg-background/78 p-3">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {leakHint && (
-                <Badge variant="outline" className="rounded-full">
-                  Likely leak: {leakHint.label}
-                </Badge>
-              )}
-              {recommendedPack && (
-                <Badge variant="outline" className="rounded-full">
-                  Suggested pack: {recommendedPack.title}
-                </Badge>
-              )}
-            </div>
-
-            {spotNote && (
-              <>
-                <div className="grid gap-2 md:hidden">
-                  {primaryNoteSections.map(([title, body]) => (
-                    <div
-                      key={title}
-                      className="rounded-xl border border-border bg-card px-3 py-2.5"
-                    >
-                      <p className="text-[11px] font-semibold text-muted-foreground">
-                        {title}
-                      </p>
-                      <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
-                        {body}
-                      </p>
-                    </div>
-                  ))}
-                  {secondaryNoteSections.length > 0 && (
-                    <Accordion type="single" collapsible className="rounded-xl border border-border bg-card">
-                      <AccordionItem value="trainer-more-coaching" className="border-none">
-                        <AccordionTrigger className="px-3 py-2.5 text-sm font-semibold text-foreground hover:no-underline">
-                          More coaching
-                        </AccordionTrigger>
-                        <AccordionContent className="px-3 pb-3">
-                          <div className="grid gap-2">
-                            {secondaryNoteSections.map(([title, body]) => (
-                              <div
-                                key={title}
-                                className="rounded-xl border border-border bg-background px-3 py-2.5"
-                              >
-                                <p className="text-[11px] font-semibold text-muted-foreground">
-                                  {title}
-                                </p>
-                                <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
-                                  {body}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  )}
-                </div>
-                <div className="hidden gap-2 md:grid md:grid-cols-2">
-                  {[...primaryNoteSections, ...secondaryNoteSections].map(([title, body]) => (
-                    <div
-                      key={title}
-                      className="rounded-xl border border-border bg-card px-3 py-2.5"
-                    >
-                      <p className="text-[11px] font-semibold text-muted-foreground">
-                        {title}
-                      </p>
-                      <p className="mt-1 text-sm leading-relaxed text-secondary-foreground">
-                        {body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {recommendedPack && (
-              <Link href={`/strategy/trainer?packId=${recommendedPack.id}`}>
-                <Button
-                  variant="outline"
-                  className="h-10 rounded-xl text-sm font-semibold"
-                >
-                  Drill Recommended Pack
-                </Button>
-              </Link>
-            )}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-          <Button
-            className="h-11 rounded-xl text-sm font-semibold"
-            onClick={onNext}
-          >
-            Next Hand
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <Link href={`/strategy/library?chartId=${chartId}`}>
+        <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 -mx-3 border-t border-border/80 bg-card/95 px-3 py-3 backdrop-blur sm:-mx-4 sm:px-4 md:static md:mx-0 md:border-t-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-0">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
             <Button
-              variant="outline"
-              className="h-11 w-full gap-2 rounded-xl text-sm font-semibold sm:w-auto"
+              className="h-11 rounded-xl text-sm font-semibold"
+              onClick={onNext}
             >
-              View Full Chart
-              <ExternalLink className="h-4 w-4" />
+              Next Hand
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-          </Link>
+            <Link href={`/strategy/library?chartId=${chartId}`}>
+              <Button
+                variant="outline"
+                className="h-11 w-full gap-2 rounded-xl text-sm font-semibold sm:w-auto"
+              >
+                View Full Chart
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>

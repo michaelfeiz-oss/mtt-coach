@@ -49,6 +49,22 @@ describe("strategy theory notes", () => {
     expect(cue?.body).toContain("UTG+1");
   });
 
+  it("rewrites late-position defend notes without generic opener-strength filler", () => {
+    const sections = buildStrategyTheorySections({
+      spotGroup: "VS_MP_RFI",
+      stackDepth: 40,
+      heroPosition: "BTN",
+      villainPosition: "MP",
+    });
+
+    const coreIdea = sections.find(section => section.key === "coreIdea");
+    const defaultLine = sections.find(section => section.key === "defaultLine");
+
+    expect(coreIdea?.body).not.toContain("respect opener strength");
+    expect(coreIdea?.body).not.toContain("realization potential");
+    expect(defaultLine?.body).not.toContain("source chart");
+  });
+
   it("surfaces the simplified 25bb facing-3bet upgrade in the structured note sections", () => {
     const sections = buildStrategyTheorySections({
       spotGroup: "VS_3BET",
