@@ -414,3 +414,20 @@
 - [x] pnpm test (all pass)
 - [x] pnpm build (clean)
 - [x] Save checkpoint + push to GitHub
+
+## Push/Fold Removal (ICMIZER handoff)
+
+- [ ] Replace /strategy/push-fold route with ICMIZER reference page
+- [ ] Remove push-fold import and route from App.tsx
+- [ ] Remove push/fold card from StudyCockpit.tsx, add ICMIZER note
+- [ ] Remove push_fold case from Dashboard.tsx ctaLabelForSuggestion
+- [ ] Remove push_fold from shared/coachingLoop.ts TODAY_TRAINING_TYPES
+- [ ] Reroute push_fold coaching loop suggestions to ICMIZER external review
+- [ ] Remove push/fold routing from server/coachingLoop.ts (isPushFold block)
+- [ ] Replace push/fold leak family drill recommendation with ICMIZER note
+- [ ] Remove push/fold from preflopTaxonomy.ts DECISION_FAMILIES list
+- [ ] Replace push/fold studyRecommendations.ts text with ICMIZER references
+- [ ] Replace push/fold programTemplates.ts text with ICMIZER references
+- [ ] Add ICMIZER_REVIEW to hand tags constant list
+- [ ] Show ICMIZER prompt on HandDetail when spotType is ICM_SPOT or FOUR_BET_JAM
+- [ ] Write tests: push/fold not in nav, not in training, ICMIZER prompt shows

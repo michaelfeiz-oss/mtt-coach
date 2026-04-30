@@ -41,8 +41,8 @@ function ctaLabelForSuggestion(suggestion: TodayTrainingSuggestion) {
       return "Open Review Queue";
     case "drill_pack":
       return "Start Pack";
-    case "push_fold":
-      return "Open Push/Fold";
+    case "icmizer_review":
+      return "Open ICMIZER";
     case "study_chart":
       return "View Chart";
     case "exact_chart":

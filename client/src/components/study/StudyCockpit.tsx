@@ -5,6 +5,7 @@ import {
   Brain,
   ChevronRight,
   ClipboardList,
+  ExternalLink,
   FileText,
   History,
   Plus,
@@ -599,33 +600,29 @@ export function StudyCockpit() {
               </CardContent>
             </Card>
 
-            <Card className="app-surface">
+            <Card className="app-surface border-dashed">
               <CardContent className="space-y-3 p-4 sm:p-5">
                 <div>
                   <p className="text-[11px] font-semibold text-muted-foreground">
-                    Push / Fold Mode
+                    Push / Fold &amp; ICM
                   </p>
                   <h3 className="mt-1 text-lg font-semibold text-foreground">
-                    Short-stack reference and drill
+                    Use ICMIZER
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Dedicated up to 10bb mode for open shoves and BB call-offs, sourced from your short-stack notes.
+                    Short-stack shoves, call-offs, Nash ranges, and ICM bubble spots are solver-grade decisions. Use ICMIZER for exact results — not simplified internal charts.
                   </p>
                 </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {[5, 6, 7, 8, 9, 10].map(stack => (
-                    <Badge key={stack} variant="outline" className="rounded-full">
-                      {stack}bb
-                    </Badge>
-                  ))}
-                </div>
-
-                <Link href="/strategy/push-fold">
-                  <Button className="h-10 w-full rounded-xl text-sm font-semibold">
-                    Open Push/Fold Mode
+                <a
+                  href="https://www.icmpoker.com/icmizer/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" className="h-10 w-full rounded-xl text-sm font-semibold gap-2">
+                    Open ICMIZER
+                    <ExternalLink className="h-4 w-4" />
                   </Button>
-                </Link>
+                </a>
               </CardContent>
             </Card>
           </div>

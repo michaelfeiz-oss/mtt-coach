@@ -332,7 +332,7 @@ export function buildPushFoldSpotContext(
   stackDepth: number
 ): CanonicalSpotContext {
   return {
-    family: "PUSH_FOLD",
+    family: "FOUR_BET_JAM",  // PUSH_FOLD removed from taxonomy; short-stack shoves map to FOUR_BET_JAM
     stackDepth,
     heroPosition: reference.heroPosition,
     villainPosition: reference.villainPosition,

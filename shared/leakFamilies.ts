@@ -82,7 +82,7 @@ export const LEAK_FAMILIES: LeakFamilyDefinition[] = [
     description: "Missing or forcing jams with 66-88 when stack depth is doing most of the work.",
     tags: ["15-20bb", "Pairs"],
     relatedPackIds: ["15-20bb-small-pair-decisions"],
-    relatedFamilies: ["OPEN_RFI", "DEFEND_VS_RFI", "FACING_3BET", "PUSH_FOLD"],
+    relatedFamilies: ["OPEN_RFI", "DEFEND_VS_RFI", "FACING_3BET"],
     commonSymptoms: ["Passing profitable re-jams", "Flatting pairs that should jam or fold"],
     drillRecommendation: "Use the 15-20bb Small Pair Decisions pack.",
     severity: "high",
@@ -186,9 +186,9 @@ export const LEAK_FAMILIES: LeakFamilyDefinition[] = [
     description: "Missing profitable short-stack shoves or calling too wide versus them.",
     tags: ["Push/Fold", "<=10bb"],
     relatedPackIds: [],
-    relatedFamilies: ["PUSH_FOLD"],
+    relatedFamilies: [],
     commonSymptoms: ["Passing profitable jams", "Calling off too loose from the blind"],
-    drillRecommendation: "Open Push/Fold Mode and drill the documented short-stack threshold directly.",
+    drillRecommendation: "Review this exact spot in ICMIZER for the correct Nash push/call-off range.",
     severity: "high",
     frequency: "urgent",
     stageRelevance: "Highest leverage in late-stage tournaments and fast-structure spots.",
@@ -240,7 +240,7 @@ export const LEAK_FAMILIES: LeakFamilyDefinition[] = [
     relatedPackIds: [],
     relatedFamilies: ["FOUR_BET_JAM", "FACING_3BET"],
     commonSymptoms: ["Stacking off too light", "Passing profitable blocker jams"],
-    drillRecommendation: "Use Facing 3-Bet Threshold Pack and Push/Fold Mode for the shortest stacks.",
+    drillRecommendation: "Use Facing 3-Bet Threshold Pack. For shortest stacks (<=10bb), use ICMIZER.",
     severity: "high",
     frequency: "watch",
     stageRelevance: "Shows up most under pressure, ICM, and late-position leveling wars.",
@@ -285,7 +285,8 @@ export function suggestLeakFamilyFromTrainerMiss(input: {
 }): CanonicalLeakFamilyId | null {
   const { context, handCode, selectedAction, correctAction } = input;
 
-  if (context.family === "PUSH_FOLD" || context.stackDepth <= 10) {
+  // Push/fold spots (<=10bb) are routed to ICMIZER external review, not internal drill packs
+  if (context.stackDepth <= 10) {
     return "push_fold_discipline_gaps";
   }
 
@@ -368,7 +369,8 @@ export function suggestLeakFamilyFromHandLog(input: {
 }): CanonicalLeakFamilyId | null {
   const { context, handCode } = input;
 
-  if (context.family === "PUSH_FOLD" || context.stackDepth <= 10) {
+  // Push/fold spots (<=10bb) are routed to ICMIZER external review, not internal drill packs
+  if (context.stackDepth <= 10) {
     return "push_fold_discipline_gaps";
   }
 

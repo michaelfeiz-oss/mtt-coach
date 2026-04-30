@@ -412,8 +412,9 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [mistakeStreet, setMistakeStreet] = useState<Street | "">("");
   const [severity, setSeverity] = useState(0);
   const [leakFamilyId, setLeakFamilyId] = useState("");
-  const [confidence, setConfidence] = useState<"LOW" | "MEDIUM" | "HIGH" | "">("");
+  const [confidence, setConfidence] = useState<"LOW" | "MEDIUM" | "HIGH" | "">("")
   const [lesson, setLesson] = useState("");
+  const [icmizerReview, setIcmizerReview] = useState(false);
 
   // Card picker mode
   const [useCardPicker, setUseCardPicker] = useState(false);
@@ -518,6 +519,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
       boardJson: buildBoardJson(),
       mistakeStreet: isMistake !== "no" && mistakeStreet ? (mistakeStreet as any) : undefined,
       mistakeSeverity: isMistake !== "no" ? severity : 0,
+      tags: icmizerReview ? ["ICMIZER_REVIEW"] : undefined,
       leakFamilyId: leakFamilyId && leakFamilyId !== "none" ? leakFamilyId : undefined,
       confidence: confidence || undefined,
       lesson: lesson.trim() || undefined,
@@ -839,6 +841,20 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
             </div>
 
+            {/* ICMIZER Review tag */}
+            <div className="flex items-center gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2">
+              <input
+                id="icmizer-review-checkbox"
+                type="checkbox"
+                checked={icmizerReview}
+                onChange={e => setIcmizerReview(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 accent-amber-500"
+              />
+              <label htmlFor="icmizer-review-checkbox" className="cursor-pointer text-xs font-medium text-amber-800">
+                Flag for ICMIZER review
+              </label>
+              <span className="ml-auto text-xs text-amber-600">Short-stack / shove / call-off?</span>
+            </div>
             {/* Lesson */}
             <div className="space-y-1.5">
               <Label className="text-sm">Lesson</Label>

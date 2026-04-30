@@ -51,7 +51,7 @@ export const TODAY_TRAINING_TYPES = [
   "drill_pack",
   "exact_chart",
   "review_hands",
-  "push_fold",
+  "icmizer_review",  // replaces push_fold — short-stack spots route to ICMIZER
   "study_chart",
 ] as const;
 export type TodayTrainingType = (typeof TODAY_TRAINING_TYPES)[number];

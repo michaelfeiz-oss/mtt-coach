@@ -371,10 +371,7 @@ export function aggregateWeakSpots(input: {
         createdAt: hand.createdAt,
         suggestedDrillPackId: family?.relatedPackIds?.[0] ?? null,
         suggestedChartId: hand.suggestedChartId,
-        suggestedAction:
-          leakFamilyId === "push_fold_discipline_gaps"
-            ? "open_push_fold"
-            : "review_hands",
+        suggestedAction: "review_hands",  // push_fold_discipline_gaps now routes to ICMIZER, not internal push-fold mode
       });
 
       leakAccumulator.handLogSeverityBoost += hand.mistakeSeverity;
@@ -511,33 +508,37 @@ export function buildTodayTrainingSuggestions(input: {
       topSpot.leakFamilyId === "push_fold_discipline_gaps" ||
       (topSpot.stackBb ?? 99) <= 10;
 
-    const route = isPushFold
-      ? "/strategy/push-fold"
-      : pack
+    // Push/fold spots are flagged for ICMIZER external review, not internal trainer
+    if (isPushFold) {
+      suggestions.push({
+        id: `top-${topSpot.id}`,
+        title: "Short-stack spot — use ICMIZER",
+        reason: "This spot is ≤10bb. Review the exact push/call-off range in ICMIZER for the correct Nash threshold.",
+        type: "icmizer_review" as const,
+        targetRoute: "/icmizer-reference",
+        estimatedReps: 0,
+        priority: 4 + topSpot.severityScore,
+      });
+      usedTargets.add("/icmizer-reference");
+    } else {
+      const route = pack
         ? `/strategy/trainer?packId=${pack.id}`
         : topSpot.suggestedChartId !== null
           ? `/strategy/trainer?chartId=${topSpot.suggestedChartId}`
           : null;
 
-    if (route) {
-      suggestions.push({
-        id: `top-${topSpot.id}`,
-        title: isPushFold
-          ? "Push/Fold cleanup"
-          : pack
-            ? pack.title
-            : `Drill ${topSpot.label}`,
-        reason: buildWeakSpotReason(topSpot),
-        type: isPushFold
-          ? "push_fold"
-          : pack
-            ? "drill_pack"
-            : "exact_chart",
-        targetRoute: route,
-        estimatedReps: pack ? 12 : 10,
-        priority: 4 + topSpot.severityScore,
-      });
-      usedTargets.add(route);
+      if (route) {
+        suggestions.push({
+          id: `top-${topSpot.id}`,
+          title: pack ? pack.title : `Drill ${topSpot.label}`,
+          reason: buildWeakSpotReason(topSpot),
+          type: pack ? "drill_pack" : "exact_chart",
+          targetRoute: route,
+          estimatedReps: pack ? 12 : 10,
+          priority: 4 + topSpot.severityScore,
+        });
+        usedTargets.add(route);
+      }
     }
   }
 

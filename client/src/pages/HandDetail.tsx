@@ -242,6 +242,29 @@ export default function HandDetail() {
       </header>
 
       <main className="container max-w-5xl space-y-4 py-6">
+        {/* ICMIZER review prompt — shown for shove/call-off spots or explicit tag */}
+        {(hand.spotType === "FOUR_BET_JAM" ||
+          hand.spotType === "ICM_SPOT" ||
+          safeParseTags(hand.tagsJson).includes("ICMIZER_REVIEW")) && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+            <span className="mt-0.5 text-lg">📊</span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-amber-900">Review this exact spot in ICMIZER</p>
+              <p className="mt-0.5 text-xs text-amber-700">
+                Short-stack shoves and call-offs require Nash / ICM / FGS calculations.
+                Enter the exact stack depth, position, and hand into ICMIZER for the correct threshold.
+              </p>
+              <a
+                href="https://www.icmizer.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900"
+              >
+                Open ICMIZER ↗
+              </a>
+            </div>
+          </div>
+        )}
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Hand Details</CardTitle>

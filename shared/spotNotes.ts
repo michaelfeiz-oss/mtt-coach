@@ -449,8 +449,7 @@ function buildSpotNote(context: CanonicalSpotContext): StudySpotNote {
       return buildLimpIsoNote(context);
     case "FOUR_BET_JAM":
       return buildFourBetJamNote(context);
-    case "PUSH_FOLD":
-      return buildPushFoldNote(context);
+    // PUSH_FOLD removed — short-stack spots now map to FOUR_BET_JAM
   }
 }
 

@@ -136,9 +136,7 @@ function buildWhy(
 
     case "FOUR_BET_JAM":
       return `${hero} versus ${villain} at ${stack} treats ${handCode} as a threshold stack-off hand, not just a hand that feels too pretty to fold.`;
-
-    case "PUSH_FOLD":
-      return `${hero} versus ${villain} at ${stack} is a threshold node, so ${handCode} is compared directly to the shove or call-off line instead of postflop playability.`;
+    // PUSH_FOLD removed — short-stack spots now map to FOUR_BET_JAM
   }
 }
 
@@ -200,9 +198,7 @@ function buildRule(
 
     case "FOUR_BET_JAM":
       return "If the hand cannot explain its stack-off logic, it does not belong in the jam bucket.";
-
-    case "PUSH_FOLD":
-      return "Short stacks are threshold spots: compare the exact hand class to the line and move on.";
+    // PUSH_FOLD removed — short-stack spots now map to FOUR_BET_JAM
   }
 }
 
