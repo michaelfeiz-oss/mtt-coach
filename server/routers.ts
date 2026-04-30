@@ -3,7 +3,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import * as db from "./db";
+import * as db from './db';
+import type { HandFilterParams } from './db';
 import { generateWeekPlan, getTodayPlan } from "./studyPlan";
 import { getCompletedPlanSlots } from "./studyPlanDb";
 import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveTopic, type LeakData } from "./studyRecommendations";
@@ -352,6 +353,38 @@ export const appRouter = router({
       .input(z.object({ limit: z.number().default(50) }))
       .query(async ({ input }) => {
         return db.getHandsByUser(HARDCODED_USER_ID, input.limit);
+      }),
+    filter: publicProcedure
+      .input(z.object({
+        reviewStatus: z.array(z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED'])).optional(),
+        spotType: z.array(z.string()).optional(),
+        mistakeSeverity: z.array(z.number()).optional(),
+        mistakeStreet: z.array(z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER'])).optional(),
+        leakFamilyId: z.string().optional(),
+        heroPosition: z.string().optional(),
+        dateFrom: z.date().optional(),
+        dateTo: z.date().optional(),
+        search: z.string().optional(),
+        sortBy: z.enum(['newest', 'oldest', 'severity_desc', 'review_status', 'updated', 'stack']).optional(),
+        limit: z.number().default(100),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ input }) => {
+        const params: HandFilterParams = {
+          reviewStatus: input.reviewStatus,
+          spotType: input.spotType,
+          mistakeSeverity: input.mistakeSeverity,
+          mistakeStreet: input.mistakeStreet,
+          leakFamilyId: input.leakFamilyId,
+          heroPosition: input.heroPosition,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+          search: input.search,
+          sortBy: input.sortBy,
+          limit: input.limit,
+          offset: input.offset,
+        };
+        return db.getHandsByFilter(HARDCODED_USER_ID, params);
       }),
     getLeaks: publicProcedure
       .input(z.object({ handId: z.number() }))

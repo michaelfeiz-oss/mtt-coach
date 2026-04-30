@@ -226,6 +226,11 @@ export default function HandDetail() {
   const mistakeStreetLabel = hand.mistakeStreet ?? null;
   const severityLabel = hand.mistakeSeverity ? SEVERITY_LABELS[hand.mistakeSeverity] : null;
 
+  // Determine whether this is a V2 structured hand
+  const hasStructuredActions = actions.length > 0;
+  const hasStructuredBoard = board !== null;
+  const isV2Hand = hasStructuredActions || hasStructuredBoard;
+
   return (
     <div className="app-shell min-h-screen text-foreground">
       <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
@@ -290,68 +295,146 @@ export default function HandDetail() {
           </CardContent>
         </Card>
 
-        {/* ── Hand Timeline ── */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">Hand Timeline</CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <div className="space-y-0">
-              {/* Preflop */}
-              <div className="relative pl-6">
-                <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-orange-400 border-2 border-white" />
-                {hasPostflop && <div className="absolute left-1 top-4 bottom-0 w-px bg-gray-200" />}
-                <div className="space-y-1 pb-4">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Preflop</div>
-                  {preflopActions.length > 0 ? (
-                    preflopActions.map((a, i) => (
-                      <div key={i} className="text-sm text-gray-700">{formatActionLine(a)}</div>
-                    ))
-                  ) : preflopSummary ? (
-                    <div className="text-sm text-gray-700">{preflopSummary}</div>
-                  ) : (
-                    <div className="text-sm text-gray-400 italic">No preflop actions recorded</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Flop */}
-              <TimelineSection
-                label="Flop"
-                board={board?.flopText}
-                actions={flopActions}
-                isLast={!board?.turnCard && turnActions.length === 0 && !board?.riverCard && riverActions.length === 0}
-              />
-
-              {/* Turn */}
-              <TimelineSection
-                label="Turn"
-                board={board?.turnCard}
-                actions={turnActions}
-                isLast={!board?.riverCard && riverActions.length === 0}
-              />
-
-              {/* River */}
-              <TimelineSection
-                label="River"
-                board={board?.riverCard}
-                actions={riverActions}
-                isLast
-              />
-
-              {/* Fallback: old boardRunout */}
-              {!board && hand.boardRunout && (
+        {/* ── Hand Timeline (V2) or Legacy Fallback ── */}
+        {isV2Hand ? (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-700">Hand Timeline</CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5">
+              <div className="space-y-0">
+                {/* Preflop — always show if V2 */}
                 <div className="relative pl-6">
-                  <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-gray-300 border-2 border-white" />
+                  <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-orange-400 border-2 border-white" />
+                  {hasPostflop && <div className="absolute left-1 top-4 bottom-0 w-px bg-gray-200" />}
                   <div className="space-y-1 pb-4">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Board</div>
-                    <div className="text-sm font-mono text-gray-700">{hand.boardRunout}</div>
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Preflop</div>
+                    {preflopActions.length > 0 ? (
+                      preflopActions.map((a, i) => (
+                        <div key={i} className="text-sm text-gray-700">{formatActionLine(a)}</div>
+                      ))
+                    ) : preflopSummary ? (
+                      <div className="text-sm text-gray-700">{preflopSummary}</div>
+                    ) : (
+                      <div className="text-sm text-gray-400 italic">No preflop actions recorded</div>
+                    )}
                   </div>
                 </div>
+
+                {/* Flop — only if data exists */}
+                <TimelineSection
+                  label="Flop"
+                  board={board?.flopText}
+                  actions={flopActions}
+                  isLast={!board?.turnCard && turnActions.length === 0 && !board?.riverCard && riverActions.length === 0}
+                />
+
+                {/* Turn — only if data exists */}
+                <TimelineSection
+                  label="Turn"
+                  board={board?.turnCard}
+                  actions={turnActions}
+                  isLast={!board?.riverCard && riverActions.length === 0}
+                />
+
+                {/* River — only if data exists */}
+                <TimelineSection
+                  label="River"
+                  board={board?.riverCard}
+                  actions={riverActions}
+                  isLast
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          /* ── Pre-V2 Legacy Fallback ── */
+          <Card className="border-dashed border-gray-300">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                No structured action data logged for this hand.
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-5 space-y-3">
+              <p className="text-xs text-gray-400">
+                This hand was logged before structured street-by-street tracking was available.
+              </p>
+
+              {/* Legacy metadata */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {(hand.heroHand || (hand as any).handClass) && (
+                  <div>
+                    <span className="text-xs text-gray-500 block">Hero Hand</span>
+                    <span className="font-mono font-bold">{hand.heroHand ?? (hand as any).handClass}</span>
+                  </div>
+                )}
+                {hand.heroPosition && (
+                  <div>
+                    <span className="text-xs text-gray-500 block">Position</span>
+                    <span className="font-medium">{hand.heroPosition}</span>
+                  </div>
+                )}
+                {stackBB && (
+                  <div>
+                    <span className="text-xs text-gray-500 block">Stack</span>
+                    <span className="font-medium">{stackBB}bb</span>
+                  </div>
+                )}
+                {hand.spotType && (
+                  <div>
+                    <span className="text-xs text-gray-500 block">Spot Type</span>
+                    <span className="font-medium capitalize">{spotTypeLabel.toLowerCase()}</span>
+                  </div>
+                )}
+                {reviewStatusInfo && (
+                  <div>
+                    <span className="text-xs text-gray-500 block">Review Status</span>
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${reviewStatusInfo.color}`}>
+                      {reviewStatusInfo.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Legacy lesson */}
+              {hand.lesson && (
+                <div className="rounded-lg bg-orange-50 border border-orange-200 p-3">
+                  <div className="text-xs font-semibold text-orange-700 mb-1">Lesson</div>
+                  <div className="text-sm text-gray-800">{hand.lesson}</div>
+                </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
+
+              {/* Legacy board runout */}
+              {hand.boardRunout && (
+                <div>
+                  <span className="text-xs text-gray-500 block mb-1">Board</span>
+                  <span className="font-mono text-sm text-gray-700">{hand.boardRunout}</span>
+                </div>
+              )}
+
+              {/* Legacy preflop decision */}
+              {hand.heroDecisionPreflop && (
+                <div>
+                  <span className="text-xs text-gray-500 block mb-1">Preflop Decision</span>
+                  <span className="text-sm text-gray-700">{hand.heroDecisionPreflop}</span>
+                </div>
+              )}
+
+              {/* CTAs */}
+              <div className="flex gap-2 pt-2 border-t">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setLocation(`/log?editId=${hand.id}`)}
+                  className="gap-1.5 text-xs"
+                >
+                  Edit hand
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Review Card ── */}
         <Card>

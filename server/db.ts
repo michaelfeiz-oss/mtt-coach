@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, asc, and, or, like, gte, lte, inArray, isNull, isNotNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, weeks, studySessions, tournaments, hands, leaks, handLeaks, InsertWeek, InsertStudySession, InsertTournament, InsertHand, InsertLeak } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -271,6 +271,86 @@ export async function getHandsByUser(userId: number, limit: number = 50) {
   if (!db) throw new Error("Database not available");
   
   return db.select().from(hands).where(eq(hands.userId, userId)).orderBy(desc(hands.createdAt)).limit(limit);
+}
+
+export interface HandFilterParams {
+  reviewStatus?: ('DRAFT' | 'NEEDS_REVIEW' | 'REVIEWED')[];
+  spotType?: string[];
+  mistakeSeverity?: number[];
+  mistakeStreet?: ('PREFLOP' | 'FLOP' | 'TURN' | 'RIVER')[];
+  leakFamilyId?: string;
+  heroPosition?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  search?: string;
+  sortBy?: 'newest' | 'oldest' | 'severity_desc' | 'review_status' | 'updated' | 'stack';
+  limit?: number;
+  offset?: number;
+}
+
+export async function getHandsByFilter(userId: number, params: HandFilterParams = {}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const conditions = [eq(hands.userId, userId)];
+
+  if (params.reviewStatus && params.reviewStatus.length > 0) {
+    conditions.push(inArray(hands.reviewStatus, params.reviewStatus));
+  }
+  if (params.spotType && params.spotType.length > 0) {
+    conditions.push(inArray(hands.spotType, params.spotType as any[]));
+  }
+  if (params.mistakeSeverity && params.mistakeSeverity.length > 0) {
+    conditions.push(inArray(hands.mistakeSeverity, params.mistakeSeverity));
+  }
+  if (params.mistakeStreet && params.mistakeStreet.length > 0) {
+    conditions.push(inArray(hands.mistakeStreet, params.mistakeStreet));
+  }
+  if (params.leakFamilyId) {
+    conditions.push(eq(hands.leakFamilyId, params.leakFamilyId));
+  }
+  if (params.heroPosition) {
+    conditions.push(eq(hands.heroPosition, params.heroPosition));
+  }
+  if (params.dateFrom) {
+    conditions.push(gte(hands.createdAt, params.dateFrom));
+  }
+  if (params.dateTo) {
+    conditions.push(lte(hands.createdAt, params.dateTo));
+  }
+  if (params.search) {
+    const term = `%${params.search}%`;
+    conditions.push(
+      or(
+        like(hands.heroHand, term),
+        like(hands.handClass, term),
+        like(hands.lesson, term),
+        like(hands.heroPosition, term),
+        like(hands.villainPosition, term),
+        like(hands.openerPosition, term)
+      )!
+    );
+  }
+
+  const where = conditions.length === 1 ? conditions[0] : and(...conditions);
+
+  let orderBy;
+  switch (params.sortBy) {
+    case 'oldest':        orderBy = asc(hands.createdAt); break;
+    case 'severity_desc': orderBy = desc(hands.mistakeSeverity); break;
+    case 'review_status': orderBy = asc(hands.reviewStatus); break;
+    case 'updated':       orderBy = desc(hands.createdAt); break;
+    case 'stack':         orderBy = desc(hands.effectiveStackBb); break;
+    default:              orderBy = desc(hands.createdAt); break;
+  }
+
+  return db
+    .select()
+    .from(hands)
+    .where(where)
+    .orderBy(orderBy)
+    .limit(params.limit ?? 100)
+    .offset(params.offset ?? 0);
 }
 
 export async function getHandsByTournament(tournamentId: number) {
