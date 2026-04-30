@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "ac319e48-95dd-46d5-bf58-41eb4a53901f",
-  "prevId": "53c81afd-6ea2-41f1-9aaf-e3c0ac7cc930",
+  "id": "2a988a86-c6ca-4ddd-8a80-d18b086398ed",
+  "prevId": "ac319e48-95dd-46d5-bf58-41eb4a53901f",
   "tables": {
     "handLeaks": {
       "name": "handLeaks",
@@ -145,120 +145,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "heroCard1": {
-          "name": "heroCard1",
-          "type": "varchar(4)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "heroCard2": {
-          "name": "heroCard2",
-          "type": "varchar(4)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "handClass": {
-          "name": "handClass",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "exactSuitsKnown": {
-          "name": "exactSuitsKnown",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "actualStackBB": {
-          "name": "actualStackBB",
-          "type": "float",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "openerPosition": {
-          "name": "openerPosition",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "villainPosition": {
-          "name": "villainPosition",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "villainType": {
-          "name": "villainType",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rangeRead": {
-          "name": "rangeRead",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "tournamentStage": {
-          "name": "tournamentStage",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "preflopDecision": {
-          "name": "preflopDecision",
-          "type": "varchar(30)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "actionsJson": {
-          "name": "actionsJson",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "boardJson": {
-          "name": "boardJson",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "leakFamilyId": {
-          "name": "leakFamilyId",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "confidence": {
-          "name": "confidence",
-          "type": "enum('LOW','MEDIUM','HIGH')",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "reviewStatus": {
-          "name": "reviewStatus",
-          "type": "enum('DRAFT','NEEDS_REVIEW','REVIEWED')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'NEEDS_REVIEW'"
-        },
         "streetDataJson": {
           "name": "streetDataJson",
           "type": "text",
@@ -268,7 +154,7 @@
         },
         "spotType": {
           "name": "spotType",
-          "type": "enum('SINGLE_RAISED_POT','3BET_POT','BVB','ICM_SPOT','LIMPED_POT','RFI','DEFEND_VS_RFI','THREE_BET','FACING_3BET','LIMP_ISO','FOUR_BET_JAM','OTHER_PREFLOP')",
+          "type": "enum('SINGLE_RAISED_POT','3BET_POT','BvB','ICM_SPOT','LIMPED_POT')",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1735,6 +1621,48 @@
           "notNull": true,
           "autoincrement": false
         },
+        "canonicalSpotId": {
+          "name": "canonicalSpotId",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "spotFamily": {
+          "name": "spotFamily",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceStatus": {
+          "name": "sourceStatus",
+          "type": "enum('exact_source','simplified_population','derived')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stackBb": {
+          "name": "stackBb",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "heroPosition": {
+          "name": "heroPosition",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "villainPosition": {
+          "name": "villainPosition",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "handCode": {
           "name": "handCode",
           "type": "varchar(4)",
@@ -1763,6 +1691,41 @@
           "notNull": true,
           "autoincrement": false
         },
+        "confidence": {
+          "name": "confidence",
+          "type": "enum('knew_it','unsure','guessed')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "drillPackId": {
+          "name": "drillPackId",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "leakFamilyId": {
+          "name": "leakFamilyId",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "responseTimeMs": {
+          "name": "responseTimeMs",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
@@ -1785,6 +1748,15 @@
           "name": "trainer_chart_created_idx",
           "columns": [
             "chartId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "trainer_spot_created_idx": {
+          "name": "trainer_spot_created_idx",
+          "columns": [
+            "userId",
+            "canonicalSpotId",
             "createdAt"
           ],
           "isUnique": false

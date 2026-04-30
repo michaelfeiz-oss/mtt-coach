@@ -6,6 +6,10 @@ import {
   type Action,
   type RangeChartWithActions,
 } from "../../../../shared/strategy";
+import {
+  TRAINER_ATTEMPT_CONFIDENCES,
+  type TrainerAttemptConfidence,
+} from "../../../../shared/coachingLoop";
 import type { ResolvedPriorityDrillPack } from "../../../../shared/drillPacks";
 import type { StudySpotNote } from "../../../../shared/spotNotes";
 import type { StrategyChartPresentation } from "@shared/strategyPresentation";
@@ -33,6 +37,9 @@ interface TrainerResultRevealProps {
   spotNote?: StudySpotNote | null;
   recommendedPack?: ResolvedPriorityDrillPack | null;
   chartPresentation?: StrategyChartPresentation | null;
+  confidence?: TrainerAttemptConfidence | null;
+  onConfidenceSelect?: (confidence: TrainerAttemptConfidence) => void;
+  isSavingConfidence?: boolean;
   onNext: () => void;
   className?: string;
 }
@@ -49,6 +56,9 @@ export function TrainerResultReveal({
   spotNote,
   recommendedPack,
   chartPresentation,
+  confidence = null,
+  onConfidenceSelect,
+  isSavingConfidence = false,
   onNext,
   className = "",
 }: TrainerResultRevealProps) {
@@ -137,6 +147,40 @@ export function TrainerResultReveal({
             recommendedPack={recommendedPack?.supported ? recommendedPack : null}
           />
         )}
+
+        <div className="rounded-[1rem] border border-border bg-background/78 p-3">
+          <p className="text-[11px] font-semibold text-muted-foreground">
+            How sure were you?
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {TRAINER_ATTEMPT_CONFIDENCES.map(option => {
+              const isActive = confidence === option;
+              const label =
+                option === "knew_it"
+                  ? "Knew it"
+                  : option === "unsure"
+                    ? "Unsure"
+                    : "Guessed";
+
+              return (
+                <Button
+                  key={option}
+                  type="button"
+                  variant={isActive ? "default" : "outline"}
+                  className={cn(
+                    "h-9 rounded-full px-3 text-xs font-semibold",
+                    !isActive &&
+                      "border-border bg-card text-secondary-foreground hover:bg-accent/80"
+                  )}
+                  disabled={!onConfidenceSelect || isSavingConfidence}
+                  onClick={() => onConfidenceSelect?.(option)}
+                >
+                  {label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-border bg-accent/70 p-2.5 sm:p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

@@ -122,31 +122,7 @@ export const hands = mysqlTable("hands", {
   boardRunout: varchar("boardRunout", { length: 50 }),
   effectiveStackBb: float("effectiveStackBb"),
   spr: float("spr"),
-
-  // Exact card fields (new)
-  heroCard1: varchar("heroCard1", { length: 4 }),       // e.g. "Ah"
-  heroCard2: varchar("heroCard2", { length: 4 }),       // e.g. "Kh"
-  handClass: varchar("handClass", { length: 10 }),     // e.g. "AKs" (derived or entered)
-  exactSuitsKnown: boolean("exactSuitsKnown").default(false).notNull(),
-  actualStackBB: float("actualStackBB"),               // free-form stack, e.g. 37.5
-
-  // Position and context (new)
-  openerPosition: varchar("openerPosition", { length: 10 }),
-  villainPosition: varchar("villainPosition", { length: 10 }),
-  villainType: varchar("villainType", { length: 50 }),
-  rangeRead: varchar("rangeRead", { length: 100 }),
-  tournamentStage: varchar("tournamentStage", { length: 20 }),
-  preflopDecision: varchar("preflopDecision", { length: 30 }),
-
-  // Structured action line and board (new)
-  actionsJson: text("actionsJson"),   // JSON: HandAction[]
-  boardJson: text("boardJson"),       // JSON: BoardRunout
-
-  // Review fields (new)
-  leakFamilyId: varchar("leakFamilyId", { length: 100 }),  // canonical leak family id
-  confidence: mysqlEnum("confidence", ["LOW", "MEDIUM", "HIGH"]),
-  reviewStatus: mysqlEnum("reviewStatus", ["DRAFT", "NEEDS_REVIEW", "REVIEWED"]).default("NEEDS_REVIEW").notNull(),
-
+  
   // Structured JSON as text for full hand history
   streetDataJson: text("streetDataJson"),
   
@@ -171,6 +147,24 @@ export const hands = mysqlTable("hands", {
   heroDecisionTurn: varchar("heroDecisionTurn", { length: 50 }),
   heroDecisionRiver: varchar("heroDecisionRiver", { length: 50 }),
   
+  // V2 structured hand fields
+  heroCard1: varchar("heroCard1", { length: 4 }),
+  heroCard2: varchar("heroCard2", { length: 4 }),
+  handClass: varchar("handClass", { length: 10 }),
+  exactSuitsKnown: boolean("exactSuitsKnown").default(false).notNull(),
+  actualStackBB: float("actualStackBB"),
+  openerPosition: varchar("openerPosition", { length: 10 }),
+  villainPosition: varchar("villainPosition", { length: 10 }),
+  villainType: varchar("villainType", { length: 50 }),
+  rangeRead: varchar("rangeRead", { length: 100 }),
+  tournamentStage: varchar("tournamentStage", { length: 20 }),
+  preflopDecision: varchar("preflopDecision", { length: 30 }),
+  actionsJson: text("actionsJson"),
+  boardJson: text("boardJson"),
+  leakFamilyId: varchar("leakFamilyId", { length: 100 }),
+  confidence: mysqlEnum("confidence", ["LOW", "MEDIUM", "HIGH"]),
+  reviewStatus: mysqlEnum("reviewStatus", ["DRAFT", "NEEDS_REVIEW", "REVIEWED"]).default("NEEDS_REVIEW").notNull(),
+
   // Review and evaluation
   reviewed: boolean("reviewed").default(false).notNull(),
   evalSource: mysqlEnum("evalSource", ["SOLVER", "COACH", "SELF"]),
@@ -359,14 +353,30 @@ export const trainerAttempts = mysqlTable("trainerAttempts", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   chartId: int("chartId").notNull().references(() => rangeCharts.id, { onDelete: "cascade" }),
+  canonicalSpotId: varchar("canonicalSpotId", { length: 120 }),
+  spotFamily: varchar("spotFamily", { length: 40 }).notNull(),
+  sourceStatus: mysqlEnum("sourceStatus", [
+    "exact_source",
+    "simplified_population",
+    "derived",
+  ]).notNull(),
+  stackBb: int("stackBb").notNull(),
+  heroPosition: varchar("heroPosition", { length: 10 }).notNull(),
+  villainPosition: varchar("villainPosition", { length: 10 }),
   handCode: varchar("handCode", { length: 4 }).notNull(),
   selectedAction: varchar("selectedAction", { length: 20 }).notNull(),
   correctAction: varchar("correctAction", { length: 20 }).notNull(),
   isCorrect: boolean("isCorrect").notNull(),
+  confidence: mysqlEnum("confidence", ["knew_it", "unsure", "guessed"]),
+  drillPackId: varchar("drillPackId", { length: 80 }),
+  leakFamilyId: varchar("leakFamilyId", { length: 80 }),
+  sessionId: varchar("sessionId", { length: 64 }),
+  responseTimeMs: int("responseTimeMs"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   userCreatedIdx: index("trainer_user_created_idx").on(table.userId, table.createdAt),
   chartCreatedIdx: index("trainer_chart_created_idx").on(table.chartId, table.createdAt),
+  spotCreatedIdx: index("trainer_spot_created_idx").on(table.userId, table.canonicalSpotId, table.createdAt),
 }));
 
 export type TrainerAttempt = typeof trainerAttempts.$inferSelect;

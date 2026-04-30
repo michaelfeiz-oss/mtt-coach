@@ -3,16 +3,28 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import * as db from './db';
-import type { HandFilterParams } from './db';
+import * as db from "./db";
 import { generateWeekPlan, getTodayPlan } from "./studyPlan";
 import { getCompletedPlanSlots } from "./studyPlanDb";
 import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveTopic, type LeakData } from "./studyRecommendations";
 import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } from "./curriculumConfig";
 import { icmRouter } from "./icm/router";
 import { strategyRouter } from "./strategy/router";
-import { getLeakFamily } from "../shared/leakFamilies";
-
+import { getLeakFamily, LEAK_FAMILY_IDS } from "../shared/leakFamilies";
+import {
+  HAND_REVIEW_STATUSES,
+  TRAINER_ATTEMPT_CONFIDENCES,
+} from "../shared/coachingLoop";
+import {
+  getHandTrainingSuggestion,
+  getReviewQueueSummary,
+  getTodayTrainingSuggestions,
+  getWeakSpotSummary,
+} from "./coachingLoop";
+import { submitTrainerAttempt, updateTrainerAttemptConfidence } from "./strategy/service";
+import { eq, and, desc, asc, inArray, gte } from "drizzle-orm";
+import { hands } from "../drizzle/schema";
+import { getDb } from "./db";
 // Hardcoded user ID for single-user app
 const HARDCODED_USER_ID = 1;
 
@@ -211,14 +223,14 @@ export const appRouter = router({
         lesson: z.string().optional(),
         leakIds: z.array(z.number()).optional(),
         leakFamilyId: z.string().optional(),
-        // New structured fields
+        villainPosition: z.string().optional(),
+        // V2 structured hand fields
         heroCard1: z.string().optional(),
         heroCard2: z.string().optional(),
         handClass: z.string().optional(),
         exactSuitsKnown: z.boolean().optional(),
         actualStackBB: z.number().optional(),
         openerPosition: z.string().optional(),
-        villainPosition: z.string().optional(),
         villainType: z.string().optional(),
         rangeRead: z.string().optional(),
         tournamentStage: z.string().optional(),
@@ -229,40 +241,30 @@ export const appRouter = router({
         reviewStatus: z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED']).optional(),
       }))
       .mutation(async ({ input }) => {
-        // Auto-derive tags from structured fields
-        const autoTags: string[] = input.tags ? [...input.tags] : [];
-        if (input.spotType === 'DEFEND_VS_RFI' || input.spotType === 'FACING_3BET') autoTags.push('BB_DEFENCE');
-        if (input.spotType === 'RFI') autoTags.push('RFI');
-        if (input.spotType === 'THREE_BET') autoTags.push('3BET');
-        if (input.spotType === 'FACING_3BET') autoTags.push('FACING_3BET');
-        if (input.actualStackBB && input.actualStackBB <= 15) autoTags.push('SHORT_STACK');
-        if (input.mistakeStreet === 'PREFLOP') autoTags.push('PREFLOP_MISTAKE');
-        const uniqueTags = Array.from(new Set(autoTags));
-
         const hand = await db.createHand({
           userId: HARDCODED_USER_ID,
           tournamentId: input.tournamentId,
           heroPosition: input.position || input.heroPosition,
-          heroHand: input.handClass || input.heroHand,
+          heroHand: input.heroHand,
           boardRunout: input.boardRunout,
-          effectiveStackBb: input.actualStackBB || input.effectiveStackBb,
+          effectiveStackBb: input.effectiveStackBb,
           spr: input.spr,
-          spotType: input.spotType as any,
-          heroDecisionPreflop: input.preflopDecision || input.heroDecisionPreflop,
+          spotType: input.spotType,
+          heroDecisionPreflop: input.heroDecisionPreflop,
           heroDecisionFlop: input.heroDecisionFlop,
           heroDecisionTurn: input.heroDecisionTurn,
           heroDecisionRiver: input.heroDecisionRiver,
           reviewed: input.reviewed,
           mistakeStreet: input.mistakeStreet,
           mistakeSeverity: input.mistakeSeverity,
-          tagsJson: uniqueTags.length > 0 ? JSON.stringify(uniqueTags) : undefined,
+          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
           lesson: input.lesson,
           streetDataJson: input.streetDataJson,
-          // New fields
+          // V2 structured fields
           heroCard1: input.heroCard1,
           heroCard2: input.heroCard2,
           handClass: input.handClass,
-          exactSuitsKnown: input.exactSuitsKnown ?? false,
+          exactSuitsKnown: input.exactSuitsKnown,
           actualStackBB: input.actualStackBB,
           openerPosition: input.openerPosition,
           villainPosition: input.villainPosition,
@@ -272,9 +274,9 @@ export const appRouter = router({
           preflopDecision: input.preflopDecision,
           actionsJson: input.actionsJson,
           boardJson: input.boardJson,
-          leakFamilyId: input.leakFamilyId,
           confidence: input.confidence,
-          reviewStatus: input.reviewStatus ?? 'NEEDS_REVIEW',
+          reviewStatus: input.reviewStatus,
+          leakFamilyId: input.leakFamilyId,
         });
 
         // Link leaks if provided
@@ -321,7 +323,6 @@ export const appRouter = router({
         mistakeSeverity: z.number().optional(),
         tags: z.array(z.string()).optional(),
         lesson: z.string().optional(),
-        // Review metadata fields
         leakFamilyId: z.string().optional(),
         confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
         reviewStatus: z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED']).optional(),
@@ -337,12 +338,13 @@ export const appRouter = router({
         if (input.lesson !== undefined) updates.lesson = input.lesson;
         if (input.leakFamilyId !== undefined) updates.leakFamilyId = input.leakFamilyId || null;
         if (input.confidence !== undefined) updates.confidence = input.confidence;
-        if (input.reviewStatus !== undefined) updates.reviewStatus = input.reviewStatus;
+        if (input.reviewStatus !== undefined) {
+          updates.reviewStatus = input.reviewStatus;
+          if (input.reviewStatus === 'REVIEWED') updates.reviewed = true;
+        }
         if (input.villainType !== undefined) updates.villainType = input.villainType;
         if (input.rangeRead !== undefined) updates.rangeRead = input.rangeRead;
-        // Sync reviewed flag with reviewStatus
-        if (input.reviewStatus === 'REVIEWED') updates.reviewed = true;
-        return db.updateHand(input.id, updates as any);
+        return db.updateHand(input.id, updates as Partial<import('../drizzle/schema').InsertHand>);
       }),
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
@@ -350,42 +352,83 @@ export const appRouter = router({
         return db.getHandById(input.id);
       }),
     getByUser: publicProcedure
-      .input(z.object({ limit: z.number().default(50) }))
+      .input(
+        z.object({
+          limit: z.number().default(50),
+          reviewStatus: z.enum(HAND_REVIEW_STATUSES).default("all"),
+          leakFamilyId: z.enum(LEAK_FAMILY_IDS).optional(),
+          spotType: z
+            .enum([
+              "SINGLE_RAISED_POT",
+              "3BET_POT",
+              "BVB",
+              "ICM_SPOT",
+              "LIMPED_POT",
+              "RFI",
+              "DEFEND_VS_RFI",
+              "THREE_BET",
+              "FACING_3BET",
+              "LIMP_ISO",
+              "FOUR_BET_JAM",
+              "OTHER_PREFLOP",
+            ])
+            .optional(),
+        })
+      )
       .query(async ({ input }) => {
-        return db.getHandsByUser(HARDCODED_USER_ID, input.limit);
+        return db.getHandsByUser(HARDCODED_USER_ID, {
+          limit: input.limit,
+          reviewStatus: input.reviewStatus,
+          leakFamilyId: input.leakFamilyId,
+          spotType: input.spotType,
+        });
       }),
     filter: publicProcedure
       .input(z.object({
-        reviewStatus: z.array(z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED'])).optional(),
-        spotType: z.array(z.string()).optional(),
-        mistakeSeverity: z.array(z.number()).optional(),
-        mistakeStreet: z.array(z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER'])).optional(),
-        leakFamilyId: z.string().optional(),
-        heroPosition: z.string().optional(),
-        dateFrom: z.date().optional(),
-        dateTo: z.date().optional(),
-        search: z.string().optional(),
-        sortBy: z.enum(['newest', 'oldest', 'severity_desc', 'review_status', 'updated', 'stack']).optional(),
-        limit: z.number().default(100),
+        limit: z.number().default(50),
         offset: z.number().default(0),
+        reviewStatus: z.array(z.enum(['NEEDS_REVIEW', 'REVIEWED', 'DRAFT'])).optional(),
+        spotType: z.array(z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BVB', 'ICM_SPOT', 'LIMPED_POT', 'RFI', 'DEFEND_VS_RFI', 'THREE_BET', 'FACING_3BET', 'LIMP_ISO', 'FOUR_BET_JAM', 'OTHER_PREFLOP'])).optional(),
+        mistakeSeverity: z.array(z.number()).optional(),
+        sortBy: z.enum(['newest', 'oldest', 'severity']).default('newest'),
+        leakFamilyId: z.string().optional(),
+        mistakeStreet: z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER']).optional(),
       }))
       .query(async ({ input }) => {
-        const params: HandFilterParams = {
-          reviewStatus: input.reviewStatus,
-          spotType: input.spotType,
-          mistakeSeverity: input.mistakeSeverity,
-          mistakeStreet: input.mistakeStreet,
-          leakFamilyId: input.leakFamilyId,
-          heroPosition: input.heroPosition,
-          dateFrom: input.dateFrom,
-          dateTo: input.dateTo,
-          search: input.search,
-          sortBy: input.sortBy,
-          limit: input.limit,
-          offset: input.offset,
-        };
-        return db.getHandsByFilter(HARDCODED_USER_ID, params);
+        const dbConn = await getDb();
+        if (!dbConn) throw new Error('Database not available');
+        const conditions = [eq(hands.userId, HARDCODED_USER_ID)];
+        if (input.reviewStatus?.length) {
+          conditions.push(inArray(hands.reviewStatus, input.reviewStatus as any[]));
+        }
+        if (input.spotType?.length) {
+          conditions.push(inArray(hands.spotType, input.spotType as any[]));
+        }
+        if (input.mistakeSeverity?.length) {
+          conditions.push(inArray(hands.mistakeSeverity, input.mistakeSeverity));
+        }
+        if (input.mistakeStreet) {
+          conditions.push(eq(hands.mistakeStreet, input.mistakeStreet));
+        }
+        if (input.leakFamilyId) {
+          conditions.push(eq(hands.leakFamilyId, input.leakFamilyId));
+        }
+        const orderCol = input.sortBy === 'severity'
+          ? desc(hands.mistakeSeverity)
+          : input.sortBy === 'oldest'
+          ? asc(hands.createdAt)
+          : desc(hands.createdAt);
+        return dbConn
+          .select()
+          .from(hands)
+          .where(and(...conditions))
+          .orderBy(orderCol)
+          .limit(input.limit)
+          .offset(input.offset);
       }),
+    getReviewQueueSummary: publicProcedure.query(async () => {
+      return getReviewQueueSummary(HARDCODED_USER_ID);
+    }),
     getLeaks: publicProcedure
       .input(z.object({ handId: z.number() }))
       .query(async ({ input }) => {
@@ -400,6 +443,15 @@ export const appRouter = router({
       .input(z.object({ handId: z.number(), leakId: z.number() }))
       .mutation(async ({ input }) => {
         return db.unlinkHandFromLeak(input.handId, input.leakId);
+      }),
+    attachLeakFamily: publicProcedure
+      .input(z.object({ handId: z.number(), leakFamilyId: z.enum(LEAK_FAMILY_IDS) }))
+      .mutation(async ({ input }) => {
+        return db.attachLeakFamilyToHand(
+          HARDCODED_USER_ID,
+          input.handId,
+          input.leakFamilyId
+        );
       }),
     getByTournament: publicProcedure
       .input(z.object({ tournamentId: z.number() }))
@@ -570,6 +622,73 @@ export const appRouter = router({
 
   // Strategy module
   strategy: strategyRouter,
+
+  trainerAttempts: router({
+    submit: publicProcedure
+      .input(
+        z.object({
+          chartId: z.number().int().positive(),
+          handCode: z.string().min(2).max(4),
+          selectedAction: z.enum([
+            "FOLD",
+            "RAISE",
+            "CALL",
+            "THREE_BET",
+            "JAM",
+            "LIMP",
+            "CHECK",
+          ]),
+          drillPackId: z.string().optional(),
+          sessionId: z.string().optional(),
+          responseTimeMs: z.number().int().min(0).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id ?? HARDCODED_USER_ID;
+        return submitTrainerAttempt(userId, input);
+      }),
+    updateConfidence: publicProcedure
+      .input(
+        z.object({
+          attemptId: z.number().int().positive(),
+          confidence: z.enum(TRAINER_ATTEMPT_CONFIDENCES),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id ?? HARDCODED_USER_ID;
+        const success = await updateTrainerAttemptConfidence(
+          userId,
+          input.attemptId,
+          input.confidence
+        );
+
+        return { success };
+      }),
+  }),
+
+  weakSpots: router({
+    getSummary: publicProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(20).default(8) }).optional())
+      .query(async ({ input }) => {
+        return getWeakSpotSummary(HARDCODED_USER_ID, input?.limit ?? 8);
+      }),
+    getTop: publicProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(10).default(5) }).optional())
+      .query(async ({ input }) => {
+        return getWeakSpotSummary(HARDCODED_USER_ID, input?.limit ?? 5);
+      }),
+  }),
+
+  suggestions: router({
+    getTodayTraining: publicProcedure.query(async () => {
+      return getTodayTrainingSuggestions(HARDCODED_USER_ID);
+    }),
+    getForHand: publicProcedure
+      .input(z.object({ handId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return getHandTrainingSuggestion(HARDCODED_USER_ID, input.handId);
+      }),
+  }),
 
   // ICM study packs
   icm: icmRouter,

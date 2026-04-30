@@ -1,7 +1,9 @@
-import { eq, desc, asc, and, or, like, gte, lte, inArray, isNull, isNotNull, sql } from "drizzle-orm";
+import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, weeks, studySessions, tournaments, hands, leaks, handLeaks, InsertWeek, InsertStudySession, InsertTournament, InsertHand, InsertLeak } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { getLeakFamily, findLeakFamilyByLabel, type CanonicalLeakFamilyId } from "../shared/leakFamilies";
+import type { HandReviewStatus } from "../shared/coachingLoop";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -266,91 +268,69 @@ export async function getHandById(handId: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getHandsByUser(userId: number, limit: number = 50) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  return db.select().from(hands).where(eq(hands.userId, userId)).orderBy(desc(hands.createdAt)).limit(limit);
-}
-
-export interface HandFilterParams {
-  reviewStatus?: ('DRAFT' | 'NEEDS_REVIEW' | 'REVIEWED')[];
-  spotType?: string[];
-  mistakeSeverity?: number[];
-  mistakeStreet?: ('PREFLOP' | 'FLOP' | 'TURN' | 'RIVER')[];
-  leakFamilyId?: string;
-  heroPosition?: string;
-  dateFrom?: Date;
-  dateTo?: Date;
-  search?: string;
-  sortBy?: 'newest' | 'oldest' | 'severity_desc' | 'review_status' | 'updated' | 'stack';
+export interface GetHandsByUserOptions {
   limit?: number;
-  offset?: number;
+  reviewStatus?: HandReviewStatus;
+  leakFamilyId?: CanonicalLeakFamilyId | null;
+  spotType?: string | null;
 }
 
-export async function getHandsByFilter(userId: number, params: HandFilterParams = {}) {
+export async function getHandsByUser(
+  userId: number,
+  options: number | GetHandsByUserOptions = 50
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  const normalizedOptions: GetHandsByUserOptions =
+    typeof options === "number" ? { limit: options } : options;
+  const limit = normalizedOptions.limit ?? 50;
+  const reviewStatus = normalizedOptions.reviewStatus ?? "all";
+  const leakFamily = normalizedOptions.leakFamilyId
+    ? getLeakFamily(normalizedOptions.leakFamilyId)
+    : null;
 
   const conditions = [eq(hands.userId, userId)];
 
-  if (params.reviewStatus && params.reviewStatus.length > 0) {
-    conditions.push(inArray(hands.reviewStatus, params.reviewStatus));
-  }
-  if (params.spotType && params.spotType.length > 0) {
-    conditions.push(inArray(hands.spotType, params.spotType as any[]));
-  }
-  if (params.mistakeSeverity && params.mistakeSeverity.length > 0) {
-    conditions.push(inArray(hands.mistakeSeverity, params.mistakeSeverity));
-  }
-  if (params.mistakeStreet && params.mistakeStreet.length > 0) {
-    conditions.push(inArray(hands.mistakeStreet, params.mistakeStreet));
-  }
-  if (params.leakFamilyId) {
-    conditions.push(eq(hands.leakFamilyId, params.leakFamilyId));
-  }
-  if (params.heroPosition) {
-    conditions.push(eq(hands.heroPosition, params.heroPosition));
-  }
-  if (params.dateFrom) {
-    conditions.push(gte(hands.createdAt, params.dateFrom));
-  }
-  if (params.dateTo) {
-    conditions.push(lte(hands.createdAt, params.dateTo));
-  }
-  if (params.search) {
-    const term = `%${params.search}%`;
-    conditions.push(
-      or(
-        like(hands.heroHand, term),
-        like(hands.handClass, term),
-        like(hands.lesson, term),
-        like(hands.heroPosition, term),
-        like(hands.villainPosition, term),
-        like(hands.openerPosition, term)
-      )!
-    );
+  if (reviewStatus === "needs_review") {
+    conditions.push(eq(hands.reviewed, false));
+  } else if (reviewStatus === "reviewed") {
+    conditions.push(eq(hands.reviewed, true));
+  } else if (reviewStatus === "high_severity") {
+    conditions.push(gte(hands.mistakeSeverity, 2));
   }
 
-  const where = conditions.length === 1 ? conditions[0] : and(...conditions);
-
-  let orderBy;
-  switch (params.sortBy) {
-    case 'oldest':        orderBy = asc(hands.createdAt); break;
-    case 'severity_desc': orderBy = desc(hands.mistakeSeverity); break;
-    case 'review_status': orderBy = asc(hands.reviewStatus); break;
-    case 'updated':       orderBy = desc(hands.createdAt); break;
-    case 'stack':         orderBy = desc(hands.effectiveStackBb); break;
-    default:              orderBy = desc(hands.createdAt); break;
+  if (normalizedOptions.spotType) {
+    conditions.push(eq(hands.spotType, normalizedOptions.spotType as any));
   }
 
-  return db
-    .select()
+  const query = db
+    .select({ hand: hands })
     .from(hands)
-    .where(where)
-    .orderBy(orderBy)
-    .limit(params.limit ?? 100)
-    .offset(params.offset ?? 0);
+    .where(and(...conditions))
+    .orderBy(desc(hands.createdAt))
+    .limit(limit);
+
+  if (!leakFamily) {
+    const result = await query;
+    return result.map(row => row.hand);
+  }
+
+  const result = await db
+    .select({ hand: hands })
+    .from(hands)
+    .innerJoin(handLeaks, eq(handLeaks.handId, hands.id))
+    .innerJoin(leaks, eq(handLeaks.leakId, leaks.id))
+    .where(
+      and(
+        ...conditions,
+        eq(leaks.name, leakFamily.label)
+      )
+    )
+    .orderBy(desc(hands.createdAt))
+    .limit(limit);
+
+  return result.map(row => row.hand);
 }
 
 export async function getHandsByTournament(tournamentId: number) {
@@ -424,6 +404,54 @@ export async function linkHandToLeak(handId: number, leakId: number) {
   }
   
   await db.insert(handLeaks).values({ handId, leakId });
+}
+
+export async function attachLeakFamilyToHand(
+  userId: number,
+  handId: number,
+  leakFamilyId: CanonicalLeakFamilyId
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const family = getLeakFamily(leakFamilyId);
+  if (!family) {
+    throw new Error("Leak family not found");
+  }
+
+  const hand = await getHandById(handId);
+  if (!hand || hand.userId !== userId) {
+    throw new Error("Hand not found");
+  }
+
+  const existingLeaks = await getUserLeaks(userId);
+  const existingLeak =
+    existingLeaks.find(
+      leak =>
+        leak.name.trim().toLowerCase() === family.label.trim().toLowerCase()
+    ) ??
+    existingLeaks.find(
+      leak => findLeakFamilyByLabel(leak.name)?.id === leakFamilyId
+    ) ??
+    null;
+
+  const leakRecord =
+    existingLeak ??
+    (await createLeak({
+      userId,
+      name: family.label,
+      category: "PREFLOP",
+      description: family.description,
+      status: "ACTIVE",
+    }));
+
+  const linkedLeaks = await getLeaksForHand(handId);
+  const alreadyLinked = linkedLeaks.some(linked => linked.id === leakRecord.id);
+  if (!alreadyLinked) {
+    await linkHandToLeak(handId, leakRecord.id);
+  }
+
+  return leakRecord;
 }
 
 export async function unlinkHandFromLeak(handId: number, leakId: number) {

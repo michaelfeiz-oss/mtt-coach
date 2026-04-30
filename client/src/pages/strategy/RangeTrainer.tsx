@@ -17,6 +17,7 @@ import {
   getPriorityDrillPack,
   resolvePriorityDrillPack,
 } from "@shared/drillPacks";
+import { type TrainerAttemptConfidence } from "@shared/coachingLoop";
 import {
   getLeakFamily,
   suggestLeakFamilyFromTrainerMiss,
@@ -53,6 +54,8 @@ interface AnswerRevealState {
   selectedAction: Action;
   correctAction: Action;
   isCorrect: boolean;
+  attemptId: number | null;
+  confidence: TrainerAttemptConfidence | null;
 }
 
 type SpotSummary = {
@@ -175,6 +178,7 @@ function replaceTrainerUrl(options: { chartId?: number | null; packId?: string |
 export default function RangeTrainer() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
   const { chartIdFromSearch, packIdFromSearch } = useMemo(() => {
     const params = new URLSearchParams(search);
     const chartIdParamRaw = params.get("chartId");
@@ -227,6 +231,7 @@ export default function RangeTrainer() {
 
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const resultRevealRef = useRef<HTMLDivElement | null>(null);
+  const questionStartedAtRef = useRef<number>(Date.now());
 
   const { data: allSpots = [] } = trpc.strategy.listSpots.useQuery({});
   const { data: spots = [] } = trpc.strategy.listSpots.useQuery({
@@ -320,9 +325,14 @@ export default function RangeTrainer() {
     { enabled: answerReveal !== null }
   );
 
-  const submitAttempt = trpc.strategy.submitTrainerAttempt.useMutation({
+  const submitAttempt = trpc.trainerAttempts.submit.useMutation({
     onError: error => {
       toast.error(`Could not submit answer: ${error.message}`);
+    },
+  });
+  const updateConfidence = trpc.trainerAttempts.updateConfidence.useMutation({
+    onError: error => {
+      toast.error(`Could not save confidence: ${error.message}`);
     },
   });
 
@@ -440,6 +450,11 @@ export default function RangeTrainer() {
   }, [answerReveal]);
 
   useEffect(() => {
+    if (!trainerSpot) return;
+    questionStartedAtRef.current = Date.now();
+  }, [questionVersion, trainerSpot?.chartId, trainerSpot?.handCode]);
+
+  useEffect(() => {
     if (heroPosition !== undefined && !heroOptions.includes(heroPosition)) {
       setHeroPosition(undefined);
     }
@@ -517,6 +532,7 @@ export default function RangeTrainer() {
 
   function handleAnswer(selectedAction: Action, isCorrect: boolean) {
     if (!trainerSpot) return;
+    const responseTimeMs = Math.max(0, Date.now() - questionStartedAtRef.current);
 
     setAnswerReveal({
       chartId: trainerSpot.chartId,
@@ -524,13 +540,54 @@ export default function RangeTrainer() {
       selectedAction,
       correctAction: trainerSpot.correctAction,
       isCorrect,
+      attemptId: null,
+      confidence: null,
     });
 
-    submitAttempt.mutate({
-      chartId: trainerSpot.chartId,
-      handCode: trainerSpot.handCode,
-      selectedAction,
-    });
+    submitAttempt.mutate(
+      {
+        chartId: trainerSpot.chartId,
+        handCode: trainerSpot.handCode,
+        selectedAction,
+        drillPackId: mode === "priority_pack" ? selectedPackId ?? undefined : undefined,
+        responseTimeMs,
+      },
+      {
+        onSuccess: result => {
+          setAnswerReveal(previous => {
+            if (
+              !previous ||
+              previous.chartId !== trainerSpot.chartId ||
+              previous.handCode !== trainerSpot.handCode
+            ) {
+              return previous;
+            }
+
+            const nextState = {
+              ...previous,
+              attemptId: result?.attemptId ?? null,
+            };
+
+            if (nextState.attemptId && nextState.confidence) {
+              updateConfidence.mutate({
+                attemptId: nextState.attemptId,
+                confidence: nextState.confidence,
+              });
+            }
+
+            return nextState;
+          });
+
+          void utils.weakSpots.getTop.invalidate();
+          void utils.weakSpots.getSummary.invalidate();
+          void utils.suggestions.getTodayTraining.invalidate();
+          void utils.hands.getReviewQueueSummary.invalidate();
+          void utils.strategy.getRecentAttempts.invalidate();
+          void utils.strategy.getProgress.invalidate();
+          void utils.strategy.getStats.invalidate();
+        },
+      }
+    );
 
     setSessionStats(previous => ({
       total: previous.total + 1,
@@ -565,6 +622,23 @@ export default function RangeTrainer() {
     window.setTimeout(() => {
       scrollElementIntoComfortView(questionCardRef.current);
     }, 80);
+  }
+
+  function handleConfidenceSelect(confidence: TrainerAttemptConfidence) {
+    setAnswerReveal(previous => {
+      if (!previous) return previous;
+      return {
+        ...previous,
+        confidence,
+      };
+    });
+
+    if (answerReveal?.attemptId) {
+      updateConfidence.mutate({
+        attemptId: answerReveal.attemptId,
+        confidence,
+      });
+    }
   }
 
   function unlockCurrentSpotAndContinue() {
@@ -764,6 +838,9 @@ export default function RangeTrainer() {
                       isCorrect={answerReveal.isCorrect}
                       spotNote={getSpotNote(trainerSpot.chart)}
                       recommendedPack={recommendedPack}
+                      confidence={answerReveal.confidence}
+                      onConfidenceSelect={handleConfidenceSelect}
+                      isSavingConfidence={updateConfidence.isPending}
                       onNext={handleNext}
                       chartPresentation={revealChartPresentation}
                       className="border-border/80 bg-card/90 shadow-none"

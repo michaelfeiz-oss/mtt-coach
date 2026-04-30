@@ -64,6 +64,13 @@
       "when": 1777434404255,
       "tag": "0008_bent_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1777527512304,
+      "tag": "0006_coaching_loop_training",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,17 @@ import {
   type RangeChartAction,
 } from "../../drizzle/schema";
 import {
+  mapStackToStudyReferenceBucket,
+  type TrainerAttemptConfidence,
+  type TrainerAttemptSourceStatus,
+} from "../../shared/coachingLoop";
+import {
+  getLeakFamily,
+  suggestLeakFamilyFromHandLog,
+  suggestLeakFamilyFromTrainerMiss,
+  type CanonicalLeakFamilyId,
+} from "../../shared/leakFamilies";
+import {
   ACTIONS,
   ALL_HANDS,
   POSITIONS,
@@ -34,7 +45,14 @@ import {
   handDistance as getCanonicalHandDistance,
   normalizeHandCode as normalizeCanonicalHandCode,
 } from "../../shared/handMatrix";
-import { isSourceSupportedStrategyChart } from "../../shared/sourceTruth";
+import {
+  canonicalSpotContextFromChart,
+  getCanonicalSpotId,
+} from "../../shared/spotIds";
+import {
+  getStrategySourceStatus,
+  isSourceSupportedStrategyChart,
+} from "../../shared/sourceTruth";
 
 export interface ListSpotsFilters {
   stackDepth?: number;
@@ -68,9 +86,14 @@ export interface TrainerQuestionWithChart extends TrainerQuestion {
 
 export interface TrainerAttemptResult {
   success: true;
+  attemptId: number | null;
+  persisted: boolean;
   isCorrect: boolean;
   correctAction: Action;
   correctNote?: string | null;
+  canonicalSpotId?: string | null;
+  leakFamilyId?: CanonicalLeakFamilyId | null;
+  sourceStatus?: TrainerAttemptSourceStatus | null;
 }
 
 const HAND_ORDER = new Map(ALL_HANDS.map((hand, index) => [hand, index]));
@@ -205,6 +228,26 @@ function isSupportedChart(chart: {
   spotKey?: string | null;
 }) {
   return isSourceSupportedStrategyChart(chart);
+}
+
+export function mapStrategySourceToAttemptSourceStatus(chart: {
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  heroPosition: string;
+  villainPosition?: string | null;
+}): TrainerAttemptSourceStatus {
+  const sourceStatus = getStrategySourceStatus(chart);
+
+  switch (sourceStatus) {
+    case "source_backed":
+      return "exact_source";
+    case "simplified_population":
+      return "simplified_population";
+    case "proxy":
+      return "derived";
+    default:
+      return "derived";
+  }
 }
 
 function buildTrainerChoices(correctAction: Action): Action[] {
@@ -460,6 +503,59 @@ function isAction(value: string): value is Action {
   return (ACTIONS as readonly string[]).includes(value);
 }
 
+interface PersistedTrainerAttemptInput {
+  userId: number;
+  chart: RangeChart;
+  handCode: string;
+  selectedAction: Action;
+  correctAction: Action;
+  isCorrect: boolean;
+  confidence?: TrainerAttemptConfidence | null;
+  drillPackId?: string | null;
+  sessionId?: string | null;
+  responseTimeMs?: number | null;
+}
+
+export function buildTrainerAttemptInsert(
+  input: PersistedTrainerAttemptInput
+): InsertTrainerAttempt {
+  const context = canonicalSpotContextFromChart(input.chart);
+  const canonicalSpotId = context ? getCanonicalSpotId(context) : null;
+  const leakFamilyId =
+    context && !input.isCorrect
+      ? suggestLeakFamilyFromTrainerMiss({
+          context,
+          handCode: input.handCode,
+          selectedAction: input.selectedAction,
+          correctAction: input.correctAction,
+        })
+      : null;
+
+  return {
+    userId: input.userId,
+    chartId: input.chart.id,
+    canonicalSpotId,
+    spotFamily: context?.family ?? "OPEN_RFI",
+    sourceStatus: mapStrategySourceToAttemptSourceStatus(input.chart),
+    stackBb: input.chart.stackDepth,
+    heroPosition: input.chart.heroPosition,
+    villainPosition: input.chart.villainPosition,
+    handCode: input.handCode,
+    selectedAction: input.selectedAction,
+    correctAction: input.correctAction,
+    isCorrect: input.isCorrect,
+    confidence: input.confidence ?? null,
+    drillPackId: input.drillPackId ?? null,
+    leakFamilyId,
+    sessionId: input.sessionId ?? null,
+    responseTimeMs:
+      typeof input.responseTimeMs === "number" &&
+      Number.isFinite(input.responseTimeMs)
+        ? Math.max(0, Math.round(input.responseTimeMs))
+        : null,
+  };
+}
+
 function toJsonObject(value: unknown): JsonObject | null {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as JsonObject;
@@ -503,7 +599,7 @@ function getNestedNumber(source: JsonObject | null, path: string[]): number | nu
   return typeof current === "number" && Number.isFinite(current) ? current : null;
 }
 
-function extractStudyMeta(hand: Hand) {
+export function extractStudyMeta(hand: Hand) {
   const streetData = parseJsonObject(hand.streetDataJson);
   const study = toJsonObject(streetData?.meta);
   const nestedStudy = toJsonObject(study?.study);
@@ -528,7 +624,7 @@ function extractStudyMeta(hand: Hand) {
   };
 }
 
-function normalizePosition(value: string | null | undefined): Position | null {
+export function normalizePosition(value: string | null | undefined): Position | null {
   if (!value) return null;
 
   const normalized = value
@@ -545,17 +641,11 @@ export function normalizeHandCode(value: string | null | undefined): string | nu
   return normalizeCanonicalHandCode(value);
 }
 
-function nearestStackDepth(stackDepth: number | null | undefined): number {
-  const target = typeof stackDepth === "number" && Number.isFinite(stackDepth)
-    ? stackDepth
-    : 20;
-
-  return [...STACK_DEPTHS].sort(
-    (a, b) => Math.abs(a - target) - Math.abs(b - target) || a - b
-  )[0];
+export function nearestStackDepth(stackDepth: number | null | undefined): number {
+  return mapStackToStudyReferenceBucket(stackDepth);
 }
 
-function extractVillainPosition(hand: Hand): Position | null {
+export function extractVillainPosition(hand: Hand): Position | null {
   const streetData = parseJsonObject(hand.streetDataJson);
   const candidates = [
     getNestedString(streetData, ["preflop", "villainPosition"]),
@@ -574,11 +664,11 @@ function extractVillainPosition(hand: Hand): Position | null {
   return null;
 }
 
-function isPreflopMistake(hand: Hand): boolean {
+export function isPreflopMistake(hand: Hand): boolean {
   return hand.mistakeStreet === "PREFLOP" && hand.mistakeSeverity > 0;
 }
 
-function inferSpotFromHand(hand: Hand): SpotInference | null {
+export function inferSpotFromHand(hand: Hand): SpotInference | null {
   const studyMeta = extractStudyMeta(hand);
   if (studyMeta.spotKey) {
     return {
@@ -707,7 +797,7 @@ function inferSpotFromHand(hand: Hand): SpotInference | null {
   return null;
 }
 
-async function findNearestChartBySpotKey(
+export async function findNearestChartBySpotKey(
   spotKey: string,
   targetStackDepth: number
 ): Promise<{ chart: RangeChart; confidence: "exact" | "nearest" } | null> {
@@ -901,12 +991,17 @@ export async function submitTrainerAttempt(
     chartId: number;
     handCode: string;
     selectedAction: Action;
+    confidence?: TrainerAttemptConfidence | null;
+    drillPackId?: string | null;
+    sessionId?: string | null;
+    responseTimeMs?: number | null;
   }
 ): Promise<TrainerAttemptResult | null> {
   const db = await requireDb();
 
   const [row] = await db
     .select({
+      chart: rangeCharts,
       action: rangeChartActions,
     })
     .from(rangeChartActions)
@@ -924,32 +1019,77 @@ export async function submitTrainerAttempt(
 
   const correctAction = row.action.primaryAction;
   const isCorrect = input.selectedAction === correctAction;
+  const context = canonicalSpotContextFromChart(row.chart);
+  const attemptRecord =
+    userId !== null
+      ? buildTrainerAttemptInsert({
+          userId,
+          chart: row.chart,
+          handCode: input.handCode,
+          selectedAction: input.selectedAction,
+          correctAction,
+          isCorrect,
+          confidence: input.confidence,
+          drillPackId: input.drillPackId,
+          sessionId: input.sessionId,
+          responseTimeMs: input.responseTimeMs,
+        })
+      : null;
+  let attemptId: number | null = null;
 
   // Only persist the attempt when a user is authenticated
-  if (userId !== null) {
-    await logTrainerAttempt({
-      userId,
-      chartId: input.chartId,
-      handCode: input.handCode,
-      selectedAction: input.selectedAction,
-      correctAction,
-      isCorrect,
-    });
+  if (attemptRecord) {
+    attemptId = await logTrainerAttempt(attemptRecord);
   }
 
   return {
     success: true,
+    attemptId,
+    persisted: attemptId !== null,
     isCorrect,
     correctAction,
     correctNote: row.action.note,
+    canonicalSpotId: context ? getCanonicalSpotId(context) : null,
+    leakFamilyId:
+      context && !isCorrect
+        ? suggestLeakFamilyFromTrainerMiss({
+            context,
+            handCode: input.handCode,
+            selectedAction: input.selectedAction,
+            correctAction,
+          })
+        : null,
+    sourceStatus: mapStrategySourceToAttemptSourceStatus(row.chart),
   };
 }
 
 export async function logTrainerAttempt(
   data: InsertTrainerAttempt
-): Promise<void> {
+): Promise<number> {
   const db = await requireDb();
-  await db.insert(trainerAttempts).values(data);
+  const [result] = await db.insert(trainerAttempts).values(data);
+  return result.insertId;
+}
+
+export async function updateTrainerAttemptConfidence(
+  userId: number,
+  attemptId: number,
+  confidence: TrainerAttemptConfidence
+): Promise<boolean> {
+  const db = await requireDb();
+
+  await db
+    .update(trainerAttempts)
+    .set({ confidence })
+    .where(and(eq(trainerAttempts.id, attemptId), eq(trainerAttempts.userId, userId)));
+
+  const [updated] = await db
+    .select({ id: trainerAttempts.id })
+    .from(trainerAttempts)
+    .where(and(eq(trainerAttempts.id, attemptId), eq(trainerAttempts.userId, userId)))
+    .limit(1);
+
+  return Boolean(updated);
 }
 
 export async function getTrainerStats(userId: number): Promise<TrainerStats> {
