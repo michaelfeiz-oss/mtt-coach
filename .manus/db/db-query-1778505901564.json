@@ -1,0 +1,15 @@
+{
+  "query": "SELECT \n  COUNT(*) AS total_leaks,\n  SUM(CASE WHEN name = 'Test Leak' THEN 1 ELSE 0 END) AS test_leaks,\n  SUM(CASE WHEN name != 'Test Leak' THEN 1 ELSE 0 END) AS real_leaks\nFROM leaks;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT \n  COUNT(*) AS total_leaks,\n  SUM(CASE WHEN name = 'Test Leak' THEN 1 ELSE 0 END) AS test_leaks,\n  SUM(CASE WHEN name != 'Test Leak' THEN 1 ELSE 0 END) AS real_leaks\nFROM leaks;",
+  "rows": [
+    {
+      "total_leaks": "100",
+      "test_leaks": "97",
+      "real_leaks": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_leaks\ttest_leaks\treal_leaks\n100\t97\t3\n",
+  "stderr": "",
+  "execution_time_ms": 1865
+}

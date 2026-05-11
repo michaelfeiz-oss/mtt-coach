@@ -1,0 +1,67 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'hands' AND ORDINAL_POSITION > 20 ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'hands' AND ORDINAL_POSITION > 20 ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "tagsJson"
+    },
+    {
+      "COLUMN_NAME": "lesson"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "heroCard1"
+    },
+    {
+      "COLUMN_NAME": "heroCard2"
+    },
+    {
+      "COLUMN_NAME": "handClass"
+    },
+    {
+      "COLUMN_NAME": "exactSuitsKnown"
+    },
+    {
+      "COLUMN_NAME": "actualStackBB"
+    },
+    {
+      "COLUMN_NAME": "openerPosition"
+    },
+    {
+      "COLUMN_NAME": "villainPosition"
+    },
+    {
+      "COLUMN_NAME": "villainType"
+    },
+    {
+      "COLUMN_NAME": "rangeRead"
+    },
+    {
+      "COLUMN_NAME": "tournamentStage"
+    },
+    {
+      "COLUMN_NAME": "preflopDecision"
+    },
+    {
+      "COLUMN_NAME": "actionsJson"
+    },
+    {
+      "COLUMN_NAME": "boardJson"
+    },
+    {
+      "COLUMN_NAME": "leakFamilyId"
+    },
+    {
+      "COLUMN_NAME": "confidence"
+    },
+    {
+      "COLUMN_NAME": "reviewStatus"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\ntagsJson\nlesson\ncreatedAt\nheroCard1\nheroCard2\nhandClass\nexactSuitsKnown\nactualStackBB\nopenerPosition\nvillainPosition\nvillainType\nrangeRead\ntournamentStage\npreflopDecision\nactionsJson\nboardJson\nleakFamilyId\nconfidence\nreviewStatus\n",
+  "stderr": "",
+  "execution_time_ms": 1866
+}

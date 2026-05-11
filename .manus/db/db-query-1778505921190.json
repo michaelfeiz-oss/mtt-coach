@@ -1,0 +1,322 @@
+{
+  "query": "DESCRIBE hands;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute DESCRIBE hands;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "userId",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tournamentId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "studySessionId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "heroPosition",
+      "Type": "varchar(10)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "heroHand",
+      "Type": "varchar(10)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "boardRunout",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "effectiveStackBb",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "spr",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "streetDataJson",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "spotType",
+      "Type": "enum('SINGLE_RAISED_POT','3BET_POT','BVB','ICM_SPOT','LIMPED_POT','RFI','DEFEND_VS_RFI','THREE_BET','FACING_3BET','LIMP_ISO','FOUR_BET_JAM','OTHER_PREFLOP')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "heroDecisionPreflop",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "heroDecisionFlop",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "heroDecisionTurn",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "heroDecisionRiver",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "reviewed",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "evalSource",
+      "Type": "enum('SOLVER','COACH','SELF')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "mistakeStreet",
+      "Type": "enum('PREFLOP','FLOP','TURN','RIVER')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "mistakeSeverity",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "evDiffBb",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tagsJson",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "lesson",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "heroCard1",
+      "Type": "varchar(4)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "heroCard2",
+      "Type": "varchar(4)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "handClass",
+      "Type": "varchar(10)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "exactSuitsKnown",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "actualStackBB",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "openerPosition",
+      "Type": "varchar(10)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "villainPosition",
+      "Type": "varchar(10)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "villainType",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "rangeRead",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tournamentStage",
+      "Type": "varchar(20)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "preflopDecision",
+      "Type": "varchar(30)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "actionsJson",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "boardJson",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "leakFamilyId",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "confidence",
+      "Type": "enum('LOW','MEDIUM','HIGH')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "reviewStatus",
+      "Type": "enum('DRAFT','NEEDS_REVIEW','REVIEWED')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NEEDS_REVIEW",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nuserId\tint\tNO\tMUL\tNULL\t\ntournamentId\tint\tYES\tMUL\tNULL\t\nstudySessionId\tint\tYES\tMUL\tNULL\t\nheroPosition\tvarchar(10)\tYES\t\tNULL\t\nheroHand\tvarchar(10)\tYES\t\tNULL\t\nboardRunout\tvarchar(50)\tYES\t\tNULL\t\neffectiveStackBb\tfloat\tYES\t\tNULL\t\nspr\tfloat\tYES\t\tNULL\t\nstreetDataJson\ttext\tYES\t\tNULL\t\nspotType\tenum('SINGLE_RAISED_POT','3BET_POT','BVB','ICM_SPOT','LIMPED_POT','RFI','DEFEND_VS_RFI','THREE_BET','FACING_3BET','LIMP_ISO','FOUR_BET_JAM','OTHER_PREFLOP')\tYES\t\tNULL\t\nheroDecisionPreflop\tvarchar(50)\tYES\t\tNULL\t\nheroDecisionFlop\tvarchar(50)\tYES\t\tNULL\t\nheroDecisionTurn\tvarchar(50)\tYES\t\tNULL\t\nheroDecisionRiver\tvarchar(50)\tYES\t\tNULL\t\nreviewed\ttinyint(1)\tNO\tMUL\t0\t\nevalSource\tenum('SOLVER','COACH','SELF')\tYES\t\tNULL\t\nmistakeStreet\tenum('PREFLOP','FLOP','TURN','RIVER')\tYES\t\tNULL\t\nmistakeSeverity\tint\tNO\t\t0\t\nevDiffBb\tfloat\tYES\t\tNULL\t\ntagsJson\ttext\tYES\t\tNULL\t\nlesson\ttext\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nheroCard1\tvarchar(4)\tYES\t\tNULL\t\nheroCard2\tvarchar(4)\tYES\t\tNULL\t\nhandClass\tvarchar(10)\tYES\t\tNULL\t\nexactSuitsKnown\ttinyint(1)\tNO\t\t0\t\nactualStackBB\tfloat\tYES\t\tNULL\t\nopenerPosition\tvarchar(10)\tYES\t\tNULL\t\nvillainPosition\tvarchar(10)\tYES\t\tNULL\t\nvillainType\tvarchar(50)\tYES\t\tNULL\t\nrangeRead\tvarchar(100)\tYES\t\tNULL\t\ntournamentStage\tvarchar(20)\tYES\t\tNULL\t\npreflopDecision\tvarchar(30)\tYES\t\tNULL\t\nactionsJson\ttext\tYES\t\tNULL\t\nboardJson\ttext\tYES\t\tNULL\t\nleakFamilyId\tvarchar(100)\tYES\t\tNULL\t\nconfidence\tenum('LOW','MEDIUM','HIGH')\tYES\t\tNULL\t\nreviewStatus\tenum('DRAFT','NEEDS_REVIEW','REVIEWED')\tNO\t\tNEEDS_REVIEW\t\n",
+  "stderr": "",
+  "execution_time_ms": 1916
+}

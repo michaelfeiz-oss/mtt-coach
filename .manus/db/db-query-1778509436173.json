@@ -1,0 +1,230 @@
+{
+  "query": "SELECT id, heroHand, heroPosition, spotType, tagsJson, lesson, reviewed, effectiveStackBb, createdAt FROM hands WHERE tagsJson IS NULL OR tagsJson = 'NULL' ORDER BY id LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, heroHand, heroPosition, spotType, tagsJson, lesson, reviewed, effectiveStackBb, createdAt FROM hands WHERE tagsJson IS NULL OR tagsJson = 'NULL' ORDER BY id LIMIT 20;",
+  "rows": [
+    {
+      "id": "510001",
+      "heroHand": "NULL",
+      "heroPosition": "CO",
+      "spotType": "NULL",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "30",
+      "createdAt": "2025-12-07 20:32:56"
+    },
+    {
+      "id": "540001",
+      "heroHand": "AHKH",
+      "heroPosition": "CO",
+      "spotType": "NULL",
+      "tagsJson": "NULL",
+      "lesson": "Good aggressive line preflop and flop. Could have gotten more value on the river.",
+      "reviewed": "0",
+      "effectiveStackBb": "45",
+      "createdAt": "2025-12-07 20:45:09"
+    },
+    {
+      "id": "570001",
+      "heroHand": "AsKs",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "50",
+      "createdAt": "2025-12-07 21:57:20"
+    },
+    {
+      "id": "570002",
+      "heroHand": "AhJd",
+      "heroPosition": "MP",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "23",
+      "createdAt": "2025-12-07 22:02:31"
+    },
+    {
+      "id": "1110001",
+      "heroHand": "J8s",
+      "heroPosition": "UTG",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-26 06:17:50"
+    },
+    {
+      "id": "1380006",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-29 06:10:50"
+    },
+    {
+      "id": "1410004",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-29 07:03:14"
+    },
+    {
+      "id": "1440004",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-30 04:29:01"
+    },
+    {
+      "id": "1470004",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-30 04:43:52"
+    },
+    {
+      "id": "1470012",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-30 04:49:17"
+    },
+    {
+      "id": "1500001",
+      "heroHand": "NULL",
+      "heroPosition": "SB",
+      "spotType": "FACING_3BET",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:32"
+    },
+    {
+      "id": "1500002",
+      "heroHand": "NULL",
+      "heroPosition": "SB",
+      "spotType": "FACING_3BET",
+      "tagsJson": "NULL",
+      "lesson": "Do not block-bet river without a plan versus raise.",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:32"
+    },
+    {
+      "id": "1500003",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:33"
+    },
+    {
+      "id": "1500004",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-30 09:08:33"
+    },
+    {
+      "id": "1500005",
+      "heroHand": "QQ",
+      "heroPosition": "CO",
+      "spotType": "RFI",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "30",
+      "createdAt": "2026-04-30 09:08:33"
+    },
+    {
+      "id": "1500006",
+      "heroHand": "A5s",
+      "heroPosition": "BB",
+      "spotType": "DEFEND_VS_RFI",
+      "tagsJson": "NULL",
+      "lesson": "Check-raise more often on wet boards.",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:34"
+    },
+    {
+      "id": "1500007",
+      "heroHand": "KQs",
+      "heroPosition": "BTN",
+      "spotType": "RFI",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:35"
+    },
+    {
+      "id": "1500009",
+      "heroHand": "NULL",
+      "heroPosition": "SB",
+      "spotType": "FACING_3BET",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:55"
+    },
+    {
+      "id": "1500010",
+      "heroHand": "NULL",
+      "heroPosition": "SB",
+      "spotType": "FACING_3BET",
+      "tagsJson": "NULL",
+      "lesson": "Do not block-bet river without a plan versus raise.",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:56"
+    },
+    {
+      "id": "1500011",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "NULL",
+      "lesson": "NULL",
+      "reviewed": "0",
+      "effectiveStackBb": "NULL",
+      "createdAt": "2026-04-30 09:08:56"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\theroHand\theroPosition\tspotType\ttagsJson\tlesson\treviewed\teffectiveStackBb\tcreatedAt\n510001\tNULL\tCO\tNULL\tNULL\tNULL\t0\t30\t2025-12-07 20:32:56\n540001\tAHKH\tCO\tNULL\tNULL\tGood aggressive line preflop and flop. Could have gotten more value on the river.\t0\t45\t2025-12-07 20:45:09\n570001\tAsKs\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t50\t2025-12-07 21:57:20\n570002\tAhJd\tMP\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t23\t2025-12-07 22:02:31\n1110001\tJ8s\tUTG\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t20\t2026-04-26 06:17:50\n1380006\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t20\t2026-04-29 06:10:50\n1410004\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t20\t2026-04-29 07:03:14\n1440004\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t20\t2026-04-30 04:29:01\n1470004\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t20\t2026-04-30 04:43:52\n1470012\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t20\t2026-04-30 04:49:17\n1500001\tNULL\tSB\tFACING_3BET\tNULL\tNULL\t0\tNULL\t2026-04-30 09:08:32\n1500002\tNULL\tSB\tFACING_3BET\tNULL\tDo not block-bet river without a plan versus raise.\t0\tNULL\t2026-04-30 09:08:32\n1500003\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\tNULL\t2026-04-30 09:08:33\n1500004\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\t20\t2026-04-30 09:08:33\n1500005\tQQ\tCO\tRFI\tNULL\tNULL\t0\t30\t2026-04-30 09:08:33\n1500006\tA5s\tBB\tDEFEND_VS_RFI\tNULL\tCheck-raise more often on wet boards.\t0\tNULL\t2026-04-30 09:08:34\n1500007\tKQs\tBTN\tRFI\tNULL\tNULL\t0\tNULL\t2026-04-30 09:08:35\n1500009\tNULL\tSB\tFACING_3BET\tNULL\tNULL\t0\tNULL\t2026-04-30 09:08:55\n1500010\tNULL\tSB\tFACING_3BET\tNULL\tDo not block-bet river without a plan versus raise.\t0\tNULL\t2026-04-30 09:08:56\n1500011\tAKo\tBTN\tSINGLE_RAISED_POT\tNULL\tNULL\t0\tNULL\t2026-04-30 09:08:56\n",
+  "stderr": "",
+  "execution_time_ms": 1822
+}

@@ -1,0 +1,36 @@
+{
+  "query": "SELECT id, heroHand, heroPosition, spotType, tagsJson, lesson, reviewed, reviewStatus, mistakeSeverity, effectiveStackBb, createdAt FROM hands WHERE id IN (1380008, 1650016) ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, heroHand, heroPosition, spotType, tagsJson, lesson, reviewed, reviewStatus, mistakeSeverity, effectiveStackBb, createdAt FROM hands WHERE id IN (1380008, 1650016) ORDER BY id;",
+  "rows": [
+    {
+      "id": "1380008",
+      "heroHand": "A5s",
+      "heroPosition": "BB",
+      "spotType": "DEFEND_VS_RFI",
+      "tagsJson": "[\"BB_DEFENCE\"]",
+      "lesson": "Check-raise more often on wet boards.",
+      "reviewed": "1",
+      "reviewStatus": "REVIEWED",
+      "mistakeSeverity": "0",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-04-29 06:10:51"
+    },
+    {
+      "id": "1650016",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "[\"TEST\"]",
+      "lesson": "NULL",
+      "reviewed": "1",
+      "reviewStatus": "NEEDS_REVIEW",
+      "mistakeSeverity": "2",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-05-11 13:04:07"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\theroHand\theroPosition\tspotType\ttagsJson\tlesson\treviewed\treviewStatus\tmistakeSeverity\teffectiveStackBb\tcreatedAt\n1380008\tA5s\tBB\tDEFEND_VS_RFI\t[\"BB_DEFENCE\"]\tCheck-raise more often on wet boards.\t1\tREVIEWED\t0\t20\t2026-04-29 06:10:51\n1650016\tAKo\tBTN\tSINGLE_RAISED_POT\t[\"TEST\"]\tNULL\t1\tNEEDS_REVIEW\t2\t20\t2026-05-11 13:04:07\n",
+  "stderr": "",
+  "execution_time_ms": 1845
+}

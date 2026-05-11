@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, name, category, status, description, createdAt FROM leaks ORDER BY id;\nSELECT handId, leakId FROM handLeaks ORDER BY handId, leakId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, name, category, status, description, createdAt FROM leaks ORDER BY id;\nSELECT handId, leakId FROM handLeaks ORDER BY handId, leakId;",
+  "rows": [
+    {
+      "id": "30001",
+      "name": "Overfolding BB vs BTN",
+      "category": "PREFLOP",
+      "status": "ACTIVE",
+      "description": "Folding too often from BB when BTN opens, especially vs small sizes",
+      "createdAt": "2025-11-30 03:14:28"
+    },
+    {
+      "id": "30002",
+      "name": "Check-calling too wide on dry flops",
+      "category": "POSTFLOP",
+      "status": "IMPROVING",
+      "description": "Not folding enough to c-bets on A-high and K-high boards",
+      "createdAt": "2025-11-30 03:14:29"
+    },
+    {
+      "id": "30003",
+      "name": "ICM overfolding at FT bubble",
+      "category": "ICM",
+      "status": "ACTIVE",
+      "description": "Too passive with 15-25bb at FT bubble, missing +EV shoves",
+      "createdAt": "2025-11-30 03:14:29"
+    }
+  ],
+  "messages": [
+    "handId\tleakId",
+    "30001\t30001",
+    "30001\t30002"
+  ],
+  "stdout": "id\tname\tcategory\tstatus\tdescription\tcreatedAt\n30001\tOverfolding BB vs BTN\tPREFLOP\tACTIVE\tFolding too often from BB when BTN opens, especially vs small sizes\t2025-11-30 03:14:28\n30002\tCheck-calling too wide on dry flops\tPOSTFLOP\tIMPROVING\tNot folding enough to c-bets on A-high and K-high boards\t2025-11-30 03:14:29\n30003\tICM overfolding at FT bubble\tICM\tACTIVE\tToo passive with 15-25bb at FT bubble, missing +EV shoves\t2025-11-30 03:14:29\nhandId\tleakId\n30001\t30001\n30001\t30002\n",
+  "stderr": "",
+  "execution_time_ms": 2180
+}

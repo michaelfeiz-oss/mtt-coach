@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, heroHand, heroPosition, spotType, tags, lesson, reviewed, effectiveStackBb, createdAt FROM hands ORDER BY createdAt;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, heroHand, heroPosition, spotType, tags, lesson, reviewed, effectiveStackBb, createdAt FROM hands ORDER BY createdAt;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'tags' in 'field list'"
+  ]
+}

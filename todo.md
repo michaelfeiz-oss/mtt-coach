@@ -431,3 +431,11 @@
 - [ ] Add ICMIZER_REVIEW to hand tags constant list
 - [ ] Show ICMIZER prompt on HandDetail when spotType is ICM_SPOT or FOUR_BET_JAM
 - [ ] Write tests: push/fold not in nav, not in training, ICMIZER prompt shows
+
+## v0.1.0 Production Data Baseline Freeze
+- [x] Removed 241 test/seed/duplicate hands from production database
+- [x] Removed 97 "Test Leak" duplicate entries from production database
+- [x] Confirmed 13 real hands and 3 real leaks remain
+- [x] Reconciled deletion math (254 - 241 = 13)
+- [x] Committed freeze note to docs/v0.1.0_data_baseline_freeze.md
+- [x] All 6 routes verified clean (Dashboard, Hands, Hand Detail, Study, Chart Viewer, Range Trainer)

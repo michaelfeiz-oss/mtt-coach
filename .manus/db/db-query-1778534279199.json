@@ -1,0 +1,15 @@
+{
+  "query": "SELECT userId, COUNT(*) AS cnt, GROUP_CONCAT(id ORDER BY id SEPARATOR ', ') AS hand_ids FROM hands GROUP BY userId ORDER BY userId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT userId, COUNT(*) AS cnt, GROUP_CONCAT(id ORDER BY id SEPARATOR ', ') AS hand_ids FROM hands GROUP BY userId ORDER BY userId;",
+  "rows": [
+    {
+      "userId": "1",
+      "cnt": "18",
+      "hand_ids": "30001, 30002, 30003, 540001, 570001, 570002, 900002, 1110001, 1260001, 1290001, 1380001, 1380003, 1380004, 1380005, 1380007, 1380008, 1380009, 1650016"
+    }
+  ],
+  "messages": [],
+  "stdout": "userId\tcnt\thand_ids\n1\t18\t30001, 30002, 30003, 540001, 570001, 570002, 900002, 1110001, 1260001, 1290001, 1380001, 1380003, 1380004, 1380005, 1380007, 1380008, 1380009, 1650016\n",
+  "stderr": "",
+  "execution_time_ms": 2528
+}

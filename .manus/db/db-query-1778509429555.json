@@ -1,0 +1,16 @@
+{
+  "query": "SELECT \n  SUM(CASE WHEN tagsJson LIKE '%TEST%' THEN 1 ELSE 0 END) AS still_test_tagged,\n  SUM(CASE WHEN tagsJson IS NULL OR tagsJson = 'NULL' THEN 1 ELSE 0 END) AS null_tags,\n  SUM(CASE WHEN tagsJson NOT LIKE '%TEST%' AND tagsJson IS NOT NULL AND tagsJson != 'NULL' THEN 1 ELSE 0 END) AS real_tagged,\n  COUNT(*) AS total\nFROM hands;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT \n  SUM(CASE WHEN tagsJson LIKE '%TEST%' THEN 1 ELSE 0 END) AS still_test_tagged,\n  SUM(CASE WHEN tagsJson IS NULL OR tagsJson = 'NULL' THEN 1 ELSE 0 END) AS null_tags,\n  SUM(CASE WHEN tagsJson NOT LIKE '%TEST%' AND tagsJson IS NOT NULL AND tagsJson != 'NULL' THEN 1 ELSE 0 END) AS real_tagged,\n  COUNT(*) AS total\nFROM hands;",
+  "rows": [
+    {
+      "still_test_tagged": "1",
+      "null_tags": "122",
+      "real_tagged": "13",
+      "total": "136"
+    }
+  ],
+  "messages": [],
+  "stdout": "still_test_tagged\tnull_tags\treal_tagged\ttotal\n1\t122\t13\t136\n",
+  "stderr": "",
+  "execution_time_ms": 1834
+}

@@ -1,0 +1,15 @@
+{
+  "query": "SELECT hl.handId, hl.leakId, l.name AS leakName FROM handLeaks hl JOIN leaks l ON hl.leakId = l.id WHERE hl.handId = 1650016;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT hl.handId, hl.leakId, l.name AS leakName FROM handLeaks hl JOIN leaks l ON hl.leakId = l.id WHERE hl.handId = 1650016;",
+  "rows": [
+    {
+      "handId": "1650016",
+      "leakId": "1470002",
+      "leakName": "Test Leak"
+    }
+  ],
+  "messages": [],
+  "stdout": "handId\tleakId\tleakName\n1650016\t1470002\tTest Leak\n",
+  "stderr": "",
+  "execution_time_ms": 1913
+}

@@ -1,0 +1,61 @@
+{
+  "query": "SELECT id FROM hands WHERE tagsJson NOT LIKE '%TEST%' ORDER BY id LIMIT 20 OFFSET 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id FROM hands WHERE tagsJson NOT LIKE '%TEST%' ORDER BY id LIMIT 20 OFFSET 20;",
+  "rows": [
+    {
+      "id": "1440002"
+    },
+    {
+      "id": "1440003"
+    },
+    {
+      "id": "1440005"
+    },
+    {
+      "id": "1440006"
+    },
+    {
+      "id": "1440007"
+    },
+    {
+      "id": "1470001"
+    },
+    {
+      "id": "1470002"
+    },
+    {
+      "id": "1470003"
+    },
+    {
+      "id": "1470005"
+    },
+    {
+      "id": "1470006"
+    },
+    {
+      "id": "1470007"
+    },
+    {
+      "id": "1470009"
+    },
+    {
+      "id": "1470010"
+    },
+    {
+      "id": "1470011"
+    },
+    {
+      "id": "1470013"
+    },
+    {
+      "id": "1470014"
+    },
+    {
+      "id": "1470015"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\n1440002\n1440003\n1440005\n1440006\n1440007\n1470001\n1470002\n1470003\n1470005\n1470006\n1470007\n1470009\n1470010\n1470011\n1470013\n1470014\n1470015\n",
+  "stderr": "",
+  "execution_time_ms": 1883
+}

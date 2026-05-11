@@ -1,0 +1,34 @@
+{
+  "query": "SELECT 'leaks' AS tbl, COUNT(*) AS total FROM leaks\nUNION ALL\nSELECT 'hands', COUNT(*) FROM hands\nUNION ALL\nSELECT 'reviewed_hands', COUNT(*) FROM hands WHERE reviewed = 1\nUNION ALL\nSELECT 'handLeaks_rows', COUNT(*) FROM handLeaks\nUNION ALL\nSELECT 'test_leak_entries', COUNT(*) FROM leaks WHERE name = 'Test Leak'\nUNION ALL\nSELECT 'seed_hands_remaining', COUNT(*) FROM hands WHERE id IN (1380001,1380003,1380005,1380007,1380009);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT 'leaks' AS tbl, COUNT(*) AS total FROM leaks\nUNION ALL\nSELECT 'hands', COUNT(*) FROM hands\nUNION ALL\nSELECT 'reviewed_hands', COUNT(*) FROM hands WHERE reviewed = 1\nUNION ALL\nSELECT 'handLeaks_rows', COUNT(*) FROM handLeaks\nUNION ALL\nSELECT 'test_leak_entries', COUNT(*) FROM leaks WHERE name = 'Test Leak'\nUNION ALL\nSELECT 'seed_hands_remaining', COUNT(*) FROM hands WHERE id IN (1380001,1380003,1380005,1380007,1380009);",
+  "rows": [
+    {
+      "tbl": "hands",
+      "total": "13"
+    },
+    {
+      "tbl": "reviewed_hands",
+      "total": "4"
+    },
+    {
+      "tbl": "test_leak_entries",
+      "total": "0"
+    },
+    {
+      "tbl": "leaks",
+      "total": "3"
+    },
+    {
+      "tbl": "handLeaks_rows",
+      "total": "2"
+    },
+    {
+      "tbl": "seed_hands_remaining",
+      "total": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\ttotal\nhands\t13\nreviewed_hands\t4\ntest_leak_entries\t0\nleaks\t3\nhandLeaks_rows\t2\nseed_hands_remaining\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1945
+}

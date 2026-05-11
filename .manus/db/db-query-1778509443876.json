@@ -1,0 +1,45 @@
+{
+  "query": "SELECT DATE(createdAt) AS day, COUNT(*) AS cnt, MIN(id) AS min_id, MAX(id) AS max_id,\n  GROUP_CONCAT(DISTINCT heroHand ORDER BY heroHand SEPARATOR ', ') AS hands\nFROM hands \nWHERE tagsJson IS NULL OR tagsJson = 'NULL'\nGROUP BY DATE(createdAt)\nORDER BY day;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT DATE(createdAt) AS day, COUNT(*) AS cnt, MIN(id) AS min_id, MAX(id) AS max_id,\n  GROUP_CONCAT(DISTINCT heroHand ORDER BY heroHand SEPARATOR ', ') AS hands\nFROM hands \nWHERE tagsJson IS NULL OR tagsJson = 'NULL'\nGROUP BY DATE(createdAt)\nORDER BY day;",
+  "rows": [
+    {
+      "day": "2025-12-07",
+      "cnt": "4",
+      "min_id": "510001",
+      "max_id": "570002",
+      "hands": "AhJd, AHKH, AsKs"
+    },
+    {
+      "day": "2026-04-26",
+      "cnt": "1",
+      "min_id": "1110001",
+      "max_id": "1110001",
+      "hands": "J8s"
+    },
+    {
+      "day": "2026-04-29",
+      "cnt": "2",
+      "min_id": "1380006",
+      "max_id": "1410004",
+      "hands": "AKo"
+    },
+    {
+      "day": "2026-04-30",
+      "cnt": "80",
+      "min_id": "1440004",
+      "max_id": "1560023",
+      "hands": "A5s, AKo, KQs, QQ"
+    },
+    {
+      "day": "2026-05-11",
+      "cnt": "35",
+      "min_id": "1590001",
+      "max_id": "1650015",
+      "hands": "A5s, AKo, KQs, QQ"
+    }
+  ],
+  "messages": [],
+  "stdout": "day\tcnt\tmin_id\tmax_id\thands\n2025-12-07\t4\t510001\t570002\tAhJd, AHKH, AsKs\n2026-04-26\t1\t1110001\t1110001\tJ8s\n2026-04-29\t2\t1380006\t1410004\tAKo\n2026-04-30\t80\t1440004\t1560023\tA5s, AKo, KQs, QQ\n2026-05-11\t35\t1590001\t1650015\tA5s, AKo, KQs, QQ\n",
+  "stderr": "",
+  "execution_time_ms": 1881
+}

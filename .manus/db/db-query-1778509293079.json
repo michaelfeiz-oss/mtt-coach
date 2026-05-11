@@ -1,0 +1,23 @@
+{
+  "query": "SELECT id, heroHand, heroPosition, spotType, tagsJson, lesson, reviewed, mistakeStreet, mistakeSeverity, effectiveStackBb, createdAt FROM hands WHERE id = 1650016;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, heroHand, heroPosition, spotType, tagsJson, lesson, reviewed, mistakeStreet, mistakeSeverity, effectiveStackBb, createdAt FROM hands WHERE id = 1650016;",
+  "rows": [
+    {
+      "id": "1650016",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "spotType": "SINGLE_RAISED_POT",
+      "tagsJson": "[\"TEST\"]",
+      "lesson": "NULL",
+      "reviewed": "1",
+      "mistakeStreet": "NULL",
+      "mistakeSeverity": "2",
+      "effectiveStackBb": "20",
+      "createdAt": "2026-05-11 13:04:07"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\theroHand\theroPosition\tspotType\ttagsJson\tlesson\treviewed\tmistakeStreet\tmistakeSeverity\teffectiveStackBb\tcreatedAt\n1650016\tAKo\tBTN\tSINGLE_RAISED_POT\t[\"TEST\"]\tNULL\t1\tNULL\t2\t20\t2026-05-11 13:04:07\n",
+  "stderr": "",
+  "execution_time_ms": 1934
+}

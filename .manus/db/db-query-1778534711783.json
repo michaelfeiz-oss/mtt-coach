@@ -1,0 +1,38 @@
+{
+  "query": "SELECT 'total_hands' AS metric, COUNT(*) AS value FROM hands\nUNION ALL SELECT 'reviewed_hands', COUNT(*) FROM hands WHERE reviewed = 1\nUNION ALL SELECT 'seed_demo_hands', COUNT(*) FROM hands WHERE id IN (1380001,1380003,1380005,1380007,1380009)\nUNION ALL SELECT 'test_tagged_hands', COUNT(*) FROM hands WHERE tagsJson LIKE '%TEST%'\nUNION ALL SELECT 'total_leaks', COUNT(*) FROM leaks\nUNION ALL SELECT 'test_leak_entries', COUNT(*) FROM leaks WHERE name = 'Test Leak'\nUNION ALL SELECT 'handLeaks_rows', COUNT(*) FROM handLeaks;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT 'total_hands' AS metric, COUNT(*) AS value FROM hands\nUNION ALL SELECT 'reviewed_hands', COUNT(*) FROM hands WHERE reviewed = 1\nUNION ALL SELECT 'seed_demo_hands', COUNT(*) FROM hands WHERE id IN (1380001,1380003,1380005,1380007,1380009)\nUNION ALL SELECT 'test_tagged_hands', COUNT(*) FROM hands WHERE tagsJson LIKE '%TEST%'\nUNION ALL SELECT 'total_leaks', COUNT(*) FROM leaks\nUNION ALL SELECT 'test_leak_entries', COUNT(*) FROM leaks WHERE name = 'Test Leak'\nUNION ALL SELECT 'handLeaks_rows', COUNT(*) FROM handLeaks;",
+  "rows": [
+    {
+      "metric": "seed_demo_hands",
+      "value": "0"
+    },
+    {
+      "metric": "total_leaks",
+      "value": "3"
+    },
+    {
+      "metric": "reviewed_hands",
+      "value": "4"
+    },
+    {
+      "metric": "total_hands",
+      "value": "13"
+    },
+    {
+      "metric": "test_tagged_hands",
+      "value": "1"
+    },
+    {
+      "metric": "test_leak_entries",
+      "value": "0"
+    },
+    {
+      "metric": "handLeaks_rows",
+      "value": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "metric\tvalue\nseed_demo_hands\t0\ntotal_leaks\t3\nreviewed_hands\t4\ntotal_hands\t13\ntest_tagged_hands\t1\ntest_leak_entries\t0\nhandLeaks_rows\t2\n",
+  "stderr": "",
+  "execution_time_ms": 5459
+}

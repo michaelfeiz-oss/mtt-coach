@@ -1,0 +1,26 @@
+{
+  "query": "SELECT 'leaks' AS tbl, COUNT(*) AS total FROM leaks\nUNION ALL\nSELECT 'hands', COUNT(*) FROM hands\nUNION ALL\nSELECT 'reviewed_hands', COUNT(*) FROM hands WHERE reviewed = 1\nUNION ALL\nSELECT 'handLeaks_rows', COUNT(*) FROM handLeaks;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT 'leaks' AS tbl, COUNT(*) AS total FROM leaks\nUNION ALL\nSELECT 'hands', COUNT(*) FROM hands\nUNION ALL\nSELECT 'reviewed_hands', COUNT(*) FROM hands WHERE reviewed = 1\nUNION ALL\nSELECT 'handLeaks_rows', COUNT(*) FROM handLeaks;",
+  "rows": [
+    {
+      "tbl": "leaks",
+      "total": "3"
+    },
+    {
+      "tbl": "handLeaks_rows",
+      "total": "2"
+    },
+    {
+      "tbl": "reviewed_hands",
+      "total": "16"
+    },
+    {
+      "tbl": "hands",
+      "total": "136"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\ttotal\nleaks\t3\nhandLeaks_rows\t2\nreviewed_hands\t16\nhands\t136\n",
+  "stderr": "",
+  "execution_time_ms": 1841
+}

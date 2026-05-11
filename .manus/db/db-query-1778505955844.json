@@ -1,0 +1,16 @@
+{
+  "query": "SELECT \n  COUNT(*) AS total_hands,\n  SUM(CASE WHEN tagsJson LIKE '%TEST%' AND lesson IS NULL THEN 1 ELSE 0 END) AS test_hands_null_lesson,\n  SUM(CASE WHEN tagsJson NOT LIKE '%TEST%' OR lesson IS NOT NULL THEN 1 ELSE 0 END) AS potentially_real,\n  SUM(CASE WHEN tagsJson LIKE '%TEST%' THEN 1 ELSE 0 END) AS tagged_test\nFROM hands;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT \n  COUNT(*) AS total_hands,\n  SUM(CASE WHEN tagsJson LIKE '%TEST%' AND lesson IS NULL THEN 1 ELSE 0 END) AS test_hands_null_lesson,\n  SUM(CASE WHEN tagsJson NOT LIKE '%TEST%' OR lesson IS NOT NULL THEN 1 ELSE 0 END) AS potentially_real,\n  SUM(CASE WHEN tagsJson LIKE '%TEST%' THEN 1 ELSE 0 END) AS tagged_test\nFROM hands;",
+  "rows": [
+    {
+      "total_hands": "254",
+      "test_hands_null_lesson": "95",
+      "potentially_real": "70",
+      "tagged_test": "95"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_hands\ttest_hands_null_lesson\tpotentially_real\ttagged_test\n254\t95\t70\t95\n",
+  "stderr": "",
+  "execution_time_ms": 1901
+}

@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM handLeaks \nWHERE leakId IN (SELECT id FROM leaks WHERE name = 'Test Leak')\n   OR handId IN (\n     SELECT id FROM hands \n     WHERE tagsJson LIKE '%TEST%' AND (lesson IS NULL OR lesson = 'NULL')\n        AND id != 1650016\n   )\n   OR handId IN (1410001,1410002,1410003,1410005,1410006,1410007,1440001,1440002,1440003,1440005,1440006,1440007,1470001,1470002,1470003,1470005,1470006,1470007,1470009,1470010,1470011,1470013,1470014,1470015);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute DELETE FROM handLeaks \nWHERE leakId IN (SELECT id FROM leaks WHERE name = 'Test Leak')\n   OR handId IN (\n     SELECT id FROM hands \n     WHERE tagsJson LIKE '%TEST%' AND (lesson IS NULL OR lesson = 'NULL')\n        AND id != 1650016\n   )\n   OR handId IN (1410001,1410002,1410003,1410005,1410006,1410007,1440001,1440002,1440003,1440005,1440006,1440007,1470001,1470002,1470003,1470005,1470006,1470007,1470009,1470010,1470011,1470013,1470014,1470015);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1853
+}

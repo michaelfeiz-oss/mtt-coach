@@ -1,0 +1,127 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'hands' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'hands' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "userId"
+    },
+    {
+      "COLUMN_NAME": "tournamentId"
+    },
+    {
+      "COLUMN_NAME": "studySessionId"
+    },
+    {
+      "COLUMN_NAME": "heroPosition"
+    },
+    {
+      "COLUMN_NAME": "heroHand"
+    },
+    {
+      "COLUMN_NAME": "boardRunout"
+    },
+    {
+      "COLUMN_NAME": "effectiveStackBb"
+    },
+    {
+      "COLUMN_NAME": "spr"
+    },
+    {
+      "COLUMN_NAME": "streetDataJson"
+    },
+    {
+      "COLUMN_NAME": "spotType"
+    },
+    {
+      "COLUMN_NAME": "heroDecisionPreflop"
+    },
+    {
+      "COLUMN_NAME": "heroDecisionFlop"
+    },
+    {
+      "COLUMN_NAME": "heroDecisionTurn"
+    },
+    {
+      "COLUMN_NAME": "heroDecisionRiver"
+    },
+    {
+      "COLUMN_NAME": "reviewed"
+    },
+    {
+      "COLUMN_NAME": "evalSource"
+    },
+    {
+      "COLUMN_NAME": "mistakeStreet"
+    },
+    {
+      "COLUMN_NAME": "mistakeSeverity"
+    },
+    {
+      "COLUMN_NAME": "evDiffBb"
+    },
+    {
+      "COLUMN_NAME": "tagsJson"
+    },
+    {
+      "COLUMN_NAME": "lesson"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "heroCard1"
+    },
+    {
+      "COLUMN_NAME": "heroCard2"
+    },
+    {
+      "COLUMN_NAME": "handClass"
+    },
+    {
+      "COLUMN_NAME": "exactSuitsKnown"
+    },
+    {
+      "COLUMN_NAME": "actualStackBB"
+    },
+    {
+      "COLUMN_NAME": "openerPosition"
+    },
+    {
+      "COLUMN_NAME": "villainPosition"
+    },
+    {
+      "COLUMN_NAME": "villainType"
+    },
+    {
+      "COLUMN_NAME": "rangeRead"
+    },
+    {
+      "COLUMN_NAME": "tournamentStage"
+    },
+    {
+      "COLUMN_NAME": "preflopDecision"
+    },
+    {
+      "COLUMN_NAME": "actionsJson"
+    },
+    {
+      "COLUMN_NAME": "boardJson"
+    },
+    {
+      "COLUMN_NAME": "leakFamilyId"
+    },
+    {
+      "COLUMN_NAME": "confidence"
+    },
+    {
+      "COLUMN_NAME": "reviewStatus"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nuserId\ntournamentId\nstudySessionId\nheroPosition\nheroHand\nboardRunout\neffectiveStackBb\nspr\nstreetDataJson\nspotType\nheroDecisionPreflop\nheroDecisionFlop\nheroDecisionTurn\nheroDecisionRiver\nreviewed\nevalSource\nmistakeStreet\nmistakeSeverity\nevDiffBb\ntagsJson\nlesson\ncreatedAt\nheroCard1\nheroCard2\nhandClass\nexactSuitsKnown\nactualStackBB\nopenerPosition\nvillainPosition\nvillainType\nrangeRead\ntournamentStage\npreflopDecision\nactionsJson\nboardJson\nleakFamilyId\nconfidence\nreviewStatus\n",
+  "stderr": "",
+  "execution_time_ms": 1910
+}

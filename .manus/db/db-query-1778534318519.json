@@ -1,0 +1,154 @@
+{
+  "query": "SELECT id, heroHand, heroPosition, reviewStatus, reviewed, tagsJson FROM hands ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, heroHand, heroPosition, reviewStatus, reviewed, tagsJson FROM hands ORDER BY id;",
+  "rows": [
+    {
+      "id": "30001",
+      "heroHand": "AhQs",
+      "heroPosition": "BB",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "1",
+      "tagsJson": "[\"BB_DEFENCE\",\"OVERFOLD\"]"
+    },
+    {
+      "id": "30002",
+      "heroHand": "JcTs",
+      "heroPosition": "BTN",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "1",
+      "tagsJson": "[\"STANDARD\"]"
+    },
+    {
+      "id": "30003",
+      "heroHand": "AsKd",
+      "heroPosition": "CO",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "[\"3BET_POT\",\"ALLIN\"]"
+    },
+    {
+      "id": "540001",
+      "heroHand": "AHKH",
+      "heroPosition": "CO",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "NULL"
+    },
+    {
+      "id": "570001",
+      "heroHand": "AsKs",
+      "heroPosition": "BTN",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "NULL"
+    },
+    {
+      "id": "570002",
+      "heroHand": "AhJd",
+      "heroPosition": "MP",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "NULL"
+    },
+    {
+      "id": "900002",
+      "heroHand": "4c3c",
+      "heroPosition": "SB",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "[\"BLIND_DEFENSE\"]"
+    },
+    {
+      "id": "1110001",
+      "heroHand": "J8s",
+      "heroPosition": "UTG",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "NULL"
+    },
+    {
+      "id": "1260001",
+      "heroHand": "A8s",
+      "heroPosition": "UTG1",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "[]"
+    },
+    {
+      "id": "1290001",
+      "heroHand": "KK",
+      "heroPosition": "SB",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "[]"
+    },
+    {
+      "id": "1380001",
+      "heroHand": "A4s",
+      "heroPosition": "MP",
+      "reviewStatus": "REVIEWED",
+      "reviewed": "0",
+      "tagsJson": "[\"3BET\"]"
+    },
+    {
+      "id": "1380003",
+      "heroHand": "KK",
+      "heroPosition": "SB",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "[\"BB_DEFENCE\",\"FACING_3BET\"]"
+    },
+    {
+      "id": "1380004",
+      "heroHand": "KK",
+      "heroPosition": "SB",
+      "reviewStatus": "REVIEWED",
+      "reviewed": "0",
+      "tagsJson": "[\"BB_DEFENCE\",\"FACING_3BET\"]"
+    },
+    {
+      "id": "1380005",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "reviewStatus": "DRAFT",
+      "reviewed": "0",
+      "tagsJson": "[\"PREFLOP_MISTAKE\"]"
+    },
+    {
+      "id": "1380007",
+      "heroHand": "QQ",
+      "heroPosition": "CO",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "[\"RFI\"]"
+    },
+    {
+      "id": "1380008",
+      "heroHand": "A5s",
+      "heroPosition": "BB",
+      "reviewStatus": "REVIEWED",
+      "reviewed": "1",
+      "tagsJson": "[\"BB_DEFENCE\"]"
+    },
+    {
+      "id": "1380009",
+      "heroHand": "KQs",
+      "heroPosition": "BTN",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "0",
+      "tagsJson": "[\"RFI\"]"
+    },
+    {
+      "id": "1650016",
+      "heroHand": "AKo",
+      "heroPosition": "BTN",
+      "reviewStatus": "NEEDS_REVIEW",
+      "reviewed": "1",
+      "tagsJson": "[\"TEST\"]"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\theroHand\theroPosition\treviewStatus\treviewed\ttagsJson\n30001\tAhQs\tBB\tNEEDS_REVIEW\t1\t[\"BB_DEFENCE\",\"OVERFOLD\"]\n30002\tJcTs\tBTN\tNEEDS_REVIEW\t1\t[\"STANDARD\"]\n30003\tAsKd\tCO\tNEEDS_REVIEW\t0\t[\"3BET_POT\",\"ALLIN\"]\n540001\tAHKH\tCO\tNEEDS_REVIEW\t0\tNULL\n570001\tAsKs\tBTN\tNEEDS_REVIEW\t0\tNULL\n570002\tAhJd\tMP\tNEEDS_REVIEW\t0\tNULL\n900002\t4c3c\tSB\tNEEDS_REVIEW\t0\t[\"BLIND_DEFENSE\"]\n1110001\tJ8s\tUTG\tNEEDS_REVIEW\t0\tNULL\n1260001\tA8s\tUTG1\tNEEDS_REVIEW\t0\t[]\n1290001\tKK\tSB\tNEEDS_REVIEW\t0\t[]\n1380001\tA4s\tMP\tREVIEWED\t0\t[\"3BET\"]\n1380003\tKK\tSB\tNEEDS_REVIEW\t0\t[\"BB_DEFENCE\",\"FACING_3BET\"]\n1380004\tKK\tSB\tREVIEWED\t0\t[\"BB_DEFENCE\",\"FACING_3BET\"]\n1380005\tAKo\tBTN\tDRAFT\t0\t[\"PREFLOP_MISTAKE\"]\n1380007\tQQ\tCO\tNEEDS_REVIEW\t0\t[\"RFI\"]\n1380008\tA5s\tBB\tREVIEWED\t1\t[\"BB_DEFENCE\"]\n1380009\tKQs\tBTN\tNEEDS_REVIEW\t0\t[\"RFI\"]\n1650016\tAKo\tBTN\tNEEDS_REVIEW\t1\t[\"TEST\"]\n",
+  "stderr": "",
+  "execution_time_ms": 1892
+}
