@@ -10,8 +10,21 @@ import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveT
 import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } from "./curriculumConfig";
 import { icmRouter } from "./icm/router";
 import { strategyRouter } from "./strategy/router";
-import { getLeakFamily } from "../shared/leakFamilies";
-
+import { getLeakFamily, LEAK_FAMILY_IDS } from "../shared/leakFamilies";
+import {
+  HAND_REVIEW_STATUSES,
+  TRAINER_ATTEMPT_CONFIDENCES,
+} from "../shared/coachingLoop";
+import {
+  getHandTrainingSuggestion,
+  getReviewQueueSummary,
+  getTodayTrainingSuggestions,
+  getWeakSpotSummary,
+} from "./coachingLoop";
+import { submitTrainerAttempt, updateTrainerAttemptConfidence } from "./strategy/service";
+import { eq, and, desc, asc, inArray, gte } from "drizzle-orm";
+import { hands } from "../drizzle/schema";
+import { getDb } from "./db";
 // Hardcoded user ID for single-user app
 const HARDCODED_USER_ID = 1;
 
@@ -198,7 +211,7 @@ export const appRouter = router({
         boardRunout: z.string().optional(),
         effectiveStackBb: z.number().optional(),
         spr: z.number().optional(),
-        spotType: z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BvB', 'ICM_SPOT', 'LIMPED_POT']).optional(),
+        spotType: z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BVB', 'ICM_SPOT', 'LIMPED_POT', 'RFI', 'DEFEND_VS_RFI', 'THREE_BET', 'FACING_3BET', 'LIMP_ISO', 'FOUR_BET_JAM', 'OTHER_PREFLOP']).optional(),
         heroDecisionPreflop: z.string().optional(),
         heroDecisionFlop: z.string().optional(),
         heroDecisionTurn: z.string().optional(),
@@ -210,6 +223,22 @@ export const appRouter = router({
         lesson: z.string().optional(),
         leakIds: z.array(z.number()).optional(),
         leakFamilyId: z.string().optional(),
+        villainPosition: z.string().optional(),
+        // V2 structured hand fields
+        heroCard1: z.string().optional(),
+        heroCard2: z.string().optional(),
+        handClass: z.string().optional(),
+        exactSuitsKnown: z.boolean().optional(),
+        actualStackBB: z.number().optional(),
+        openerPosition: z.string().optional(),
+        villainType: z.string().optional(),
+        rangeRead: z.string().optional(),
+        tournamentStage: z.string().optional(),
+        preflopDecision: z.string().optional(),
+        actionsJson: z.string().optional(),
+        boardJson: z.string().optional(),
+        confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+        reviewStatus: z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED']).optional(),
       }))
       .mutation(async ({ input }) => {
         const hand = await db.createHand({
@@ -231,6 +260,23 @@ export const appRouter = router({
           tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
           lesson: input.lesson,
           streetDataJson: input.streetDataJson,
+          // V2 structured fields
+          heroCard1: input.heroCard1,
+          heroCard2: input.heroCard2,
+          handClass: input.handClass,
+          exactSuitsKnown: input.exactSuitsKnown,
+          actualStackBB: input.actualStackBB,
+          openerPosition: input.openerPosition,
+          villainPosition: input.villainPosition,
+          villainType: input.villainType,
+          rangeRead: input.rangeRead,
+          tournamentStage: input.tournamentStage,
+          preflopDecision: input.preflopDecision,
+          actionsJson: input.actionsJson,
+          boardJson: input.boardJson,
+          confidence: input.confidence,
+          reviewStatus: input.reviewStatus,
+          leakFamilyId: input.leakFamilyId,
         });
 
         // Link leaks if provided
@@ -277,15 +323,28 @@ export const appRouter = router({
         mistakeSeverity: z.number().optional(),
         tags: z.array(z.string()).optional(),
         lesson: z.string().optional(),
+        leakFamilyId: z.string().optional(),
+        confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+        reviewStatus: z.enum(['DRAFT', 'NEEDS_REVIEW', 'REVIEWED']).optional(),
+        villainType: z.string().optional(),
+        rangeRead: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        return db.updateHand(input.id, {
-          reviewed: input.reviewed,
-          mistakeStreet: input.mistakeStreet,
-          mistakeSeverity: input.mistakeSeverity,
-          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
-          lesson: input.lesson,
-        });
+        const updates: Record<string, unknown> = {};
+        if (input.reviewed !== undefined) updates.reviewed = input.reviewed;
+        if (input.mistakeStreet !== undefined) updates.mistakeStreet = input.mistakeStreet;
+        if (input.mistakeSeverity !== undefined) updates.mistakeSeverity = input.mistakeSeverity;
+        if (input.tags !== undefined) updates.tagsJson = JSON.stringify(input.tags);
+        if (input.lesson !== undefined) updates.lesson = input.lesson;
+        if (input.leakFamilyId !== undefined) updates.leakFamilyId = input.leakFamilyId || null;
+        if (input.confidence !== undefined) updates.confidence = input.confidence;
+        if (input.reviewStatus !== undefined) {
+          updates.reviewStatus = input.reviewStatus;
+          if (input.reviewStatus === 'REVIEWED') updates.reviewed = true;
+        }
+        if (input.villainType !== undefined) updates.villainType = input.villainType;
+        if (input.rangeRead !== undefined) updates.rangeRead = input.rangeRead;
+        return db.updateHand(input.id, updates as Partial<import('../drizzle/schema').InsertHand>);
       }),
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
@@ -293,10 +352,83 @@ export const appRouter = router({
         return db.getHandById(input.id);
       }),
     getByUser: publicProcedure
-      .input(z.object({ limit: z.number().default(50) }))
+      .input(
+        z.object({
+          limit: z.number().default(50),
+          reviewStatus: z.enum(HAND_REVIEW_STATUSES).default("all"),
+          leakFamilyId: z.enum(LEAK_FAMILY_IDS).optional(),
+          spotType: z
+            .enum([
+              "SINGLE_RAISED_POT",
+              "3BET_POT",
+              "BVB",
+              "ICM_SPOT",
+              "LIMPED_POT",
+              "RFI",
+              "DEFEND_VS_RFI",
+              "THREE_BET",
+              "FACING_3BET",
+              "LIMP_ISO",
+              "FOUR_BET_JAM",
+              "OTHER_PREFLOP",
+            ])
+            .optional(),
+        })
+      )
       .query(async ({ input }) => {
-        return db.getHandsByUser(HARDCODED_USER_ID, input.limit);
+        return db.getHandsByUser(HARDCODED_USER_ID, {
+          limit: input.limit,
+          reviewStatus: input.reviewStatus,
+          leakFamilyId: input.leakFamilyId,
+          spotType: input.spotType,
+        });
       }),
+    filter: publicProcedure
+      .input(z.object({
+        limit: z.number().default(50),
+        offset: z.number().default(0),
+        reviewStatus: z.array(z.enum(['NEEDS_REVIEW', 'REVIEWED', 'DRAFT'])).optional(),
+        spotType: z.array(z.enum(['SINGLE_RAISED_POT', '3BET_POT', 'BVB', 'ICM_SPOT', 'LIMPED_POT', 'RFI', 'DEFEND_VS_RFI', 'THREE_BET', 'FACING_3BET', 'LIMP_ISO', 'FOUR_BET_JAM', 'OTHER_PREFLOP'])).optional(),
+        mistakeSeverity: z.array(z.number()).optional(),
+        sortBy: z.enum(['newest', 'oldest', 'severity']).default('newest'),
+        leakFamilyId: z.string().optional(),
+        mistakeStreet: z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER']).optional(),
+      }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) throw new Error('Database not available');
+        const conditions = [eq(hands.userId, HARDCODED_USER_ID)];
+        if (input.reviewStatus?.length) {
+          conditions.push(inArray(hands.reviewStatus, input.reviewStatus as any[]));
+        }
+        if (input.spotType?.length) {
+          conditions.push(inArray(hands.spotType, input.spotType as any[]));
+        }
+        if (input.mistakeSeverity?.length) {
+          conditions.push(inArray(hands.mistakeSeverity, input.mistakeSeverity));
+        }
+        if (input.mistakeStreet) {
+          conditions.push(eq(hands.mistakeStreet, input.mistakeStreet));
+        }
+        if (input.leakFamilyId) {
+          conditions.push(eq(hands.leakFamilyId, input.leakFamilyId));
+        }
+        const orderCol = input.sortBy === 'severity'
+          ? desc(hands.mistakeSeverity)
+          : input.sortBy === 'oldest'
+          ? asc(hands.createdAt)
+          : desc(hands.createdAt);
+        return dbConn
+          .select()
+          .from(hands)
+          .where(and(...conditions))
+          .orderBy(orderCol)
+          .limit(input.limit)
+          .offset(input.offset);
+      }),
+    getReviewQueueSummary: publicProcedure.query(async () => {
+      return getReviewQueueSummary(HARDCODED_USER_ID);
+    }),
     getLeaks: publicProcedure
       .input(z.object({ handId: z.number() }))
       .query(async ({ input }) => {
@@ -311,6 +443,15 @@ export const appRouter = router({
       .input(z.object({ handId: z.number(), leakId: z.number() }))
       .mutation(async ({ input }) => {
         return db.unlinkHandFromLeak(input.handId, input.leakId);
+      }),
+    attachLeakFamily: publicProcedure
+      .input(z.object({ handId: z.number(), leakFamilyId: z.enum(LEAK_FAMILY_IDS) }))
+      .mutation(async ({ input }) => {
+        return db.attachLeakFamilyToHand(
+          HARDCODED_USER_ID,
+          input.handId,
+          input.leakFamilyId
+        );
       }),
     getByTournament: publicProcedure
       .input(z.object({ tournamentId: z.number() }))
@@ -481,6 +622,73 @@ export const appRouter = router({
 
   // Strategy module
   strategy: strategyRouter,
+
+  trainerAttempts: router({
+    submit: publicProcedure
+      .input(
+        z.object({
+          chartId: z.number().int().positive(),
+          handCode: z.string().min(2).max(4),
+          selectedAction: z.enum([
+            "FOLD",
+            "RAISE",
+            "CALL",
+            "THREE_BET",
+            "JAM",
+            "LIMP",
+            "CHECK",
+          ]),
+          drillPackId: z.string().optional(),
+          sessionId: z.string().optional(),
+          responseTimeMs: z.number().int().min(0).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id ?? HARDCODED_USER_ID;
+        return submitTrainerAttempt(userId, input);
+      }),
+    updateConfidence: publicProcedure
+      .input(
+        z.object({
+          attemptId: z.number().int().positive(),
+          confidence: z.enum(TRAINER_ATTEMPT_CONFIDENCES),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id ?? HARDCODED_USER_ID;
+        const success = await updateTrainerAttemptConfidence(
+          userId,
+          input.attemptId,
+          input.confidence
+        );
+
+        return { success };
+      }),
+  }),
+
+  weakSpots: router({
+    getSummary: publicProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(20).default(8) }).optional())
+      .query(async ({ input }) => {
+        return getWeakSpotSummary(HARDCODED_USER_ID, input?.limit ?? 8);
+      }),
+    getTop: publicProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(10).default(5) }).optional())
+      .query(async ({ input }) => {
+        return getWeakSpotSummary(HARDCODED_USER_ID, input?.limit ?? 5);
+      }),
+  }),
+
+  suggestions: router({
+    getTodayTraining: publicProcedure.query(async () => {
+      return getTodayTrainingSuggestions(HARDCODED_USER_ID);
+    }),
+    getForHand: publicProcedure
+      .input(z.object({ handId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return getHandTrainingSuggestion(HARDCODED_USER_ID, input.handId);
+      }),
+  }),
 
   // ICM study packs
   icm: icmRouter,

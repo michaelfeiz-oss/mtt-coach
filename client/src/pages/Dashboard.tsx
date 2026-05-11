@@ -9,6 +9,7 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
+import type { TodayTrainingSuggestion } from "@shared/coachingLoop";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,22 @@ function formatNetResult(value: number | null | undefined) {
   }).format(value);
 }
 
+function ctaLabelForSuggestion(suggestion: TodayTrainingSuggestion) {
+  switch (suggestion.type) {
+    case "review_hands":
+      return "Open Review Queue";
+    case "drill_pack":
+      return "Start Pack";
+    case "icmizer_review":
+      return "Open ICMIZER";
+    case "study_chart":
+      return "View Chart";
+    case "exact_chart":
+    default:
+      return "Start Drill";
+  }
+}
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [currentWeek, setCurrentWeek] = useState(1);
@@ -43,6 +60,8 @@ export default function Dashboard() {
   const { data: dashboardStats } = trpc.dashboard.getStats.useQuery({
     weekId: currentWeek,
   });
+  const { data: todayTraining = [] } = trpc.suggestions.getTodayTraining.useQuery();
+  const { data: reviewQueueSummary } = trpc.hands.getReviewQueueSummary.useQuery();
   const { data: tournaments } = trpc.tournaments.getByWeek.useQuery({
     weekId: currentWeek,
   });
@@ -80,12 +99,7 @@ export default function Dashboard() {
       tournament: t,
     })) || [];
 
-  const pendingReviewCount = useMemo(
-    () =>
-      recentActivity.filter(activity => activity.tournament.netResult < 0)
-        .length,
-    [recentActivity]
-  );
+  const pendingReviewCount = reviewQueueSummary?.totalNeedsReview ?? 0;
   const activityPreview = recentActivity.slice(0, 4);
 
   function handleEditTournament(data: any) {
@@ -106,7 +120,12 @@ export default function Dashboard() {
     <main className="app-shell min-h-screen pb-24 text-foreground">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
         <header className="app-surface-elevated p-5 sm:p-6">
+          <p className="app-eyebrow mb-2">Daily Workspace</p>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Choose the next preflop task, drill reps, and capture lessons while
+            they are still fresh.
+          </p>
         </header>
 
         <Card className="app-surface">
@@ -114,20 +133,52 @@ export default function Dashboard() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground">
-                  Today&apos;s Focus
+                  Today&apos;s Training
                 </p>
                 <h2 className="mt-1 text-xl font-semibold">
-                  Continue Preflop Session
+                  Based on your recent misses and review queue
                 </h2>
-
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Clear next reps, review tasks, and chart work surfaced from your actual study history.
+                </p>
               </div>
               <Button
                 className="h-11 rounded-xl px-4"
                 onClick={() => setLocation("/study")}
               >
-                Start Session
+                Open Study
                 <ArrowRight className="h-4 w-4" />
               </Button>
+            </div>
+
+            <div className="space-y-2">
+              {todayTraining.map((suggestion, index) => (
+                <div
+                  key={suggestion.id}
+                  className="rounded-xl border border-border bg-accent/65 p-3"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-muted-foreground">
+                        {index + 1}. Today
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">
+                        {suggestion.title}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {suggestion.reason}
+                      </p>
+                    </div>
+                    <Button
+                      variant={index === 0 ? "default" : "outline"}
+                      className="h-9 shrink-0 rounded-full px-4 text-xs font-semibold"
+                      onClick={() => setLocation(suggestion.targetRoute)}
+                    >
+                      {ctaLabelForSuggestion(suggestion)}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -194,7 +245,9 @@ export default function Dashboard() {
             </span>
             <div>
               <p className="text-sm font-semibold">Hand Ranges</p>
-
+              <p className="text-xs text-muted-foreground">
+                Open the current chart setup quickly.
+              </p>
             </div>
           </button>
           <button
@@ -207,7 +260,9 @@ export default function Dashboard() {
             </span>
             <div>
               <p className="text-sm font-semibold">Range Trainer</p>
-
+              <p className="text-xs text-muted-foreground">
+                Drill current spot and review misses.
+              </p>
             </div>
           </button>
         </section>
@@ -249,7 +304,10 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-end justify-between gap-3">
             <div>
               <CardTitle className="text-lg">Tournament Updates</CardTitle>
-
+              <p className="mt-1 text-sm text-muted-foreground">
+                Recent result logs and edits, kept quiet until there is
+                something worth reviewing.
+              </p>
             </div>
             {activityPreview.length > 0 && (
               <Badge variant="outline">Latest {activityPreview.length}</Badge>

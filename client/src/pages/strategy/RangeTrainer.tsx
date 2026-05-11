@@ -13,11 +13,11 @@ import { TrainerCard } from "@/components/strategy/TrainerCard";
 import { TrainerResultReveal } from "@/components/strategy/TrainerResultReveal";
 import { calcAccuracy } from "@/components/strategy/utils";
 import { trpc } from "@/lib/trpc";
-import { buildHandClassRevealNote } from "@shared/preflop";
 import {
   getPriorityDrillPack,
   resolvePriorityDrillPack,
 } from "@shared/drillPacks";
+import { type TrainerAttemptConfidence } from "@shared/coachingLoop";
 import {
   getLeakFamily,
   suggestLeakFamilyFromTrainerMiss,
@@ -54,7 +54,8 @@ interface AnswerRevealState {
   selectedAction: Action;
   correctAction: Action;
   isCorrect: boolean;
-  explanation?: string | null;
+  attemptId: number | null;
+  confidence: TrainerAttemptConfidence | null;
 }
 
 type SpotSummary = {
@@ -177,6 +178,7 @@ function replaceTrainerUrl(options: { chartId?: number | null; packId?: string |
 export default function RangeTrainer() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
   const { chartIdFromSearch, packIdFromSearch } = useMemo(() => {
     const params = new URLSearchParams(search);
     const chartIdParamRaw = params.get("chartId");
@@ -229,6 +231,7 @@ export default function RangeTrainer() {
 
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const resultRevealRef = useRef<HTMLDivElement | null>(null);
+  const questionStartedAtRef = useRef<number>(Date.now());
 
   const { data: allSpots = [] } = trpc.strategy.listSpots.useQuery({});
   const { data: spots = [] } = trpc.strategy.listSpots.useQuery({
@@ -322,9 +325,14 @@ export default function RangeTrainer() {
     { enabled: answerReveal !== null }
   );
 
-  const submitAttempt = trpc.strategy.submitTrainerAttempt.useMutation({
+  const submitAttempt = trpc.trainerAttempts.submit.useMutation({
     onError: error => {
       toast.error(`Could not submit answer: ${error.message}`);
+    },
+  });
+  const updateConfidence = trpc.trainerAttempts.updateConfidence.useMutation({
+    onError: error => {
+      toast.error(`Could not save confidence: ${error.message}`);
     },
   });
 
@@ -351,7 +359,6 @@ export default function RangeTrainer() {
   );
 
   const activeSpot = trainerSpot?.chart ?? selectedSpot;
-  const activeSpotNote = activeSpot ? getSpotNote(activeSpot) : null;
   const activeSpotPresentation = useMemo(
     () => (activeSpot ? buildStrategyChartPresentation(activeSpot) : null),
     [activeSpot]
@@ -360,7 +367,6 @@ export default function RangeTrainer() {
     () => (revealChart ? buildStrategyChartPresentation(revealChart) : null),
     [revealChart]
   );
-  const trainingCue = activeSpotNote?.drillCue ?? null;
   const fallbackModeLabel = formatModeLabel(
     mode,
     activeSpot,
@@ -373,13 +379,6 @@ export default function RangeTrainer() {
       ? activeSpotPresentation.title
       : fallbackModeLabel;
   const modeHelper = filterSummary(mode, stackDepth, spotGroup, selectedPackId);
-  const revealNote = answerReveal
-    ? buildHandClassRevealNote(
-        answerReveal.handCode,
-        answerReveal.correctAction,
-        answerReveal.explanation
-      )
-    : null;
   const currentLeakHintId =
     answerReveal && trainerSpot
       ? (() => {
@@ -449,6 +448,11 @@ export default function RangeTrainer() {
     }, 80);
     return () => window.clearTimeout(timeout);
   }, [answerReveal]);
+
+  useEffect(() => {
+    if (!trainerSpot) return;
+    questionStartedAtRef.current = Date.now();
+  }, [questionVersion, trainerSpot?.chartId, trainerSpot?.handCode]);
 
   useEffect(() => {
     if (heroPosition !== undefined && !heroOptions.includes(heroPosition)) {
@@ -528,6 +532,7 @@ export default function RangeTrainer() {
 
   function handleAnswer(selectedAction: Action, isCorrect: boolean) {
     if (!trainerSpot) return;
+    const responseTimeMs = Math.max(0, Date.now() - questionStartedAtRef.current);
 
     setAnswerReveal({
       chartId: trainerSpot.chartId,
@@ -535,14 +540,54 @@ export default function RangeTrainer() {
       selectedAction,
       correctAction: trainerSpot.correctAction,
       isCorrect,
-      explanation: trainerSpot.correctNote,
+      attemptId: null,
+      confidence: null,
     });
 
-    submitAttempt.mutate({
-      chartId: trainerSpot.chartId,
-      handCode: trainerSpot.handCode,
-      selectedAction,
-    });
+    submitAttempt.mutate(
+      {
+        chartId: trainerSpot.chartId,
+        handCode: trainerSpot.handCode,
+        selectedAction,
+        drillPackId: mode === "priority_pack" ? selectedPackId ?? undefined : undefined,
+        responseTimeMs,
+      },
+      {
+        onSuccess: result => {
+          setAnswerReveal(previous => {
+            if (
+              !previous ||
+              previous.chartId !== trainerSpot.chartId ||
+              previous.handCode !== trainerSpot.handCode
+            ) {
+              return previous;
+            }
+
+            const nextState = {
+              ...previous,
+              attemptId: result?.attemptId ?? null,
+            };
+
+            if (nextState.attemptId && nextState.confidence) {
+              updateConfidence.mutate({
+                attemptId: nextState.attemptId,
+                confidence: nextState.confidence,
+              });
+            }
+
+            return nextState;
+          });
+
+          void utils.weakSpots.getTop.invalidate();
+          void utils.weakSpots.getSummary.invalidate();
+          void utils.suggestions.getTodayTraining.invalidate();
+          void utils.hands.getReviewQueueSummary.invalidate();
+          void utils.strategy.getRecentAttempts.invalidate();
+          void utils.strategy.getProgress.invalidate();
+          void utils.strategy.getStats.invalidate();
+        },
+      }
+    );
 
     setSessionStats(previous => ({
       total: previous.total + 1,
@@ -577,6 +622,23 @@ export default function RangeTrainer() {
     window.setTimeout(() => {
       scrollElementIntoComfortView(questionCardRef.current);
     }, 80);
+  }
+
+  function handleConfidenceSelect(confidence: TrainerAttemptConfidence) {
+    setAnswerReveal(previous => {
+      if (!previous) return previous;
+      return {
+        ...previous,
+        confidence,
+      };
+    });
+
+    if (answerReveal?.attemptId) {
+      updateConfidence.mutate({
+        attemptId: answerReveal.attemptId,
+        confidence,
+      });
+    }
   }
 
   function unlockCurrentSpotAndContinue() {
@@ -767,36 +829,22 @@ export default function RangeTrainer() {
                   <div ref={resultRevealRef} className="scroll-mt-4 sm:scroll-mt-6">
                     <TrainerResultReveal
                       chart={revealChart}
+                      contextChart={trainerSpot.chart}
                       isLoadingChart={revealChartLoading || revealChartFetching}
                       chartId={answerReveal.chartId}
                       handCode={answerReveal.handCode}
                       selectedAction={answerReveal.selectedAction}
                       correctAction={answerReveal.correctAction}
                       isCorrect={answerReveal.isCorrect}
-                      explanation={answerReveal.explanation}
                       spotNote={getSpotNote(trainerSpot.chart)}
-                      leakHint={leakHint}
                       recommendedPack={recommendedPack}
+                      confidence={answerReveal.confidence}
+                      onConfidenceSelect={handleConfidenceSelect}
+                      isSavingConfidence={updateConfidence.isPending}
                       onNext={handleNext}
                       chartPresentation={revealChartPresentation}
                       className="border-border/80 bg-card/90 shadow-none"
                     />
-                  </div>
-                  <div className="rounded-[1rem] border border-border bg-background/78 p-3">
-                    <p className="text-[11px] font-semibold text-muted-foreground">
-                      Takeaway
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-secondary-foreground">
-                      {revealNote}
-                    </p>
-                    {trainingCue && (
-                      <p className="mt-2 text-[11px] leading-relaxed text-secondary-foreground">
-                        <span className="font-semibold text-foreground">
-                          Training cue:
-                        </span>{" "}
-                        {trainingCue}
-                      </p>
-                    )}
                   </div>
                 </>
               )}

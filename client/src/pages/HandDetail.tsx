@@ -3,7 +3,9 @@ import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Target } from "lucide-react";
 import { toast } from "sonner";
 import { ACTION_LABELS } from "../../../shared/strategy";
+import { findLeakFamilyByLabel } from "@shared/leakFamilies";
 import { trpc } from "@/lib/trpc";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,6 +55,10 @@ export default function HandDetail() {
     { handId },
     { enabled: Number.isFinite(handId) }
   );
+  const { data: handTrainingSuggestion } = trpc.suggestions.getForHand.useQuery(
+    { handId },
+    { enabled: Number.isFinite(handId) }
+  );
 
   const [formData, setFormData] = useState<HandReviewForm>({
     reviewed: false,
@@ -83,6 +89,13 @@ export default function HandDetail() {
         .filter(Boolean),
     [formData.tags]
   );
+  const suggestedLeakAlreadyLinked = useMemo(() => {
+    if (!handTrainingSuggestion?.leakFamilyId) return false;
+    return handLeaks.some(
+      leak =>
+        findLeakFamilyByLabel(leak.name)?.id === handTrainingSuggestion.leakFamilyId
+    );
+  }, [handLeaks, handTrainingSuggestion?.leakFamilyId]);
 
   const updateHand = trpc.hands.update.useMutation({
     onSuccess: () => {
@@ -106,6 +119,22 @@ export default function HandDetail() {
     onSuccess: () => {
       void utils.hands.getLeaks.invalidate({ handId });
       void utils.leaks.getTop.invalidate();
+    },
+  });
+  const attachLeakFamily = trpc.hands.attachLeakFamily.useMutation({
+    onSuccess: leak => {
+      toast.success(`Linked ${leak.name}`);
+      void utils.hands.getLeaks.invalidate({ handId });
+      void utils.leaks.getTop.invalidate();
+      setFormData(previous => ({
+        ...previous,
+        selectedLeakIds: previous.selectedLeakIds.includes(leak.id)
+          ? previous.selectedLeakIds
+          : [...previous.selectedLeakIds, leak.id],
+      }));
+    },
+    onError: error => {
+      toast.error(`Could not link leak: ${error.message}`);
     },
   });
 
@@ -191,7 +220,10 @@ export default function HandDetail() {
   }
 
   const isSaving =
-    updateHand.isPending || linkLeak.isPending || unlinkLeak.isPending;
+    updateHand.isPending ||
+    linkLeak.isPending ||
+    unlinkLeak.isPending ||
+    attachLeakFamily.isPending;
 
   return (
     <div className="app-shell min-h-screen text-foreground">
@@ -210,10 +242,37 @@ export default function HandDetail() {
       </header>
 
       <main className="container max-w-5xl space-y-4 py-6">
+        {/* ICMIZER review prompt — shown for shove/call-off spots or explicit tag */}
+        {(hand.spotType === "FOUR_BET_JAM" ||
+          hand.spotType === "ICM_SPOT" ||
+          safeParseTags(hand.tagsJson).includes("ICMIZER_REVIEW")) && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+            <span className="mt-0.5 text-lg">📊</span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-amber-900">Review this exact spot in ICMIZER</p>
+              <p className="mt-0.5 text-xs text-amber-700">
+                Short-stack shoves and call-offs require Nash / ICM / FGS calculations.
+                Enter the exact stack depth, position, and hand into ICMIZER for the correct threshold.
+              </p>
+              <a
+                href="https://www.icmizer.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900"
+              >
+                Open ICMIZER ↗
+              </a>
+            </div>
+          </div>
+        )}
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Hand Details</CardTitle>
-
+            <CardDescription className="text-muted-foreground">
+              {[hand.heroPosition, hand.spotType?.replace(/_/g, " ")]
+                .filter(Boolean)
+                .join(" - ") || "Preflop hand log"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -237,14 +296,14 @@ export default function HandDetail() {
           </CardContent>
         </Card>
 
-        {strategyRecommendation && (
+        {strategyRecommendation && handTrainingSuggestion && (
           <Card className="app-surface">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Target className="h-4 w-4 text-primary" />
-                Recommended Preflop Study
+                Next Study Actions
               </CardTitle>
-  
+              <CardDescription>{strategyRecommendation.reason}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="app-surface-subtle p-3 text-sm">
@@ -264,24 +323,53 @@ export default function HandDetail() {
                     .filter(Boolean)
                     .join(" - ")}
                 </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {handTrainingSuggestion.chartReferenceLabel && (
+                    <Badge variant="outline" className="rounded-full">
+                      {handTrainingSuggestion.chartReferenceLabel}
+                    </Badge>
+                  )}
+                  {handTrainingSuggestion.leakFamilyLabel && (
+                    <Badge variant="outline" className="rounded-full">
+                      {handTrainingSuggestion.leakFamilyLabel}
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Button
-                  onClick={() =>
-                    setLocation(`/strategy/trainer?chartId=${strategyRecommendation.chart.id}`)
-                  }
-                >
-                  Train This Spot
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setLocation(`/strategy/library?chartId=${strategyRecommendation.chart.id}`)
-                  }
-                >
-                  View Chart
-                </Button>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {handTrainingSuggestion.drillRoute && (
+                  <Button onClick={() => setLocation(handTrainingSuggestion.drillRoute!)}>
+                    Drill This Spot
+                  </Button>
+                )}
+                {handTrainingSuggestion.chartRoute && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocation(handTrainingSuggestion.chartRoute!)}
+                  >
+                    View nearest chart
+                  </Button>
+                )}
+                {handTrainingSuggestion.leakFamilyId && (
+                  <Button
+                    variant="outline"
+                    disabled={suggestedLeakAlreadyLinked || attachLeakFamily.isPending}
+                    onClick={() =>
+                      attachLeakFamily.mutate({
+                        handId,
+                        leakFamilyId: handTrainingSuggestion.leakFamilyId!,
+                      })
+                    }
+                  >
+                    {suggestedLeakAlreadyLinked ? "Leak linked" : "Mark as leak"}
+                  </Button>
+                )}
               </div>
+              {handTrainingSuggestion.leakReason && (
+                <p className="text-xs text-muted-foreground">
+                  {handTrainingSuggestion.leakReason}
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
@@ -289,7 +377,9 @@ export default function HandDetail() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Review and Notes</CardTitle>
-
+            <CardDescription>
+              Keep this focused on preflop mistakes and repeatable takeaways.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

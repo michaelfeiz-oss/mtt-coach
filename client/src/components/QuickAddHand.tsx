@@ -28,7 +28,7 @@ const STACK_PRESETS = [15, 20, 25, 40];
 const SPOT_TYPES = [
   { value: "SINGLE_RAISED_POT", label: "RFI / Defend" },
   { value: "3BET_POT", label: "3-Bet / vs 3-Bet" },
-  { value: "BvB", label: "Blind vs Blind" },
+  { value: "BVB", label: "Blind vs Blind" },
   { value: "LIMPED_POT", label: "Limp Pot" },
 ] as const;
 
@@ -110,7 +110,7 @@ export function QuickAddHand() {
       spotType: formData.spotType as
         | "SINGLE_RAISED_POT"
         | "3BET_POT"
-        | "BvB"
+        | "BVB"
         | "LIMPED_POT",
       heroPosition: formData.heroPosition,
       heroHand: normalizeHandCode(formData.heroHand),

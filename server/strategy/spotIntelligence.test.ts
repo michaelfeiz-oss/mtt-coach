@@ -151,13 +151,17 @@ describe("preflop study intelligence layer", () => {
     expect(poolCodes).not.toContain("72o");
   });
 
-  it("builds push/fold notes from the same canonical spot system", () => {
+  it("push/fold references still resolve (ICMIZER-flagged, not internal training)", () => {
+    // Push/fold references still exist for data purposes but are no longer surfaced as internal training.
+    // The note title reflects the actual spot family (e.g. 4-Bet / Jam), not a Push/Fold training directive.
     const reference = getPushFoldReference(10, "BB_CALL_VS_BTN_SHOVE", "BB");
     expect(reference).not.toBeNull();
 
     const note = getSpotNote(buildPushFoldSpotContext(reference!, 10));
-    expect(note?.title).toContain("Push / Fold");
-    expect(note?.drillCue).toContain("threshold");
+    // Note exists — content is informational
+    expect(note).not.toBeNull();
+    // Title should NOT claim to be an internal push/fold training chart
+    expect(note?.title).not.toContain("Push / Fold training");
   });
 
   it("keeps unavailable packs visible as explicit coverage gaps", () => {

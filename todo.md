@@ -396,3 +396,38 @@
 - [x] Shorten labels and limit help text to 1 line max
 - [x] Test full UX flow with accordions
 - [x] Verify data persistence with new context fields
+
+## Pre-Publish Hardening (Audit Items)
+- [x] spotType data migration: fix stale BvB / BVB_SPOT rows
+- [x] Verify 0 stale rows after migration
+- [x] Extend hands.getByUser with filter/sort input schema (server-side)
+- [x] Build compact filter bar UI on HandsList with URL param persistence
+- [x] Add active filter chips + Clear filters button
+- [x] Add empty state with active filter context
+- [x] Add Hand Detail pre-V2 fallback: "No structured action data logged"
+- [x] Show legacy metadata in fallback (hand, position, stack, spot type, lesson)
+- [x] Add "Edit hand" CTA in fallback
+- [x] Ensure partial V2 hands skip empty street blocks
+- [x] Tests: filter by reviewStatus, spotType, severity, sort, combined, empty state
+- [x] Tests: Hand Detail fallback null/empty actionsJson, V2 full/partial streets
+- [x] pnpm check (0 errors)
+- [x] pnpm test (all pass)
+- [x] pnpm build (clean)
+- [x] Save checkpoint + push to GitHub
+
+## Push/Fold Removal (ICMIZER handoff)
+
+- [ ] Replace /strategy/push-fold route with ICMIZER reference page
+- [ ] Remove push-fold import and route from App.tsx
+- [ ] Remove push/fold card from StudyCockpit.tsx, add ICMIZER note
+- [ ] Remove push_fold case from Dashboard.tsx ctaLabelForSuggestion
+- [ ] Remove push_fold from shared/coachingLoop.ts TODAY_TRAINING_TYPES
+- [ ] Reroute push_fold coaching loop suggestions to ICMIZER external review
+- [ ] Remove push/fold routing from server/coachingLoop.ts (isPushFold block)
+- [ ] Replace push/fold leak family drill recommendation with ICMIZER note
+- [ ] Remove push/fold from preflopTaxonomy.ts DECISION_FAMILIES list
+- [ ] Replace push/fold studyRecommendations.ts text with ICMIZER references
+- [ ] Replace push/fold programTemplates.ts text with ICMIZER references
+- [ ] Add ICMIZER_REVIEW to hand tags constant list
+- [ ] Show ICMIZER prompt on HandDetail when spotType is ICM_SPOT or FOUR_BET_JAM
+- [ ] Write tests: push/fold not in nav, not in training, ICMIZER prompt shows

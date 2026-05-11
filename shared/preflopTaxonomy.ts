@@ -12,7 +12,7 @@ export const CANONICAL_SPOT_FAMILIES = [
   "BLIND_VS_BLIND",
   "LIMP_ISO",
   "FOUR_BET_JAM",
-  "PUSH_FOLD",
+  // PUSH_FOLD removed: use ICMIZER for shove/call-off decisions
 ] as const;
 export type CanonicalSpotFamily = (typeof CANONICAL_SPOT_FAMILIES)[number];
 
@@ -51,7 +51,7 @@ export const CANONICAL_SPOT_FAMILY_LABELS: Record<
   BLIND_VS_BLIND: "Blind vs Blind",
   LIMP_ISO: "Limp / Iso",
   FOUR_BET_JAM: "4-Bet / Jam",
-  PUSH_FOLD: "Push / Fold",
+  // PUSH_FOLD removed — use ICMIZER
 };
 
 export function canonicalFamilyFromSpotGroup(
@@ -95,7 +95,7 @@ export function canonicalFamilyFromScenarioId(
 }
 
 export function requiresVillainPosition(family: CanonicalSpotFamily): boolean {
-  return !["OPEN_RFI", "PUSH_FOLD"].includes(family);
+  return family !== "OPEN_RFI";
 }
 
 export function normalizeStudyStage(

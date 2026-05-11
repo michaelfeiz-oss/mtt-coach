@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
-  AlertCircle,
   BookOpen,
   Brain,
   ChevronRight,
   ClipboardList,
+  ExternalLink,
   FileText,
   History,
   Plus,
@@ -27,7 +27,6 @@ import {
   buildPriorityPackSummary,
   resolveAllPriorityDrillPacks,
 } from "@shared/drillPacks";
-import { findLeakFamilyByLabel } from "@shared/leakFamilies";
 import {
   ACTION_LABELS,
   SPOT_GROUP_LABELS,
@@ -124,12 +123,11 @@ export function StudyCockpit() {
   const { data: spots = [], isLoading: spotsLoading } =
     trpc.strategy.listSpots.useQuery({});
   const { data: hands = [], isLoading: handsLoading } =
-    trpc.hands.getByUser.useQuery({ limit: 5 });
-  const { data: topLeaks = [] } = trpc.leaks.getTop.useQuery({ limit: 4 });
+    trpc.hands.getByUser.useQuery({ limit: 5, reviewStatus: "all" });
+  const { data: reviewQueueSummary } = trpc.hands.getReviewQueueSummary.useQuery();
+  const { data: todayTraining = [] } = trpc.suggestions.getTodayTraining.useQuery();
+  const { data: weakSpots = [] } = trpc.weakSpots.getTop.useQuery({ limit: 5 });
   const { data: stats } = trpc.strategy.getStats.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
-  const { data: progress } = trpc.strategy.getProgress.useQuery(undefined, {
     enabled: isAuthenticated,
   });
   const { data: recentAttempts = [] } =
@@ -154,11 +152,9 @@ export function StudyCockpit() {
     : "Jump into Range Trainer and build reps from the current range pool.";
   const chartCount = spots.length;
   const pendingHands = useMemo(
-    () => hands.filter(hand => !hand.reviewed).length,
-    [hands]
+    () => reviewQueueSummary?.totalNeedsReview ?? hands.filter(hand => !hand.reviewed).length,
+    [hands, reviewQueueSummary]
   );
-  const weakSpots = progress?.weakSpots ?? [];
-  const missedHands = progress?.missedHands ?? [];
   const priorityPacks = useMemo(
     () =>
       resolveAllPriorityDrillPacks(spots)
@@ -166,26 +162,6 @@ export function StudyCockpit() {
         .slice(0, 4),
     [spots]
   );
-  const leakBoard = useMemo(
-    () =>
-      topLeaks.map(leak => ({
-        leak,
-        family: findLeakFamilyByLabel(leak.name),
-      })),
-    [topLeaks]
-  );
-  const suggestedNextSpotTitle = weakSpots[0]?.chartTitle ?? recentSpot?.title;
-  const suggestedNextSpotMeta = weakSpots[0]
-    ? `${weakSpots[0].accuracy}% accuracy over ${weakSpots[0].attempts} attempts`
-    : recentSpot
-      ? formatSpotMeta(recentSpot)
-      : null;
-  const suggestedNextSpotHref = weakSpots[0]
-    ? `/strategy/trainer?chartId=${weakSpots[0].chartId}`
-    : recentSpot
-      ? `/strategy/trainer?chartId=${recentSpot.id}`
-      : null;
-
   return (
     <main className="app-shell min-h-screen pb-24 text-foreground">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
@@ -303,68 +279,141 @@ export function StudyCockpit() {
               }
             />
 
+            <Card className="app-surface">
+              <CardContent className="space-y-4 p-4 sm:p-5">
+                {recentSpots.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                      <History className="h-3.5 w-3.5" />
+                      Recently Viewed Ranges
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {recentSpots.slice(0, 4).map(spot => (
+                        <Link
+                          key={spot.id}
+                          href={`/strategy/library?chartId=${spot.id}`}
+                        >
+                          <div className="rounded-xl border border-border bg-accent/65 p-3 transition hover:-translate-y-0.5 hover:bg-accent/90">
+                            <p className="truncate text-sm font-semibold text-foreground">
+                              {spot.title}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <Badge className="rounded-full bg-primary text-primary-foreground">
+                                {spot.stackDepth}bb
+                              </Badge>
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-border/80 bg-accent/55 text-[11px] text-secondary-foreground"
+                              >
+                                {SPOT_GROUP_LABELS[spot.spotGroup]}
+                              </Badge>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No recent ranges yet"
+                    helper="Open a chart once and it will appear here for quick return."
+                    ctaHref="/strategy/library"
+                    ctaLabel="Browse ranges"
+                  />
+                )}
 
+                <div className="h-px bg-border/80" />
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Recently Logged Hands
+                  </div>
+
+                  {handsLoading && (
+                    <div className="space-y-2">
+                      {[1, 2, 3].map(index => (
+                        <Skeleton
+                          key={index}
+                          className="h-14 w-full rounded-2xl"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {!handsLoading && hands.length === 0 && (
+                    <EmptyState
+                      title="No logged hands yet"
+                      helper="Use quick hand capture after a session, then review it here."
+                      ctaHref="/log"
+                      ctaLabel="Log first hand"
+                    />
+                  )}
+
+                  {!handsLoading &&
+                    hands.slice(0, 3).map(hand => (
+                      <Link key={hand.id} href={`/hands/${hand.id}`}>
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-accent/65 p-3 transition hover:-translate-y-0.5 hover:bg-accent/90">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">
+                              {hand.heroHand || "Hand captured"}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                              {formatHandMeta(hand)}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={hand.reviewed ? "secondary" : "outline"}
+                            className="shrink-0 rounded-full"
+                          >
+                            {hand.reviewed ? "Reviewed" : "To review"}
+                          </Badge>
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="space-y-4">
             <SectionHeader
               label="Weak Spots"
-              title="What Needs Reps"
-              helper="Saved trainer history and leak data drive this area."
+              title="Suggested Drills + Review Queue"
+              helper="Today’s reps and review actions built from trainer misses, weak spots, and logged hands."
             />
 
             <Card className="app-surface">
               <CardContent className="space-y-4 p-4 sm:p-5">
-                {suggestedNextSpotTitle &&
-                  suggestedNextSpotMeta &&
-                  suggestedNextSpotHref && (
-                  <div className="rounded-xl border border-border bg-accent/65 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-semibold text-muted-foreground">
-                          Suggested Next Spot
-                        </p>
-                        <p className="mt-1 truncate text-sm font-semibold text-foreground">
-                          {suggestedNextSpotTitle}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {suggestedNextSpotMeta}
-                        </p>
-                      </div>
-                      <Link href={suggestedNextSpotHref}>
-                        <Button
-                          size="sm"
-                          className="h-8 shrink-0 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
-                        >
-                          Train
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                )}
-
-                {isAuthenticated && weakSpots.length > 0 && (
+                {todayTraining.length > 0 && (
                   <div className="space-y-2">
-                    {weakSpots.slice(0, 4).map(spot => (
+                    <div className="text-[11px] font-semibold text-muted-foreground">
+                      Suggested Drills
+                    </div>
+                    {todayTraining.map(suggestion => (
                       <div
-                        key={spot.chartId}
+                        key={suggestion.id}
                         className="rounded-xl border border-border bg-accent/65 p-3"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-foreground">
-                              {spot.chartTitle}
+                              {suggestion.title}
                             </p>
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                              {spot.accuracy}% over {spot.attempts} attempts
+                              {suggestion.reason}
                             </p>
                           </div>
-                          <Link href={`/strategy/trainer?chartId=${spot.chartId}`}>
+                          <Link href={suggestion.targetRoute}>
                             <Button
                               size="sm"
                               className="h-8 shrink-0 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
                             >
-                              Train
+                              {suggestion.type === "review_hands"
+                                ? "Review"
+                                : suggestion.type === "study_chart"
+                                  ? "View"
+                                  : "Start"}
                             </Button>
                           </Link>
                         </div>
@@ -373,90 +422,116 @@ export function StudyCockpit() {
                   </div>
                 )}
 
-                {(!isAuthenticated || weakSpots.length === 0) &&
-                  topLeaks.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-                        <AlertCircle className="h-3.5 w-3.5" />
-                        Active Leaks
-                      </div>
-                      {leakBoard.map(({ leak, family }) => (
-                        <Link key={leak.id} href={`/leaks/${leak.id}`}>
-                          <div className="rounded-xl border border-border bg-accent/65 p-3 transition hover:bg-accent/90">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-foreground">
-                                  {family?.label ?? leak.name}
-                                </p>
-                                <p className="mt-0.5 text-xs text-muted-foreground">
-                                  {family?.description ?? leak.category} ·{" "}
-                                  {leak.handCount} linked hands
-                                </p>
-                                {family?.relatedPackIds?.[0] && (
-                                  <Badge
-                                    variant="outline"
-                                    className="mt-2 rounded-full"
-                                  >
-                                    Drill: {family.relatedPackIds[0].replace(/-/g, " ")}
-                                  </Badge>
-                                )}
-                              </div>
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-
-                {isAuthenticated && missedHands.length > 0 && (
+                {weakSpots.length > 0 && (
                   <>
                     <div className="h-px bg-border/80" />
                     <div className="space-y-2">
                       <div className="text-[11px] font-semibold text-muted-foreground">
-                        Most Missed Hands
+                        Weak Spots
                       </div>
-                      {missedHands.slice(0, 3).map(hand => (
+                      {weakSpots.slice(0, 4).map(spot => (
                         <div
-                          key={`${hand.chartId}-${hand.handCode}`}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-border bg-accent/65 p-3"
+                          key={spot.id}
+                          className="rounded-xl border border-border bg-accent/65 p-3"
                         >
-                          <div>
-                            <p className="font-mono text-base font-semibold text-foreground">
-                              {hand.handCode}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Correct: {ACTION_LABELS[hand.correctAction]}
-                            </p>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-foreground">
+                                {spot.label}
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {spot.misses} miss{spot.misses === 1 ? "" : "es"} ·{" "}
+                                {spot.accuracy}% accuracy
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              {spot.suggestedChartId !== null && (
+                                <Link href={`/strategy/library?chartId=${spot.suggestedChartId}`}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 rounded-full px-3 text-xs font-semibold"
+                                  >
+                                    View
+                                  </Button>
+                                </Link>
+                              )}
+                              {spot.suggestedDrillPackId ? (
+                                <Link href={`/strategy/trainer?packId=${spot.suggestedDrillPackId}`}>
+                                  <Button
+                                    size="sm"
+                                    className="h-8 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
+                                  >
+                                    Drill
+                                  </Button>
+                                </Link>
+                              ) : spot.suggestedChartId !== null ? (
+                                <Link href={`/strategy/trainer?chartId=${spot.suggestedChartId}`}>
+                                  <Button
+                                    size="sm"
+                                    className="h-8 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
+                                  >
+                                    Drill
+                                  </Button>
+                                </Link>
+                              ) : null}
+                            </div>
                           </div>
-                          <Badge
-                            variant="outline"
-                            className="rounded-full border-red-400/35 bg-red-500/12 text-red-300"
-                          >
-                            Missed {hand.missed}
-                          </Badge>
                         </div>
                       ))}
                     </div>
                   </>
                 )}
 
-                {(!isAuthenticated || weakSpots.length === 0) &&
-                  topLeaks.length === 0 && (
-                    <EmptyState
-                      title="No weak spots yet"
-                      helper="Train ranges or log mistakes and this will become your next-study queue."
-                      ctaHref="/strategy/trainer"
-                      ctaLabel="Start trainer"
-                    />
-                  )}
-
-                {!isAuthenticated && (
-                  <p className="rounded-xl border border-border bg-accent/70 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                    Range practice works while logged out. Saved weak spots
-                    appear here for authenticated users.
-                  </p>
+                {reviewQueueSummary && (
+                  <>
+                    <div className="h-px bg-border/80" />
+                    <div className="rounded-xl border border-border bg-accent/65 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold text-muted-foreground">
+                            Review Queue
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">
+                            {reviewQueueSummary.totalNeedsReview} hand
+                            {reviewQueueSummary.totalNeedsReview === 1 ? "" : "s"} need review
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {reviewQueueSummary.topLeakLabel
+                              ? `Most common tag: ${reviewQueueSummary.topLeakLabel}`
+                              : "Use review to turn logged mistakes into next drills."}
+                          </p>
+                        </div>
+                        <Link
+                          href={
+                            reviewQueueSummary.topLeakFamilyId
+                              ? `/hands?reviewStatus=needs_review&leakFamily=${reviewQueueSummary.topLeakFamilyId}`
+                              : "/hands?reviewStatus=needs_review"
+                          }
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 shrink-0 rounded-full px-3 text-xs font-semibold"
+                          >
+                            Open
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </>
                 )}
+
+                {todayTraining.length === 0 &&
+                  weakSpots.length === 0 &&
+                  (!reviewQueueSummary || reviewQueueSummary.totalNeedsReview === 0) && (
+                      <EmptyState
+                        title="No weak spots yet"
+                        helper="Train ranges or log mistakes and this will become your next-study queue."
+                        ctaHref="/strategy/trainer"
+                        ctaLabel="Start trainer"
+                      />
+                    )}
               </CardContent>
             </Card>
           </div>
@@ -525,33 +600,29 @@ export function StudyCockpit() {
               </CardContent>
             </Card>
 
-            <Card className="app-surface">
+            <Card className="app-surface border-dashed">
               <CardContent className="space-y-3 p-4 sm:p-5">
                 <div>
                   <p className="text-[11px] font-semibold text-muted-foreground">
-                    Push / Fold Mode
+                    Push / Fold &amp; ICM
                   </p>
                   <h3 className="mt-1 text-lg font-semibold text-foreground">
-                    Short-stack reference and drill
+                    Use ICMIZER
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Dedicated up to 10bb mode for open shoves and BB call-offs, sourced from your short-stack notes.
+                    Short-stack shoves, call-offs, Nash ranges, and ICM bubble spots are solver-grade decisions. Use ICMIZER for exact results — not simplified internal charts.
                   </p>
                 </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {[5, 6, 7, 8, 9, 10].map(stack => (
-                    <Badge key={stack} variant="outline" className="rounded-full">
-                      {stack}bb
-                    </Badge>
-                  ))}
-                </div>
-
-                <Link href="/strategy/push-fold">
-                  <Button className="h-10 w-full rounded-xl text-sm font-semibold">
-                    Open Push/Fold Mode
+                <a
+                  href="https://www.icmpoker.com/icmizer/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="outline" className="h-10 w-full rounded-xl text-sm font-semibold gap-2">
+                    Open ICMIZER
+                    <ExternalLink className="h-4 w-4" />
                   </Button>
-                </Link>
+                </a>
               </CardContent>
             </Card>
           </div>

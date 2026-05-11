@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { BookOpen, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -108,10 +108,19 @@ export default function StrategyLibrary() {
   const [villainPosition, setVillainPosition] = useState<string | undefined>(
     undefined
   );
-  const [selectedChartId, setSelectedChartId] = useState<number | undefined>(
-    chartIdFromSearch
-  );
+  // URL is the single source of truth for the selected chart.
+  // selectedChartId is derived from the URL param — never stored in local state.
+  // User selections call navigateToChart() which updates the URL, which updates this value.
+  const selectedChartId = chartIdFromSearch;
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+
+  // Navigate to a chart by updating the URL (single source of truth).
+  function navigateToChart(id: number | undefined) {
+    const nextUrl = id !== undefined ? `/strategy/library?chartId=${id}` : "/strategy/library";
+    window.history.replaceState(window.history.state, "", nextUrl);
+    // Force wouter to re-read the URL by dispatching a popstate event.
+    window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+  }
 
   const {
     data: allSpots = [],
@@ -209,17 +218,13 @@ export default function StrategyLibrary() {
     [viewportHeight]
   );
 
-  useEffect(() => {
-    if (
-      chartIdFromSearch !== undefined &&
-      chartIdFromSearch !== selectedChartId
-    ) {
-      setSelectedChartId(chartIdFromSearch);
-    }
-  }, [chartIdFromSearch, selectedChartId]);
-
+  // When a chart loads, sync the filter controls to match it and record recent spot.
+  // This effect only runs when the chart data changes (not on every render).
+  const lastSyncedChartIdRef = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (!chart) return;
+    if (chart.id === lastSyncedChartIdRef.current) return; // already synced
+    lastSyncedChartIdRef.current = chart.id;
 
     setStackDepth(chart.stackDepth);
     setSpotGroup(chart.spotGroup);
@@ -245,19 +250,6 @@ export default function StrategyLibrary() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const nextUrl =
-      selectedChartId !== undefined
-        ? `/strategy/library?chartId=${selectedChartId}`
-        : "/strategy/library";
-    const currentUrl = `${window.location.pathname}${window.location.search}`;
-    if (nextUrl !== currentUrl) {
-      window.history.replaceState(window.history.state, "", nextUrl);
-    }
-  }, [selectedChartId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
     const updateViewportHeight = () => {
       setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
     };
@@ -273,16 +265,22 @@ export default function StrategyLibrary() {
     };
   }, []);
 
+  // Auto-navigate to the first matching spot when spots load or filters change,
+  // but only if the current URL chartId is not already in the filtered list.
+  // This runs once per matchingSpots change and never reads selectedChartId from state
+  // (it reads from the URL-derived value), so there is no circular dependency.
   useEffect(() => {
     if (spotsLoading) return;
-    if (
-      selectedChartId !== undefined &&
-      matchingSpots.some(spot => spot.id === selectedChartId)
-    ) {
+    if (matchingSpots.length === 0) return;
+    // If the URL already points to a valid chart in the filtered list, keep it.
+    if (selectedChartId !== undefined && matchingSpots.some(spot => spot.id === selectedChartId)) {
       return;
     }
-    setSelectedChartId(matchingSpots[0]?.id);
-  }, [matchingSpots, selectedChartId, spotsLoading]);
+    // Navigate to the first matching spot.
+    navigateToChart(matchingSpots[0].id);
+  // selectedChartId is derived from URL (chartIdFromSearch) — stable reference, no loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchingSpots, spotsLoading]);
 
   useEffect(() => {
     if (heroPosition !== undefined && !heroOptions.includes(heroPosition)) {
@@ -302,23 +300,23 @@ export default function StrategyLibrary() {
   function setGroup(nextGroup: SpotGroup | undefined) {
     setSpotGroup(nextGroup);
     setVillainPosition(undefined);
-    setSelectedChartId(undefined);
+    navigateToChart(undefined);
   }
 
   function setStack(nextStack: number | undefined) {
     setStackDepth(nextStack);
-    setSelectedChartId(undefined);
+    navigateToChart(undefined);
   }
 
   function setHero(nextHero: string | undefined) {
     setHeroPosition(nextHero);
     setVillainPosition(undefined);
-    setSelectedChartId(undefined);
+    navigateToChart(undefined);
   }
 
   function setVillain(nextVillain: string | undefined) {
     setVillainPosition(nextVillain);
-    setSelectedChartId(undefined);
+    navigateToChart(undefined);
   }
 
   return (

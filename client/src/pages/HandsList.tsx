@@ -22,15 +22,55 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useLocation } from "wouter";
 import { QuickEditHand } from "@/components/QuickEditHand";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearch } from "wouter";
+import { getLeakFamily, type CanonicalLeakFamilyId } from "@shared/leakFamilies";
+import { isHandReviewStatus, type HandReviewStatus } from "@shared/coachingLoop";
 
 export default function HandsList() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const [editingHandId, setEditingHandId] = useState<number | null>(null);
   const [deletingHandId, setDeletingHandId] = useState<number | null>(null);
   const utils = trpc.useUtils();
+  const filters = useMemo(() => {
+    const params = new URLSearchParams(search);
+    const reviewStatusParam = params.get("reviewStatus");
+    const rawLeakFamilyId = params.get("leakFamily");
+    const spotType = params.get("spotType");
+    const leakFamilyId =
+      rawLeakFamilyId && getLeakFamily(rawLeakFamilyId)
+        ? (rawLeakFamilyId as CanonicalLeakFamilyId)
+        : null;
 
-  const { data: hands, isLoading } = trpc.hands.getByUser.useQuery({ limit: 50 });
+    return {
+      reviewStatus: isHandReviewStatus(reviewStatusParam)
+        ? (reviewStatusParam as HandReviewStatus)
+        : "all",
+      leakFamilyId,
+      spotType,
+    };
+  }, [search]);
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    if (filters.reviewStatus !== "all") {
+      labels.push(filters.reviewStatus.replace(/_/g, " "));
+    }
+    if (filters.leakFamilyId) {
+      labels.push(getLeakFamily(filters.leakFamilyId)?.label ?? filters.leakFamilyId);
+    }
+    if (filters.spotType) {
+      labels.push(filters.spotType.replace(/_/g, " "));
+    }
+    return labels;
+  }, [filters.leakFamilyId, filters.reviewStatus, filters.spotType]);
+
+  const { data: hands, isLoading } = trpc.hands.getByUser.useQuery({
+    limit: 50,
+    reviewStatus: filters.reviewStatus,
+    leakFamilyId: filters.leakFamilyId ?? undefined,
+    spotType: (filters.spotType as any) ?? undefined,
+  });
 
   const deleteHand = trpc.hands.delete.useMutation({
     onSuccess: () => {
@@ -62,6 +102,18 @@ export default function HandsList() {
               Log a Hand
             </Button>
           </div>
+          {activeFilterLabels.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {activeFilterLabels.map(label => (
+                <span
+                  key={label}
+                  className="rounded-full border border-border bg-accent/70 px-3 py-1 text-xs font-semibold text-secondary-foreground"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
@@ -69,7 +121,10 @@ export default function HandsList() {
         <Card className="app-surface">
           <CardHeader>
             <CardTitle className="text-foreground">Preflop Hand Review</CardTitle>
-
+            <CardDescription className="text-muted-foreground">
+              Scan logged tournament spots by hand, stack, position, decision,
+              and lesson.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -81,7 +136,9 @@ export default function HandsList() {
             ) : !hands || hands.length === 0 ? (
               <div className="py-12 text-center">
                 <p className="mb-4 text-secondary-foreground">No preflop hands logged yet</p>
-
+                <p className="text-sm text-muted-foreground">
+                  Use quick capture after a tournament session, then review here.
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
