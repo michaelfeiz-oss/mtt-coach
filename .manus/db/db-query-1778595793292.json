@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, title, heroPosition, spotGroup, stackDepth FROM rangeCharts WHERE spotGroup = 'VS_UTG_RFI' AND heroPosition = 'UTG1' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, title, heroPosition, spotGroup, stackDepth FROM rangeCharts WHERE spotGroup = 'VS_UTG_RFI' AND heroPosition = 'UTG1' LIMIT 5;",
+  "rows": [
+    {
+      "id": "390002",
+      "title": "UTG+1 vs UTG @ 15bb",
+      "heroPosition": "UTG1",
+      "spotGroup": "VS_UTG_RFI",
+      "stackDepth": "15"
+    },
+    {
+      "id": "390033",
+      "title": "UTG+1 vs UTG @ 20bb",
+      "heroPosition": "UTG1",
+      "spotGroup": "VS_UTG_RFI",
+      "stackDepth": "20"
+    },
+    {
+      "id": "390064",
+      "title": "UTG+1 vs UTG @ 25bb",
+      "heroPosition": "UTG1",
+      "spotGroup": "VS_UTG_RFI",
+      "stackDepth": "25"
+    },
+    {
+      "id": "390095",
+      "title": "UTG+1 vs UTG @ 40bb",
+      "heroPosition": "UTG1",
+      "spotGroup": "VS_UTG_RFI",
+      "stackDepth": "40"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\theroPosition\tspotGroup\tstackDepth\n390002\tUTG+1 vs UTG @ 15bb\tUTG1\tVS_UTG_RFI\t15\n390033\tUTG+1 vs UTG @ 20bb\tUTG1\tVS_UTG_RFI\t20\n390064\tUTG+1 vs UTG @ 25bb\tUTG1\tVS_UTG_RFI\t25\n390095\tUTG+1 vs UTG @ 40bb\tUTG1\tVS_UTG_RFI\t40\n",
+  "stderr": "",
+  "execution_time_ms": 1846
+}
