@@ -100,7 +100,7 @@ function EmptyState({
   ctaLabel: string;
 }) {
   return (
-    <div className="rounded-[1rem] border border-dashed border-border/75 bg-accent/45 p-5 text-center shadow-sm shadow-black/20">
+    <div className="rounded-[1rem] border border-dashed border-border bg-secondary p-5 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <p className="text-sm font-semibold text-foreground">{title}</p>
       <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{helper}</p>
       <Link href={ctaHref}>
@@ -193,7 +193,7 @@ export function StudyCockpit() {
 
             <div className="grid gap-2 sm:min-w-[20rem]">
               <Link href={continueHref}>
-                <Button className="h-12 w-full justify-between rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm shadow-black/25 hover:bg-[#FF8A1F]">
+                <Button className="h-12 w-full justify-between rounded-2xl px-4 text-sm font-semibold">
                   <span className="flex items-center gap-2">
                     <Target className="h-4 w-4" />
                     {continueTitle}
@@ -204,7 +204,7 @@ export function StudyCockpit() {
               <Link href="/log">
                 <Button
                   variant="outline"
-                  className="h-11 w-full justify-between rounded-2xl border-border/80 bg-accent/55 px-4 text-sm font-semibold text-secondary-foreground hover:bg-accent"
+                  className="h-11 w-full justify-between rounded-2xl border-[var(--border-strong)] bg-card px-4 text-sm font-semibold text-secondary-foreground hover:bg-secondary"
                 >
                   <span className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -216,7 +216,7 @@ export function StudyCockpit() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-xl border border-border bg-accent/70 p-4">
+          <div className="mt-5 rounded-xl border border-border bg-secondary p-4">
             <p className="text-xs font-semibold text-muted-foreground">
               Next action
             </p>
@@ -304,7 +304,7 @@ export function StudyCockpit() {
                           key={spot.id}
                           href={`/strategy/library?chartId=${spot.id}`}
                         >
-                          <div className="rounded-xl border border-border bg-accent/65 p-3 transition hover:-translate-y-0.5 hover:bg-accent/90">
+                          <div className="rounded-xl border border-border bg-secondary p-3 transition hover:-translate-y-0.5 hover:bg-slate-100">
                             <p className="truncate text-sm font-semibold text-foreground">
                               {spot.title}
                             </p>
@@ -314,7 +314,7 @@ export function StudyCockpit() {
                               </Badge>
                               <Badge
                                 variant="outline"
-                                className="rounded-full border-border/80 bg-accent/55 text-[11px] text-secondary-foreground"
+                                className="rounded-full border-[var(--border-strong)] bg-card text-[11px] text-secondary-foreground"
                               >
                                 {SPOT_GROUP_LABELS[spot.spotGroup]}
                               </Badge>
@@ -364,7 +364,7 @@ export function StudyCockpit() {
                   {!handsLoading &&
                     hands.slice(0, 3).map(hand => (
                       <Link key={hand.id} href={`/hands/${hand.id}`}>
-                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-accent/65 p-3 transition hover:-translate-y-0.5 hover:bg-accent/90">
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-secondary p-3 transition hover:-translate-y-0.5 hover:bg-slate-100">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-foreground">
                               {hand.heroHand || "Hand captured"}
@@ -404,7 +404,7 @@ export function StudyCockpit() {
                     {todayTraining.map(suggestion => (
                       <div
                         key={suggestion.id}
-                        className="rounded-xl border border-border bg-accent/65 p-3"
+                        className="rounded-xl border border-border bg-secondary p-3"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -418,7 +418,7 @@ export function StudyCockpit() {
                           <Link href={suggestion.targetRoute}>
                             <Button
                               size="sm"
-                              className="h-8 shrink-0 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
+                              className="h-8 shrink-0 rounded-full px-3 text-xs font-semibold"
                             >
                               {suggestion.type === "review_hands"
                                 ? "Review"
@@ -443,7 +443,7 @@ export function StudyCockpit() {
                       {weakSpots.slice(0, 4).map(spot => (
                         <div
                           key={spot.id}
-                          className="rounded-xl border border-border bg-accent/65 p-3"
+                          className="rounded-xl border border-border bg-secondary p-3"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -471,7 +471,7 @@ export function StudyCockpit() {
                                 <Link href={`/strategy/trainer?packId=${spot.suggestedDrillPackId}`}>
                                   <Button
                                     size="sm"
-                                    className="h-8 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
+                                    className="h-8 rounded-full px-3 text-xs font-semibold"
                                   >
                                     Drill
                                   </Button>
@@ -480,7 +480,7 @@ export function StudyCockpit() {
                                 <Link href={`/strategy/trainer?chartId=${spot.suggestedChartId}`}>
                                   <Button
                                     size="sm"
-                                    className="h-8 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-[#FF8A1F]"
+                                    className="h-8 rounded-full px-3 text-xs font-semibold"
                                   >
                                     Drill
                                   </Button>
@@ -497,7 +497,7 @@ export function StudyCockpit() {
                 {reviewQueueSummary && (
                   <>
                     <div className="h-px bg-border/80" />
-                    <div className="rounded-xl border border-border bg-accent/65 p-3">
+                    <div className="rounded-xl border border-border bg-secondary p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-[11px] font-semibold text-muted-foreground">
@@ -572,7 +572,7 @@ export function StudyCockpit() {
                 {priorityPacks.map(pack => (
                   <div
                     key={pack.id}
-                    className="rounded-xl border border-border bg-accent/65 p-3"
+                    className="rounded-xl border border-border bg-secondary p-3"
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
@@ -587,7 +587,7 @@ export function StudyCockpit() {
                             {buildPriorityPackSummary(pack)}
                           </Badge>
                           {!pack.trainerAvailable && (
-                            <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
+                            <Badge className="rounded-full border-amber-200 bg-[#FFF7E6] text-[#9A4D12]">
                               Study-only
                             </Badge>
                           )}
@@ -685,7 +685,7 @@ export function StudyCockpit() {
               },
             ].map(item => (
               <Link key={item.href} href={item.href}>
-                <div className="group rounded-[1rem] border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-accent/55">
+                <div className="group rounded-[1rem] border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:bg-secondary">
                   <item.icon className="h-5 w-5 text-primary" />
                   <p className="mt-3 text-sm font-semibold text-foreground">
                     {item.title}
@@ -719,8 +719,8 @@ export function StudyCockpit() {
                     <Badge
                       className={
                         attempt.isCorrect
-                          ? "rounded-full bg-emerald-500 text-white"
-                          : "rounded-full bg-red-500 text-white"
+                          ? "rounded-full bg-emerald-600 text-white"
+                          : "rounded-full bg-red-600 text-white"
                       }
                     >
                       {attempt.isCorrect ? "Hit" : "Miss"}

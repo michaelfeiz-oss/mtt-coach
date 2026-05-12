@@ -390,9 +390,9 @@ export default function StrategyLibrary() {
                           chartPresentation.sourceStatus === "source_backed"
                             ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                             : chartPresentation.sourceStatus === "simplified_population"
-                              ? "bg-amber-50 text-amber-900 border border-amber-200"
+                              ? "bg-[#FFF7E6] text-[#9A4D12] border border-amber-200"
                               : chartPresentation.sourceStatus === "proxy"
-                                ? "bg-amber-50 text-amber-900 border border-amber-200"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
                                 : "bg-rose-50 text-rose-800 border border-rose-200"
                         )}
                       >
@@ -400,7 +400,7 @@ export default function StrategyLibrary() {
                       </Badge>
                     )}
                     {chartPresentation?.sharedFamilyLabel && (
-                      <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
+                      <Badge className="h-6 rounded-full border-[var(--border-strong)] bg-card px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                         {chartPresentation.sharedFamilyLabel}
                       </Badge>
                     )}
@@ -426,12 +426,12 @@ export default function StrategyLibrary() {
               </div>
             </div>
 
-            <div
-              className={cn(
-                "rounded-[0.95rem] border border-border bg-background/78",
-                chartViewerDensity.tight ? "p-2.5" : "p-3"
-              )}
-            >
+              <div
+                className={cn(
+                "rounded-[0.95rem] border border-border bg-secondary",
+                  chartViewerDensity.tight ? "p-2.5" : "p-3"
+                )}
+              >
               <PreflopSetupControls
                 spotGroup={spotGroup}
                 stackDepth={stackDepth}
@@ -454,16 +454,16 @@ export default function StrategyLibrary() {
                   <Badge className="h-6 rounded-full bg-primary px-2.5 text-[10.5px] font-semibold text-primary-foreground">
                     {chart.stackDepth}bb
                   </Badge>
-                  <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
+                  <Badge className="h-6 rounded-full border-[var(--border-strong)] bg-card px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     {chartPresentation?.decisionLabel ?? chart.spotGroup}
                   </Badge>
-                  <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
+                  <Badge className="h-6 rounded-full border-[var(--border-strong)] bg-card px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     {displayPositionLabel(chart.heroPosition)}
                     {chart.villainPosition
                       ? ` vs ${displayPositionLabel(chart.villainPosition)}`
                       : ""}
                   </Badge>
-                  <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
+                  <Badge className="h-6 rounded-full border-[var(--border-strong)] bg-card px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     BBA
                   </Badge>
                 </div>
@@ -491,7 +491,7 @@ export default function StrategyLibrary() {
             )}
 
             {!chart && !chartLoading && (
-              <div className="rounded-2xl border border-dashed border-border bg-background/82 p-6 text-center">
+              <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center">
                 <BookOpen className="mx-auto h-9 w-9 text-muted-foreground" />
                 <p className="mt-3 text-sm font-bold">No chart selected</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -504,12 +504,12 @@ export default function StrategyLibrary() {
             {chart && (
               <>
                 {chartPresentation?.trainingGateMessage && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+                  <div className="app-note-warning rounded-xl px-3 py-2.5 text-sm">
                     {chartPresentation.trainingGateMessage}
                   </div>
                 )}
 
-                <div className="rounded-[0.95rem] border border-border/80 bg-background/88 p-1">
+                <div className="rounded-[0.95rem] border border-border bg-secondary p-1">
                   <div
                     className="mx-auto w-full"
                     style={{
@@ -533,7 +533,7 @@ export default function StrategyLibrary() {
                 />
 
                 {relatedDrillPacks.length > 0 && (
-                  <section className="rounded-[1rem] border border-border bg-background/78 p-3 sm:p-4">
+                  <section className="rounded-[1rem] border border-border bg-secondary p-3 sm:p-4">
                     <div className="mb-3">
                       <p className="text-[11px] font-semibold text-muted-foreground">
                         Related Drill Packs
@@ -590,7 +590,7 @@ export default function StrategyLibrary() {
                 {chartPresentation?.trainerAllowed && (
                   <div className="pt-1">
                     <Link href={`/strategy/trainer?chartId=${chart.id}`}>
-                      <Button className="h-10 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#FF8A1F]">
+                      <Button className="h-10 w-full rounded-xl text-sm font-semibold">
                         <Play className="mr-2 h-4 w-4" />
                         Train This Spot
                       </Button>

@@ -65,8 +65,8 @@ function Field({
 function selectClassName(disabled = false, compact = false) {
   return cn(
     compact
-      ? "h-8 w-full rounded-lg border-border/80 bg-input/90 px-2 text-[11.5px] font-semibold text-foreground shadow-none hover:bg-input focus:ring-ring/35"
-      : "h-9 w-full rounded-lg border-border/80 bg-input/90 px-2.5 text-[12px] font-semibold text-foreground shadow-none hover:bg-input focus:ring-ring/35",
+      ? "h-8 w-full rounded-lg border-[var(--border-strong)] bg-card px-2 text-[11.5px] font-semibold text-foreground shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:border-slate-400 hover:bg-card focus:border-ring"
+      : "h-9 w-full rounded-lg border-[var(--border-strong)] bg-card px-2.5 text-[12px] font-semibold text-foreground shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:border-slate-400 hover:bg-card focus:border-ring",
     disabled && "opacity-50"
   );
 }

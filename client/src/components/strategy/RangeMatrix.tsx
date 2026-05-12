@@ -95,7 +95,7 @@ export function RangeMatrix({
     <div className={cn("w-full", className)}>
       <div
         className={cn(
-          "mx-auto grid border border-border/80 bg-background/85 shadow-sm",
+          "mx-auto grid border border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_20px_rgba(15,23,42,0.04)]",
           compact
             ? "gap-px rounded-xl p-1"
             : "gap-[2px] rounded-[1rem] p-1 sm:p-1.5"
@@ -130,13 +130,13 @@ export function RangeMatrix({
               title={title}
               onClick={() => selectHand(handCode)}
               className={cn(
-                "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden border border-white/75 font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] transition duration-150",
+                "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden border border-white font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition duration-150",
                 compact ? "rounded-[5px]" : "rounded-md",
                 isInteractive
-                  ? "cursor-pointer hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  ? "cursor-pointer hover:-translate-y-0.5 hover:brightness-[1.03] active:translate-y-0 active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FB923C] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   : "cursor-default",
                 isHighlighted &&
-                  "z-10 scale-[1.04] border-primary/70 shadow-[0_0_0_1px_rgba(212,111,42,0.24),0_8px_16px_rgba(15,23,42,0.12)] ring-2 ring-primary/70 ring-offset-2 ring-offset-background"
+                  "z-10 scale-[1.04] border-[#FB923C] shadow-[0_0_0_1px_rgba(251,146,60,0.45),0_10px_18px_rgba(15,23,42,0.12)] ring-2 ring-[#FB923C] ring-offset-2 ring-offset-background"
               )}
               style={{
                 backgroundColor: style.backgroundColor,

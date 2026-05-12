@@ -45,18 +45,18 @@ export function StrategyTheoryNotes({
     return (
       <section
         className={cn(
-          "rounded-[1rem] border border-amber-200 bg-amber-50 p-3 sm:p-4",
+          "app-note-danger rounded-[1rem] p-3 sm:p-4",
           className
         )}
         aria-label="Spot notes"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[11px] font-semibold text-amber-900">Spot Notes</p>
-          <Badge className="rounded-full border-amber-300 bg-white text-amber-900">
+          <p className="text-[11px] font-semibold text-red-900">Spot Notes</p>
+          <Badge className="rounded-full border-red-200 bg-white text-red-800">
             Unsupported
           </Badge>
         </div>
-        <p className="mt-2 text-sm leading-relaxed text-amber-900">
+        <p className="mt-2 text-sm leading-relaxed text-red-900">
           Source unavailable. Do not train this spot until reviewed.
         </p>
       </section>
@@ -75,7 +75,7 @@ export function StrategyTheoryNotes({
   return (
     <section
       className={cn(
-        "rounded-[1rem] border border-border bg-background/78 p-3 sm:p-4",
+        "rounded-[1rem] border border-border bg-secondary p-3 sm:p-4",
         className
       )}
       aria-label="Spot notes"
@@ -85,7 +85,14 @@ export function StrategyTheoryNotes({
           Spot Notes
         </p>
         {sourceStatus !== "source_backed" && (
-          <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
+          <Badge
+            className={cn(
+              "rounded-full",
+              sourceStatus === "proxy"
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-amber-200 bg-[#FFF7E6] text-[#9A4D12]"
+            )}
+          >
             {sourceStatus === "simplified_population"
               ? "Simplified Population - study only"
               : "Proxy - study only"}
@@ -113,8 +120,13 @@ export function StrategyTheoryNotes({
           </AccordionTrigger>
           <AccordionContent className="space-y-2 px-3 pb-3">
             {helper && sourceStatus !== "source_backed" && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                <p className="text-sm leading-relaxed text-amber-900">
+              <div
+                className={cn(
+                  "rounded-xl px-3 py-2.5",
+                  sourceStatus === "proxy" ? "app-note-info" : "app-note-warning"
+                )}
+              >
+                <p className="text-sm leading-relaxed">
                   {helper}
                 </p>
               </div>
@@ -125,7 +137,7 @@ export function StrategyTheoryNotes({
                 key={section.key}
                 className={cn(
                   "rounded-xl border border-border/80 bg-background px-3 py-2.5",
-                  section.accent && "border-primary/20 bg-primary/5"
+                  section.accent && "border-amber-200 bg-[#FFF3E8]"
                 )}
               >
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.03em] text-muted-foreground">

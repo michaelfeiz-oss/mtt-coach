@@ -42,7 +42,7 @@ export function ActionLegend({
           <div
             key={action}
             className={cn(
-              "flex items-center rounded-full border border-border/80 bg-background/85",
+              "flex items-center rounded-full border border-border bg-card",
               compact
                 ? "min-h-5 gap-1 px-1.5 py-0.5"
                 : "min-h-6 gap-1.5 px-2 py-0.5"

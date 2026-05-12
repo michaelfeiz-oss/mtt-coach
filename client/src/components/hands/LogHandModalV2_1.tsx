@@ -47,10 +47,10 @@ interface StreetData {
 const RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
 const SUITS = ["s", "h", "d", "c"] as const;
 const SUIT_SYMBOLS: Record<string, { symbol: string; color: string }> = {
-  s: { symbol: "♠", color: "text-gray-800" },
+  s: { symbol: "♠", color: "text-slate-800" },
   h: { symbol: "♥", color: "text-red-600" },
   d: { symbol: "♦", color: "text-red-600" },
-  c: { symbol: "♣", color: "text-green-700" },
+  c: { symbol: "♣", color: "text-emerald-700" },
 };
 
 const SPOT_TYPES: Array<{ value: SpotTypeValue; label: string }> = [
@@ -166,7 +166,7 @@ function CardPicker({ card1, card2, onChange }: CardPickerProps) {
         <button
           onClick={() => setSelecting(slot)}
           className={`w-12 h-16 rounded-lg border-2 border-dashed flex items-center justify-center text-sm font-bold transition-all ${
-            selecting === slot ? "border-orange-500 bg-orange-50" : "border-gray-300 hover:border-orange-400 text-gray-400"
+            selecting === slot ? "border-primary bg-[#FFF3E8] text-[#9A4D12]" : "border-slate-300 hover:border-primary text-slate-400"
           }`}
         >
           ?
@@ -175,12 +175,12 @@ function CardPicker({ card1, card2, onChange }: CardPickerProps) {
     }
     const rank = card[0];
     const suit = card[1];
-    const { symbol, color } = SUIT_SYMBOLS[suit] || { symbol: suit, color: "text-gray-700" };
+    const { symbol, color } = SUIT_SYMBOLS[suit] || { symbol: suit, color: "text-slate-700" };
     return (
       <button
         onClick={() => setSelecting(slot)}
         className={`w-12 h-16 rounded-lg border-2 flex flex-col items-center justify-center transition-all bg-white ${
-          selecting === slot ? "border-orange-500" : "border-gray-300 hover:border-orange-400"
+          selecting === slot ? "border-primary ring-2 ring-[rgba(201,106,27,0.18)]" : "border-slate-300 hover:border-primary"
         }`}
       >
         <span className={`text-lg font-bold ${color}`}>{rank}</span>
@@ -197,15 +197,15 @@ function CardPicker({ card1, card2, onChange }: CardPickerProps) {
         {(card1 || card2) && (
           <button
             onClick={() => { onChange("", ""); setSelecting(1); }}
-            className="text-xs text-gray-400 hover:text-red-500 ml-1"
+            className="ml-1 text-xs text-slate-400 hover:text-red-600"
           >
             Clear
           </button>
         )}
       </div>
       {selecting && (
-        <div className="border rounded-lg p-2 bg-gray-50">
-          <div className="text-xs text-gray-500 mb-2">Select card {selecting}</div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+          <div className="mb-2 text-xs text-slate-500">Select card {selecting}</div>
           {SUITS.map(suit => {
             const { symbol, color } = SUIT_SYMBOLS[suit];
             return (
@@ -220,8 +220,8 @@ function CardPicker({ card1, card2, onChange }: CardPickerProps) {
                       onClick={() => handleCardClick(rank, suit)}
                       className={`w-8 h-8 rounded text-xs font-bold transition-all ${
                         taken
-                          ? "opacity-30 cursor-not-allowed bg-gray-100"
-                          : `bg-white border border-gray-200 hover:border-orange-400 hover:bg-orange-50 ${color}`
+                          ? "cursor-not-allowed bg-slate-100 opacity-30"
+                          : `border border-slate-200 bg-white hover:border-primary hover:bg-[#FFF3E8] ${color}`
                       }`}
                     >
                       {rank}{symbol}
@@ -283,7 +283,7 @@ function ActionRow({ action, onChange, onRemove }: ActionRowProps) {
           </Select>
         </>
       )}
-      <button onClick={onRemove} className="text-gray-400 hover:text-red-500 ml-1">
+      <button onClick={onRemove} className="text-slate-400 hover:text-red-600 ml-1">
         <Trash2 className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -324,7 +324,7 @@ function StreetBuilder({ label, data, onToggle, onChange }: StreetBuilderProps) 
     return (
       <button
         onClick={onToggle}
-        className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium"
+        className="flex items-center gap-1 text-sm font-medium text-[#9A4D12] hover:text-primary"
       >
         <Plus className="w-4 h-4" /> Add {label}
       </button>
@@ -332,10 +332,10 @@ function StreetBuilder({ label, data, onToggle, onChange }: StreetBuilderProps) 
   }
 
   return (
-    <div className="border rounded-lg p-3 space-y-2 bg-white">
+    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-800">{label}</span>
-        <button onClick={onToggle} className="text-xs text-gray-400 hover:text-red-500">Remove</button>
+        <span className="text-sm font-semibold text-slate-800">{label}</span>
+        <button onClick={onToggle} className="text-xs text-slate-400 hover:text-red-600">Remove</button>
       </div>
       <Input
         className="h-8 text-xs"
@@ -355,7 +355,7 @@ function StreetBuilder({ label, data, onToggle, onChange }: StreetBuilderProps) 
       </div>
       <button
         onClick={addAction}
-        className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
+        className="flex items-center gap-1 text-xs text-[#9A4D12] hover:text-primary"
       >
         <Plus className="w-3.5 h-3.5" /> Add action
       </button>
@@ -535,7 +535,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   return (
     <Dialog open={isOpen} onOpenChange={open => { if (!open) handleClose(); }}>
       <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[88vh] overflow-hidden p-0">
-        <DialogHeader className="sticky top-0 z-10 border-b bg-white px-4 pb-3 pt-4 sm:px-5">
+        <DialogHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 pb-3 pt-4 sm:px-5">
           <DialogTitle className="text-base font-semibold">Log a Hand</DialogTitle>
         </DialogHeader>
 
@@ -544,7 +544,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {/* ── Section 1: Hand Context ── */}
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Hand Context</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Hand Context</h3>
 
             {/* Hero Hand */}
             <div className="space-y-1.5">
@@ -563,7 +563,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     )}
                     <button
                       onClick={() => setUseCardPicker(true)}
-                      className="text-xs text-orange-600 hover:text-orange-700 underline"
+                      className="text-xs text-[#9A4D12] hover:text-primary underline"
                     >
                       Pick cards
                     </button>
@@ -576,7 +576,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     )}
                     <button
                       onClick={() => { setUseCardPicker(false); setCard1(""); setCard2(""); setHandClass(""); setExactKnown(false); setHandInput(""); }}
-                      className="text-xs text-gray-400 hover:text-gray-600 underline"
+                      className="text-xs text-slate-400 underline hover:text-slate-600"
                     >
                       Type instead
                     </button>
@@ -601,7 +601,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                       key={c}
                       onClick={() => setStackInput(String(c))}
                       className={`px-2 py-0.5 rounded text-xs border transition-all ${
-                        stackInput === String(c) ? "bg-orange-500 text-white border-orange-500" : "border-gray-200 hover:border-orange-400 text-gray-600"
+                        stackInput === String(c) ? "border-primary bg-primary text-white" : "border-slate-200 text-slate-600 hover:border-primary hover:bg-[#FFF3E8]"
                       }`}
                     >
                       {c}bb
@@ -656,7 +656,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             {/* Optional context toggle */}
             <button
               onClick={() => setShowOptionalContext(v => !v)}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
             >
               {showOptionalContext ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               {showOptionalContext ? "Hide" : "Show"} optional context
@@ -665,7 +665,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             {showOptionalContext && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-gray-600">Stage</Label>
+                  <Label className="text-xs text-slate-600">Stage</Label>
                   <Select value={tournamentStage} onValueChange={setTournamentStage}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Stage" />
@@ -677,7 +677,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-gray-600">Villain Type</Label>
+                  <Label className="text-xs text-slate-600">Villain Type</Label>
                   <Select value={villainType} onValueChange={setVillainType}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Type" />
@@ -689,7 +689,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-gray-600">Range Read</Label>
+                  <Label className="text-xs text-slate-600">Range Read</Label>
                   <Select value={rangeRead} onValueChange={setRangeRead}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Range" />
@@ -706,7 +706,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {/* ── Section 2: Preflop Line ── */}
           <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Preflop Line</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preflop Line</h3>
             <div className="space-y-1.5">
               {preflopActions.map((a, i) => (
                 <ActionRow
@@ -723,21 +723,21 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </div>
             <button
               onClick={addPreflopAction}
-              className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium"
+              className="flex items-center gap-1 text-sm font-medium text-[#9A4D12] hover:text-primary"
             >
               <Plus className="w-4 h-4" /> Add action
             </button>
             {preflopPreview && (
-              <p className="text-xs text-gray-500 italic">{preflopPreview}</p>
+              <p className="text-xs italic text-slate-500">{preflopPreview}</p>
             )}
           </div>
 
           {/* ── Section 3: Optional Streets ── */}
           <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Optional Streets</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Optional Streets</h3>
             <button
               onClick={() => setShowOptionalStreets(v => !v)}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
             >
               {showOptionalStreets ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               {showOptionalStreets ? "Hide" : "Show"} streets
@@ -768,10 +768,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
           {/* ── Section 4: Review Tagging ── */}
           <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Review & Tagging</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Review & Tagging</h3>
             <button
               onClick={() => setShowReviewTagging(v => !v)}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
             >
               {showReviewTagging ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               {showReviewTagging ? "Hide" : "Show"} review fields
@@ -789,7 +789,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     key={v}
                     onClick={() => setIsMistake(v)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all capitalize ${
-                      isMistake === v ? "bg-orange-500 text-white border-orange-500" : "border-gray-200 hover:border-orange-400 text-gray-600"
+                      isMistake === v ? "border-primary bg-primary text-white" : "border-slate-200 text-slate-600 hover:border-primary hover:bg-[#FFF3E8]"
                     }`}
                   >
                     {v}
@@ -819,7 +819,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                         key={s.value}
                         onClick={() => setSeverity(s.value)}
                         className={`flex-1 py-1.5 rounded text-xs font-medium border transition-all ${
-                          severity === s.value ? "bg-orange-500 text-white border-orange-500" : "border-gray-200 hover:border-orange-400 text-gray-600"
+                          severity === s.value ? "border-primary bg-primary text-white" : "border-slate-200 text-slate-600 hover:border-primary hover:bg-[#FFF3E8]"
                         }`}
                       >
                         {s.value} {s.label}
@@ -855,7 +855,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                     key={c}
                     onClick={() => setConfidence(prev => prev === c ? "" : c)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      confidence === c ? "bg-orange-500 text-white border-orange-500" : "border-gray-200 hover:border-orange-400 text-gray-600"
+                      confidence === c ? "border-primary bg-primary text-white" : "border-slate-200 text-slate-600 hover:border-primary hover:bg-[#FFF3E8]"
                     }`}
                   >
                     {c.charAt(0) + c.slice(1).toLowerCase()}
@@ -865,18 +865,18 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </div>
 
             {/* ICMIZER Review tag */}
-            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-amber-200 bg-[#FFF7E6] px-3 py-2 sm:flex-row sm:items-center">
               <input
                 id="icmizer-review-checkbox"
                 type="checkbox"
                 checked={icmizerReview}
                 onChange={e => setIcmizerReview(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 accent-amber-500"
+                className="h-4 w-4 rounded border-slate-300 accent-[#C96A1B]"
               />
-              <label htmlFor="icmizer-review-checkbox" className="cursor-pointer text-xs font-medium text-amber-800">
+              <label htmlFor="icmizer-review-checkbox" className="cursor-pointer text-xs font-medium text-[#9A4D12]">
                 Flag for ICMIZER review
               </label>
-              <span className="text-xs text-amber-600 sm:ml-auto">Short-stack / shove / call-off?</span>
+              <span className="text-xs text-[#B45309] sm:ml-auto">Short-stack / shove / call-off?</span>
             </div>
             {/* Lesson */}
             <div className="space-y-1.5">
@@ -897,7 +897,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
         {/* ── Footer ── */}
         </div>
 
-        <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <Button variant="ghost" size="sm" onClick={handleClose}>Cancel</Button>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
@@ -911,7 +911,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </Button>
             <Button
               size="sm"
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={() => handleSave("REVIEWED")}
               disabled={createHand.isPending}
             >
@@ -923,3 +923,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     </Dialog>
   );
 }
+
+
+

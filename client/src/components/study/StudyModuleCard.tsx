@@ -22,22 +22,22 @@ const toneClasses: Record<
   orange: {
     icon: "bg-primary text-primary-foreground",
     border: "hover:border-border",
-    meta: "border-border bg-accent/80 text-secondary-foreground",
+    meta: "border-[var(--border-strong)] bg-secondary text-secondary-foreground",
   },
   zinc: {
-    icon: "bg-accent text-secondary-foreground",
+    icon: "bg-secondary text-secondary-foreground",
     border: "hover:border-border",
-    meta: "border-border bg-accent/80 text-secondary-foreground",
+    meta: "border-[var(--border-strong)] bg-secondary text-secondary-foreground",
   },
   blue: {
-    icon: "bg-sky-500 text-white",
+    icon: "bg-blue-600 text-white",
     border: "hover:border-border",
-    meta: "border-border bg-accent/80 text-secondary-foreground",
+    meta: "border-[var(--border-strong)] bg-secondary text-secondary-foreground",
   },
   green: {
-    icon: "bg-emerald-500 text-white",
+    icon: "bg-emerald-600 text-white",
     border: "hover:border-border",
-    meta: "border-border bg-accent/80 text-secondary-foreground",
+    meta: "border-[var(--border-strong)] bg-secondary text-secondary-foreground",
   },
 };
 
@@ -56,7 +56,7 @@ export function StudyModuleCard({
     <Link href={href}>
       <div
         className={cn(
-          "group block h-full rounded-[1.2rem] border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-accent/55",
+          "group block h-full rounded-[1.2rem] border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:bg-secondary",
           styles.border,
           className
         )}

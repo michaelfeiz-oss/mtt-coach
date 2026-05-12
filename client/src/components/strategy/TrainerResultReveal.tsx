@@ -103,13 +103,13 @@ export function TrainerResultReveal({
       )}
     >
       <CardContent className="space-y-3 p-3 sm:p-4">
-        <div className="flex items-start gap-3 rounded-2xl border border-border bg-accent/70 p-3">
+        <div className="flex items-start gap-3 rounded-2xl border border-border bg-secondary p-3">
           <div
             className={cn(
               "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm",
               isCorrect
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-red-100 text-red-700"
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-red-50 text-red-700"
             )}
           >
             {isCorrect ? (
@@ -130,11 +130,11 @@ export function TrainerResultReveal({
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge
                 variant="outline"
-                className="rounded-full border-border bg-accent px-2.5 text-secondary-foreground"
+                className="rounded-full border-[var(--border-strong)] bg-card px-2.5 text-secondary-foreground"
               >
                 You chose: {ACTION_LABELS[selectedAction]}
               </Badge>
-              <Badge className="rounded-full bg-primary/90 px-2.5 text-primary-foreground">
+              <Badge className="rounded-full bg-primary px-2.5 text-primary-foreground">
                 Correct: {ACTION_LABELS[correctAction]}
               </Badge>
             </div>
@@ -148,7 +148,7 @@ export function TrainerResultReveal({
           />
         )}
 
-        <div className="rounded-[1rem] border border-border bg-background/78 p-3">
+        <div className="rounded-[1rem] border border-border bg-secondary p-3">
           <p className="text-[11px] font-semibold text-muted-foreground">
             How sure were you?
           </p>
@@ -170,7 +170,7 @@ export function TrainerResultReveal({
                   className={cn(
                     "h-9 rounded-full px-3 text-xs font-semibold",
                     !isActive &&
-                      "border-border bg-card text-secondary-foreground hover:bg-accent/80"
+                      "border-[var(--border-strong)] bg-card text-secondary-foreground hover:bg-slate-100"
                   )}
                   disabled={!onConfidenceSelect || isSavingConfidence}
                   onClick={() => onConfidenceSelect?.(option)}
@@ -182,7 +182,7 @@ export function TrainerResultReveal({
           </div>
         </div>
 
-        <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-border bg-accent/70 p-2.5 sm:p-3">
+        <div className="min-w-0 space-y-2.5 rounded-[1rem] border border-border bg-secondary p-2.5 sm:p-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-semibold text-muted-foreground">
@@ -202,7 +202,14 @@ export function TrainerResultReveal({
               <div className="flex flex-wrap gap-1.5">
                 {chartPresentation?.sourceStatus !== "source_backed" &&
                   chartPresentation?.sourceBadge && (
-                    <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
+                    <Badge
+                      className={cn(
+                        "rounded-full",
+                        chartPresentation.sourceStatus === "proxy"
+                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                          : "border-amber-200 bg-[#FFF7E6] text-[#9A4D12]"
+                      )}
+                    >
                       {chartPresentation.sourceBadge}
                     </Badge>
                   )}
@@ -214,7 +221,7 @@ export function TrainerResultReveal({
               </div>
               <ActionLegend
                 actions={visibleActions}
-                className="rounded-xl border border-border/80 bg-accent/45 p-1.5"
+                className="rounded-xl border border-border bg-card p-1.5"
               />
             </div>
           </div>
@@ -249,7 +256,7 @@ export function TrainerResultReveal({
           )}
 
           {!chart && !isLoadingChart && (
-            <div className="rounded-2xl border border-dashed border-border/75 bg-accent/40 p-4 text-center text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-dashed border-border bg-card p-4 text-center text-sm text-muted-foreground">
               Chart actions are not available for this reveal.
             </div>
           )}
