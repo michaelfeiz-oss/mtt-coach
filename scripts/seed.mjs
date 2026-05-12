@@ -1,9 +1,13 @@
-import { drizzle } from 'drizzle-orm/mysql2';
-import { eq } from 'drizzle-orm';
-import mysql from 'mysql2/promise';
-import * as schema from '../drizzle/schema.js';
+import { register } from "tsx/esm/api";
 
-const connection = await mysql.createConnection(process.env.DATABASE_URL);
+register();
+
+const { drizzle } = await import("drizzle-orm/mysql2");
+const { eq } = await import("drizzle-orm");
+const mysql = await import("mysql2/promise");
+const schema = await import("../drizzle/schema.ts");
+
+const connection = await mysql.default.createConnection(process.env.DATABASE_URL);
 const db = drizzle(connection);
 
 console.log('🌱 Seeding database...');

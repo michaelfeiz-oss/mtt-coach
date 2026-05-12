@@ -47,7 +47,20 @@
 }
 
 :root {
-  --primary: #d46f2a;
+  --bg: #f7f5f1;
+  --surface: #fffdfa;
+  --surface-muted: #f4f1eb;
+  --text-primary: #1f2933;
+  --text-secondary: #5f6c7c;
+  --brand-accent: #d46f2a;
+  --action-call: #16a34a;
+  --action-jam: #ea580c;
+  --action-raise: #dc2626;
+  --action-threebet: #2563eb;
+  --action-fold: #94a3b8;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --primary: var(--brand-accent);
   --primary-foreground: #ffffff;
   --sidebar-primary: #d46f2a;
   --sidebar-primary-foreground: #ffffff;
@@ -57,32 +70,32 @@
   --chart-4: #d46f2a;
   --chart-5: #8b5cf6;
   --radius: 0.75rem;
-  --background: #f7f5f1;
-  --foreground: #1f2933;
-  --card: #fffdfa;
+  --background: var(--bg);
+  --foreground: var(--text-primary);
+  --card: var(--surface);
   --card-foreground: #16202a;
-  --popover: #fffdfa;
+  --popover: var(--surface);
   --popover-foreground: #16202a;
   --secondary: #f2eee7;
   --secondary-foreground: #435164;
-  --muted: #f5f1eb;
-  --muted-foreground: #637182;
-  --accent: #f4f1eb;
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-muted);
   --accent-foreground: #334155;
-  --destructive: #ef4444;
+  --destructive: var(--danger);
   --destructive-foreground: #ffffff;
   --border: #e4ddd2;
   --input: #fbf8f3;
-  --ring: #d46f2a;
+  --ring: var(--brand-accent);
   --sidebar: #faf8f4;
   --sidebar-foreground: #1f2933;
   --sidebar-accent: #f3efe8;
   --sidebar-accent-foreground: #334155;
   --sidebar-border: #e4ddd2;
   --sidebar-ring: #d46f2a;
-  --success: #16a34a;
-  --warning: #d97706;
-  --error: #dc2626;
+  --success: var(--action-call);
+  --warning: var(--warning);
+  --error: var(--danger);
   --info: #0ea5e9;
 }
 
@@ -150,18 +163,18 @@
     background-image:
       radial-gradient(
         circle at 14% 12%,
-        rgba(212, 111, 42, 0.055),
+        rgba(212, 111, 42, 0.04),
         transparent 28%
       ),
       linear-gradient(180deg, #faf8f4 0%, #f4f1eb 100%);
   }
 
   .app-surface {
-    @apply rounded-[1rem] border border-border bg-card shadow-[0_8px_24px_rgba(15,23,42,0.06)];
+    @apply rounded-[1rem] border border-border bg-card shadow-[0_6px_18px_rgba(15,23,42,0.05)];
   }
 
   .app-surface-elevated {
-    @apply rounded-[1rem] border border-border bg-popover shadow-[0_16px_36px_rgba(15,23,42,0.08)];
+    @apply rounded-[1rem] border border-border bg-popover shadow-[0_12px_28px_rgba(15,23,42,0.07)];
   }
 
   .app-surface-subtle {

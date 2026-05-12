@@ -11,6 +11,7 @@ import {
   getTrainerSpot,
   getTrainerStats,
   listAvailableSpots,
+  listTrainerAvailableSpots,
   submitTrainerAttempt,
 } from "./service";
 import { ACTIONS, POSITIONS, SPOT_GROUPS, STACK_DEPTHS } from "../../shared/strategy";
@@ -80,6 +81,13 @@ export const strategyRouter = router({
     const result = await listAvailableSpots(input);
     return result;
   }),
+
+  listTrainerSpots: publicProcedure
+    .input(ListSpotsInput)
+    .query(async ({ input }) => {
+      const result = await listTrainerAvailableSpots(input);
+      return result;
+    }),
 
   getChart: publicProcedure.input(GetChartInput).query(async ({ input }) => {
     const chart = await getChartWithActions(input.chartId);

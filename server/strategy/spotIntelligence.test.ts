@@ -88,7 +88,7 @@ describe("preflop study intelligence layer", () => {
     expect(note40?.commonPunt).toContain("speculative suited hands");
   });
 
-  it("resolves the source-backed blind-defense drill pack against real spot coverage", () => {
+  it("keeps blind-defense proxy packs blocked from trainer when only study-only spots are available", () => {
     const pack = resolvePriorityDrillPack("bb-vs-sb-marginal-defense", [
       {
         id: 1,
@@ -108,8 +108,10 @@ describe("preflop study intelligence layer", () => {
       },
     ]);
 
-    expect(pack?.supported).toBe(true);
+    expect(pack?.supported).toBe(false);
     expect(pack?.spotCount).toBe(1);
+    expect(pack?.trainerSpotCount).toBe(0);
+    expect(pack?.blockedSpotCount).toBe(1);
     expect(pack?.focusHandCodes).toContain("K9o");
   });
 
@@ -182,7 +184,7 @@ describe("preflop study intelligence layer", () => {
     }
   });
 
-  it("extends the facing-3bet threshold pack across the new 25bb and 40bb nodes", () => {
+  it("keeps the facing-3bet threshold pack blocked when only simplified 25bb and 40bb nodes are present", () => {
     const resolved = resolvePriorityDrillPack("facing-3bet-threshold-pack", [
       {
         id: 1,
@@ -202,8 +204,10 @@ describe("preflop study intelligence layer", () => {
       },
     ]);
 
-    expect(resolved?.supported).toBe(true);
+    expect(resolved?.supported).toBe(false);
     expect(resolved?.spotCount).toBe(2);
+    expect(resolved?.trainerSpotCount).toBe(0);
+    expect(resolved?.blockedSpotCount).toBe(2);
   });
 
   it("keeps EP drill packs out of non-EP late-position 3-bet spots", () => {
@@ -234,11 +238,11 @@ describe("preflop study intelligence layer", () => {
   it("keeps the EP pressure pack available when early-position pressure is actually involved", () => {
     const spot = {
       id: 1,
-      title: "UTG vs CO 3-Bet @ 15bb",
+      title: "UTG vs BTN 3-Bet @ 15bb",
       stackDepth: 15,
       spotGroup: "VS_3BET" as const,
       heroPosition: "UTG",
-      villainPosition: "CO",
+      villainPosition: "BTN",
     };
 
     const packs = getRelatedPriorityDrillPacksForSpot(spot, [spot]);

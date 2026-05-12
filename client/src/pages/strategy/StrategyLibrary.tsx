@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearch } from "wouter";
-import { BookOpen, Play } from "lucide-react";
+import { BookOpen, Lock, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -210,6 +210,7 @@ export default function StrategyLibrary() {
         ? getRelatedPriorityDrillPacksForSpot(chart, allSpots).filter(
             pack => pack.supported
           )
+            .slice(0, 2)
         : [],
     [allSpots, chart]
   );
@@ -354,32 +355,73 @@ export default function StrategyLibrary() {
                 </span>
                 <div className="min-w-0">
                   <p className="app-eyebrow">Hand Ranges</p>
-                  <h1 className="mt-0.5 truncate text-xl font-bold tracking-tight sm:text-[1.65rem]">
+                  <h1 className="mt-0.5 truncate text-xl font-bold tracking-tight sm:text-[1.55rem]">
                     Preflop Chart Viewer
                   </h1>
                 </div>
               </div>
 
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  Current Chart
-                </p>
-                <h2
-                  className={cn(
-                    "mt-0.5 truncate text-lg font-black tracking-tight sm:text-[1.55rem]",
-                    chartViewerDensity.tight && "sm:text-[1.45rem]"
-                  )}
-                >
-                  {chartPresentation?.title ?? "Choose a supported preflop spot"}
-                </h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {chartPresentation?.contextLine ??
-                    "Decision, stack, hero, and opener stay visible here so you can move around the chart library quickly."}
-                </p>
-                {chartPresentation?.sourceHelper && (
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    {chartPresentation.sourceHelper}
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Current Chart
                   </p>
+                  <h2
+                    className={cn(
+                      "mt-0.5 truncate text-lg font-black tracking-tight sm:text-[1.45rem]",
+                      chartViewerDensity.tight && "sm:text-[1.35rem]"
+                    )}
+                  >
+                    {chartPresentation?.title ?? "Choose a preflop spot"}
+                  </h2>
+                  {chartPresentation?.contextLine && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {chartPresentation.contextLine}
+                    </p>
+                  )}
+                </div>
+
+                {chart && (
+                  <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+                    {chartPresentation?.sourceBadge && (
+                      <Badge
+                        className={cn(
+                          "h-6 rounded-full px-2.5 text-[10.5px] font-semibold",
+                          chartPresentation.sourceStatus === "source_backed"
+                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                            : chartPresentation.sourceStatus === "simplified_population"
+                              ? "bg-amber-50 text-amber-900 border border-amber-200"
+                              : chartPresentation.sourceStatus === "proxy"
+                                ? "bg-amber-50 text-amber-900 border border-amber-200"
+                                : "bg-rose-50 text-rose-800 border border-rose-200"
+                        )}
+                      >
+                        {chartPresentation.sourceBadge}
+                      </Badge>
+                    )}
+                    {chartPresentation?.sharedFamilyLabel && (
+                      <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
+                        {chartPresentation.sharedFamilyLabel}
+                      </Badge>
+                    )}
+                    {chartPresentation?.trainerAllowed ? (
+                      <Link href={`/strategy/trainer?chartId=${chart.id}`}>
+                        <Button className="h-9 rounded-xl px-3 text-sm font-semibold">
+                          <Play className="mr-2 h-4 w-4" />
+                          Train
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="h-9 rounded-xl px-3 text-sm font-semibold opacity-100"
+                      >
+                        <Lock className="mr-2 h-4 w-4" />
+                        Study-only
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -402,7 +444,7 @@ export default function StrategyLibrary() {
                 onStackDepthChange={setStack}
                 onHeroPositionChange={setHero}
                 onVillainPositionChange={setVillain}
-                compact={chartViewerDensity.condensed}
+                compact
               />
             </div>
 
@@ -424,17 +466,6 @@ export default function StrategyLibrary() {
                   <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     BBA
                   </Badge>
-                  {chartPresentation?.sourceStatus !== "source_backed" &&
-                    chartPresentation?.sourceBadge && (
-                      <Badge className="h-6 rounded-full border-amber-200 bg-amber-50 px-2.5 text-[10.5px] font-semibold text-amber-900">
-                        {chartPresentation.sourceBadge}
-                      </Badge>
-                    )}
-                  {chartPresentation?.sharedFamilyLabel && (
-                    <Badge className="h-6 rounded-full border-border bg-background/85 px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
-                      {chartPresentation.sharedFamilyLabel}
-                    </Badge>
-                  )}
                 </div>
                 <ActionLegend
                   actions={visibleActions}
@@ -465,13 +496,19 @@ export default function StrategyLibrary() {
                 <p className="mt-3 text-sm font-bold">No chart selected</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {spotsError?.message ??
-                    "Choose a supported setup to load a preflop chart."}
+                    "Choose a setup to load a preflop chart."}
                 </p>
               </div>
             )}
 
             {chart && (
               <>
+                {chartPresentation?.trainingGateMessage && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+                    {chartPresentation.trainingGateMessage}
+                  </div>
+                )}
+
                 <div className="rounded-[0.95rem] border border-border/80 bg-background/88 p-1">
                   <div
                     className="mx-auto w-full"
@@ -480,10 +517,10 @@ export default function StrategyLibrary() {
                     }}
                   >
                     <div className="md:hidden">
-                      <RangeMatrix actions={actionMap} compact size="md" />
+                      <RangeMatrix actions={actionMap} compact size="sm" />
                     </div>
                     <div className="hidden md:block">
-                      <RangeMatrix actions={actionMap} size="lg" />
+                      <RangeMatrix actions={actionMap} size="md" />
                     </div>
                   </div>
                 </div>
@@ -508,7 +545,7 @@ export default function StrategyLibrary() {
                     </div>
                     <div className="grid gap-2.5">
                       {relatedDrillPacks.map(pack => (
-                        <div
+                      <div
                           key={pack.id}
                           className="rounded-xl border border-border bg-card p-3"
                         >
@@ -539,7 +576,7 @@ export default function StrategyLibrary() {
                               </div>
                             </div>
                             <Link href={`/strategy/trainer?packId=${pack.id}`}>
-                              <Button className="h-10 rounded-xl px-4 text-sm font-semibold">
+                              <Button className="h-9 rounded-xl px-4 text-sm font-semibold">
                                 Start Drill
                               </Button>
                             </Link>
@@ -550,14 +587,16 @@ export default function StrategyLibrary() {
                   </section>
                 )}
 
-                <div className="pt-1">
-                  <Link href={`/strategy/trainer?chartId=${chart.id}`}>
-                    <Button className="h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#FF8A1F]">
-                      <Play className="mr-2 h-4 w-4" />
-                      Train This Spot
-                    </Button>
-                  </Link>
-                </div>
+                {chartPresentation?.trainerAllowed && (
+                  <div className="pt-1">
+                    <Link href={`/strategy/trainer?chartId=${chart.id}`}>
+                      <Button className="h-10 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[#FF8A1F]">
+                        <Play className="mr-2 h-4 w-4" />
+                        Train This Spot
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </>
             )}
           </div>

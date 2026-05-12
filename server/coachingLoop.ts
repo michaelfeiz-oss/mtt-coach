@@ -21,6 +21,7 @@ import {
 import {
   getPriorityDrillPack,
   getRelatedPriorityDrillPacksForSpot,
+  resolvePriorityDrillPack,
   type DrillPackSpotLike,
 } from "../shared/drillPacks";
 import {
@@ -47,10 +48,11 @@ import {
   getHandStrategyRecommendation,
   inferSpotFromHand,
   isPreflopMistake,
-  listAvailableSpots,
+  listTrainerAvailableSpots,
   normalizeHandCode,
   normalizePosition,
 } from "./strategy/service";
+import { isTrainerAllowedStrategyChart } from "../shared/sourceTruth";
 
 const RECENT_WINDOW_MS = 1000 * 60 * 60 * 24 * 7;
 const STALE_WINDOW_MS = 1000 * 60 * 60 * 24 * 30;
@@ -224,10 +226,13 @@ function chooseSuggestedPackId(
   },
   availableSpots: DrillPackSpotLike[]
 ) {
-  const leakPackId = spot.leakFamilyId
-    ? getLeakFamily(spot.leakFamilyId)?.relatedPackIds?.[0] ?? null
+  const leakPack = spot.leakFamilyId
+    ? getPriorityDrillPack(getLeakFamily(spot.leakFamilyId)?.relatedPackIds?.[0])
     : null;
-  if (leakPackId) return leakPackId;
+  if (leakPack) {
+    const resolvedLeakPack = resolvePriorityDrillPack(leakPack.id, availableSpots);
+    if (resolvedLeakPack?.supported) return leakPack.id;
+  }
 
   if (!spot.chartLike) return null;
   return (
@@ -337,7 +342,7 @@ export function aggregateWeakSpots(input: {
         heroPosition: hand.heroPosition,
         villainPosition: hand.villainPosition,
         createdAt: hand.createdAt,
-        suggestedChartId: hand.suggestedChartId,
+        suggestedChartId: chartLike ? hand.suggestedChartId : null,
         suggestedAction: "view_chart",
         suggestedDrillPackId: chooseSuggestedPackId(
           {
@@ -742,7 +747,7 @@ export async function getWeakSpotSummary(
       .leftJoin(leaks, eq(handLeaks.leakId, leaks.id))
       .where(eq(hands.userId, userId))
       .orderBy(desc(hands.createdAt)),
-    listAvailableSpots({}),
+    listTrainerAvailableSpots({}),
   ]);
 
   const attempts: AggregatedTrainerAttempt[] = attemptRows.map(row => ({
@@ -863,15 +868,20 @@ export function buildHandTrainingSuggestionModel(input: {
   leakFamilyId: CanonicalLeakFamilyId | null;
 }): HandTrainingSuggestion {
   const leakFamily = getLeakFamily(input.leakFamilyId);
-  const drillRoute = input.recommendation
-    ? `/strategy/trainer?chartId=${input.recommendation.chart.id}`
-    : leakFamily?.relatedPackIds?.[0]
-      ? `/strategy/trainer?packId=${leakFamily.relatedPackIds[0]}`
+  const trainerSafeChart =
+    input.recommendation && isTrainerAllowedStrategyChart(input.recommendation.chart)
+      ? input.recommendation.chart
       : null;
-  const drillLabel = input.recommendation
+  const fallbackPackId = leakFamily?.relatedPackIds?.[0] ?? null;
+  const drillRoute = trainerSafeChart
+    ? `/strategy/trainer?chartId=${trainerSafeChart.id}`
+    : fallbackPackId
+      ? `/strategy/trainer?packId=${fallbackPackId}`
+      : null;
+  const drillLabel = trainerSafeChart
     ? "Drill this spot"
-    : leakFamily?.relatedPackIds?.[0]
-      ? `Start ${getPriorityDrillPack(leakFamily.relatedPackIds[0])?.title ?? "suggested drill"}`
+    : fallbackPackId
+      ? `Start ${getPriorityDrillPack(fallbackPackId)?.title ?? "suggested drill"}`
       : null;
   const chartRoute = input.recommendation
     ? `/strategy/library?chartId=${input.recommendation.chart.id}`

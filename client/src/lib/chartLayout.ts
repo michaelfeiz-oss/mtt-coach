@@ -11,7 +11,7 @@ export function getChartViewerDensity(
     return {
       condensed: false,
       tight: false,
-      desktopMatrixMaxWidthRem: 41,
+      desktopMatrixMaxWidthRem: 39,
     };
   }
 
@@ -19,13 +19,13 @@ export function getChartViewerDensity(
     return {
       condensed: true,
       tight: false,
-      desktopMatrixMaxWidthRem: 39,
+      desktopMatrixMaxWidthRem: 37.5,
     };
   }
 
   return {
     condensed: true,
     tight: true,
-    desktopMatrixMaxWidthRem: 37,
+    desktopMatrixMaxWidthRem: 36,
   };
 }

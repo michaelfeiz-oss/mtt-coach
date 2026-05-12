@@ -9,14 +9,14 @@ import {
 } from "./strategy";
 import {
   getSharedFamilySourceLabel,
+  getStrategyChartTrustMetadata,
   getStrategySourceHelperText,
   getStrategySourceLabel,
   getStrategySourceStatus,
   type StrategyChartLike,
 } from "./sourceTruth";
 
-export interface StrategyPresentationChart
-  extends StrategyChartLike {
+export interface StrategyPresentationChart extends StrategyChartLike {
   title?: string | null;
 }
 
@@ -28,6 +28,15 @@ export interface StrategyChartPresentation {
   sourceBadge: string | null;
   sourceHelper: string | null;
   sharedFamilyLabel: string | null;
+  trainerAllowed: boolean;
+  manuallyApprovedForTraining: boolean;
+  notesConfidence: ReturnType<
+    typeof getStrategyChartTrustMetadata
+  >["notesConfidence"];
+  cellMapSource: ReturnType<
+    typeof getStrategyChartTrustMetadata
+  >["cellMapSource"];
+  trainingGateMessage: string | null;
 }
 
 function formatVersusTitle(
@@ -90,17 +99,29 @@ export function buildStrategyChartPresentation(
   const villainLabel = chart.villainPosition
     ? displayPositionLabel(chart.villainPosition)
     : "Any / no opener";
-  const sourceStatus = getStrategySourceStatus(chart);
+  const trust = getStrategyChartTrustMetadata(chart);
+  const sourceStatus = trust.sourceStatus;
 
   return {
     title: formatStrategyChartTitle(chart),
     decisionLabel,
-    contextLine: `${decisionLabel} · ${heroLabel}${
+    contextLine: `${decisionLabel} - ${heroLabel}${
       chart.villainPosition ? ` vs ${villainLabel}` : ""
-    } · ${PRELFOP_PLAYERS_COUNT} players · ${PRELFOP_ANTE_FORMAT}`,
+    } - ${PRELFOP_PLAYERS_COUNT} players - ${PRELFOP_ANTE_FORMAT}`,
     sourceStatus,
     sourceBadge: getStrategySourceLabel(chart),
     sourceHelper: getStrategySourceHelperText(chart),
     sharedFamilyLabel: getSharedFamilySourceLabel(chart),
+    trainerAllowed: trust.trainerAllowed,
+    manuallyApprovedForTraining: trust.manuallyApprovedForTraining,
+    notesConfidence: trust.notesConfidence,
+    cellMapSource: trust.cellMapSource,
+    trainingGateMessage: trust.trainerAllowed
+      ? null
+      : sourceStatus === "simplified_population"
+        ? "Study-only simplified node. Training is blocked until a human approval exists."
+        : sourceStatus === "proxy"
+          ? "Study-only proxy node. Training is blocked until a human approval exists."
+          : "Unsupported node. Training stays blocked until source evidence exists.",
   };
 }

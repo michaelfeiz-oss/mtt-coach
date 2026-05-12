@@ -32,8 +32,10 @@ describe("strategy chart presentation", () => {
     expect(presentation.sourceBadge).toBe("Simplified Population");
     expect(presentation.sharedFamilyLabel).toBe("Shared IP vs BB 3-Bet family");
     expect(presentation.sourceHelper).toBe(
-      "Practical simplified model - not exact PDF chart."
+      "Simplified study note - not an exact source chart."
     );
+    expect(presentation.trainerAllowed).toBe(false);
+    expect(presentation.trainingGateMessage?.toLowerCase()).toContain("study-only");
   });
 
   it("formats blind-versus-blind limp nodes explicitly", () => {

@@ -6,7 +6,7 @@ describe("getChartViewerDensity", () => {
     expect(getChartViewerDensity(980)).toEqual({
       condensed: false,
       tight: false,
-      desktopMatrixMaxWidthRem: 41,
+      desktopMatrixMaxWidthRem: 39,
     });
   });
 
@@ -14,7 +14,7 @@ describe("getChartViewerDensity", () => {
     expect(getChartViewerDensity(880)).toEqual({
       condensed: true,
       tight: false,
-      desktopMatrixMaxWidthRem: 39,
+      desktopMatrixMaxWidthRem: 37.5,
     });
   });
 
@@ -22,7 +22,7 @@ describe("getChartViewerDensity", () => {
     expect(getChartViewerDensity(760)).toEqual({
       condensed: true,
       tight: true,
-      desktopMatrixMaxWidthRem: 37,
+      desktopMatrixMaxWidthRem: 36,
     });
   });
 });
