@@ -12,6 +12,7 @@ import {
 } from "../../../../shared/coachingLoop";
 import type { ResolvedPriorityDrillPack } from "../../../../shared/drillPacks";
 import type { StudySpotNote } from "../../../../shared/spotNotes";
+import { getStrategyChartTrustMetadata } from "../../../../shared/sourceTruth";
 import type { StrategyChartPresentation } from "@shared/strategyPresentation";
 import { buildTrainerSpotInsight, type TrainerSpotInsight as TrainerSpotInsightModel } from "../../../../shared/trainerInsight";
 import type { ChartLikeSpotContext } from "../../../../shared/spotIds";
@@ -94,6 +95,10 @@ export function TrainerResultReveal({
       selectedAction,
       spotNote,
     ]
+  );
+  const sourcePanelTrust = React.useMemo(
+    () => getStrategyChartTrustMetadata(chart ?? contextChart),
+    [chart, contextChart]
   );
 
   return (
@@ -227,18 +232,17 @@ export function TrainerResultReveal({
               </div>
             </div>
 
-            {chartPresentation?.sourcePanelLabel &&
-              chartPresentation.sourceCoverageNote && (
+            {sourcePanelTrust.sourcePanelLabel && (
                 <details className="rounded-xl border border-border/80 bg-card px-3 py-2.5">
                   <summary className="cursor-pointer list-none text-xs font-semibold text-secondary-foreground">
                     Source detail
                   </summary>
                   <StrategySourcePanelNote
                     className="mt-2"
-                    sourcePanelLabel={chartPresentation.sourcePanelLabel}
-                    sourcePanelGroup={chartPresentation.sourcePanelGroup}
-                    sourceCoverageNote={chartPresentation.sourceCoverageNote}
-                    groupedSourcePanel={chartPresentation.groupedSourcePanel}
+                    sourcePanelLabel={sourcePanelTrust.sourcePanelLabel}
+                    sourcePanelGroup={sourcePanelTrust.sourcePanelGroup}
+                    sourceCoverageNote={sourcePanelTrust.sourceCoverageNote}
+                    groupedSourcePanel={sourcePanelTrust.groupedSourcePanel}
                   />
                 </details>
               )}
