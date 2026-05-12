@@ -1,0 +1,22 @@
+{
+  "query": "\nSELECT id, name, category, status FROM leaks WHERE id IN (1500001, 1530001);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute \nSELECT id, name, category, status FROM leaks WHERE id IN (1500001, 1530001);\n",
+  "rows": [
+    {
+      "id": "1500001",
+      "name": "Test Leak",
+      "category": "PREFLOP",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "1530001",
+      "name": "Test Leak",
+      "category": "PREFLOP",
+      "status": "ACTIVE"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcategory\tstatus\n1500001\tTest Leak\tPREFLOP\tACTIVE\n1530001\tTest Leak\tPREFLOP\tACTIVE\n",
+  "stderr": "",
+  "execution_time_ms": 1925
+}

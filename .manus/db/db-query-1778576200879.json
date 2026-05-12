@@ -1,0 +1,34 @@
+{
+  "query": "\nSELECT hl.handId, hl.leakId, l.name AS leakName, hl.createdAt\nFROM handLeaks hl\nLEFT JOIN leaks l ON hl.leakId = l.id\nORDER BY hl.handId, hl.leakId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute \nSELECT hl.handId, hl.leakId, l.name AS leakName, hl.createdAt\nFROM handLeaks hl\nLEFT JOIN leaks l ON hl.leakId = l.id\nORDER BY hl.handId, hl.leakId;\n",
+  "rows": [
+    {
+      "handId": "30001",
+      "leakId": "30001",
+      "leakName": "Overfolding BB vs BTN",
+      "createdAt": "2025-11-30 03:14:30"
+    },
+    {
+      "handId": "30001",
+      "leakId": "30002",
+      "leakName": "Check-calling too wide on dry flops",
+      "createdAt": "2025-11-30 03:14:30"
+    },
+    {
+      "handId": "1680007",
+      "leakId": "1500001",
+      "leakName": "Test Leak",
+      "createdAt": "2026-05-12 02:39:32"
+    },
+    {
+      "handId": "1710008",
+      "leakId": "1530001",
+      "leakName": "Test Leak",
+      "createdAt": "2026-05-12 08:42:36"
+    }
+  ],
+  "messages": [],
+  "stdout": "handId\tleakId\tleakName\tcreatedAt\n30001\t30001\tOverfolding BB vs BTN\t2025-11-30 03:14:30\n30001\t30002\tCheck-calling too wide on dry flops\t2025-11-30 03:14:30\n1680007\t1500001\tTest Leak\t2026-05-12 02:39:32\n1710008\t1530001\tTest Leak\t2026-05-12 08:42:36\n",
+  "stderr": "",
+  "execution_time_ms": 1866
+}

@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT hl.id, hl.handId, hl.leakId, l.id AS leakExists, l.name AS leakName\nFROM handLeaks hl\nLEFT JOIN leaks l ON hl.leakId = l.id\nORDER BY hl.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute \nSELECT hl.id, hl.handId, hl.leakId, l.id AS leakExists, l.name AS leakName\nFROM handLeaks hl\nLEFT JOIN leaks l ON hl.leakId = l.id\nORDER BY hl.id;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'hl.id' in 'order clause'"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, name, category, status FROM leaks ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute SELECT id, name, category, status FROM leaks ORDER BY id;",
+  "rows": [
+    {
+      "id": "30001",
+      "name": "Overfolding BB vs BTN",
+      "category": "PREFLOP",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "30002",
+      "name": "Check-calling too wide on dry flops",
+      "category": "POSTFLOP",
+      "status": "IMPROVING"
+    },
+    {
+      "id": "30003",
+      "name": "ICM overfolding at FT bubble",
+      "category": "ICM",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "1500001",
+      "name": "Test Leak",
+      "category": "PREFLOP",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "1530001",
+      "name": "Test Leak",
+      "category": "PREFLOP",
+      "status": "ACTIVE"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcategory\tstatus\n30001\tOverfolding BB vs BTN\tPREFLOP\tACTIVE\n30002\tCheck-calling too wide on dry flops\tPOSTFLOP\tIMPROVING\n30003\tICM overfolding at FT bubble\tICM\tACTIVE\n1500001\tTest Leak\tPREFLOP\tACTIVE\n1530001\tTest Leak\tPREFLOP\tACTIVE\n",
+  "stderr": "",
+  "execution_time_ms": 1886
+}

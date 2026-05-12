@@ -1,0 +1,26 @@
+{
+  "query": "\nSELECT 'handLeaks' AS tbl, COUNT(*) AS cnt FROM handLeaks\nUNION ALL\nSELECT 'leaks', COUNT(*) FROM leaks;\n\nSELECT id, name, category, status FROM leaks ORDER BY id;\n\nSELECT hl.handId, hl.leakId, l.name AS leakName FROM handLeaks hl LEFT JOIN leaks l ON hl.leakId = l.id ORDER BY hl.handId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute \nSELECT 'handLeaks' AS tbl, COUNT(*) AS cnt FROM handLeaks\nUNION ALL\nSELECT 'leaks', COUNT(*) FROM leaks;\n\nSELECT id, name, category, status FROM leaks ORDER BY id;\n\nSELECT hl.handId, hl.leakId, l.name AS leakName FROM handLeaks hl LEFT JOIN leaks l ON hl.leakId = l.id ORDER BY hl.handId;\n",
+  "rows": [
+    {
+      "tbl": "leaks",
+      "cnt": "3"
+    },
+    {
+      "tbl": "handLeaks",
+      "cnt": "2"
+    }
+  ],
+  "messages": [
+    "id\tname\tcategory\tstatus",
+    "30001\tOverfolding BB vs BTN\tPREFLOP\tACTIVE",
+    "30002\tCheck-calling too wide on dry flops\tPOSTFLOP\tIMPROVING",
+    "30003\tICM overfolding at FT bubble\tICM\tACTIVE",
+    "handId\tleakId\tleakName",
+    "30001\t30001\tOverfolding BB vs BTN",
+    "30001\t30002\tCheck-calling too wide on dry flops"
+  ],
+  "stdout": "tbl\tcnt\nleaks\t3\nhandLeaks\t2\nid\tname\tcategory\tstatus\n30001\tOverfolding BB vs BTN\tPREFLOP\tACTIVE\n30002\tCheck-calling too wide on dry flops\tPOSTFLOP\tIMPROVING\n30003\tICM overfolding at FT bubble\tICM\tACTIVE\nhandId\tleakId\tleakName\n30001\t30001\tOverfolding BB vs BTN\n30001\t30002\tCheck-calling too wide on dry flops\n",
+  "stderr": "",
+  "execution_time_ms": 2339
+}
