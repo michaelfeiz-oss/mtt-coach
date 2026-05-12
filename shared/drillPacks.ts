@@ -2,12 +2,13 @@ import {
   CANONICAL_SPOT_FAMILY_LABELS,
   type CanonicalSpotFamily,
 } from "./preflopTaxonomy";
+import type { CanonicalLeakFamilyId } from "./leakFamilies";
+import { isTrainerAllowedStrategyChart } from "./sourceTruth";
 import {
   canonicalSpotContextFromChart,
   getCanonicalSpotId,
   type ChartLikeSpotContext,
 } from "./spotIds";
-import type { CanonicalLeakFamilyId } from "./leakFamilies";
 
 export const PRIORITY_DRILL_PACK_IDS = [
   "sub-premiums-vs-ep-pressure",
@@ -44,8 +45,13 @@ export interface PriorityDrillPackDefinition {
 
 export interface ResolvedPriorityDrillPack extends PriorityDrillPackDefinition {
   chartIds: number[];
+  trainerChartIds: number[];
+  blockedChartIds: number[];
   spotCount: number;
+  trainerSpotCount: number;
+  blockedSpotCount: number;
   supported: boolean;
+  trainerAvailable: boolean;
 }
 
 const LIMPER_BROADWAY_MATCHER = (spot: DrillPackSpotLike) =>
@@ -223,12 +229,23 @@ export function resolvePriorityDrillPack(
   if (!pack) return null;
 
   const matchingSpots = spots.filter(spot => pack.match(spot));
+  const trainerSpots = matchingSpots.filter(spot =>
+    isTrainerAllowedStrategyChart(spot)
+  );
+  const blockedSpots = matchingSpots.filter(
+    spot => !isTrainerAllowedStrategyChart(spot)
+  );
 
   return {
     ...pack,
     chartIds: matchingSpots.map(spot => spot.id),
+    trainerChartIds: trainerSpots.map(spot => spot.id),
+    blockedChartIds: blockedSpots.map(spot => spot.id),
     spotCount: matchingSpots.length,
-    supported: matchingSpots.length > 0,
+    trainerSpotCount: trainerSpots.length,
+    blockedSpotCount: blockedSpots.length,
+    supported: trainerSpots.length > 0,
+    trainerAvailable: trainerSpots.length > 0,
   };
 }
 
@@ -251,7 +268,12 @@ export function getRelatedPriorityDrillPacksForSpot(
 }
 
 export function buildPriorityPackSummary(pack: ResolvedPriorityDrillPack) {
-  return `${pack.spotCount} spots · ${pack.families
+  const coverage =
+    pack.blockedSpotCount > 0
+      ? `${pack.trainerSpotCount} trainer-safe spots, ${pack.blockedSpotCount} study-only`
+      : `${pack.trainerSpotCount} trainer-safe spots`;
+
+  return `${coverage} - ${pack.families
     .map(family => CANONICAL_SPOT_FAMILY_LABELS[family])
     .join(", ")}`;
 }

@@ -406,6 +406,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [flopData, setFlopData] = useState<StreetData | null>(null);
   const [turnData, setTurnData] = useState<StreetData | null>(null);
   const [riverData, setRiverData] = useState<StreetData | null>(null);
+  const [showOptionalStreets, setShowOptionalStreets] = useState(false);
 
   // Review tagging
   const [isMistake, setIsMistake] = useState<"yes" | "no" | "unsure">("unsure");
@@ -415,6 +416,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [confidence, setConfidence] = useState<"LOW" | "MEDIUM" | "HIGH" | "">("")
   const [lesson, setLesson] = useState("");
   const [icmizerReview, setIcmizerReview] = useState(false);
+  const [showReviewTagging, setShowReviewTagging] = useState(false);
 
   // Card picker mode
   const [useCardPicker, setUseCardPicker] = useState(false);
@@ -435,9 +437,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     setStackInput(""); setSpotType(""); setHeroPosition(""); setVillainPosition("");
     setTournamentStage(""); setVillainType(""); setRangeRead(""); setShowOptionalContext(false);
     setPreflopActions([]);
-    setFlopData(null); setTurnData(null); setRiverData(null);
+    setFlopData(null); setTurnData(null); setRiverData(null); setShowOptionalStreets(false);
     setIsMistake("unsure"); setMistakeStreet(""); setSeverity(0);
     setLeakFamilyId(""); setConfidence(""); setLesson("");
+    setShowReviewTagging(false);
     setUseCardPicker(false);
     onClose();
   };
@@ -531,12 +534,13 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={open => { if (!open) handleClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="px-6 pt-5 pb-3 border-b">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[88vh] overflow-hidden p-0">
+        <DialogHeader className="sticky top-0 z-10 border-b bg-white px-4 pb-3 pt-4 sm:px-5">
           <DialogTitle className="text-base font-semibold">Log a Hand</DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-4 space-y-5">
+        <div className="max-h-[calc(88vh-7.75rem)] overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="space-y-4">
 
           {/* ── Section 1: Hand Context ── */}
           <div className="space-y-3">
@@ -582,7 +586,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </div>
 
             {/* Stack + Spot */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-sm">Stack (bb)</Label>
                 <Input
@@ -619,7 +623,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </div>
 
             {/* Positions */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-sm">Hero Position <span className="text-red-500">*</span></Label>
                 <Select value={heroPosition} onValueChange={v => setHeroPosition(v as HeroPosition)}>
@@ -659,7 +663,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </button>
 
             {showOptionalContext && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-gray-600">Stage</Label>
                   <Select value={tournamentStage} onValueChange={setTournamentStage}>
@@ -731,31 +735,50 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
           {/* ── Section 3: Optional Streets ── */}
           <div className="space-y-2">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Optional Streets</h3>
-            <div className="space-y-2">
-              <StreetBuilder
-                label="Flop"
-                data={flopData}
-                onToggle={() => setFlopData(d => d ? null : { actions: [] })}
-                onChange={setFlopData}
-              />
-              <StreetBuilder
-                label="Turn"
-                data={turnData}
-                onToggle={() => setTurnData(d => d ? null : { actions: [] })}
-                onChange={setTurnData}
-              />
-              <StreetBuilder
-                label="River"
-                data={riverData}
-                onToggle={() => setRiverData(d => d ? null : { actions: [] })}
-                onChange={setRiverData}
-              />
-            </div>
+            <button
+              onClick={() => setShowOptionalStreets(v => !v)}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+            >
+              {showOptionalStreets ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {showOptionalStreets ? "Hide" : "Show"} streets
+            </button>
+            {showOptionalStreets && (
+              <div className="space-y-2">
+                <StreetBuilder
+                  label="Flop"
+                  data={flopData}
+                  onToggle={() => setFlopData(d => d ? null : { actions: [] })}
+                  onChange={setFlopData}
+                />
+                <StreetBuilder
+                  label="Turn"
+                  data={turnData}
+                  onToggle={() => setTurnData(d => d ? null : { actions: [] })}
+                  onChange={setTurnData}
+                />
+                <StreetBuilder
+                  label="River"
+                  data={riverData}
+                  onToggle={() => setRiverData(d => d ? null : { actions: [] })}
+                  onChange={setRiverData}
+                />
+              </div>
+            )}
           </div>
 
           {/* ── Section 4: Review Tagging ── */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Review & Tagging</h3>
+            <button
+              onClick={() => setShowReviewTagging(v => !v)}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+            >
+              {showReviewTagging ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {showReviewTagging ? "Hide" : "Show"} review fields
+            </button>
+
+            {showReviewTagging && (
+              <>
 
             {/* Mistake? */}
             <div className="space-y-1.5">
@@ -776,7 +799,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </div>
 
             {isMistake !== "no" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-sm">Mistake Street</Label>
                   <Select value={mistakeStreet} onValueChange={v => setMistakeStreet(v as Street)}>
@@ -842,7 +865,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </div>
 
             {/* ICMIZER Review tag */}
-            <div className="flex items-center gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2">
+            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 px-3 py-2 sm:flex-row sm:items-center">
               <input
                 id="icmizer-review-checkbox"
                 type="checkbox"
@@ -853,7 +876,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               <label htmlFor="icmizer-review-checkbox" className="cursor-pointer text-xs font-medium text-amber-800">
                 Flag for ICMIZER review
               </label>
-              <span className="ml-auto text-xs text-amber-600">Short-stack / shove / call-off?</span>
+              <span className="text-xs text-amber-600 sm:ml-auto">Short-stack / shove / call-off?</span>
             </div>
             {/* Lesson */}
             <div className="space-y-1.5">
@@ -866,16 +889,21 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                 onChange={e => setLesson(e.target.value)}
               />
             </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-6 py-4 border-t flex items-center justify-between gap-2 bg-gray-50">
+        </div>
+
+        <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <Button variant="ghost" size="sm" onClick={handleClose}>Cancel</Button>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={() => handleSave("NEEDS_REVIEW")}
               disabled={createHand.isPending}
             >
@@ -883,7 +911,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
             </Button>
             <Button
               size="sm"
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white sm:w-auto"
               onClick={() => handleSave("REVIEWED")}
               disabled={createHand.isPending}
             >

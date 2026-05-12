@@ -1,4 +1,4 @@
-ALTER TABLE `hands` MODIFY COLUMN `spotType` enum('SINGLE_RAISED_POT','3BET_POT','BvB','ICM_SPOT','LIMPED_POT','RFI','DEFEND_VS_RFI','THREE_BET','FACING_3BET','BVB','LIMP_ISO','FOUR_BET_JAM','OTHER_PREFLOP');--> statement-breakpoint
+ALTER TABLE `hands` MODIFY COLUMN `spotType` enum('SINGLE_RAISED_POT','3BET_POT','BvB','ICM_SPOT','LIMPED_POT','RFI','DEFEND_VS_RFI','THREE_BET','FACING_3BET','LIMP_ISO','FOUR_BET_JAM','OTHER_PREFLOP');--> statement-breakpoint
 ALTER TABLE `hands` ADD `heroCard1` varchar(4);--> statement-breakpoint
 ALTER TABLE `hands` ADD `heroCard2` varchar(4);--> statement-breakpoint
 ALTER TABLE `hands` ADD `handClass` varchar(10);--> statement-breakpoint

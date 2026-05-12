@@ -119,7 +119,7 @@ export default function Dashboard() {
   return (
     <main className="app-shell min-h-screen pb-24 text-foreground">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
-        <header className="app-surface-elevated p-5 sm:p-6">
+        <header className="app-surface-elevated p-4 sm:p-5">
           <p className="app-eyebrow mb-2">Daily Workspace</p>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -129,7 +129,7 @@ export default function Dashboard() {
         </header>
 
         <Card className="app-surface">
-          <CardContent className="space-y-4 p-5">
+          <CardContent className="space-y-3.5 p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground">
@@ -143,7 +143,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <Button
-                className="h-11 rounded-xl px-4"
+                className="h-10 rounded-xl px-4"
                 onClick={() => setLocation("/study")}
               >
                 Open Study
@@ -155,7 +155,7 @@ export default function Dashboard() {
               {todayTraining.map((suggestion, index) => (
                 <div
                   key={suggestion.id}
-                  className="rounded-xl border border-border bg-accent/65 p-3"
+                  className="rounded-xl border border-border bg-accent/65 p-2.5 sm:p-3"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
@@ -171,7 +171,7 @@ export default function Dashboard() {
                     </div>
                     <Button
                       variant={index === 0 ? "default" : "outline"}
-                      className="h-9 shrink-0 rounded-full px-4 text-xs font-semibold"
+                      className="h-8 shrink-0 rounded-full px-4 text-xs font-semibold"
                       onClick={() => setLocation(suggestion.targetRoute)}
                     >
                       {ctaLabelForSuggestion(suggestion)}

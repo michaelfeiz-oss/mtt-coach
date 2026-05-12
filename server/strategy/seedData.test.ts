@@ -31,7 +31,8 @@ describe("strategy seed coverage", () => {
     expect(keys).toContain("15:UTG1_vs_UTG");
     expect(keys).toContain("25:MP_vs_UTG");
     expect(keys).toContain("40:SB_vs_CO");
-    expect(keys).toContain("15:HJ_vs_BTN_3bet");
+    expect(keys).toContain("15:UTG_vs_BTN_3bet");
+    expect(keys).not.toContain("15:HJ_vs_BTN_3bet");
     expect(keys).toContain("25:CO_vs_BB_3bet");
     expect(keys).toContain("40:BTN_vs_SB_3bet");
     expect(keys).not.toContain("25:SB_vs_BB_3bet");

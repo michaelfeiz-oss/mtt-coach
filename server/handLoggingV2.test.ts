@@ -12,6 +12,7 @@ import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
+const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
 
 function createTestContext(): { ctx: TrpcContext } {
   const user: AuthenticatedUser = {
@@ -78,7 +79,7 @@ describe("Hand Parser", () => {
 
 // ─── 2. createHand Persistence Tests ─────────────────────────────────────────
 
-describe("createHand V2 Persistence", () => {
+describeDb("createHand V2 Persistence", () => {
   it("persists exact hero cards and handClass", async () => {
     const { ctx } = createTestContext();
     const caller = appRouter.createCaller(ctx);
@@ -198,7 +199,7 @@ describe("createHand V2 Persistence", () => {
 
 // ─── 3. Backward Compatibility Tests ─────────────────────────────────────────
 
-describe("Backward Compatibility – Old Hands", () => {
+describeDb("Backward Compatibility - Old Hands", () => {
   it("old hand without actionsJson / boardJson still loads without crash", async () => {
     const { ctx } = createTestContext();
     const caller = appRouter.createCaller(ctx);
@@ -248,7 +249,7 @@ describe("Backward Compatibility – Old Hands", () => {
 
 // ─── 4. Update Mutation – Review Fields ──────────────────────────────────────
 
-describe("hands.update – Review Fields Persistence", () => {
+describeDb("hands.update - Review Fields Persistence", () => {
   it("updates leakFamilyId and lesson together", async () => {
     const { ctx } = createTestContext();
     const caller = appRouter.createCaller(ctx);
@@ -292,3 +293,4 @@ describe("hands.update – Review Fields Persistence", () => {
     expect((updated as any).leakFamilyId == null || (updated as any).leakFamilyId === "").toBe(true);
   });
 });
+

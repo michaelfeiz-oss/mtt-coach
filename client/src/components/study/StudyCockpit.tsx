@@ -120,8 +120,9 @@ export function StudyCockpit() {
   const { isAuthenticated } = useAuth();
   const [recentSpots, setRecentSpots] = useState<RecentStrategySpot[]>([]);
 
-  const { data: spots = [], isLoading: spotsLoading } =
+  const { data: studySpots = [], isLoading: spotsLoading } =
     trpc.strategy.listSpots.useQuery({});
+  const { data: trainerSpots = [] } = trpc.strategy.listTrainerSpots.useQuery({});
   const { data: hands = [], isLoading: handsLoading } =
     trpc.hands.getByUser.useQuery({ limit: 5, reviewStatus: "all" });
   const { data: reviewQueueSummary } = trpc.hands.getReviewQueueSummary.useQuery();
@@ -140,27 +141,37 @@ export function StudyCockpit() {
     setRecentSpots(loadRecentStrategySpots());
   }, []);
 
+  const trainerSafeSpotIds = useMemo(
+    () => new Set(trainerSpots.map(spot => spot.id)),
+    [trainerSpots]
+  );
   const recentSpot = recentSpots[0];
+  const recentSpotIsTrainerSafe =
+    recentSpot !== undefined && trainerSafeSpotIds.has(recentSpot.id);
   const continueHref = recentSpot
-    ? `/strategy/trainer?chartId=${recentSpot.id}`
+    ? recentSpotIsTrainerSafe
+      ? `/strategy/trainer?chartId=${recentSpot.id}`
+      : `/strategy/library?chartId=${recentSpot.id}`
     : "/strategy/trainer";
   const continueTitle = recentSpot
-    ? "Resume Last Study Spot"
+    ? recentSpotIsTrainerSafe
+      ? "Resume Last Drill Spot"
+      : "Resume Last Study Spot"
     : "Continue Training";
   const continueHelper = recentSpot
-    ? `${recentSpot.title} - ${formatSpotMeta(recentSpot)}`
-    : "Jump into Range Trainer and build reps from the current range pool.";
-  const chartCount = spots.length;
+    ? recentSpotIsTrainerSafe
+      ? `${recentSpot.title} - ${formatSpotMeta(recentSpot)}`
+      : `${recentSpot.title} - study-only reference`
+    : "Jump into source-backed Range Trainer reps or open a chart for study.";
+  const chartCount = studySpots.length;
   const pendingHands = useMemo(
     () => reviewQueueSummary?.totalNeedsReview ?? hands.filter(hand => !hand.reviewed).length,
     [hands, reviewQueueSummary]
   );
   const priorityPacks = useMemo(
     () =>
-      resolveAllPriorityDrillPacks(spots)
-        .filter(pack => pack.supported || pack.id === "30bb-broadways-vs-limper")
-        .slice(0, 4),
-    [spots]
+      resolveAllPriorityDrillPacks(studySpots).slice(0, 4),
+    [studySpots]
   );
   return (
     <main className="app-shell min-h-screen pb-24 text-foreground">
@@ -380,7 +391,7 @@ export function StudyCockpit() {
             <SectionHeader
               label="Weak Spots"
               title="Suggested Drills + Review Queue"
-              helper="Today’s reps and review actions built from trainer misses, weak spots, and logged hands."
+              helper="Today's reps and review actions built from trainer misses, weak spots, and logged hands."
             />
 
             <Card className="app-surface">
@@ -440,7 +451,7 @@ export function StudyCockpit() {
                                 {spot.label}
                               </p>
                               <p className="mt-0.5 text-xs text-muted-foreground">
-                                {spot.misses} miss{spot.misses === 1 ? "" : "es"} ·{" "}
+                                {spot.misses} miss{spot.misses === 1 ? "" : "es"} -{" "}
                                 {spot.accuracy}% accuracy
                               </p>
                             </div>
@@ -575,6 +586,11 @@ export function StudyCockpit() {
                           <Badge variant="outline" className="rounded-full">
                             {buildPriorityPackSummary(pack)}
                           </Badge>
+                          {!pack.trainerAvailable && (
+                            <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
+                              Study-only
+                            </Badge>
+                          )}
                           {pack.focusTags.map(tag => (
                             <Badge
                               key={tag}
@@ -586,14 +602,20 @@ export function StudyCockpit() {
                           ))}
                         </div>
                       </div>
-                      <Link href={`/strategy/trainer?packId=${pack.id}`}>
+                      {pack.supported ? (
+                        <Link href={`/strategy/trainer?packId=${pack.id}`}>
+                          <Button className="h-9 rounded-full px-4 text-xs font-semibold">
+                            Start Drill
+                          </Button>
+                        </Link>
+                      ) : (
                         <Button
                           className="h-9 rounded-full px-4 text-xs font-semibold"
-                          disabled={!pack.supported}
+                          disabled
                         >
-                          {pack.supported ? "Start Drill" : "Needs Coverage"}
+                          Study Only
                         </Button>
-                      </Link>
+                      )}
                     </div>
                   </div>
                 ))}

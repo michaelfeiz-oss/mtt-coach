@@ -6,6 +6,7 @@ import {
   getStrategySourceHelperText,
   getStrategySourceLabel,
   getStrategySourceStatus,
+  isTrainerAllowedStrategyChart,
   isSourceSupportedStrategyChart,
 } from "../../shared/sourceTruth";
 import { STACK_DEPTHS } from "../../shared/strategy";
@@ -77,8 +78,9 @@ describe("source-of-truth chart coverage", () => {
       "Shared IP vs BB 3-Bet family"
     );
     expect(getStrategySourceHelperText(chart)).toBe(
-      "Practical simplified model - not exact PDF chart."
+      "Simplified study note - not an exact source chart."
     );
+    expect(isTrainerAllowedStrategyChart(chart)).toBe(false);
   });
 
   it("keeps blind-vs-blind spots visible as explicit proxy coverage", () => {
@@ -91,5 +93,15 @@ describe("source-of-truth chart coverage", () => {
         spotKey: "SB_vs_BB_limp",
       })
     ).toBe("proxy");
+
+    expect(
+      isTrainerAllowedStrategyChart({
+        stackDepth: 25,
+        spotGroup: "BVB",
+        heroPosition: "SB",
+        villainPosition: "BB",
+        spotKey: "SB_vs_BB_limp",
+      })
+    ).toBe(false);
   });
 });

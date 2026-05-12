@@ -33,6 +33,7 @@ interface PreflopSetupControlsProps {
   onStackDepthChange: SelectValueChange<number>;
   onHeroPositionChange: SelectValueChange<string>;
   onVillainPositionChange: SelectValueChange<string>;
+  showPlayers?: boolean;
   compact?: boolean;
   className?: string;
 }
@@ -82,6 +83,7 @@ export function PreflopSetupControls({
   onStackDepthChange,
   onHeroPositionChange,
   onVillainPositionChange,
+  showPlayers = false,
   compact = false,
   className,
 }: PreflopSetupControlsProps) {
@@ -94,7 +96,13 @@ export function PreflopSetupControls({
       <div
         className={cn(
           "grid sm:grid-cols-2",
-          compact ? "gap-1.5 lg:grid-cols-5" : "gap-2 xl:grid-cols-5"
+          compact
+            ? showPlayers
+              ? "gap-1.5 lg:grid-cols-5"
+              : "gap-1.5 lg:grid-cols-4"
+            : showPlayers
+              ? "gap-2 xl:grid-cols-5"
+              : "gap-2 xl:grid-cols-4"
         )}
       >
         <Field label="Decision" compact={compact}>
@@ -133,7 +141,7 @@ export function PreflopSetupControls({
               <SelectValue placeholder="Any stack" />
             </SelectTrigger>
             <SelectContent className="z-[80]">
-              <SelectItem value={ANY_VALUE}>Any source-backed stack</SelectItem>
+              <SelectItem value={ANY_VALUE}>Any stack</SelectItem>
               {STACK_DEPTHS.map(depth => (
                 <SelectItem
                   key={depth}
@@ -147,16 +155,18 @@ export function PreflopSetupControls({
           </Select>
         </Field>
 
-        <Field label="Players" compact={compact}>
-          <Select value={PLAYER_COUNT}>
-            <SelectTrigger className={selectClassName(false, compact)}>
-              <SelectValue placeholder="9 players" />
-            </SelectTrigger>
-            <SelectContent className="z-[80]">
-              <SelectItem value={PLAYER_COUNT}>9 players</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
+        {showPlayers && (
+          <Field label="Players" compact={compact}>
+            <Select value={PLAYER_COUNT}>
+              <SelectTrigger className={selectClassName(false, compact)}>
+                <SelectValue placeholder="9 players" />
+              </SelectTrigger>
+              <SelectContent className="z-[80]">
+                <SelectItem value={PLAYER_COUNT}>9 players</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
 
         <Field label="Hero" compact={compact}>
           <Select

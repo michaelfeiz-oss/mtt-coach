@@ -191,11 +191,12 @@ export function TrainerResultReveal({
               <p className="text-sm font-semibold text-foreground">
                 {chartPresentation?.title ?? chart?.title ?? "Loading chart"}
               </p>
-              {chartPresentation?.sourceHelper && (
+              {chartPresentation?.sourceStatus !== "source_backed" &&
+                chartPresentation?.sourceHelper && (
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {chartPresentation.sourceHelper}
                 </p>
-              )}
+                )}
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
               <div className="flex flex-wrap gap-1.5">
@@ -234,7 +235,7 @@ export function TrainerResultReveal({
                   actions={actionMap}
                   readonly
                   highlightedHand={handCode}
-                  size="lg"
+                  size="md"
                 />
               </div>
             </>

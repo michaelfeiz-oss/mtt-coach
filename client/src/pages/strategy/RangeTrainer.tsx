@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearch } from "wouter";
-import { CheckCircle2, Flame, Target } from "lucide-react";
+import { Link, useSearch } from "wouter";
+import { BookOpen, CheckCircle2, Flame, Lock, Target } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -137,20 +137,20 @@ function filterSummary(
   if (mode === "priority_pack" && packId) {
     return (
       getPriorityDrillPack(packId)?.purpose ??
-      "Focused drill pack built from supported preflop spots."
+      "Focused drill pack built from trainer-safe preflop spots."
     );
   }
   if (mode === "current_spot") {
-    return "Drilling this chart one hand at a time.";
+    return "Drill this chart one decision at a time.";
   }
   if (mode === "decision_family" && spotGroup && stackDepth) {
     return `Drilling ${SPOT_GROUP_LABELS[spotGroup]} spots at ${stackDepth}bb.`;
   }
   if (mode === "decision_family" && spotGroup) {
-    return `Drilling ${SPOT_GROUP_LABELS[spotGroup]} across supported stacks.`;
+    return `Drilling ${SPOT_GROUP_LABELS[spotGroup]} across trainer-safe stacks.`;
   }
   if (stackDepth) return `Drilling preflop spots at ${stackDepth}bb.`;
-  return "Drilling supported 15bb / 25bb / 40bb preflop spots.";
+  return "Drilling trainer-safe 15bb / 25bb / 40bb preflop spots.";
 }
 
 function scrollElementIntoComfortView(element: HTMLElement | null) {
@@ -233,19 +233,26 @@ export default function RangeTrainer() {
   const resultRevealRef = useRef<HTMLDivElement | null>(null);
   const questionStartedAtRef = useRef<number>(Date.now());
 
-  const { data: allSpots = [] } = trpc.strategy.listSpots.useQuery({});
-  const { data: spots = [] } = trpc.strategy.listSpots.useQuery({
+  const { data: allStudySpots = [] } = trpc.strategy.listSpots.useQuery({});
+  const { data: spots = [] } = trpc.strategy.listTrainerSpots.useQuery({
     stackDepth,
     spotGroup,
   });
+  const { data: selectedStudyChart } = trpc.strategy.getChart.useQuery(
+    { chartId: selectedChartId ?? 1 },
+    {
+      enabled: mode === "current_spot" && selectedChartId !== null,
+      retry: false,
+    }
+  );
   const resolvedPack = useMemo(() => {
     if (!selectedPackId) return null;
     const pack = getPriorityDrillPack(selectedPackId);
-    return pack ? resolvePriorityDrillPack(pack.id, allSpots) : null;
-  }, [allSpots, selectedPackId]);
+    return pack ? resolvePriorityDrillPack(pack.id, allStudySpots) : null;
+  }, [allStudySpots, selectedPackId]);
   const selectedSpot = useMemo(
-    () => allSpots.find(spot => spot.id === selectedChartId),
-    [allSpots, selectedChartId]
+    () => allStudySpots.find(spot => spot.id === selectedChartId),
+    [allStudySpots, selectedChartId]
   );
 
   const trainerInput = useMemo(() => {
@@ -272,7 +279,7 @@ export default function RangeTrainer() {
     }
 
     if (mode === "priority_pack" && resolvedPack?.supported) {
-      input.chartIds = resolvedPack.chartIds;
+      input.chartIds = resolvedPack.trainerChartIds;
       input.focusHandCodes = resolvedPack.focusHandCodes;
       return input;
     }
@@ -302,10 +309,23 @@ export default function RangeTrainer() {
     villainPosition,
   ]);
 
+  const selectedStudyChartPresentation = useMemo(
+    () =>
+      selectedStudyChart
+        ? buildStrategyChartPresentation(selectedStudyChart)
+        : null,
+    [selectedStudyChart]
+  );
+  const directChartBlocked =
+    mode === "current_spot" &&
+    selectedChartId !== null &&
+    selectedStudyChartPresentation !== null &&
+    !selectedStudyChartPresentation.trainerAllowed;
   const trainerEnabled =
     mode === "priority_pack"
-      ? Boolean(resolvedPack?.supported)
-      : mode !== "current_spot" || selectedChartId !== null;
+      ? Boolean(resolvedPack?.trainerAvailable)
+      : mode !== "current_spot" ||
+        (selectedChartId !== null && !directChartBlocked);
   const {
     data: trainerSpot,
     isLoading: trainerSpotLoading,
@@ -358,7 +378,7 @@ export default function RangeTrainer() {
     [heroPosition, spots]
   );
 
-  const activeSpot = trainerSpot?.chart ?? selectedSpot;
+  const activeSpot = trainerSpot?.chart ?? selectedSpot ?? selectedStudyChart;
   const activeSpotPresentation = useMemo(
     () => (activeSpot ? buildStrategyChartPresentation(activeSpot) : null),
     [activeSpot]
@@ -401,8 +421,8 @@ export default function RangeTrainer() {
     const nextPackId = leakHint?.relatedPackIds?.[0];
     if (!nextPackId) return null;
     const pack = getPriorityDrillPack(nextPackId);
-    return pack ? resolvePriorityDrillPack(pack.id, allSpots) : null;
-  }, [allSpots, leakHint]);
+    return pack ? resolvePriorityDrillPack(pack.id, allStudySpots) : null;
+  }, [allStudySpots, leakHint]);
 
   useEffect(() => {
     if (chartIdFromSearch !== null) {
@@ -652,8 +672,8 @@ export default function RangeTrainer() {
 
   return (
     <div className="app-shell min-h-[calc(100dvh-4rem)] overflow-x-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-foreground">
-      <main className="mx-auto w-full max-w-4xl space-y-3 px-3 py-3 sm:space-y-4 sm:px-5 sm:py-5">
-        <header className="app-surface-elevated p-4 sm:p-5">
+      <main className="mx-auto w-full max-w-[58rem] space-y-3 px-3 py-3 sm:space-y-3.5 sm:px-5 sm:py-5">
+        <header className="app-surface-elevated p-4 sm:p-4.5">
           <div className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Target className="h-4 w-4" />
@@ -661,24 +681,20 @@ export default function RangeTrainer() {
             <div className="min-w-0">
               <p className="app-eyebrow">Range Trainer</p>
               <h1 className="mt-1 truncate text-2xl font-bold tracking-tight">
-                Preflop Drill Flow
+                Range Trainer
               </h1>
             </div>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Keep the setup visible, drill one decision at a time, then confirm
-            the chart immediately below the answer.
-          </p>
         </header>
 
-        <section className="app-surface p-3 sm:p-4">
-          <div className="space-y-3">
+        <section className="app-surface p-3 sm:p-3.5">
+          <div className="space-y-2.5">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  Current Setup
+                  Current Node
                 </p>
-                <h2 className="truncate text-lg font-black tracking-tight sm:text-[1.5rem]">
+                <h2 className="truncate text-lg font-black tracking-tight sm:text-[1.4rem]">
                   {modeLabel}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -695,7 +711,7 @@ export default function RangeTrainer() {
                   BBA
                 </Badge>
                 <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
-                    15bb / 25bb / 40bb
+                  15bb / 25bb / 40bb
                 </Badge>
                 {activeSpot && (
                   <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
@@ -705,24 +721,44 @@ export default function RangeTrainer() {
                       : ""}
                   </Badge>
                 )}
-                {activeSpotPresentation?.sourceStatus !== "source_backed" &&
-                  activeSpotPresentation?.sourceBadge && (
-                    <Badge className="rounded-full border-amber-200 bg-amber-50 text-amber-900">
-                      {activeSpotPresentation.sourceBadge}
-                    </Badge>
-                  )}
+                {activeSpotPresentation?.sourceBadge && (
+                  <Badge
+                    className={
+                      activeSpotPresentation.sourceStatus === "source_backed"
+                        ? "rounded-full border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : activeSpotPresentation.sourceStatus === "unsupported"
+                          ? "rounded-full border-rose-200 bg-rose-50 text-rose-800"
+                          : "rounded-full border-amber-200 bg-amber-50 text-amber-900"
+                    }
+                  >
+                    {activeSpotPresentation.sourceBadge}
+                  </Badge>
+                )}
+                {activeSpotPresentation && (
+                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                    {activeSpotPresentation.trainerAllowed
+                      ? "Trainer-safe"
+                      : "Study-only"}
+                  </Badge>
+                )}
                 {activeSpotPresentation?.sharedFamilyLabel && (
                   <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
                     {activeSpotPresentation.sharedFamilyLabel}
                   </Badge>
                 )}
-                {resolvedPack?.supported && (
+                {resolvedPack && (
                   <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
-                    Pack - {resolvedPack.spotCount} spots
+                    Pack - {resolvedPack.trainerSpotCount} trainer-safe
                   </Badge>
                 )}
               </div>
             </div>
+
+            {activeSpotPresentation?.trainingGateMessage && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+                {activeSpotPresentation.trainingGateMessage}
+              </div>
+            )}
 
             <div className="rounded-[1rem] border border-border bg-background/78 p-3">
               <PreflopSetupControls
@@ -737,6 +773,7 @@ export default function RangeTrainer() {
                 onStackDepthChange={setStackFilter}
                 onHeroPositionChange={setHeroFilter}
                 onVillainPositionChange={setVillainFilter}
+                compact
               />
             </div>
 
@@ -762,15 +799,63 @@ export default function RangeTrainer() {
         </section>
 
         <section className="space-y-3">
-          {mode === "priority_pack" && resolvedPack && !resolvedPack.supported && (
+          {mode === "priority_pack" && resolvedPack && !resolvedPack.trainerAvailable && (
             <Card className="border-amber-200 bg-amber-50 text-amber-900">
               <CardContent className="space-y-2 p-4 text-sm">
                 <p className="font-semibold">{resolvedPack.title}</p>
                 <p>
-                  {resolvedPack.purpose} This pack is visible so it stays on the
-                  study roadmap, but the current chart dataset does not include
-                  the required spots yet.
+                  {resolvedPack.purpose} This pack currently has no trainer-safe
+                  spots. The study-only nodes stay visible for reference, but
+                  they are blocked from quizzes until a human approval exists.
                 </p>
+                {resolvedPack.blockedSpotCount > 0 && (
+                  <p className="text-xs text-amber-800">
+                    {resolvedPack.blockedSpotCount} study-only spot
+                    {resolvedPack.blockedSpotCount === 1 ? "" : "s"} blocked
+                    from trainer
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {directChartBlocked && selectedStudyChartPresentation && selectedChartId !== null && (
+            <Card className="rounded-[1.2rem] border-amber-200 bg-amber-50 text-amber-950 shadow-none">
+              <CardContent className="space-y-4 p-5">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                    <Lock className="h-4.5 w-4.5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">Study-only chart</p>
+                    <p className="mt-1 text-sm leading-relaxed text-amber-900">
+                      {selectedStudyChartPresentation.trainingGateMessage ??
+                        "This chart is blocked from training because it is not exact source-backed."}
+                    </p>
+                    <p className="mt-2 text-xs text-amber-800">
+                      Keep it in the chart viewer for study, but do not use it
+                      for answer validation.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-[1fr_1fr]">
+                  <Link href={`/strategy/library?chartId=${selectedChartId}`}>
+                    <Button
+                      variant="outline"
+                      className="h-10 w-full rounded-xl border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      View chart
+                    </Button>
+                  </Link>
+                  <Button
+                    className="h-10 rounded-xl"
+                    onClick={unlockCurrentSpotAndContinue}
+                  >
+                    Go to trainer-safe spot
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -854,6 +939,7 @@ export default function RangeTrainer() {
           {trainerEnabled &&
             !trainerSpotLoading &&
             !trainerSpotFetching &&
+            !directChartBlocked &&
             !trainerSpot && (
               <Card className="rounded-[1.2rem] border-dashed border-border bg-background/82 text-foreground">
                 <CardContent className="space-y-4 p-6 text-center">
@@ -864,7 +950,7 @@ export default function RangeTrainer() {
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {trainerSpotError?.message ??
-                        "Adjust setup to another supported preflop spot."}
+                        "Adjust setup to another trainer-safe preflop spot."}
                     </p>
                   </div>
                   <Button
