@@ -45,10 +45,10 @@ function seatTone(
   }
 
   if (position === villainPosition) {
-    return "border-sky-300 bg-sky-500 text-white";
+    return "border-blue-200 bg-blue-600 text-white";
   }
 
-  return "border-border/80 bg-background/90 text-muted-foreground";
+  return "border-border bg-card text-muted-foreground";
 }
 
 export function TableContext({
@@ -88,7 +88,7 @@ export function TableContext({
             </Badge>
           )}
           {spotGroup && (
-            <Badge className="rounded-full border-border bg-accent/80 text-secondary-foreground">
+            <Badge className="rounded-full border-[var(--border-strong)] bg-secondary text-secondary-foreground">
               {SPOT_GROUP_LABELS[spotGroup].replace(" (Open Raise)", "")}
             </Badge>
           )}
@@ -96,7 +96,7 @@ export function TableContext({
       </div>
 
       <div className="relative mx-auto h-[9.15rem] w-full max-w-md sm:h-[9.65rem]">
-        <div className="absolute inset-x-[16%] inset-y-[21%] rounded-[999px] border border-border bg-gradient-to-br from-[#f7efe5] via-[#f3e6d4] to-[#efd8bd] shadow-inner" />
+        <div className="absolute inset-x-[16%] inset-y-[21%] rounded-[999px] border border-border bg-gradient-to-br from-[#ffffff] via-[#f8fafc] to-[#e2e8f0] shadow-inner" />
         <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-xl border border-border bg-card px-2.5 py-1.5 text-center shadow-sm">
           <span className="text-[10px] font-semibold text-foreground">
             {playerCount}P
@@ -147,13 +147,13 @@ export function TableContext({
       </div>
 
       <div className="grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
-        <div className="rounded-lg border border-border bg-accent/80 px-2.5 py-1.5">
+        <div className="rounded-lg border border-border bg-secondary px-2.5 py-1.5">
           <span className="font-semibold text-foreground">
             {heroPosition ? displayPositionLabel(heroPosition) : "Mixed"}
           </span>
           <span className="ml-1">hero</span>
         </div>
-        <div className="rounded-lg border border-border bg-accent/80 px-2.5 py-1.5">
+        <div className="rounded-lg border border-border bg-secondary px-2.5 py-1.5">
           <span className="font-semibold text-foreground">
             {villainPosition ? displayPositionLabel(villainPosition) : "No opener"}
           </span>

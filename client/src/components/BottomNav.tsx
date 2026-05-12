@@ -17,7 +17,7 @@ export default function BottomNav() {
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 border-r border-border bg-sidebar/95 px-4 py-5 backdrop-blur lg:flex lg:flex-col">
         <div className="flex items-center gap-2 rounded-xl px-2 py-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/12 text-primary">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFF3E8] text-primary ring-1 ring-amber-200/70">
             <Target className="h-4 w-4" />
           </span>
           <div>
@@ -38,18 +38,18 @@ export default function BottomNav() {
                 className={cn(
                   "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition",
                   active
-                    ? "bg-card text-foreground shadow-sm ring-1 ring-border"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    ? "bg-[#FFF3E8] text-[#9A4D12] shadow-none ring-1 ring-amber-200/80"
+                    : "text-secondary-foreground hover:bg-sidebar-accent hover:text-foreground"
                 )}
               >
-                <Icon className={cn("h-4 w-4", active && "text-primary")} />
+                <Icon className={cn("h-4 w-4", active ? "text-[#9A4D12]" : "text-secondary-foreground")} />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="rounded-xl border border-border bg-background/90 px-3 py-2">
+        <div className="rounded-xl border border-border bg-secondary px-3 py-2">
           <p className="text-xs font-semibold text-foreground">BBA only</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Preflop tournament charts at 15bb, 25bb, and 40bb.
@@ -77,7 +77,9 @@ export default function BottomNav() {
                 <span
                   className={cn(
                     "flex min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 transition",
-                    active ? "bg-card ring-1 ring-border" : "hover:bg-accent"
+                    active
+                      ? "bg-[#FFF3E8] text-[#9A4D12] ring-1 ring-amber-200/80"
+                      : "hover:bg-sidebar-accent"
                   )}
                 >
                   <Icon className="h-5 w-5" />

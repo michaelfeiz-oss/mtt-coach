@@ -728,26 +728,28 @@ export default function RangeTrainer() {
                         ? "rounded-full border-emerald-200 bg-emerald-50 text-emerald-800"
                         : activeSpotPresentation.sourceStatus === "unsupported"
                           ? "rounded-full border-rose-200 bg-rose-50 text-rose-800"
-                          : "rounded-full border-amber-200 bg-amber-50 text-amber-900"
+                          : activeSpotPresentation.sourceStatus === "proxy"
+                            ? "rounded-full border-blue-200 bg-blue-50 text-blue-700"
+                            : "rounded-full border-amber-200 bg-[#FFF7E6] text-[#9A4D12]"
                     }
                   >
                     {activeSpotPresentation.sourceBadge}
                   </Badge>
                 )}
                 {activeSpotPresentation && (
-                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                  <Badge className="rounded-full border-[var(--border-strong)] bg-card text-secondary-foreground">
                     {activeSpotPresentation.trainerAllowed
                       ? "Trainer-safe"
                       : "Study-only"}
                   </Badge>
                 )}
                 {activeSpotPresentation?.sharedFamilyLabel && (
-                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                  <Badge className="rounded-full border-[var(--border-strong)] bg-card text-secondary-foreground">
                     {activeSpotPresentation.sharedFamilyLabel}
                   </Badge>
                 )}
                 {resolvedPack && (
-                  <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
+                  <Badge className="rounded-full border-[var(--border-strong)] bg-card text-secondary-foreground">
                     Pack - {resolvedPack.trainerSpotCount} trainer-safe
                   </Badge>
                 )}
@@ -755,12 +757,12 @@ export default function RangeTrainer() {
             </div>
 
             {activeSpotPresentation?.trainingGateMessage && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+            <div className="app-note-warning rounded-xl px-3 py-2.5 text-sm">
                 {activeSpotPresentation.trainingGateMessage}
               </div>
             )}
 
-            <div className="rounded-[1rem] border border-border bg-background/78 p-3">
+            <div className="rounded-[1rem] border border-border bg-secondary p-3">
               <PreflopSetupControls
                 spotGroup={spotGroup}
                 stackDepth={stackDepth}
@@ -800,7 +802,7 @@ export default function RangeTrainer() {
 
         <section className="space-y-3">
           {mode === "priority_pack" && resolvedPack && !resolvedPack.trainerAvailable && (
-            <Card className="border-amber-200 bg-amber-50 text-amber-900">
+              <Card className="border-amber-200 bg-[#FFF7E6] text-[#9A4D12]">
               <CardContent className="space-y-2 p-4 text-sm">
                 <p className="font-semibold">{resolvedPack.title}</p>
                 <p>
@@ -809,7 +811,7 @@ export default function RangeTrainer() {
                   they are blocked from quizzes until a human approval exists.
                 </p>
                 {resolvedPack.blockedSpotCount > 0 && (
-                  <p className="text-xs text-amber-800">
+                  <p className="text-xs text-[#9A4D12]">
                     {resolvedPack.blockedSpotCount} study-only spot
                     {resolvedPack.blockedSpotCount === 1 ? "" : "s"} blocked
                     from trainer
@@ -820,19 +822,19 @@ export default function RangeTrainer() {
           )}
 
           {directChartBlocked && selectedStudyChartPresentation && selectedChartId !== null && (
-            <Card className="rounded-[1.2rem] border-amber-200 bg-amber-50 text-amber-950 shadow-none">
+            <Card className="rounded-[1.2rem] border-amber-200 bg-[#FFF7E6] text-[#9A4D12] shadow-none">
               <CardContent className="space-y-4 p-5">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3E8] text-[#9A4D12]">
                     <Lock className="h-4.5 w-4.5" />
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">Study-only chart</p>
-                    <p className="mt-1 text-sm leading-relaxed text-amber-900">
+                    <p className="mt-1 text-sm leading-relaxed text-[#9A4D12]">
                       {selectedStudyChartPresentation.trainingGateMessage ??
                         "This chart is blocked from training because it is not exact source-backed."}
                     </p>
-                    <p className="mt-2 text-xs text-amber-800">
+                    <p className="mt-2 text-xs text-[#9A4D12]">
                       Keep it in the chart viewer for study, but do not use it
                       for answer validation.
                     </p>
@@ -843,7 +845,7 @@ export default function RangeTrainer() {
                   <Link href={`/strategy/library?chartId=${selectedChartId}`}>
                     <Button
                       variant="outline"
-                      className="h-10 w-full rounded-xl border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+                    className="h-10 w-full rounded-xl border-amber-300 bg-white text-[#9A4D12] hover:bg-[#FFF3E8]"
                     >
                       <BookOpen className="mr-2 h-4 w-4" />
                       View chart
@@ -941,7 +943,7 @@ export default function RangeTrainer() {
             !trainerSpotFetching &&
             !directChartBlocked &&
             !trainerSpot && (
-              <Card className="rounded-[1.2rem] border-dashed border-border bg-background/82 text-foreground">
+              <Card className="rounded-[1.2rem] border-dashed border-border bg-card text-foreground">
                 <CardContent className="space-y-4 p-6 text-center">
                   <Target className="mx-auto h-10 w-10 text-muted-foreground" />
                   <div>
@@ -954,7 +956,7 @@ export default function RangeTrainer() {
                     </p>
                   </div>
                   <Button
-                    className="rounded-xl bg-primary text-primary-foreground hover:bg-[#FF8A1F]"
+                    className="rounded-xl"
                     onClick={unlockCurrentSpotAndContinue}
                   >
                     Try Another Spot

@@ -21,20 +21,30 @@ Defined from `client/src/index.css`.
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#f7f5f1` | app background |
-| `--surface` | `#fffdfa` | primary cards |
-| `--surface-muted` | `#f4f1eb` | muted panels and chips |
-| `--border` | `#e4ddd2` | dividers and outlines |
-| `--text-primary` | `#1f2933` | main content |
-| `--text-secondary` | `#5f6c7c` | supporting text |
-| `--brand-accent` | `#d46f2a` | burnt orange accent |
-| `--action-call` | `#16a34a` | call / positive |
-| `--action-jam` | `#ea580c` | jam / aggressive all-in |
-| `--action-raise` | `#dc2626` | raise |
-| `--action-threebet` | `#2563eb` | 3-bet |
-| `--action-fold` | `#94a3b8` | fold |
-| `--warning` | `#d97706` | study-only / caution |
-| `--danger` | `#dc2626` | blocked / destructive |
+| `--bg` | `#F7F8FA` | app background |
+| `--surface` | `#FFFFFF` | primary cards and panels |
+| `--surface-muted` | `#F1F5F9` | secondary surfaces and neutral containers |
+| `--surface-info` | `#EFF6FF` | proxy/info note surfaces |
+| `--surface-success` | `#EAF7EF` | trainer-safe/source-backed note surfaces |
+| `--surface-warning` | `#FFF7E6` | simplified/study-only note surfaces |
+| `--surface-danger` | `#FEF2F2` | blocked/unsupported note surfaces |
+| `--border` | `#E2E8F0` | standard borders and dividers |
+| `--border-strong` | `#CBD5E1` | emphasized borders and selected controls |
+| `--text-primary` | `#0F172A` | main content |
+| `--text-secondary` | `#475569` | supporting text |
+| `--text-muted` | `#64748B` | helper text and inactive labels |
+| `--brand-accent` | `#C96A1B` | refined burnt orange accent |
+| `--brand-accent-hover` | `#A95516` | primary hover state |
+| `--brand-accent-soft` | `#FFF3E8` | selected pills and soft accent backgrounds |
+| `--action-call` | `#16A34A` | call / passive continue |
+| `--action-jam` | `#D96B1D` | jam / aggressive all-in |
+| `--action-raise` | `#D96B1D` | raise |
+| `--action-threebet` | `#2563EB` | 3-bet |
+| `--action-fold` | `#E2E8F0` | fold cell background |
+| `--warning` | `#D97706` | study-only / caution |
+| `--danger` | `#DC2626` | blocked / destructive |
+| `--success` | `#0F9D58` | source-backed success state |
+| `--info` | `#2563EB` | proxy/info state |
 
 ## Spacing scale
 
@@ -50,20 +60,24 @@ Guidelines:
 
 ## Card rules
 
-- White or very light cream surfaces only
-- Subtle warm-gray border
-- Soft shadow, not dramatic elevation
+- White card surfaces with cool neutral separators
+- Standard borders use `#E2E8F0`; stronger separation uses `#CBD5E1`
+- Soft shadow, not dramatic elevation:
+  - `0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04)`
 - Cards should frame tools, not become decoration
 - Primary workflow cards can be slightly elevated
 - Secondary panels should use muted surfaces or subtle borders instead of height
+- Beige / tan fills are intentionally removed from page shells, panels, and note boxes
 
 ## Button rules
 
-- Primary CTA: burnt orange
+- Primary CTA: `#C96A1B`
+- Primary hover: `#A95516`
 - Trainer-safe action buttons must read clearly at a glance
 - Study-only / blocked actions should be disabled with honest copy
 - Do not oversize buttons when a compact row works
 - On mobile, sticky primary actions are preferred over long trailing layouts
+- Secondary buttons should stay white with `#CBD5E1` borders and dark slate text
 
 ## Chart viewer rules
 
@@ -79,6 +93,8 @@ Desktop target:
 - matrix max width roughly `680px-760px`
 - compact legend
 - less vertical gap between controls and matrix
+- white chart surface inside a light neutral outer container
+- aggressive cells use refined orange, call cells use green, 3-bet uses blue, fold uses cool grey
 
 Mobile target:
 
@@ -122,6 +138,25 @@ For unsupported charts:
 
 - no strategic coaching copy
 - only warning / review-needed language
+
+## Navigation and notes surfaces
+
+- Sidebar background: `#FFFFFF`
+- Sidebar border: `#E2E8F0`
+- Active nav item:
+  - background `#FFF3E8`
+  - text/icon `#9A4D12`
+- Inactive nav item:
+  - text/icon `#475569`
+  - hover background `#F8FAFC`
+
+Notes and status surfaces use semantic tints instead of beige:
+
+- default note: white
+- info/proxy note: `#EFF6FF`
+- source-backed/safe note: `#EAF7EF`
+- simplified/study-only note: `#FFF7E6`
+- blocked/unsupported note: `#FEF2F2`
 
 ## Hand logging rules
 

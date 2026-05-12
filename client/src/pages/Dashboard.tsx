@@ -155,7 +155,7 @@ export default function Dashboard() {
               {todayTraining.map((suggestion, index) => (
                 <div
                   key={suggestion.id}
-                  className="rounded-xl border border-border bg-accent/65 p-2.5 sm:p-3"
+                  className="rounded-xl border border-border bg-secondary p-2.5 sm:p-3"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
@@ -226,7 +226,7 @@ export default function Dashboard() {
               onClick={action.onClick}
               className="app-surface flex items-center gap-2 p-3 text-left transition hover:-translate-y-0.5"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-background text-primary ring-1 ring-border/70">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-primary ring-1 ring-border/70">
                 <action.icon className="h-4 w-4" />
               </span>
               <span className="text-sm font-semibold">{action.label}</span>
@@ -240,7 +240,7 @@ export default function Dashboard() {
             onClick={() => setLocation("/strategy/library")}
             className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-background text-primary ring-1 ring-border/70">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-primary ring-1 ring-border/70">
               <Layers className="h-5 w-5" />
             </span>
             <div>
@@ -255,7 +255,7 @@ export default function Dashboard() {
             onClick={() => setLocation("/strategy/trainer")}
             className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/12 text-primary ring-1 ring-primary/10">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFF3E8] text-primary ring-1 ring-amber-200/70">
               <Target className="h-5 w-5" />
             </span>
             <div>
@@ -342,7 +342,7 @@ export default function Dashboard() {
                   className={
                     activity.tournament.netResult >= 0
                       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-amber-200 bg-amber-50 text-amber-700"
+                      : "border-amber-200 bg-[#FFF7E6] text-[#9A4D12]"
                   }
                 >
                   {formatNetResult(activity.tournament.netResult)}

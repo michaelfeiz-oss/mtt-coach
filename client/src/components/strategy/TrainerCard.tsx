@@ -114,7 +114,7 @@ export function TrainerCard({
             {heroPosition && (
               <Badge
                 variant="outline"
-                className="rounded-full border-border bg-accent/80 px-2.5 py-0.5 text-secondary-foreground"
+                className="rounded-full border-[var(--border-strong)] bg-secondary px-2.5 py-0.5 text-secondary-foreground"
               >
                 {heroPosition}
                 {villainPosition ? ` vs ${villainPosition}` : ""}
@@ -125,7 +125,7 @@ export function TrainerCard({
 
         <div
           className={cn(
-            "rounded-[1rem] border border-border bg-accent/75 px-3.5 py-3",
+            "rounded-[1rem] border border-border bg-secondary px-3.5 py-3",
             compact && "px-3 py-2.5"
           )}
         >
@@ -155,10 +155,10 @@ export function TrainerCard({
           if (isRevealed) {
             if (action === correctAction) {
               extraClass =
-                "border-emerald-300 bg-emerald-50 text-emerald-700 shadow-[0_0_0_1px_rgba(16,185,129,0.24)]";
+                "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-[0_0_0_1px_rgba(15,157,88,0.18)]";
             } else if (action === selectedAction && action !== correctAction) {
               extraClass =
-                "border-red-300 bg-red-50 text-red-700 shadow-[0_0_0_1px_rgba(239,68,68,0.22)]";
+                "border-red-200 bg-red-50 text-red-700 shadow-[0_0_0_1px_rgba(220,38,38,0.18)]";
             } else {
               extraClass = "opacity-45";
             }
@@ -169,7 +169,7 @@ export function TrainerCard({
               key={action}
               variant="outline"
               className={cn(
-                "h-10 rounded-xl border-border/80 bg-input/78 px-3 text-xs font-semibold text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-border hover:bg-input active:translate-y-0 sm:h-10 sm:px-4 sm:text-sm",
+                "h-10 rounded-xl border-[var(--border-strong)] bg-card px-3 text-xs font-semibold text-foreground shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition hover:-translate-y-0.5 hover:border-slate-400 hover:bg-secondary active:translate-y-0 sm:h-10 sm:px-4 sm:text-sm",
                 compact && "h-9 sm:h-9",
                 "justify-between",
                 extraClass
@@ -178,7 +178,7 @@ export function TrainerCard({
               disabled={isRevealed}
             >
               <span className="min-w-0 truncate">{ACTION_LABELS[action]}</span>
-              <span className="ml-2 shrink-0 rounded-lg border border-border/70 bg-accent/55 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground sm:px-2 sm:text-[11px]">
+              <span className="ml-2 shrink-0 rounded-lg border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground sm:px-2 sm:text-[11px]">
                 {index + 1}
               </span>
             </Button>
@@ -187,7 +187,7 @@ export function TrainerCard({
       </div>
 
       {isRevealed && showInlineResult && (
-        <div className="space-y-4 rounded-2xl border border-border bg-accent/70 p-4">
+        <div className="space-y-4 rounded-2xl border border-border bg-secondary p-4">
           <div className="text-center">
             <p
               className={cn(
@@ -214,7 +214,7 @@ export function TrainerCard({
             onClick={handleNext}
           >
             Next Hand
-            <span className="ml-2 rounded-lg bg-primary/15 px-2 py-0.5 text-xs">
+            <span className="ml-2 rounded-lg bg-[#FFF3E8] px-2 py-0.5 text-xs text-[#9A4D12]">
               Enter
             </span>
           </Button>
