@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ActionLegend } from "@/components/strategy/ActionLegend";
 import { PreflopSetupControls } from "@/components/strategy/PreflopSetupControls";
 import { RangeMatrix } from "@/components/strategy/RangeMatrix";
+import { StrategySourcePanelNote } from "@/components/strategy/StrategySourcePanelNote";
 import { StrategyTheoryNotes } from "@/components/strategy/StrategyTheoryNotes";
 import { buildActionMap } from "@/components/strategy/utils";
 import { getChartViewerDensity } from "@/lib/chartLayout";
@@ -474,6 +475,16 @@ export default function StrategyLibrary() {
                 />
               </div>
             )}
+
+            {chartPresentation?.sourcePanelLabel &&
+              chartPresentation.sourceCoverageNote && (
+                <StrategySourcePanelNote
+                  sourcePanelLabel={chartPresentation.sourcePanelLabel}
+                  sourcePanelGroup={chartPresentation.sourcePanelGroup}
+                  sourceCoverageNote={chartPresentation.sourceCoverageNote}
+                  groupedSourcePanel={chartPresentation.groupedSourcePanel}
+                />
+              )}
 
             {chartLoading && selectedChartId !== undefined && (
               <div className="space-y-3">

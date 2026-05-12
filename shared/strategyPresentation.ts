@@ -27,6 +27,11 @@ export interface StrategyChartPresentation {
   sourceStatus: ReturnType<typeof getStrategySourceStatus>;
   sourceBadge: string | null;
   sourceHelper: string | null;
+  sourcePanelLabel: string | null;
+  sourcePanelGroup: string | null;
+  appDisplayLabel: string;
+  sourceCoverageNote: string | null;
+  groupedSourcePanel: boolean;
   sharedFamilyLabel: string | null;
   trainerAllowed: boolean;
   manuallyApprovedForTraining: boolean;
@@ -111,6 +116,11 @@ export function buildStrategyChartPresentation(
     sourceStatus,
     sourceBadge: getStrategySourceLabel(chart),
     sourceHelper: getStrategySourceHelperText(chart),
+    sourcePanelLabel: trust.sourcePanelLabel,
+    sourcePanelGroup: trust.sourcePanelGroup,
+    appDisplayLabel: trust.appDisplayLabel,
+    sourceCoverageNote: trust.sourceCoverageNote,
+    groupedSourcePanel: trust.groupedSourcePanel,
     sharedFamilyLabel: getSharedFamilySourceLabel(chart),
     trainerAllowed: trust.trainerAllowed,
     manuallyApprovedForTraining: trust.manuallyApprovedForTraining,

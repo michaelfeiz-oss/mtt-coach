@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ActionLegend } from "./ActionLegend";
 import { RangeMatrix } from "./RangeMatrix";
+import { StrategySourcePanelNote } from "./StrategySourcePanelNote";
 import { TrainerSpotInsight } from "./TrainerSpotInsight";
 import { buildActionMap } from "./utils";
 
@@ -223,8 +224,24 @@ export function TrainerResultReveal({
                 actions={visibleActions}
                 className="rounded-xl border border-border bg-card p-1.5"
               />
+              </div>
             </div>
-          </div>
+
+            {chartPresentation?.sourcePanelLabel &&
+              chartPresentation.sourceCoverageNote && (
+                <details className="rounded-xl border border-border/80 bg-card px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-xs font-semibold text-secondary-foreground">
+                    Source detail
+                  </summary>
+                  <StrategySourcePanelNote
+                    className="mt-2"
+                    sourcePanelLabel={chartPresentation.sourcePanelLabel}
+                    sourcePanelGroup={chartPresentation.sourcePanelGroup}
+                    sourceCoverageNote={chartPresentation.sourceCoverageNote}
+                    groupedSourcePanel={chartPresentation.groupedSourcePanel}
+                  />
+                </details>
+              )}
 
           {chart && (
             <>

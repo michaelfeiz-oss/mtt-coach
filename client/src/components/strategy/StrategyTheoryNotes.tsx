@@ -6,11 +6,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { StrategySourcePanelNote } from "@/components/strategy/StrategySourcePanelNote";
 import {
   buildStrategyTheoryResult,
   type StrategyTheoryContext,
 } from "@shared/strategyTheory";
 import {
+  getStrategyChartTrustMetadata,
   getStrategySourceHelperText,
   getStrategySourceStatus,
 } from "@shared/sourceTruth";
@@ -40,6 +42,7 @@ export function StrategyTheoryNotes({
   const result = buildStrategyTheoryResult(context);
   const sourceStatus = getStrategySourceStatus(context);
   const helper = getStrategySourceHelperText(context);
+  const trust = getStrategyChartTrustMetadata(context);
 
   if (sourceStatus === "unsupported") {
     return (
@@ -130,6 +133,15 @@ export function StrategyTheoryNotes({
                   {helper}
                 </p>
               </div>
+            )}
+
+            {trust.sourcePanelLabel && trust.sourceCoverageNote && (
+              <StrategySourcePanelNote
+                sourcePanelLabel={trust.sourcePanelLabel}
+                sourcePanelGroup={trust.sourcePanelGroup}
+                sourceCoverageNote={trust.sourceCoverageNote}
+                groupedSourcePanel={trust.groupedSourcePanel}
+              />
             )}
 
             {result.sections.map(section => (

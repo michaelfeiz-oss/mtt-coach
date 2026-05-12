@@ -700,11 +700,12 @@ export default function RangeTrainer() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {modeHelper}
                 </p>
-                {activeSpotPresentation?.sourceHelper && (
+                {activeSpotPresentation?.sourceHelper &&
+                  activeSpotPresentation.sourceStatus !== "source_backed" && (
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                     {activeSpotPresentation.sourceHelper}
                   </p>
-                )}
+                  )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <Badge className="rounded-full bg-primary text-primary-foreground">

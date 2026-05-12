@@ -115,6 +115,32 @@ describe("strategy seed coverage", () => {
     ).toBe("CALL");
   });
 
+  it("keeps grouped-source-backed chart actions unchanged while labels become more explicit", () => {
+    const utgGrouped40 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 40 && chart.spotKey === "UTG1_vs_UTG"
+    );
+    const mpGrouped40 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 40 && chart.spotKey === "CO_vs_MP"
+    );
+
+    expect(
+      utgGrouped40?.actions.find(action => action.handCode === "99")
+        ?.primaryAction
+    ).toBe("CALL");
+    expect(
+      utgGrouped40?.actions.find(action => action.handCode === "QJo")
+        ?.primaryAction
+    ).toBe("THREE_BET");
+    expect(
+      mpGrouped40?.actions.find(action => action.handCode === "77")
+        ?.primaryAction
+    ).toBe("CALL");
+    expect(
+      mpGrouped40?.actions.find(action => action.handCode === "QJo")
+        ?.primaryAction
+    ).toBe("FOLD");
+  });
+
   it("validates all generated seed charts", () => {
     expect(() => validateSeedCharts(SEED_CHARTS)).not.toThrow();
   });

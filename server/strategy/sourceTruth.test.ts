@@ -3,6 +3,7 @@ import {
   SOURCE_BACKED_MAIN_STACKS,
   SIMPLIFIED_POPULATION_3BET_STACKS,
   getSharedFamilySourceLabel,
+  getStrategyChartTrustMetadata,
   getStrategySourceHelperText,
   getStrategySourceLabel,
   getStrategySourceStatus,
@@ -103,5 +104,38 @@ describe("source-of-truth chart coverage", () => {
         spotKey: "SB_vs_BB_limp",
       })
     ).toBe(false);
+  });
+
+  it("exposes grouped source panel metadata for source-backed charts without changing trainer safety", () => {
+    const trust = getStrategyChartTrustMetadata({
+      stackDepth: 40,
+      spotGroup: "VS_UTG_RFI",
+      heroPosition: "HJ",
+      villainPosition: "UTG",
+      spotKey: "HJ_vs_UTG",
+    });
+
+    expect(trust.sourceStatus).toBe("source_backed");
+    expect(trust.trainerAllowed).toBe(true);
+    expect(trust.sourcePanelLabel).toBe("LJ/HJ vs UTG RFI");
+    expect(trust.sourcePanelGroup).toBe("LJ/HJ");
+    expect(trust.groupedSourcePanel).toBe(true);
+    expect(trust.sourceCoverageNote).toContain("group");
+  });
+
+  it("exposes remapped source panel metadata when the app label is narrower than the PDF panel label", () => {
+    const trust = getStrategyChartTrustMetadata({
+      stackDepth: 40,
+      spotGroup: "RFI",
+      heroPosition: "HJ",
+      spotKey: "HJ_RFI",
+    });
+
+    expect(trust.sourceStatus).toBe("source_backed");
+    expect(trust.trainerAllowed).toBe(true);
+    expect(trust.sourcePanelLabel).toBe("Lojack RFI");
+    expect(trust.groupedSourcePanel).toBe(false);
+    expect(trust.sourceCoverageNote).toContain("HJ RFI");
+    expect(trust.sourceCoverageNote).toContain("Lojack RFI");
   });
 });

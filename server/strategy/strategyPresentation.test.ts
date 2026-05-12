@@ -38,6 +38,24 @@ describe("strategy chart presentation", () => {
     expect(presentation.trainingGateMessage?.toLowerCase()).toContain("study-only");
   });
 
+  it("surfaces grouped source panel notes for narrower app labels", () => {
+    const presentation = buildStrategyChartPresentation({
+      stackDepth: 40,
+      spotGroup: "VS_MP_RFI",
+      heroPosition: "CO",
+      villainPosition: "MP",
+      spotKey: "CO_vs_MP",
+    });
+
+    expect(presentation.sourceStatus).toBe("source_backed");
+    expect(presentation.sourcePanelLabel).toBe("CO vs LJ/HJ RFI");
+    expect(presentation.sourcePanelGroup).toBe("LJ/HJ");
+    expect(presentation.groupedSourcePanel).toBe(true);
+    expect(presentation.sourceCoverageNote).toContain("CO vs MP");
+    expect(presentation.sourceCoverageNote).toContain("LJ/HJ");
+    expect(presentation.trainerAllowed).toBe(true);
+  });
+
   it("formats blind-versus-blind limp nodes explicitly", () => {
     expect(
       formatStrategyChartTitle({

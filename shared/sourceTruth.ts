@@ -1,4 +1,8 @@
-import type { Position, SpotGroup } from "./strategy";
+import {
+  displayPositionLabel,
+  type Position,
+  type SpotGroup,
+} from "./strategy";
 
 export const SOURCE_BACKED_MAIN_STACKS = [15, 25, 40] as const;
 export type SourceBackedMainStack = (typeof SOURCE_BACKED_MAIN_STACKS)[number];
@@ -81,6 +85,11 @@ export interface StrategyChartTrustMetadata {
   reviewedAt: string | null;
   notesConfidence: StrategyNotesConfidence;
   cellMapSource: StrategyCellMapSource;
+  sourcePanelLabel: string | null;
+  sourcePanelGroup: string | null;
+  appDisplayLabel: string;
+  sourceCoverageNote: string | null;
+  groupedSourcePanel: boolean;
 }
 
 const SOURCE_BACKED_3BET_HEROES = new Set<Position>([
@@ -156,6 +165,193 @@ function defaultSourceChartName(chart: StrategyChartLike): string {
   return chart.spotKey ?? `${chart.heroPosition}_${chart.spotGroup}`;
 }
 
+function buildAppDisplayLabel(chart: StrategyChartLike) {
+  const heroLabel = displayPositionLabel(chart.heroPosition);
+  const villainLabel = chart.villainPosition
+    ? displayPositionLabel(chart.villainPosition)
+    : null;
+
+  switch (chart.spotGroup) {
+    case "RFI":
+      return `${heroLabel} RFI`;
+    case "VS_UTG_RFI":
+    case "VS_MP_RFI":
+    case "VS_LP_RFI":
+      return villainLabel ? `${heroLabel} vs ${villainLabel}` : heroLabel;
+    case "VS_3BET":
+      return villainLabel ? `${heroLabel} vs ${villainLabel} 3-Bet` : heroLabel;
+    case "BVB":
+      if (chart.spotKey === "SB_vs_BB_limp") {
+        return "SB vs BB (limp)";
+      }
+      if (chart.spotKey === "BB_vs_SB_limp") {
+        return "BB vs SB limp";
+      }
+      return villainLabel ? `${heroLabel} vs ${villainLabel}` : heroLabel;
+  }
+}
+
+interface StrategySourcePanelDescriptor {
+  sourcePanelLabel: string | null;
+  sourcePanelGroup: string | null;
+  sourceCoverageNote: string | null;
+  groupedSourcePanel: boolean;
+}
+
+function buildSourcePanelNote(
+  appDisplayLabel: string,
+  sourcePanelLabel: string,
+  options?: {
+    groupedSourcePanel?: boolean;
+    sourcePanelGroup?: string | null;
+  }
+): StrategySourcePanelDescriptor {
+  if (options?.groupedSourcePanel) {
+    const groupLabel = options.sourcePanelGroup ?? sourcePanelLabel;
+    return {
+      sourcePanelLabel,
+      sourcePanelGroup: options.sourcePanelGroup ?? null,
+      sourceCoverageNote: `This chart is displayed as ${appDisplayLabel} in the app, but the source panel groups ${groupLabel}.`,
+      groupedSourcePanel: true,
+    };
+  }
+
+  return {
+    sourcePanelLabel,
+    sourcePanelGroup: null,
+    sourceCoverageNote: `This chart is displayed as ${appDisplayLabel} in the app, but the source panel is labeled ${sourcePanelLabel}.`,
+    groupedSourcePanel: false,
+  };
+}
+
+function getStrategySourcePanelDescriptor(
+  chart: StrategyChartLike
+): StrategySourcePanelDescriptor {
+  const appDisplayLabel = buildAppDisplayLabel(chart);
+
+  if (getStrategySourceStatus(chart) !== "source_backed") {
+    return {
+      sourcePanelLabel: null,
+      sourcePanelGroup: null,
+      sourceCoverageNote: null,
+      groupedSourcePanel: false,
+    };
+  }
+
+  switch (chart.spotGroup) {
+    case "RFI":
+      switch (chart.heroPosition) {
+        case "UTG":
+          return {
+            sourcePanelLabel: "UTG RFI",
+            sourcePanelGroup: null,
+            sourceCoverageNote: null,
+            groupedSourcePanel: false,
+          };
+        case "UTG1":
+          return {
+            sourcePanelLabel: "UTG+1 RFI",
+            sourcePanelGroup: null,
+            sourceCoverageNote: null,
+            groupedSourcePanel: false,
+          };
+        case "MP":
+          return buildSourcePanelNote(appDisplayLabel, "UTG+2 RFI");
+        case "HJ":
+          return buildSourcePanelNote(appDisplayLabel, "Lojack RFI");
+        case "CO":
+          return {
+            sourcePanelLabel: "Cutoff RFI",
+            sourcePanelGroup: null,
+            sourceCoverageNote: null,
+            groupedSourcePanel: false,
+          };
+        case "BTN":
+          return {
+            sourcePanelLabel: "Button RFI",
+            sourcePanelGroup: null,
+            sourceCoverageNote: null,
+            groupedSourcePanel: false,
+          };
+        case "SB":
+          return {
+            sourcePanelLabel: "Small Blind RFI",
+            sourcePanelGroup: null,
+            sourceCoverageNote: null,
+            groupedSourcePanel: false,
+          };
+        default:
+          return {
+            sourcePanelLabel: null,
+            sourcePanelGroup: null,
+            sourceCoverageNote: null,
+            groupedSourcePanel: false,
+          };
+      }
+    case "VS_UTG_RFI":
+      if (chart.heroPosition === "UTG1" || chart.heroPosition === "MP") {
+        return buildSourcePanelNote(appDisplayLabel, "UTG+1/+2 vs UTG RFI", {
+          groupedSourcePanel: true,
+          sourcePanelGroup: "UTG+1/+2",
+        });
+      }
+      if (chart.heroPosition === "HJ") {
+        return buildSourcePanelNote(appDisplayLabel, "LJ/HJ vs UTG RFI", {
+          groupedSourcePanel: true,
+          sourcePanelGroup: "LJ/HJ",
+        });
+      }
+      return {
+        sourcePanelLabel: `${displayPositionLabel(chart.heroPosition)} vs UTG RFI`,
+        sourcePanelGroup: null,
+        sourceCoverageNote: null,
+        groupedSourcePanel: false,
+      };
+    case "VS_MP_RFI":
+      if (chart.heroPosition === "HJ") {
+        return buildSourcePanelNote(appDisplayLabel, "HJ vs LJ RFI");
+      }
+      if (
+        chart.heroPosition === "CO" ||
+        chart.heroPosition === "BTN" ||
+        chart.heroPosition === "SB" ||
+        chart.heroPosition === "BB"
+      ) {
+        return buildSourcePanelNote(
+          appDisplayLabel,
+          `${displayPositionLabel(chart.heroPosition)} vs LJ/HJ RFI`,
+          {
+            groupedSourcePanel: true,
+            sourcePanelGroup: "LJ/HJ",
+          }
+        );
+      }
+      return {
+        sourcePanelLabel: null,
+        sourcePanelGroup: null,
+        sourceCoverageNote: null,
+        groupedSourcePanel: false,
+      };
+    case "VS_LP_RFI":
+      return {
+        sourcePanelLabel: chart.villainPosition
+          ? `${displayPositionLabel(chart.heroPosition)} vs ${displayPositionLabel(chart.villainPosition)} RFI`
+          : null,
+        sourcePanelGroup: null,
+        sourceCoverageNote: null,
+        groupedSourcePanel: false,
+      };
+    case "VS_3BET":
+    case "BVB":
+      return {
+        sourcePanelLabel: null,
+        sourcePanelGroup: null,
+        sourceCoverageNote: null,
+        groupedSourcePanel: false,
+      };
+  }
+}
+
 function defaultNotesConfidence(
   sourceStatus: StrategySourceStatus
 ): StrategyNotesConfidence {
@@ -192,11 +388,12 @@ function defaultSourceReference(
   sourceStatus: StrategySourceStatus
 ): string | null {
   const sourceFile = defaultSourceFile(chart.stackDepth);
+  const panelDescriptor = getStrategySourcePanelDescriptor(chart);
 
   switch (sourceStatus) {
     case "source_backed":
       return sourceFile
-        ? `Imported from ${sourceFile} using chart key ${defaultSourceChartName(chart)}.`
+        ? `Imported from ${sourceFile} using source panel ${panelDescriptor.sourcePanelLabel ?? defaultSourceChartName(chart)}.`
         : null;
     case "simplified_population": {
       const familyLabel = getSimplifiedVsThreeBetFamilyLabel(chart);
@@ -272,6 +469,7 @@ export function getStrategyChartTrustMetadata(
 ): StrategyChartTrustMetadata {
   const chartKey = chartKeyFor(chart);
   const sourceStatus = getStrategySourceStatus(chart);
+  const sourcePanelDescriptor = getStrategySourcePanelDescriptor(chart);
   const manualApproval = MANUAL_TRAINING_APPROVALS[chartKey] ?? null;
   const trainerAllowed =
     sourceStatus === "source_backed" || manualApproval !== null;
@@ -292,7 +490,9 @@ export function getStrategyChartTrustMetadata(
         : null,
     sourceReference: defaultSourceReference(chart, sourceStatus),
     sourceChartName:
-      sourceStatus === "unsupported" ? null : defaultSourceChartName(chart),
+      sourceStatus === "unsupported"
+        ? null
+        : sourcePanelDescriptor.sourcePanelLabel ?? defaultSourceChartName(chart),
     trainerAllowed,
     manuallyApprovedForTraining: manualApproval !== null,
     approvalReason: manualApproval?.reason ?? null,
@@ -303,6 +503,11 @@ export function getStrategyChartTrustMetadata(
       (sourceStatus === "source_backed" ? BASELINE_SOURCE_REVIEWED_AT : null),
     notesConfidence: defaultNotesConfidence(sourceStatus),
     cellMapSource: defaultCellMapSource(chart, sourceStatus),
+    sourcePanelLabel: sourcePanelDescriptor.sourcePanelLabel,
+    sourcePanelGroup: sourcePanelDescriptor.sourcePanelGroup,
+    appDisplayLabel: buildAppDisplayLabel(chart),
+    sourceCoverageNote: sourcePanelDescriptor.sourceCoverageNote,
+    groupedSourcePanel: sourcePanelDescriptor.groupedSourcePanel,
   };
 }
 
