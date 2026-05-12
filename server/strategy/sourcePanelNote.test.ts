@@ -2,22 +2,31 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { StrategySourcePanelNote } from "../../client/src/components/strategy/StrategySourcePanelNote";
+import { getStrategyChartTrustMetadata } from "../../shared/sourceTruth";
+import { SEED_CHARTS } from "./seedData";
 
 describe("grouped source panel note UI", () => {
-  it("renders the grouped source panel note used in the chart viewer", () => {
+  it("renders the grouped source panel note used in the chart viewer from an actual seeded chart", () => {
+    const chart = SEED_CHARTS.find(
+      candidate =>
+        candidate.stackDepth === 15 && candidate.spotKey === "UTG1_vs_UTG"
+    );
+
+    expect(chart).toBeDefined();
+    const trust = getStrategyChartTrustMetadata(chart!);
+
     const markup = renderToStaticMarkup(
       React.createElement(StrategySourcePanelNote, {
-        sourcePanelLabel: "LJ/HJ vs UTG RFI",
-        sourcePanelGroup: "LJ/HJ",
-        sourceCoverageNote:
-          "This chart is displayed as HJ vs UTG in the app, but the source panel groups LJ/HJ.",
-        groupedSourcePanel: true,
+        sourcePanelLabel: trust.sourcePanelLabel,
+        sourcePanelGroup: trust.sourcePanelGroup,
+        sourceCoverageNote: trust.sourceCoverageNote,
+        groupedSourcePanel: trust.groupedSourcePanel,
       })
     );
 
     expect(markup).toContain("Source-backed grouped panel");
-    expect(markup).toContain("Source panel: LJ/HJ vs UTG RFI");
-    expect(markup).toContain("Grouped source panel: LJ/HJ");
-    expect(markup).toContain("HJ vs UTG");
+    expect(markup).toContain("Source panel: UTG+1/+2 vs UTG RFI");
+    expect(markup).toContain("Grouped source panel: UTG+1/+2");
+    expect(markup).toContain("UTG+1 vs UTG");
   });
 });

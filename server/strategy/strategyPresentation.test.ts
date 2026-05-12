@@ -3,6 +3,7 @@ import {
   buildStrategyChartPresentation,
   formatStrategyChartTitle,
 } from "../../shared/strategyPresentation";
+import { SEED_CHARTS } from "./seedData";
 
 describe("strategy chart presentation", () => {
   it("keeps versus-RFI titles aligned with the real spot family", () => {
@@ -54,6 +55,23 @@ describe("strategy chart presentation", () => {
     expect(presentation.sourceCoverageNote).toContain("CO vs MP");
     expect(presentation.sourceCoverageNote).toContain("LJ/HJ");
     expect(presentation.trainerAllowed).toBe(true);
+  });
+
+  it("keeps grouped source metadata on actual seeded charts used by the viewer runtime", () => {
+    const chart = SEED_CHARTS.find(
+      candidate =>
+        candidate.stackDepth === 15 && candidate.spotKey === "UTG1_vs_UTG"
+    );
+
+    expect(chart).toBeDefined();
+
+    const presentation = buildStrategyChartPresentation(chart!);
+
+    expect(presentation.sourceStatus).toBe("source_backed");
+    expect(presentation.trainerAllowed).toBe(true);
+    expect(presentation.sourcePanelLabel).toBe("UTG+1/+2 vs UTG RFI");
+    expect(presentation.sourceCoverageNote).toContain("UTG+1 vs UTG");
+    expect(presentation.groupedSourcePanel).toBe(true);
   });
 
   it("formats blind-versus-blind limp nodes explicitly", () => {

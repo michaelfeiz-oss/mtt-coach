@@ -23,6 +23,7 @@ import {
   buildPriorityPackSummary,
   getRelatedPriorityDrillPacksForSpot,
 } from "@shared/drillPacks";
+import { getStrategyChartTrustMetadata } from "@shared/sourceTruth";
 import {
   displayPositionLabel,
   POSITIONS,
@@ -198,6 +199,10 @@ export default function StrategyLibrary() {
   const actionMap = chart ? buildActionMap(chart.actions) : {};
   const chartPresentation = useMemo(
     () => (chart ? buildStrategyChartPresentation(chart) : null),
+    [chart]
+  );
+  const chartTrust = useMemo(
+    () => (chart ? getStrategyChartTrustMetadata(chart) : null),
     [chart]
   );
   const visibleActions = chart
@@ -476,13 +481,12 @@ export default function StrategyLibrary() {
               </div>
             )}
 
-            {chartPresentation?.sourcePanelLabel &&
-              chartPresentation.sourceCoverageNote && (
+            {chartTrust?.sourcePanelLabel && (
                 <StrategySourcePanelNote
-                  sourcePanelLabel={chartPresentation.sourcePanelLabel}
-                  sourcePanelGroup={chartPresentation.sourcePanelGroup}
-                  sourceCoverageNote={chartPresentation.sourceCoverageNote}
-                  groupedSourcePanel={chartPresentation.groupedSourcePanel}
+                  sourcePanelLabel={chartTrust.sourcePanelLabel}
+                  sourcePanelGroup={chartTrust.sourcePanelGroup}
+                  sourceCoverageNote={chartTrust.sourceCoverageNote}
+                  groupedSourcePanel={chartTrust.groupedSourcePanel}
                 />
               )}
 

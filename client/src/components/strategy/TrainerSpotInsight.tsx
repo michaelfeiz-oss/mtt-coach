@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "wouter";
 import type { ResolvedPriorityDrillPack } from "@shared/drillPacks";
 import type { TrainerSpotInsight as TrainerSpotInsightModel } from "@shared/trainerInsight";

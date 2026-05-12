@@ -44,16 +44,18 @@ export function StrategySourcePanelNote({
           {prefix}
         </p>
       </div>
-      {!compact && sourceCoverageNote && (
+      {(!compact || groupedSourcePanel || sourceCoverageNote) && (
         <div className="mt-1.5 space-y-1">
           {groupedSourcePanel && sourcePanelGroup && (
             <p className="text-[11px] font-medium text-secondary-foreground">
               Grouped source panel: {sourcePanelGroup}
             </p>
           )}
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {sourceCoverageNote}
-          </p>
+          {sourceCoverageNote && (
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              {sourceCoverageNote}
+            </p>
+          )}
         </div>
       )}
     </div>
