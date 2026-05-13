@@ -10,11 +10,8 @@ import {
   TRAINER_ATTEMPT_CONFIDENCES,
   type TrainerAttemptConfidence,
 } from "../../../../shared/coachingLoop";
-import type { ResolvedPriorityDrillPack } from "../../../../shared/drillPacks";
-import type { StudySpotNote } from "../../../../shared/spotNotes";
 import { getStrategyChartTrustMetadata } from "../../../../shared/sourceTruth";
 import type { StrategyChartPresentation } from "@shared/strategyPresentation";
-import { buildTrainerSpotInsight, type TrainerSpotInsight as TrainerSpotInsightModel } from "../../../../shared/trainerInsight";
 import type { ChartLikeSpotContext } from "../../../../shared/spotIds";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +21,6 @@ import { cn } from "@/lib/utils";
 import { ActionLegend } from "./ActionLegend";
 import { RangeMatrix } from "./RangeMatrix";
 import { StrategySourcePanelNote } from "./StrategySourcePanelNote";
-import { TrainerSpotInsight } from "./TrainerSpotInsight";
 import { buildActionMap } from "./utils";
 
 interface TrainerResultRevealProps {
@@ -36,8 +32,6 @@ interface TrainerResultRevealProps {
   selectedAction: Action;
   correctAction: Action;
   isCorrect: boolean;
-  spotNote?: StudySpotNote | null;
-  recommendedPack?: ResolvedPriorityDrillPack | null;
   chartPresentation?: StrategyChartPresentation | null;
   confidence?: TrainerAttemptConfidence | null;
   onConfidenceSelect?: (confidence: TrainerAttemptConfidence) => void;
@@ -55,8 +49,6 @@ export function TrainerResultReveal({
   selectedAction,
   correctAction,
   isCorrect,
-  spotNote,
-  recommendedPack,
   chartPresentation,
   confidence = null,
   onConfidenceSelect,
@@ -76,25 +68,6 @@ export function TrainerResultReveal({
           ) as Action[])
         : undefined,
     [chart]
-  );
-  const insight = React.useMemo<TrainerSpotInsightModel | null>(
-    () =>
-      buildTrainerSpotInsight({
-        chart: contextChart,
-        handCode,
-        selectedAction,
-        correctAction,
-        isCorrect,
-        spotNote,
-      }),
-    [
-      contextChart,
-      correctAction,
-      handCode,
-      isCorrect,
-      selectedAction,
-      spotNote,
-    ]
   );
   const sourcePanelTrust = React.useMemo(
     () => getStrategyChartTrustMetadata(chart ?? contextChart),
@@ -146,13 +119,6 @@ export function TrainerResultReveal({
             </div>
           </div>
         </div>
-
-        {insight && (
-          <TrainerSpotInsight
-            insight={insight}
-            recommendedPack={recommendedPack?.supported ? recommendedPack : null}
-          />
-        )}
 
         <div className="rounded-[1rem] border border-border bg-secondary p-3">
           <p className="text-[11px] font-semibold text-muted-foreground">

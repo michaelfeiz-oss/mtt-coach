@@ -250,11 +250,11 @@ export function StudyCockpit() {
             tone="orange"
           />
           <StudyModuleCard
-            href="/log"
+            href="/study/notes"
             icon={FileText}
             title="Notes"
-            subtitle="Capture spot takeaways and hand lessons."
-            meta="Attached to review"
+            subtitle="Keep your own bullet-point reminders by stack and theme."
+            meta="5 editable note boxes"
             tone="blue"
           />
           <StudyModuleCard
@@ -660,10 +660,10 @@ export function StudyCockpit() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                href: "/strategy/library",
+                href: "/study/notes",
                 icon: BookOpen,
-                title: "Spot Notes",
-                helper: "Review notes attached to preflop charts.",
+                title: "Study Notes",
+                helper: "Review and edit your own stack-based reminders.",
               },
               {
                 href: "/strategy/trainer",

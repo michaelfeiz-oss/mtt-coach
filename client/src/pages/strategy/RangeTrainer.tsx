@@ -23,7 +23,6 @@ import {
   suggestLeakFamilyFromTrainerMiss,
 } from "@shared/leakFamilies";
 import { canonicalSpotContextFromChart } from "@shared/spotIds";
-import { getSpotNote } from "@shared/spotNotes";
 import { buildStrategyChartPresentation } from "@shared/strategyPresentation";
 import {
   displayPositionLabel,
@@ -940,8 +939,6 @@ export default function RangeTrainer() {
                       selectedAction={answerReveal.selectedAction}
                       correctAction={answerReveal.correctAction}
                       isCorrect={answerReveal.isCorrect}
-                      spotNote={getSpotNote(trainerSpot.chart)}
-                      recommendedPack={recommendedPack}
                       confidence={answerReveal.confidence}
                       onConfidenceSelect={handleConfidenceSelect}
                       isSavingConfidence={updateConfidence.isPending}

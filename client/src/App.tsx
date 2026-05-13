@@ -16,6 +16,7 @@ import HandDetail from "./pages/HandDetail";
 import BottomNav from "./components/BottomNav";
 import Log from "./pages/Log";
 import Study from "./pages/Study";
+import StudyNotes from "./pages/StudyNotes";
 import StudyHub from "./pages/strategy/StudyHub";
 import StrategyLibrary from "./pages/strategy/StrategyLibrary";
 import RangeTrainer from "./pages/strategy/RangeTrainer";
@@ -30,6 +31,7 @@ function Router() {
       <Route key="home" path={"/"} component={Dashboard} />
       <Route key="log" path={"/log"} component={Log} />
       <Route key="study" path={"/study"} component={Study} />
+      <Route key="study-notes" path={"/study/notes"} component={StudyNotes} />
       <Route key="log-session" path={"/log-session"} component={LogStudySession} />
       <Route key="log-tournament" path={"/log-tournament"} component={LogTournament} />
       <Route key="hands" path={"/hands"} component={HandsList} />

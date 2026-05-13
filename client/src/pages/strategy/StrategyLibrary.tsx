@@ -9,7 +9,6 @@ import { ActionLegend } from "@/components/strategy/ActionLegend";
 import { PreflopSetupControls } from "@/components/strategy/PreflopSetupControls";
 import { RangeMatrix } from "@/components/strategy/RangeMatrix";
 import { StrategySourcePanelNote } from "@/components/strategy/StrategySourcePanelNote";
-import { StrategyTheoryNotes } from "@/components/strategy/StrategyTheoryNotes";
 import { buildActionMap } from "@/components/strategy/utils";
 import { getChartViewerDensity } from "@/lib/chartLayout";
 import {
@@ -551,13 +550,6 @@ export default function StrategyLibrary() {
                     </div>
                   </div>
                 </div>
-
-                <StrategyTheoryNotes
-                  spotGroup={chart.spotGroup}
-                  stackDepth={chart.stackDepth}
-                  heroPosition={chart.heroPosition}
-                  villainPosition={chart.villainPosition}
-                />
 
                 {relatedDrillPacks.length > 0 && (
                   <section className="rounded-[1rem] border border-border bg-secondary p-3 sm:p-4">
