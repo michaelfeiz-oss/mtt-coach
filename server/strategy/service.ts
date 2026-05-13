@@ -98,6 +98,8 @@ export interface TrainerAttemptResult {
 }
 
 const HAND_ORDER = new Map(ALL_HANDS.map((hand, index) => [hand, index]));
+const VALID_HAND_CODES = new Set(ALL_HANDS);
+const VALID_PRIMARY_ACTIONS = new Set<Action>(ACTIONS);
 const TRAINER_ACTION_ORDER: Action[] = [
   "RAISE",
   "CALL",
@@ -567,6 +569,64 @@ export function buildTrainerAttemptInsert(
   };
 }
 
+interface CompleteChartActionsLike {
+  title: string;
+  actions: Array<{
+    handCode: string;
+    primaryAction: Action;
+  }>;
+}
+
+export function assertCompleteChartActions(chart: CompleteChartActionsLike) {
+  const seen = new Set<string>();
+
+  for (const action of chart.actions) {
+    if (seen.has(action.handCode)) {
+      throw new Error(`${chart.title}: duplicate hand ${action.handCode}`);
+    }
+
+    seen.add(action.handCode);
+
+    if (!VALID_HAND_CODES.has(action.handCode)) {
+      throw new Error(`${chart.title}: invalid hand ${action.handCode}`);
+    }
+
+    if (!VALID_PRIMARY_ACTIONS.has(action.primaryAction)) {
+      throw new Error(`${chart.title}: invalid action ${action.primaryAction}`);
+    }
+  }
+
+  const missing = ALL_HANDS.filter(hand => !seen.has(hand));
+
+  if (missing.length > 0) {
+    throw new Error(
+      `${chart.title}: missing ${missing.length} hands: ${missing.join(", ")}`
+    );
+  }
+}
+
+function handleTrainerIntegrityFailure(context: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (process.env.NODE_ENV !== "production") {
+    throw error instanceof Error ? error : new Error(message);
+  }
+
+  console.warn(`[Strategy trainer integrity] ${context}: ${message}`);
+}
+
+function isCompleteTrainerChart(
+  chart: CompleteChartActionsLike,
+  context: string
+): boolean {
+  try {
+    assertCompleteChartActions(chart);
+    return true;
+  } catch (error) {
+    handleTrainerIntegrityFailure(context, error);
+    return false;
+  }
+}
+
 function toJsonObject(value: unknown): JsonObject | null {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as JsonObject;
@@ -876,8 +936,13 @@ export async function getChartWithActions(
     .select()
     .from(rangeChartActions)
     .where(eq(rangeChartActions.chartId, chartId));
+  const chartWithActions = mapChartWithActions(chart, actions);
 
-  return mapChartWithActions(chart, actions);
+  if (isTrainerAllowedChart(chart)) {
+    assertCompleteChartActions(chartWithActions);
+  }
+
+  return chartWithActions;
 }
 
 export async function getChartBySpotSelector(
@@ -917,8 +982,35 @@ export async function listAvailableSpots(filters: ListSpotsFilters = {}) {
 }
 
 export async function listTrainerAvailableSpots(filters: ListSpotsFilters = {}) {
-  const spots = await listAvailableSpots(filters);
-  return spots.filter(isTrainerAllowedChart);
+  const db = await requireDb();
+  const spots = (await listAvailableSpots(filters)).filter(isTrainerAllowedChart);
+
+  if (spots.length === 0) return spots;
+
+  const actionRows = await db
+    .select()
+    .from(rangeChartActions)
+    .where(inArray(rangeChartActions.chartId, spots.map(spot => spot.id)));
+
+  const actionsByChartId = new Map<number, RangeChartAction[]>();
+  for (const action of actionRows) {
+    const bucket = actionsByChartId.get(action.chartId) ?? [];
+    bucket.push(action);
+    actionsByChartId.set(action.chartId, bucket);
+  }
+
+  return spots.filter(spot =>
+    isCompleteTrainerChart(
+      {
+        title: spot.title,
+        actions: (actionsByChartId.get(spot.id) ?? []).map(action => ({
+          handCode: action.handCode,
+          primaryAction: action.primaryAction,
+        })),
+      },
+      `${spot.title} trainer list`
+    )
+  );
 }
 
 export async function createChart(data: InsertRangeChart): Promise<number> {
@@ -977,12 +1069,36 @@ export async function getTrainerSpot(
 
   if (trainableRows.length === 0) return null;
 
-  const selectedChart = pickChartForTrainer(trainableRows, filters);
+  const rowsByChartId = new Map<number, TrainerSelectionRow[]>();
+  for (const row of trainableRows) {
+    const bucket = rowsByChartId.get(row.chart.id) ?? [];
+    bucket.push(row);
+    rowsByChartId.set(row.chart.id, bucket);
+  }
+
+  const integritySafeRows = Array.from(rowsByChartId.values())
+    .filter(chartRows =>
+      isCompleteTrainerChart(
+        {
+          title: chartRows[0].chart.title,
+          actions: chartRows.map(({ action }) => ({
+            handCode: action.handCode,
+            primaryAction: action.primaryAction,
+          })),
+        },
+        `${chartRows[0].chart.title} trainer selection`
+      )
+    )
+    .flat();
+
+  if (integritySafeRows.length === 0) return null;
+
+  const selectedChart = pickChartForTrainer(integritySafeRows, filters);
   if (!selectedChart) return null;
 
   const selectedAction = pickHandForTrainer(
     selectedChart,
-    trainableRows,
+    integritySafeRows,
     filters
   );
   if (!selectedAction) return null;
@@ -1032,6 +1148,26 @@ export async function submitTrainerAttempt(
 
   if (!row) return null;
   if (!isTrainerAllowedChart(row.chart)) return null;
+
+  const chartActions = await db
+    .select({
+      handCode: rangeChartActions.handCode,
+      primaryAction: rangeChartActions.primaryAction,
+    })
+    .from(rangeChartActions)
+    .where(eq(rangeChartActions.chartId, row.chart.id));
+
+  if (
+    !isCompleteTrainerChart(
+      {
+        title: row.chart.title,
+        actions: chartActions,
+      },
+      `${row.chart.title} trainer submit`
+    )
+  ) {
+    return null;
+  }
 
   const correctAction = row.action.primaryAction;
   const isCorrect = input.selectedAction === correctAction;

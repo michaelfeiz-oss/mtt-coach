@@ -135,12 +135,14 @@ export function StrategyTheoryNotes({
               </div>
             )}
 
-            {trust.sourcePanelLabel && (
+            {(trust.sourcePanelLabel || trust.provenanceLabel) && (
               <StrategySourcePanelNote
                 sourcePanelLabel={trust.sourcePanelLabel}
                 sourcePanelGroup={trust.sourcePanelGroup}
                 sourceCoverageNote={trust.sourceCoverageNote}
                 groupedSourcePanel={trust.groupedSourcePanel}
+                provenanceLabel={trust.provenanceLabel}
+                provenanceNote={trust.provenanceNote}
               />
             )}
 

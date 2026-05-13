@@ -55,6 +55,8 @@ describe("strategy chart presentation", () => {
     expect(presentation.sourceCoverageNote).toContain("CO vs MP");
     expect(presentation.sourceCoverageNote).toContain("LJ/HJ");
     expect(presentation.trainerAllowed).toBe(true);
+    expect(presentation.provenanceLabel).toBe("Automated integrity pass");
+    expect(presentation.provenanceNote).toContain("pending owner review");
   });
 
   it("keeps grouped source metadata on actual seeded charts used by the viewer runtime", () => {
@@ -72,6 +74,7 @@ describe("strategy chart presentation", () => {
     expect(presentation.sourcePanelLabel).toBe("UTG+1/+2 vs UTG RFI");
     expect(presentation.sourceCoverageNote).toContain("UTG+1 vs UTG");
     expect(presentation.groupedSourcePanel).toBe(true);
+    expect(presentation.provenanceLabel).toBe("Automated integrity pass");
   });
 
   it("formats blind-versus-blind limp nodes explicitly", () => {

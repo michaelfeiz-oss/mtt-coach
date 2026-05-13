@@ -7,7 +7,14 @@ ALTER TABLE `rangeCharts`
     'simplified_population',
     'unsupported'
   ) DEFAULT NULL AFTER `sourceLabel`,
-  ADD COLUMN `sourceFile` varchar(255) DEFAULT NULL AFTER `sourceStatus`,
+  ADD COLUMN `cellMapSource` enum(
+    'reviewed',
+    'imported_unreviewed',
+    'generated',
+    'manual',
+    'missing'
+  ) DEFAULT NULL AFTER `sourceStatus`,
+  ADD COLUMN `sourceFile` varchar(255) DEFAULT NULL AFTER `cellMapSource`,
   ADD COLUMN `sourcePanelLabel` varchar(255) DEFAULT NULL AFTER `sourceFile`,
   ADD COLUMN `dataVersion` varchar(64) DEFAULT NULL AFTER `sourcePanelLabel`,
   ADD COLUMN `reviewedBy` varchar(255) DEFAULT NULL AFTER `dataVersion`,

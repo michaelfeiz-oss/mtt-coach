@@ -32,6 +32,8 @@ export interface StrategyChartPresentation {
   appDisplayLabel: string;
   sourceCoverageNote: string | null;
   groupedSourcePanel: boolean;
+  provenanceLabel: string | null;
+  provenanceNote: string | null;
   sharedFamilyLabel: string | null;
   trainerAllowed: boolean;
   manuallyApprovedForTraining: boolean;
@@ -121,6 +123,8 @@ export function buildStrategyChartPresentation(
     appDisplayLabel: trust.appDisplayLabel,
     sourceCoverageNote: trust.sourceCoverageNote,
     groupedSourcePanel: trust.groupedSourcePanel,
+    provenanceLabel: trust.provenanceLabel,
+    provenanceNote: trust.provenanceNote,
     sharedFamilyLabel: getSharedFamilySourceLabel(chart),
     trainerAllowed: trust.trainerAllowed,
     manuallyApprovedForTraining: trust.manuallyApprovedForTraining,

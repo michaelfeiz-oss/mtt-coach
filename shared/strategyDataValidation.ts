@@ -4,6 +4,7 @@ import {
   REVIEWED_STRATEGY_CHARTS,
   REVIEWED_STRATEGY_DATA_VERSION,
   type ReviewedStrategyChart,
+  type ReviewedStrategyReviewStatus,
 } from "./strategy-data/reviewed";
 
 const VALID_HANDS = new Set(ALL_HANDS);
@@ -11,6 +12,11 @@ const VALID_ACTIONS = new Set<Action>(ACTIONS);
 const VALID_STACKS = new Set<number>(STACK_DEPTHS);
 const VALID_SPOT_GROUPS = new Set<string>(SPOT_GROUPS);
 const VALID_POSITIONS = new Set<string>(POSITIONS);
+const VALID_REVIEW_STATUSES = new Set<ReviewedStrategyReviewStatus>([
+  "candidate",
+  "automated_integrity_pass",
+  "owner_reviewed",
+]);
 
 function isIsoDateLike(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
@@ -41,24 +47,31 @@ export function validateReviewedStrategyChart(chart: ReviewedStrategyChart) {
     throw new Error(`Reviewed chart ${chartLabel} is missing dataVersion.`);
   }
 
-  if (chart.sourceFile.trim().length === 0) {
+  if (chart.source.sourceFile.trim().length === 0) {
     throw new Error(`Reviewed chart ${chartLabel} is missing sourceFile.`);
   }
 
-  if (chart.sourcePanelLabel.trim().length === 0) {
+  if (chart.source.sourcePanelLabel.trim().length === 0) {
     throw new Error(`Reviewed chart ${chartLabel} is missing sourcePanelLabel.`);
   }
 
-  if (chart.review.status !== "reviewed") {
-    throw new Error(`Reviewed chart ${chartLabel} has invalid review status ${chart.review.status}.`);
+  if (!VALID_REVIEW_STATUSES.has(chart.review.status)) {
+    throw new Error(
+      `Reviewed chart ${chartLabel} has invalid review status ${chart.review.status}.`
+    );
   }
 
-  if (chart.reviewedBy.trim().length === 0) {
+  if (chart.review.reviewedBy.trim().length === 0) {
     throw new Error(`Reviewed chart ${chartLabel} is missing reviewedBy.`);
   }
 
-  if (chart.reviewedAt.trim().length === 0 || !isIsoDateLike(chart.reviewedAt)) {
-    throw new Error(`Reviewed chart ${chartLabel} has invalid reviewedAt ${chart.reviewedAt}.`);
+  if (
+    chart.review.reviewedAt.trim().length === 0 ||
+    !isIsoDateLike(chart.review.reviewedAt)
+  ) {
+    throw new Error(
+      `Reviewed chart ${chartLabel} has invalid reviewedAt ${chart.review.reviewedAt}.`
+    );
   }
 
   const actionEntries = Object.entries(chart.actions);
@@ -113,6 +126,16 @@ export function validateReviewedStrategyCharts(
     charts: charts.length,
     dataVersion: REVIEWED_STRATEGY_DATA_VERSION,
   };
+}
+
+export function reviewedActionsToSeedActions(chart: ReviewedStrategyChart) {
+  validateReviewedStrategyChart(chart);
+
+  return ALL_HANDS.map(handCode => ({
+    handCode,
+    primaryAction: chart.actions[handCode],
+    weightPercent: 100,
+  }));
 }
 
 if (

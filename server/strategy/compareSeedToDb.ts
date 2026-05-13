@@ -13,9 +13,23 @@ function parseArgs(argv: string[]): CompareOptions {
     failOnMismatch: false,
   };
 
-  for (const arg of argv) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
     if (arg === "--fail-on-mismatch") {
       options.failOnMismatch = true;
+      continue;
+    }
+
+    if (arg === "--hand") {
+      const next = argv[index + 1];
+      if (next) {
+        options.handCodes = next
+          .split(",")
+          .map(value => value.trim())
+          .filter(Boolean);
+        index += 1;
+      }
       continue;
     }
 

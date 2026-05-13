@@ -7,6 +7,8 @@ interface StrategySourcePanelNoteProps {
   sourcePanelGroup?: string | null;
   sourceCoverageNote?: string | null;
   groupedSourcePanel?: boolean;
+  provenanceLabel?: string | null;
+  provenanceNote?: string | null;
   className?: string;
   compact?: boolean;
 }
@@ -16,15 +18,16 @@ export function StrategySourcePanelNote({
   sourcePanelGroup,
   sourceCoverageNote,
   groupedSourcePanel = false,
+  provenanceLabel,
+  provenanceNote,
   className,
   compact = false,
 }: StrategySourcePanelNoteProps) {
-  if (!sourcePanelLabel) return null;
+  if (!sourcePanelLabel && !provenanceLabel) return null;
 
   const toneLabel = groupedSourcePanel
     ? "Source-backed grouped panel"
     : "Source panel mapping";
-  const prefix = `Source panel: ${sourcePanelLabel}`;
 
   return (
     <div
@@ -34,18 +37,35 @@ export function StrategySourcePanelNote({
       )}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <Badge
-          variant="outline"
-          className="rounded-full border-[var(--border-strong)] bg-background text-[10.5px] font-semibold text-secondary-foreground"
-        >
-          {toneLabel}
-        </Badge>
-        <p className="text-[11px] font-medium text-secondary-foreground">
-          {prefix}
-        </p>
+        {provenanceLabel && (
+          <Badge className="rounded-full border-amber-200 bg-[#FFF7E6] text-[10.5px] font-semibold text-[#9A4D12]">
+            {provenanceLabel}
+          </Badge>
+        )}
+        {sourcePanelLabel && (
+          <>
+            <Badge
+              variant="outline"
+              className="rounded-full border-[var(--border-strong)] bg-background text-[10.5px] font-semibold text-secondary-foreground"
+            >
+              {toneLabel}
+            </Badge>
+            <p className="text-[11px] font-medium text-secondary-foreground">
+              {`Source panel: ${sourcePanelLabel}`}
+            </p>
+          </>
+        )}
       </div>
-      {(!compact || groupedSourcePanel || sourceCoverageNote) && (
+      {(!compact ||
+        groupedSourcePanel ||
+        sourceCoverageNote ||
+        provenanceNote) && (
         <div className="mt-1.5 space-y-1">
+          {provenanceNote && (
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              {provenanceNote}
+            </p>
+          )}
           {groupedSourcePanel && sourcePanelGroup && (
             <p className="text-[11px] font-medium text-secondary-foreground">
               Grouped source panel: {sourcePanelGroup}

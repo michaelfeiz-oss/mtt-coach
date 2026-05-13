@@ -22,15 +22,19 @@ import {
   getReviewedStrategyChart,
   type ReviewedStrategyChart,
 } from "../../shared/strategy-data/reviewed";
-import { validateReviewedStrategyCharts } from "../../shared/strategyDataValidation";
 import {
+  reviewedActionsToSeedActions,
+  validateReviewedStrategyCharts,
+} from "../../shared/strategyDataValidation";
+import {
+  getStrategyChartTrustMetadata,
   getSimplifiedVsThreeBetFamily,
   getStrategySourceLabel,
   getStrategySourceStatus,
   isSourceSupportedStrategyChart,
 } from "../../shared/sourceTruth";
 import { formatStrategyChartTitle } from "../../shared/strategyPresentation";
-import { getSourceChart } from "./sourceChartData";
+import { getSourceChart } from "./sourceChartData.generated";
 
 export interface SeedHandAction {
   handCode: string;
@@ -50,6 +54,7 @@ export interface SeedChart {
   villainPosition?: string;
   sourceLabel?: string;
   sourceStatus?: ReturnType<typeof getStrategySourceStatus>;
+  cellMapSource?: ReturnType<typeof getStrategyChartTrustMetadata>["cellMapSource"];
   sourceFile?: string | null;
   sourcePanelLabel?: string | null;
   dataVersion?: string | null;
@@ -876,6 +881,13 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
   // Fall back to imported candidate data for study-only charts that are not
   // yet part of the reviewed trainer-safe catalog.
   const sourceChart = getSourceChart(stackDepth, definition.key);
+  const trust = getStrategyChartTrustMetadata({
+    stackDepth,
+    spotGroup: definition.group,
+    heroPosition: definition.heroPosition,
+    villainPosition: definition.villainPosition,
+    spotKey: definition.key,
+  });
   if (sourceChart) {
     return {
       title: formatStrategyChartTitle({
@@ -898,13 +910,10 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
           villainPosition: definition.villainPosition,
           spotKey: definition.key,
         }) ?? sourceChart.sourceLabel,
-      sourceStatus: getStrategySourceStatus({
-        stackDepth,
-        spotGroup: definition.group,
-        heroPosition: definition.heroPosition,
-        villainPosition: definition.villainPosition,
-        spotKey: definition.key,
-      }),
+      sourceStatus: trust.sourceStatus,
+      cellMapSource: trust.cellMapSource,
+      sourceFile: trust.sourceFile,
+      sourcePanelLabel: trust.sourcePanelLabel,
       notes: chartNotes(definition, stackDepth),
       actions: sourceChart.actions.map(a => ({
         handCode: a.handCode,
@@ -926,7 +935,7 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
     spotKey: definition.key,
       heroPosition: definition.heroPosition,
       villainPosition: definition.villainPosition,
-      sourceLabel:
+    sourceLabel:
       getStrategySourceLabel({
         stackDepth,
         spotGroup: definition.group,
@@ -934,13 +943,10 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
           villainPosition: definition.villainPosition,
           spotKey: definition.key,
         }) ?? "MTT Coach structured baseline",
-    sourceStatus: getStrategySourceStatus({
-      stackDepth,
-      spotGroup: definition.group,
-      heroPosition: definition.heroPosition,
-      villainPosition: definition.villainPosition,
-      spotKey: definition.key,
-    }),
+    sourceStatus: trust.sourceStatus,
+    cellMapSource: trust.cellMapSource,
+    sourceFile: trust.sourceFile,
+    sourcePanelLabel: trust.sourcePanelLabel,
     notes: chartNotes(definition, stackDepth),
     actions: buildChartActions(definition, stackDepth),
   };
@@ -956,11 +962,12 @@ function buildReviewedSeedChart(reviewedChart: ReviewedStrategyChart): SeedChart
     villainPosition: reviewedChart.villainPosition ?? undefined,
     sourceLabel: "Source-backed",
     sourceStatus: "source_backed",
-    sourceFile: reviewedChart.sourceFile,
-    sourcePanelLabel: reviewedChart.sourcePanelLabel,
+    cellMapSource: "reviewed",
+    sourceFile: reviewedChart.source.sourceFile,
+    sourcePanelLabel: reviewedChart.source.sourcePanelLabel,
     dataVersion: reviewedChart.dataVersion,
-    reviewedBy: reviewedChart.reviewedBy,
-    reviewedAt: reviewedChart.reviewedAt,
+    reviewedBy: reviewedChart.review.reviewedBy,
+    reviewedAt: reviewedChart.review.reviewedAt,
     notes: chartNotes(
       {
         key: reviewedChart.spotKey,
@@ -971,11 +978,7 @@ function buildReviewedSeedChart(reviewedChart: ReviewedStrategyChart): SeedChart
       },
       reviewedChart.stackDepth
     ),
-    actions: ALL_HANDS.map(handCode => ({
-      handCode,
-      primaryAction: reviewedChart.actions[handCode],
-      weightPercent: 100,
-    })),
+    actions: reviewedActionsToSeedActions(reviewedChart),
   };
 }
 

@@ -21,9 +21,13 @@ describe("grouped source panel note UI", () => {
         sourcePanelGroup: trust.sourcePanelGroup,
         sourceCoverageNote: trust.sourceCoverageNote,
         groupedSourcePanel: trust.groupedSourcePanel,
+        provenanceLabel: trust.provenanceLabel,
+        provenanceNote: trust.provenanceNote,
       })
     );
 
+    expect(markup).toContain("Automated integrity pass");
+    expect(markup).toContain("pending owner review");
     expect(markup).toContain("Source-backed grouped panel");
     expect(markup).toContain("Source panel: UTG+1/+2 vs UTG RFI");
     expect(markup).toContain("Grouped source panel: UTG+1/+2");

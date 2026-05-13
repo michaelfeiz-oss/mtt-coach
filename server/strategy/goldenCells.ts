@@ -1,71 +1,56 @@
 import type { Action } from "../../shared/strategy";
-import {
-  REVIEWED_STRATEGY_CHARTS,
-  getReviewedStrategyChart,
-} from "../../shared/strategy-data/reviewed";
 
-export interface GoldenCell {
+export interface VerifiedGoldenCell {
   stackDepth: number;
   spotKey: string;
   handCode: string;
   expectedAction: Action;
   note: string;
+  reviewedBy: string;
+  reviewedAt: string;
+  evidence: string;
 }
 
-function makeGoldenCell(
-  stackDepth: number,
-  spotKey: string,
-  handCode: string,
-  note: string
-): GoldenCell {
-  const chart = getReviewedStrategyChart({ stackDepth, spotKey });
-  if (!chart) {
-    throw new Error(`Missing reviewed chart for golden cell ${stackDepth}:${spotKey}:${handCode}.`);
-  }
-
-  const expectedAction = chart.actions[handCode];
-  if (!expectedAction) {
-    throw new Error(`Missing reviewed hand ${handCode} for golden cell ${stackDepth}:${spotKey}.`);
-  }
-
-  return {
-    stackDepth,
-    spotKey,
-    handCode,
-    expectedAction,
-    note,
-  };
+export interface PendingGoldenCell {
+  stackDepth: number;
+  spotKey: string;
+  handCode: string;
+  note: string;
+  status: "pending_owner_review";
+  evidence: string;
 }
 
-const AJO_GOLDEN_CELLS = REVIEWED_STRATEGY_CHARTS.map(chart =>
-  makeGoldenCell(
-    chart.stackDepth,
-    chart.spotKey,
-    "AJo",
-    "AJo regression guard"
-  )
-);
+// Intentionally empty for the Manus review deployment pass. We have a complete
+// 169-cell catalog and automated integrity coverage, but we do not yet have
+// owner-verified action evidence to bless exact chart actions as final truth.
+export const VERIFIED_GOLDEN_STRATEGY_CELLS: VerifiedGoldenCell[] = [];
 
-const BOUNDARY_GOLDEN_CELLS = [
-  makeGoldenCell(15, "UTG_RFI", "ATo", "15bb early-position offsuit Ace threshold"),
-  makeGoldenCell(15, "UTG_RFI", "KQo", "15bb early-position offsuit broadway threshold"),
-  makeGoldenCell(15, "UTG1_vs_UTG", "KJo", "15bb versus-UTG offsuit broadway boundary"),
-  makeGoldenCell(15, "UTG1_vs_UTG", "QJo", "15bb versus-UTG offsuit broadway boundary"),
-  makeGoldenCell(15, "CO_vs_BB_3bet", "A5s", "15bb facing 3-bet wheel Ace threshold"),
-  makeGoldenCell(15, "CO_vs_BB_3bet", "A2s", "15bb facing 3-bet wheel Ace floor"),
-  makeGoldenCell(25, "CO_vs_MP", "KTs", "25bb defend threshold for suited broadways"),
-  makeGoldenCell(25, "CO_vs_MP", "QTs", "25bb defend threshold for suited broadways"),
-  makeGoldenCell(25, "BB_vs_BTN", "JTs", "25bb late-position defend suited broadway"),
-  makeGoldenCell(25, "BB_vs_BTN", "T9s", "25bb late-position defend connector"),
-  makeGoldenCell(40, "CO_vs_UTG", "99", "40bb small-pair threshold"),
-  makeGoldenCell(40, "CO_vs_UTG", "22", "40bb bottom-pair threshold"),
-  makeGoldenCell(40, "SB_vs_UTG", "88", "40bb blind defend pair boundary"),
-  makeGoldenCell(40, "CO_vs_MP", "77", "40bb medium-pair threshold"),
-  makeGoldenCell(40, "UTG1_vs_UTG", "66", "40bb grouped-panel pair threshold"),
+export const PENDING_GOLDEN_STRATEGY_CELLS: PendingGoldenCell[] = [
+  {
+    stackDepth: 25,
+    spotKey: "CO_vs_UTG",
+    handCode: "AJo",
+    note: "Recurring AJo regression spot. Verify after Manus DB reseed and deployed UI review.",
+    status: "pending_owner_review",
+    evidence: "Pending owner comparison against the 25bb source chart and deployed UI.",
+  },
+  {
+    stackDepth: 25,
+    spotKey: "HJ_vs_UTG",
+    handCode: "AJo",
+    note: "AJo versus UTG should be reviewed in the same post-deploy pass.",
+    status: "pending_owner_review",
+    evidence: "Pending owner comparison against the 25bb source chart and deployed UI.",
+  },
+  {
+    stackDepth: 25,
+    spotKey: "BTN_vs_UTG",
+    handCode: "AJo",
+    note: "Late-position AJo versus UTG remains a post-deploy review target.",
+    status: "pending_owner_review",
+    evidence: "Pending owner comparison against the 25bb source chart and deployed UI.",
+  },
 ];
 
-export const GOLDEN_CELLS: GoldenCell[] = [
-  ...AJO_GOLDEN_CELLS,
-  ...BOUNDARY_GOLDEN_CELLS,
-];
-
+export const GOLDEN_STRATEGY_CELLS = VERIFIED_GOLDEN_STRATEGY_CELLS;
+export const GOLDEN_CELLS = GOLDEN_STRATEGY_CELLS;

@@ -106,7 +106,7 @@ describe("source-of-truth chart coverage", () => {
     ).toBe(false);
   });
 
-  it("exposes grouped source panel metadata for source-backed charts without changing trainer safety", () => {
+  it("exposes grouped source panel metadata for source-backed review-deployment charts", () => {
     const trust = getStrategyChartTrustMetadata({
       stackDepth: 40,
       spotGroup: "VS_UTG_RFI",
@@ -118,9 +118,18 @@ describe("source-of-truth chart coverage", () => {
     expect(trust.sourceStatus).toBe("source_backed");
     expect(trust.trainerAllowed).toBe(true);
     expect(trust.hasReviewedData).toBe(true);
+    expect(trust.reviewStatus).toBe("automated_integrity_pass");
     expect(trust.dataVersion).toBeTruthy();
     expect(trust.reviewedBy).toBeTruthy();
     expect(trust.reviewedAt).toBeTruthy();
+    expect(trust.has169Cells).toBe(true);
+    expect(trust.structurallyComplete).toBe(true);
+    expect(trust.automatedIntegrityPassed).toBe(true);
+    expect(trust.ownerReviewed).toBe(false);
+    expect(trust.trainerEligibleForReviewDeployment).toBe(true);
+    expect(trust.trainerEligibleForFinalProduction).toBe(false);
+    expect(trust.provenanceLabel).toBe("Automated integrity pass");
+    expect(trust.provenanceNote).toContain("pending owner review");
     expect(trust.sourcePanelLabel).toBe("LJ/HJ vs UTG RFI");
     expect(trust.sourcePanelGroup).toBe("LJ/HJ");
     expect(trust.groupedSourcePanel).toBe(true);
@@ -139,6 +148,7 @@ describe("source-of-truth chart coverage", () => {
     expect(trust.trainerAllowed).toBe(true);
     expect(trust.sourcePanelLabel).toBe("Lojack RFI");
     expect(trust.groupedSourcePanel).toBe(false);
+    expect(trust.provenanceLabel).toBe("Automated integrity pass");
     expect(trust.sourceCoverageNote).toContain("HJ RFI");
     expect(trust.sourceCoverageNote).toContain("Lojack RFI");
   });
