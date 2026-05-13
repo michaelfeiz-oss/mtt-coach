@@ -232,7 +232,8 @@ export function TrainerResultReveal({
               </div>
             </div>
 
-            {sourcePanelTrust.sourcePanelLabel && (
+            {(sourcePanelTrust.sourcePanelLabel ||
+              sourcePanelTrust.provenanceLabel) && (
                 <details className="rounded-xl border border-border/80 bg-card px-3 py-2.5">
                   <summary className="cursor-pointer list-none text-xs font-semibold text-secondary-foreground">
                     Source detail
@@ -243,6 +244,8 @@ export function TrainerResultReveal({
                     sourcePanelGroup={sourcePanelTrust.sourcePanelGroup}
                     sourceCoverageNote={sourcePanelTrust.sourceCoverageNote}
                     groupedSourcePanel={sourcePanelTrust.groupedSourcePanel}
+                    provenanceLabel={sourcePanelTrust.provenanceLabel}
+                    provenanceNote={sourcePanelTrust.provenanceNote}
                   />
                 </details>
               )}

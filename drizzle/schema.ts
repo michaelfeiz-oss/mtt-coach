@@ -316,6 +316,13 @@ export const rangeCharts = mysqlTable("rangeCharts", {
     "simplified_population",
     "unsupported",
   ]),
+  cellMapSource: mysqlEnum("cellMapSource", [
+    "reviewed",
+    "imported_unreviewed",
+    "generated",
+    "manual",
+    "missing",
+  ]),
   sourceFile: varchar("sourceFile", { length: 255 }),
   sourcePanelLabel: varchar("sourcePanelLabel", { length: 255 }),
   dataVersion: varchar("dataVersion", { length: 64 }),

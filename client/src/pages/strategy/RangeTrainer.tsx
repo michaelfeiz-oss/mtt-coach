@@ -706,6 +706,12 @@ export default function RangeTrainer() {
                     {activeSpotPresentation.sourceHelper}
                   </p>
                   )}
+                {activeSpotPresentation?.sourceStatus === "source_backed" &&
+                  activeSpotPresentation.provenanceNote && (
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      {activeSpotPresentation.provenanceNote}
+                    </p>
+                  )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <Badge className="rounded-full bg-primary text-primary-foreground">
@@ -735,6 +741,11 @@ export default function RangeTrainer() {
                     }
                   >
                     {activeSpotPresentation.sourceBadge}
+                  </Badge>
+                )}
+                {activeSpotPresentation?.provenanceLabel && (
+                  <Badge className="rounded-full border-amber-200 bg-[#FFF7E6] text-[#9A4D12]">
+                    {activeSpotPresentation.provenanceLabel}
                   </Badge>
                 )}
                 {activeSpotPresentation && (

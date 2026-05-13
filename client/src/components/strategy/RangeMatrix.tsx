@@ -1,6 +1,6 @@
 import React from "react";
 import { generateHandGrid } from "../../../../shared/strategy";
-import type { Action, HandAction } from "../../../../shared/strategy";
+import type { HandAction } from "../../../../shared/strategy";
 import { cn } from "@/lib/utils";
 import { ACTION_CELL_STYLES, MISSING_ACTION_CELL_STYLE } from "./actionStyles";
 
@@ -54,6 +54,28 @@ export function getActionForHand(
   return actions[handCode];
 }
 
+export type MatrixCellState =
+  | { kind: "action"; action: HandAction }
+  | { kind: "missing"; handCode: string };
+
+export function getMatrixCellState(
+  actions: Record<string, HandAction>,
+  handCode: string
+): MatrixCellState {
+  const action = getActionForHand(actions, handCode);
+
+  return action
+    ? { kind: "action", action }
+    : { kind: "missing", handCode };
+}
+
+function getMissingHandCodes(
+  actions: Record<string, HandAction>,
+  grid: string[][]
+) {
+  return grid.flat().filter(handCode => actions[handCode] === undefined);
+}
+
 export function getMatrixCellDisplay(
   action: HandAction | undefined,
   strictComplete = false
@@ -61,7 +83,7 @@ export function getMatrixCellDisplay(
   if (!action) {
     return {
       primaryAction: null,
-      label: strictComplete ? "Missing data (strict)" : "Missing data",
+      label: "Missing",
       style: MISSING_ACTION_CELL_STYLE,
       isMissing: true,
       frequency: null,
@@ -110,6 +132,23 @@ export function RangeMatrix({
     onSelectHand?.(handCode);
   }
 
+  const missingHandCodes = React.useMemo(
+    () => getMissingHandCodes(actionLookup, grid),
+    [actionLookup, grid]
+  );
+  const isProductionEnv =
+    import.meta.env.PROD || process.env.NODE_ENV === "production";
+  const shouldThrowForMissing =
+    strictComplete &&
+    missingHandCodes.length > 0 &&
+    !isProductionEnv;
+
+  if (shouldThrowForMissing) {
+    throw new Error(
+      `Missing reviewed strategy cell data: ${missingHandCodes.join(", ")}`
+    );
+  }
+
   return (
     <div className={cn("w-full", className)}>
       <div
@@ -130,7 +169,9 @@ export function RangeMatrix({
         aria-label="Preflop range matrix"
       >
         {grid.flat().map(handCode => {
-          const action = getActionForHand(actionLookup, handCode);
+          const cellState = getMatrixCellState(actionLookup, handCode);
+          const action =
+            cellState.kind === "action" ? cellState.action : undefined;
           const cellDisplay = getMatrixCellDisplay(action, strictComplete);
           const style = cellDisplay.style;
           const isHighlighted = handCode === selectedHand;
@@ -141,13 +182,16 @@ export function RangeMatrix({
               ? `${handCode}: Missing action data (reviewed/source-backed chart should be complete)`
               : `${handCode}: Missing action data`
             : `${handCode}: ${label}${frequency ? ` (${frequency}%)` : ""}`;
+          const ariaLabel = cellDisplay.isMissing
+            ? `${handCode} missing action`
+            : `${handCode} ${label}`;
 
           return (
             <button
               key={handCode}
               type="button"
               role="gridcell"
-              aria-label={`${handCode} ${label}`}
+              aria-label={ariaLabel}
               data-missing={cellDisplay.isMissing ? "true" : "false"}
               aria-selected={isHighlighted}
               tabIndex={isInteractive ? 0 : -1}

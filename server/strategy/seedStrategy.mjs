@@ -47,6 +47,7 @@ async function main() {
       villainPosition: chart.villainPosition ?? null,
       sourceLabel: chart.sourceLabel ?? null,
       sourceStatus: chart.sourceStatus ?? null,
+      cellMapSource: chart.cellMapSource ?? null,
       sourceFile: chart.sourceFile ?? null,
       sourcePanelLabel: chart.sourcePanelLabel ?? null,
       dataVersion: chart.dataVersion ?? null,

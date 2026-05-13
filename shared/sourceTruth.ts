@@ -3,7 +3,11 @@ import {
   type Position,
   type SpotGroup,
 } from "./strategy";
-import { getReviewedStrategyChart } from "./strategy-data/reviewed";
+import {
+  getReviewedStrategyChart,
+  getReviewedStrategyChartGovernance,
+  type ReviewedStrategyReviewStatus,
+} from "./strategy-data/reviewed";
 
 export const SOURCE_BACKED_MAIN_STACKS = [15, 25, 40] as const;
 export type SourceBackedMainStack = (typeof SOURCE_BACKED_MAIN_STACKS)[number];
@@ -27,7 +31,8 @@ export type StrategyNotesConfidence =
   | "needs_review";
 
 export type StrategyCellMapSource =
-  | "imported"
+  | "reviewed"
+  | "imported_unreviewed"
   | "generated"
   | "manual"
   | "missing";
@@ -84,10 +89,17 @@ export interface StrategyChartTrustMetadata {
   manuallyApprovedForTraining: boolean;
   approvalReason: string | null;
   hasReviewedData: boolean;
+  reviewStatus: ReviewedStrategyReviewStatus | null;
   dataVersion: string | null;
   reviewedBy: string | null;
   reviewedByHuman: boolean;
   reviewedAt: string | null;
+  has169Cells: boolean;
+  structurallyComplete: boolean;
+  automatedIntegrityPassed: boolean;
+  ownerReviewed: boolean;
+  trainerEligibleForReviewDeployment: boolean;
+  trainerEligibleForFinalProduction: boolean;
   notesConfidence: StrategyNotesConfidence;
   cellMapSource: StrategyCellMapSource;
   sourcePanelLabel: string | null;
@@ -95,6 +107,8 @@ export interface StrategyChartTrustMetadata {
   appDisplayLabel: string;
   sourceCoverageNote: string | null;
   groupedSourcePanel: boolean;
+  provenanceLabel: string | null;
+  provenanceNote: string | null;
 }
 
 const SOURCE_BACKED_3BET_HEROES = new Set<Position>([
@@ -227,6 +241,11 @@ interface StrategySourcePanelDescriptor {
   sourcePanelGroup: string | null;
   sourceCoverageNote: string | null;
   groupedSourcePanel: boolean;
+}
+
+interface StrategyReviewProvenanceDescriptor {
+  provenanceLabel: string | null;
+  provenanceNote: string | null;
 }
 
 function buildSourcePanelNote(
@@ -387,12 +406,67 @@ function getStrategySourcePanelDescriptor(
   }
 }
 
+function getStrategyReviewProvenanceDescriptor(
+  reviewStatus: ReviewedStrategyReviewStatus | null,
+  options: {
+    structurallyComplete: boolean;
+    automatedIntegrityPassed: boolean;
+    ownerReviewed: boolean;
+  }
+): StrategyReviewProvenanceDescriptor {
+  if (!reviewStatus) {
+    return {
+      provenanceLabel: null,
+      provenanceNote: null,
+    };
+  }
+
+  if (options.ownerReviewed) {
+    return {
+      provenanceLabel: "Owner-reviewed",
+      provenanceNote:
+        "Owner review is complete for this 169-cell chart.",
+    };
+  }
+
+  if (options.automatedIntegrityPassed) {
+    return {
+      provenanceLabel: "Automated integrity pass",
+      provenanceNote:
+        "Complete 169-cell chart - pending owner review.",
+    };
+  }
+
+  if (reviewStatus === "candidate") {
+    return {
+      provenanceLabel: "Pending owner review",
+      provenanceNote:
+        "Chart data exists, but the automated integrity pass is not complete yet.",
+    };
+  }
+
+  if (options.structurallyComplete) {
+    return {
+      provenanceLabel: "Review metadata pending",
+      provenanceNote:
+        "Chart structure is complete, but review provenance is not finalized yet.",
+    };
+  }
+
+  return {
+    provenanceLabel: "Incomplete chart data",
+    provenanceNote:
+      "This chart is missing required integrity metadata and should stay blocked from training.",
+  };
+}
+
 function defaultNotesConfidence(
-  sourceStatus: StrategySourceStatus
+  sourceStatus: StrategySourceStatus,
+  ownerReviewed: boolean
 ): StrategyNotesConfidence {
   switch (sourceStatus) {
     case "source_backed":
-      return "exact";
+      return ownerReviewed ? "exact" : "needs_review";
     case "imported_unreviewed":
       return "needs_review";
     case "generated_candidate":
@@ -412,13 +486,13 @@ function defaultCellMapSource(
 ): StrategyCellMapSource {
   switch (sourceStatus) {
     case "source_backed":
-      return "manual";
+      return "reviewed";
     case "imported_unreviewed":
-      return "imported";
+      return "imported_unreviewed";
     case "generated_candidate":
       return "generated";
     case "proxy":
-      return chart.spotGroup === "BVB" ? "imported" : "manual";
+      return "manual";
     case "simplified_population":
       return "generated";
     case "unsupported":
@@ -537,13 +611,44 @@ export function getStrategyChartTrustMetadata(
         spotKey: resolvedSpotKey,
       })
     : null;
-  const hasReviewedData =
-    reviewedChart !== null &&
-    reviewedChart.review.status === "reviewed" &&
-    reviewedChart.reviewedBy.trim().length > 0 &&
-    reviewedChart.reviewedAt.trim().length > 0 &&
-    reviewedChart.dataVersion.trim().length > 0;
-  const trainerAllowed = sourceStatus === "source_backed" && hasReviewedData;
+  const reviewedGovernance = reviewedChart
+    ? getReviewedStrategyChartGovernance(reviewedChart)
+    : {
+        has169Cells: false,
+        structurallyComplete: false,
+        automatedIntegrityPassed: false,
+        ownerReviewed: false,
+        trainerEligibleForReviewDeployment: false,
+        trainerEligibleForFinalProduction: false,
+      };
+  const hasReviewedData = reviewedChart !== null;
+  const reviewStatus = reviewedChart?.review.status ?? null;
+  const trainerEligibleForReviewDeployment =
+    sourceStatus === "source_backed" &&
+    reviewedGovernance.trainerEligibleForReviewDeployment;
+  const trainerEligibleForFinalProduction =
+    manualApproval !== null ||
+    (sourceStatus === "source_backed" &&
+      reviewedGovernance.trainerEligibleForFinalProduction);
+  const trainerAllowed =
+    manualApproval !== null || trainerEligibleForReviewDeployment;
+  const resolvedSourcePanelLabel =
+    reviewedChart?.source.sourcePanelLabel ?? sourcePanelDescriptor.sourcePanelLabel;
+  const resolvedSourcePanelGroup =
+    reviewedChart?.source.sourcePanelGroup ?? sourcePanelDescriptor.sourcePanelGroup;
+  const resolvedSourceCoverageNote =
+    reviewedChart?.source.sourceCoverageNote ?? sourcePanelDescriptor.sourceCoverageNote;
+  const resolvedAppDisplayLabel =
+    reviewedChart?.source.appDisplayLabel ?? buildAppDisplayLabel(chart);
+  const groupedSourcePanel =
+    reviewedChart?.source.sourcePanelGroup !== null &&
+    reviewedChart?.source.sourcePanelGroup !== undefined
+      ? true
+      : sourcePanelDescriptor.groupedSourcePanel;
+  const provenanceDescriptor = getStrategyReviewProvenanceDescriptor(
+    reviewStatus,
+    reviewedGovernance
+  );
 
   return {
     chartId: chart.id ?? null,
@@ -556,31 +661,44 @@ export function getStrategyChartTrustMetadata(
     anteType: "BBA",
     sourceStatus,
     sourceFile:
-      sourceStatus === "source_backed" ||
+      reviewedChart?.source.sourceFile ??
+      (sourceStatus === "source_backed" ||
       sourceStatus === "imported_unreviewed" ||
       sourceStatus === "proxy"
         ? defaultSourceFile(chart.stackDepth)
-        : null,
+        : null),
     sourceReference: defaultSourceReference(chart, sourceStatus),
     sourceChartName:
       sourceStatus === "unsupported"
         ? null
-        : sourcePanelDescriptor.sourcePanelLabel ?? defaultSourceChartName(chart),
+        : resolvedSourcePanelLabel ?? defaultSourceChartName(chart),
     trainerAllowed,
     manuallyApprovedForTraining: manualApproval !== null,
     approvalReason: manualApproval?.reason ?? null,
     hasReviewedData,
+    reviewStatus,
     dataVersion: reviewedChart?.dataVersion ?? null,
-    reviewedBy: reviewedChart?.reviewedBy ?? null,
-    reviewedByHuman: hasReviewedData,
-    reviewedAt: reviewedChart?.reviewedAt ?? null,
-    notesConfidence: defaultNotesConfidence(sourceStatus),
+    reviewedBy: reviewedChart?.review.reviewedBy ?? null,
+    reviewedByHuman: reviewedGovernance.ownerReviewed,
+    reviewedAt: reviewedChart?.review.reviewedAt ?? null,
+    has169Cells: reviewedGovernance.has169Cells,
+    structurallyComplete: reviewedGovernance.structurallyComplete,
+    automatedIntegrityPassed: reviewedGovernance.automatedIntegrityPassed,
+    ownerReviewed: reviewedGovernance.ownerReviewed,
+    trainerEligibleForReviewDeployment,
+    trainerEligibleForFinalProduction,
+    notesConfidence: defaultNotesConfidence(
+      sourceStatus,
+      reviewedGovernance.ownerReviewed
+    ),
     cellMapSource: defaultCellMapSource(chart, sourceStatus),
-    sourcePanelLabel: sourcePanelDescriptor.sourcePanelLabel,
-    sourcePanelGroup: sourcePanelDescriptor.sourcePanelGroup,
-    appDisplayLabel: buildAppDisplayLabel(chart),
-    sourceCoverageNote: sourcePanelDescriptor.sourceCoverageNote,
-    groupedSourcePanel: sourcePanelDescriptor.groupedSourcePanel,
+    sourcePanelLabel: resolvedSourcePanelLabel,
+    sourcePanelGroup: resolvedSourcePanelGroup,
+    appDisplayLabel: resolvedAppDisplayLabel,
+    sourceCoverageNote: resolvedSourceCoverageNote,
+    groupedSourcePanel,
+    provenanceLabel: provenanceDescriptor.provenanceLabel,
+    provenanceNote: provenanceDescriptor.provenanceNote,
   };
 }
 
@@ -618,9 +736,20 @@ export function getStrategySourceLabel(chart: StrategyChartLike): string | null 
 export function getStrategySourceHelperText(
   chart: StrategyChartLike
 ): string | null {
-  switch (getStrategySourceStatus(chart)) {
+  const sourceStatus = getStrategySourceStatus(chart);
+  const metadata = getStrategyChartTrustMetadata(chart);
+
+  switch (sourceStatus) {
     case "source_backed":
-      return "Exact source-backed chart from the reviewed tournament range set.";
+      if (metadata.ownerReviewed) {
+        return "Owner-reviewed source-backed chart from the tournament range set.";
+      }
+
+      if (metadata.automatedIntegrityPassed) {
+        return "Complete 169-cell source-backed chart from the automated integrity pass. Training is enabled for review deployment, but owner review is still pending.";
+      }
+
+      return "Source-backed chart metadata exists, but the automated integrity pass is incomplete.";
     case "imported_unreviewed":
       return "Imported source candidate. Review is incomplete, so training stays blocked.";
     case "generated_candidate":
@@ -661,6 +790,10 @@ export function getStrategyTrainingGateMessage(chart: StrategyChartLike) {
 
   if (metadata.trainerAllowed) {
     return null;
+  }
+
+  if (metadata.sourceStatus === "source_backed") {
+    return "This chart is blocked from training because the automated 169-cell integrity pass is incomplete.";
   }
 
   if (metadata.sourceStatus === "simplified_population") {

@@ -19,7 +19,7 @@ import {
   type SpotGroup,
 } from "../../shared/strategy";
 import { formatStrategyChartTitle } from "../../shared/strategyPresentation";
-import { getSourceChart } from "./sourceChartData";
+import { getSourceChart } from "./sourceChartData.generated";
 import { SEED_CHARTS, type SeedChart } from "./seedData";
 
 const FULL_MATRIX_CELL_COUNT = ALL_HANDS.length;
@@ -441,13 +441,7 @@ export function buildChartCellAuditRows(): ChartCellAuditRow[] {
         sourceStatus: spot.trust.sourceStatus,
         sourceFile: spot.trust.sourceFile ?? "",
         sourceReference: spot.trust.sourceReference ?? "",
-        cellSource:
-          spot.trust.sourceStatus === "simplified_population" ||
-          spot.trust.sourceStatus === "unsupported"
-            ? spot.trust.cellMapSource
-            : spot.sourceChart
-              ? "imported"
-              : spot.trust.cellMapSource,
+        cellSource: spot.trust.cellMapSource,
         matchYesNo,
         isHighRiskHand: true,
         changedYesNo,

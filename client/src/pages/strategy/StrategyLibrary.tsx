@@ -481,12 +481,14 @@ export default function StrategyLibrary() {
               </div>
             )}
 
-            {chartTrust?.sourcePanelLabel && (
+            {(chartTrust?.sourcePanelLabel || chartTrust?.provenanceLabel) && (
                 <StrategySourcePanelNote
                   sourcePanelLabel={chartTrust.sourcePanelLabel}
                   sourcePanelGroup={chartTrust.sourcePanelGroup}
                   sourceCoverageNote={chartTrust.sourceCoverageNote}
                   groupedSourcePanel={chartTrust.groupedSourcePanel}
+                  provenanceLabel={chartTrust.provenanceLabel}
+                  provenanceNote={chartTrust.provenanceNote}
                 />
               )}
 

@@ -18,15 +18,39 @@ function parseArgs(argv: string[]): AuditOptions {
     dbMode: false,
   };
 
-  for (const arg of argv) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
     if (arg === "--db") {
       options.dbMode = true;
+      continue;
+    }
+
+    if (arg === "--stack") {
+      const next = argv[index + 1];
+      const value = Number(next);
+      if (Number.isFinite(value)) {
+        options.stackDepth = value;
+        index += 1;
+      }
       continue;
     }
 
     if (arg.startsWith("--stack=")) {
       const value = Number(arg.slice("--stack=".length));
       if (Number.isFinite(value)) options.stackDepth = value;
+      continue;
+    }
+
+    if (arg === "--spot") {
+      const next = argv[index + 1];
+      if (next) {
+        options.spotKeys = next
+          .split(",")
+          .map(value => value.trim())
+          .filter(Boolean);
+        index += 1;
+      }
       continue;
     }
 
@@ -86,6 +110,7 @@ function buildSeedRows(options: AuditOptions) {
 
     for (const handCode of options.handCodes) {
       rows.push({
+        source: "seed",
         stackDepth: chart.stackDepth,
         spotGroup: chart.spotGroup,
         spotKey: chart.spotKey,
@@ -94,8 +119,19 @@ function buildSeedRows(options: AuditOptions) {
         villainPosition: chart.villainPosition ?? "",
         handCode,
         action: actionByHand.get(handCode) ?? "<missing>",
+        sourceLabel: chart.sourceLabel ?? "",
         sourceStatus: chart.sourceStatus ?? trust.sourceStatus,
+        cellMapSource: chart.cellMapSource ?? trust.cellMapSource,
+        reviewStatus: trust.reviewStatus ?? "candidate",
         trainerAllowed: trust.trainerAllowed,
+        has169Cells: trust.has169Cells,
+        structurallyComplete: trust.structurallyComplete,
+        automatedIntegrityPassed: trust.automatedIntegrityPassed,
+        ownerReviewed: trust.ownerReviewed,
+        trainerEligibleForReviewDeployment:
+          trust.trainerEligibleForReviewDeployment,
+        trainerEligibleForFinalProduction:
+          trust.trainerEligibleForFinalProduction,
         dataVersion: chart.dataVersion ?? trust.dataVersion ?? "",
         reviewedBy: chart.reviewedBy ?? trust.reviewedBy ?? "",
         reviewedAt: chart.reviewedAt ?? trust.reviewedAt ?? "",
@@ -151,6 +187,7 @@ async function buildDbRows(options: AuditOptions) {
 
     for (const handCode of options.handCodes) {
       rows.push({
+        source: "db",
         stackDepth: chart.stackDepth,
         spotGroup: chart.spotGroup,
         spotKey: chart.spotKey,
@@ -159,8 +196,19 @@ async function buildDbRows(options: AuditOptions) {
         villainPosition: chart.villainPosition ?? "",
         handCode,
         action: actionByHand.get(handCode) ?? "<missing>",
+        sourceLabel: chart.sourceLabel ?? "",
         sourceStatus: chart.sourceStatus ?? trust.sourceStatus,
+        cellMapSource: chart.cellMapSource ?? trust.cellMapSource,
+        reviewStatus: trust.reviewStatus ?? "candidate",
         trainerAllowed: trust.trainerAllowed,
+        has169Cells: trust.has169Cells,
+        structurallyComplete: trust.structurallyComplete,
+        automatedIntegrityPassed: trust.automatedIntegrityPassed,
+        ownerReviewed: trust.ownerReviewed,
+        trainerEligibleForReviewDeployment:
+          trust.trainerEligibleForReviewDeployment,
+        trainerEligibleForFinalProduction:
+          trust.trainerEligibleForFinalProduction,
         dataVersion: chart.dataVersion ?? trust.dataVersion ?? "",
         reviewedBy: chart.reviewedBy ?? trust.reviewedBy ?? "",
         reviewedAt: chart.reviewedAt ?? trust.reviewedAt ?? "",
