@@ -117,6 +117,10 @@ describe("source-of-truth chart coverage", () => {
 
     expect(trust.sourceStatus).toBe("source_backed");
     expect(trust.trainerAllowed).toBe(true);
+    expect(trust.hasReviewedData).toBe(true);
+    expect(trust.dataVersion).toBeTruthy();
+    expect(trust.reviewedBy).toBeTruthy();
+    expect(trust.reviewedAt).toBeTruthy();
     expect(trust.sourcePanelLabel).toBe("LJ/HJ vs UTG RFI");
     expect(trust.sourcePanelGroup).toBe("LJ/HJ");
     expect(trust.groupedSourcePanel).toBe(true);
@@ -137,5 +141,19 @@ describe("source-of-truth chart coverage", () => {
     expect(trust.groupedSourcePanel).toBe(false);
     expect(trust.sourceCoverageNote).toContain("HJ RFI");
     expect(trust.sourceCoverageNote).toContain("Lojack RFI");
+  });
+
+  it("blocks imported unreviewed exact-source candidates from trainer until a reviewed 169-cell chart exists", () => {
+    const candidate = {
+      stackDepth: 15,
+      spotGroup: "RFI" as const,
+      heroPosition: "UTG",
+      spotKey: "UTG_RFI_candidate_only",
+    };
+
+    expect(getStrategySourceStatus(candidate)).toBe("imported_unreviewed");
+    expect(getStrategySourceLabel(candidate)).toBe("Imported Candidate");
+    expect(getStrategySourceHelperText(candidate)).toContain("Review is incomplete");
+    expect(isTrainerAllowedStrategyChart(candidate)).toBe(false);
   });
 });

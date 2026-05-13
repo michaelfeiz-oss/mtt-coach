@@ -46,6 +46,12 @@ async function main() {
       heroPosition: chart.heroPosition,
       villainPosition: chart.villainPosition ?? null,
       sourceLabel: chart.sourceLabel ?? null,
+      sourceStatus: chart.sourceStatus ?? null,
+      sourceFile: chart.sourceFile ?? null,
+      sourcePanelLabel: chart.sourcePanelLabel ?? null,
+      dataVersion: chart.dataVersion ?? null,
+      reviewedBy: chart.reviewedBy ?? null,
+      reviewedAt: chart.reviewedAt ?? null,
       notesJson: chart.notes ? JSON.stringify(chart.notes) : null,
       isActive: true,
     };

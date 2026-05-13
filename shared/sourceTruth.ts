@@ -3,6 +3,7 @@ import {
   type Position,
   type SpotGroup,
 } from "./strategy";
+import { getReviewedStrategyChart } from "./strategy-data/reviewed";
 
 export const SOURCE_BACKED_MAIN_STACKS = [15, 25, 40] as const;
 export type SourceBackedMainStack = (typeof SOURCE_BACKED_MAIN_STACKS)[number];
@@ -13,6 +14,8 @@ export type SimplifiedPopulationThreeBetStack =
 
 export type StrategySourceStatus =
   | "source_backed"
+  | "imported_unreviewed"
+  | "generated_candidate"
   | "proxy"
   | "simplified_population"
   | "unsupported";
@@ -54,7 +57,6 @@ interface ManualTrainingApproval {
   approvedAt: string;
 }
 
-const BASELINE_SOURCE_REVIEWED_AT = "2026-05-11";
 const MANUAL_TRAINING_APPROVALS: Record<string, ManualTrainingApproval> = {};
 
 export interface StrategyChartLike {
@@ -81,6 +83,9 @@ export interface StrategyChartTrustMetadata {
   trainerAllowed: boolean;
   manuallyApprovedForTraining: boolean;
   approvalReason: string | null;
+  hasReviewedData: boolean;
+  dataVersion: string | null;
+  reviewedBy: string | null;
   reviewedByHuman: boolean;
   reviewedAt: string | null;
   notesConfidence: StrategyNotesConfidence;
@@ -149,8 +154,34 @@ function hasImportedExactFacingThreeBetChart(chart: StrategyChartLike) {
   return spotKey ? IMPORTED_15BB_VS_3BET_KEYS.has(spotKey) : false;
 }
 
+function resolveStrategySpotKey(chart: StrategyChartLike) {
+  if (chart.spotKey) return chart.spotKey;
+
+  switch (chart.spotGroup) {
+    case "RFI":
+      return `${chart.heroPosition}_RFI`;
+    case "VS_UTG_RFI":
+    case "VS_MP_RFI":
+    case "VS_LP_RFI":
+      return chart.villainPosition
+        ? `${chart.heroPosition}_vs_${chart.villainPosition}`
+        : null;
+    case "VS_3BET":
+      return getFacingThreeBetSpotKey(chart);
+    case "BVB":
+      if (chart.heroPosition === "SB" && chart.villainPosition === "BB") {
+        return "SB_vs_BB_limp";
+      }
+      if (chart.heroPosition === "BB" && chart.villainPosition === "SB") {
+        return "BB_vs_SB_limp";
+      }
+      return null;
+  }
+}
+
 function chartKeyFor(chart: StrategyChartLike) {
-  return `${chart.stackDepth}:${chart.spotKey ?? `${chart.spotGroup}:${chart.heroPosition}:${chart.villainPosition ?? "NONE"}`}`;
+  const resolvedSpotKey = resolveStrategySpotKey(chart);
+  return `${chart.stackDepth}:${resolvedSpotKey ?? `${chart.spotGroup}:${chart.heroPosition}:${chart.villainPosition ?? "NONE"}`}`;
 }
 
 function defaultSourceFile(stackDepth: number): string | null {
@@ -228,8 +259,12 @@ function getStrategySourcePanelDescriptor(
   chart: StrategyChartLike
 ): StrategySourcePanelDescriptor {
   const appDisplayLabel = buildAppDisplayLabel(chart);
+  const sourceStatus = getStrategySourceStatus(chart);
 
-  if (getStrategySourceStatus(chart) !== "source_backed") {
+  if (
+    sourceStatus !== "source_backed" &&
+    sourceStatus !== "imported_unreviewed"
+  ) {
     return {
       sourcePanelLabel: null,
       sourcePanelGroup: null,
@@ -358,6 +393,10 @@ function defaultNotesConfidence(
   switch (sourceStatus) {
     case "source_backed":
       return "exact";
+    case "imported_unreviewed":
+      return "needs_review";
+    case "generated_candidate":
+      return "heuristic";
     case "simplified_population":
       return "simplified";
     case "proxy":
@@ -373,7 +412,11 @@ function defaultCellMapSource(
 ): StrategyCellMapSource {
   switch (sourceStatus) {
     case "source_backed":
+      return "manual";
+    case "imported_unreviewed":
       return "imported";
+    case "generated_candidate":
+      return "generated";
     case "proxy":
       return chart.spotGroup === "BVB" ? "imported" : "manual";
     case "simplified_population":
@@ -395,6 +438,12 @@ function defaultSourceReference(
       return sourceFile
         ? `Imported from ${sourceFile} using source panel ${panelDescriptor.sourcePanelLabel ?? defaultSourceChartName(chart)}.`
         : null;
+    case "imported_unreviewed":
+      return sourceFile
+        ? `Imported candidate from ${sourceFile} using source panel ${panelDescriptor.sourcePanelLabel ?? defaultSourceChartName(chart)}. Not reviewed for trainer use yet.`
+        : "Imported candidate chart. Not reviewed for trainer use yet.";
+    case "generated_candidate":
+      return "Generated candidate chart. Human review is required before trainer use.";
     case "simplified_population": {
       const familyLabel = getSimplifiedVsThreeBetFamilyLabel(chart);
       return familyLabel
@@ -435,6 +484,14 @@ export function isSourceBackedMainStack(
 export function getStrategySourceStatus(
   chart: StrategyChartLike
 ): StrategySourceStatus {
+  const resolvedSpotKey = resolveStrategySpotKey(chart);
+  const reviewedChart = resolvedSpotKey
+    ? getReviewedStrategyChart({
+        stackDepth: chart.stackDepth,
+        spotKey: resolvedSpotKey,
+      })
+    : null;
+
   if (!isSourceBackedMainStack(chart.stackDepth)) {
     return "unsupported";
   }
@@ -444,7 +501,7 @@ export function getStrategySourceStatus(
     case "VS_UTG_RFI":
     case "VS_MP_RFI":
     case "VS_LP_RFI":
-      return "source_backed";
+      return reviewedChart ? "source_backed" : "imported_unreviewed";
     case "VS_3BET":
       if (!supportsFacingThreeBetHero(chart.heroPosition)) {
         return "unsupported";
@@ -452,7 +509,9 @@ export function getStrategySourceStatus(
 
       if (chart.stackDepth === 15) {
         return hasImportedExactFacingThreeBetChart(chart)
-          ? "source_backed"
+          ? reviewedChart
+            ? "source_backed"
+            : "imported_unreviewed"
           : "unsupported";
       }
 
@@ -471,8 +530,20 @@ export function getStrategyChartTrustMetadata(
   const sourceStatus = getStrategySourceStatus(chart);
   const sourcePanelDescriptor = getStrategySourcePanelDescriptor(chart);
   const manualApproval = MANUAL_TRAINING_APPROVALS[chartKey] ?? null;
-  const trainerAllowed =
-    sourceStatus === "source_backed" || manualApproval !== null;
+  const resolvedSpotKey = resolveStrategySpotKey(chart);
+  const reviewedChart = resolvedSpotKey
+    ? getReviewedStrategyChart({
+        stackDepth: chart.stackDepth,
+        spotKey: resolvedSpotKey,
+      })
+    : null;
+  const hasReviewedData =
+    reviewedChart !== null &&
+    reviewedChart.review.status === "reviewed" &&
+    reviewedChart.reviewedBy.trim().length > 0 &&
+    reviewedChart.reviewedAt.trim().length > 0 &&
+    reviewedChart.dataVersion.trim().length > 0;
+  const trainerAllowed = sourceStatus === "source_backed" && hasReviewedData;
 
   return {
     chartId: chart.id ?? null,
@@ -485,7 +556,9 @@ export function getStrategyChartTrustMetadata(
     anteType: "BBA",
     sourceStatus,
     sourceFile:
-      sourceStatus === "source_backed" || sourceStatus === "proxy"
+      sourceStatus === "source_backed" ||
+      sourceStatus === "imported_unreviewed" ||
+      sourceStatus === "proxy"
         ? defaultSourceFile(chart.stackDepth)
         : null,
     sourceReference: defaultSourceReference(chart, sourceStatus),
@@ -496,11 +569,11 @@ export function getStrategyChartTrustMetadata(
     trainerAllowed,
     manuallyApprovedForTraining: manualApproval !== null,
     approvalReason: manualApproval?.reason ?? null,
-    reviewedByHuman:
-      sourceStatus === "source_backed" || manualApproval !== null,
-    reviewedAt:
-      manualApproval?.approvedAt ??
-      (sourceStatus === "source_backed" ? BASELINE_SOURCE_REVIEWED_AT : null),
+    hasReviewedData,
+    dataVersion: reviewedChart?.dataVersion ?? null,
+    reviewedBy: reviewedChart?.reviewedBy ?? null,
+    reviewedByHuman: hasReviewedData,
+    reviewedAt: reviewedChart?.reviewedAt ?? null,
     notesConfidence: defaultNotesConfidence(sourceStatus),
     cellMapSource: defaultCellMapSource(chart, sourceStatus),
     sourcePanelLabel: sourcePanelDescriptor.sourcePanelLabel,
@@ -529,6 +602,10 @@ export function getStrategySourceLabel(chart: StrategyChartLike): string | null 
   switch (getStrategySourceStatus(chart)) {
     case "source_backed":
       return "Source-backed";
+    case "imported_unreviewed":
+      return "Imported Candidate";
+    case "generated_candidate":
+      return "Generated Candidate";
     case "proxy":
       return "Proxy";
     case "simplified_population":
@@ -544,6 +621,10 @@ export function getStrategySourceHelperText(
   switch (getStrategySourceStatus(chart)) {
     case "source_backed":
       return "Exact source-backed chart from the reviewed tournament range set.";
+    case "imported_unreviewed":
+      return "Imported source candidate. Review is incomplete, so training stays blocked.";
+    case "generated_candidate":
+      return "Generated candidate chart. Training stays blocked until a reviewed 169-cell source exists.";
     case "proxy":
       return "Study-only proxy branch. Use it as a reference, not as a quiz answer key.";
     case "simplified_population":
@@ -584,6 +665,14 @@ export function getStrategyTrainingGateMessage(chart: StrategyChartLike) {
 
   if (metadata.sourceStatus === "simplified_population") {
     return "This chart is study-only and blocked from training because it is a simplified population layer, not an exact source-backed chart.";
+  }
+
+  if (metadata.sourceStatus === "imported_unreviewed") {
+    return "This chart is blocked from training because the imported source candidate has not completed the reviewed 169-cell audit yet.";
+  }
+
+  if (metadata.sourceStatus === "generated_candidate") {
+    return "This chart is blocked from training because it is a generated candidate without reviewed source truth.";
   }
 
   if (metadata.sourceStatus === "proxy") {

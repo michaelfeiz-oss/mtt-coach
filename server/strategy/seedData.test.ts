@@ -141,6 +141,19 @@ describe("strategy seed coverage", () => {
     ).toBe("FOLD");
   });
 
+  it("builds trainer-safe source-backed charts from reviewed data instead of the candidate import map", () => {
+    const reviewedChart = SEED_CHARTS.find(
+      chart => chart.stackDepth === 15 && chart.spotKey === "UTG1_vs_UTG"
+    );
+
+    expect(reviewedChart?.sourceStatus).toBe("source_backed");
+    expect(reviewedChart?.dataVersion).toBeTruthy();
+    expect(reviewedChart?.reviewedBy).toBeTruthy();
+    expect(reviewedChart?.reviewedAt).toBeTruthy();
+    expect(reviewedChart?.sourceFile).toBe("15bb-gto-charts.pdf");
+    expect(reviewedChart?.sourcePanelLabel).toBe("UTG+1/+2 vs UTG RFI");
+  });
+
   it("validates all generated seed charts", () => {
     expect(() => validateSeedCharts(SEED_CHARTS)).not.toThrow();
   });

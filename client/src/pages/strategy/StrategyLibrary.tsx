@@ -532,10 +532,19 @@ export default function StrategyLibrary() {
                     }}
                   >
                     <div className="md:hidden">
-                      <RangeMatrix actions={actionMap} compact size="sm" />
+                      <RangeMatrix
+                        actions={actionMap}
+                        compact
+                        size="sm"
+                        strictComplete={chartTrust?.sourceStatus === "source_backed"}
+                      />
                     </div>
                     <div className="hidden md:block">
-                      <RangeMatrix actions={actionMap} size="md" />
+                      <RangeMatrix
+                        actions={actionMap}
+                        size="md"
+                        strictComplete={chartTrust?.sourceStatus === "source_backed"}
+                      />
                     </div>
                   </div>
                 </div>
