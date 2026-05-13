@@ -953,6 +953,15 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
 }
 
 function buildReviewedSeedChart(reviewedChart: ReviewedStrategyChart): SeedChart {
+  const chartLike = {
+    stackDepth: reviewedChart.stackDepth,
+    spotGroup: reviewedChart.spotGroup,
+    heroPosition: reviewedChart.heroPosition,
+    villainPosition: reviewedChart.villainPosition ?? undefined,
+    spotKey: reviewedChart.spotKey,
+  } as const;
+  const trust = getStrategyChartTrustMetadata(chartLike);
+
   return {
     title: reviewedChart.title,
     stackDepth: reviewedChart.stackDepth,
@@ -960,11 +969,11 @@ function buildReviewedSeedChart(reviewedChart: ReviewedStrategyChart): SeedChart
     spotKey: reviewedChart.spotKey,
     heroPosition: reviewedChart.heroPosition,
     villainPosition: reviewedChart.villainPosition ?? undefined,
-    sourceLabel: "Source-backed",
-    sourceStatus: "source_backed",
-    cellMapSource: "reviewed",
-    sourceFile: reviewedChart.source.sourceFile,
-    sourcePanelLabel: reviewedChart.source.sourcePanelLabel,
+    sourceLabel: getStrategySourceLabel(chartLike) ?? "Imported Candidate",
+    sourceStatus: trust.sourceStatus,
+    cellMapSource: trust.cellMapSource,
+    sourceFile: trust.sourceFile,
+    sourcePanelLabel: trust.sourcePanelLabel,
     dataVersion: reviewedChart.dataVersion,
     reviewedBy: reviewedChart.review.reviewedBy,
     reviewedAt: reviewedChart.review.reviewedAt,

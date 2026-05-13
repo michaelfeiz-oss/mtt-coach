@@ -240,6 +240,7 @@ export function TrainerResultReveal({
                   </summary>
                   <StrategySourcePanelNote
                     className="mt-2"
+                    sourceStatus={sourcePanelTrust.sourceStatus}
                     sourcePanelLabel={sourcePanelTrust.sourcePanelLabel}
                     sourcePanelGroup={sourcePanelTrust.sourcePanelGroup}
                     sourceCoverageNote={sourcePanelTrust.sourceCoverageNote}

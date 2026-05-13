@@ -335,6 +335,11 @@ export default function RangeTrainer() {
   } = trpc.strategy.getTrainerSpot.useQuery(trainerInput, {
     enabled: trainerEnabled,
   });
+  const noTrainerMessage =
+    spots.length === 0
+      ? "Trainer is temporarily unavailable because the exact-chart catalog is pending owner source review. Use the chart viewer for study until verified charts are restored."
+      : trainerSpotError?.message ??
+        "Adjust setup to another trainer-safe preflop spot.";
 
   const {
     data: revealChart,
@@ -963,8 +968,7 @@ export default function RangeTrainer() {
                       No trainer hand available
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {trainerSpotError?.message ??
-                        "Adjust setup to another trainer-safe preflop spot."}
+                      {noTrainerMessage}
                     </p>
                   </div>
                   <Button

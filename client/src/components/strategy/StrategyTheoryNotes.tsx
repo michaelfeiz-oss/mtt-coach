@@ -137,6 +137,7 @@ export function StrategyTheoryNotes({
 
             {(trust.sourcePanelLabel || trust.provenanceLabel) && (
               <StrategySourcePanelNote
+                sourceStatus={trust.sourceStatus}
                 sourcePanelLabel={trust.sourcePanelLabel}
                 sourcePanelGroup={trust.sourcePanelGroup}
                 sourceCoverageNote={trust.sourceCoverageNote}

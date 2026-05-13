@@ -141,12 +141,13 @@ describe("strategy seed coverage", () => {
     ).toBe("FOLD");
   });
 
-  it("builds trainer-safe source-backed charts from reviewed data instead of the candidate import map", () => {
+  it("builds structurally complete imported candidates from reviewed data instead of the candidate import map", () => {
     const reviewedChart = SEED_CHARTS.find(
       chart => chart.stackDepth === 15 && chart.spotKey === "UTG1_vs_UTG"
     );
 
-    expect(reviewedChart?.sourceStatus).toBe("source_backed");
+    expect(reviewedChart?.sourceStatus).toBe("imported_unreviewed");
+    expect(reviewedChart?.sourceLabel).toBe("Imported Candidate");
     expect(reviewedChart?.dataVersion).toBeTruthy();
     expect(reviewedChart?.reviewedBy).toBeTruthy();
     expect(reviewedChart?.reviewedAt).toBeTruthy();

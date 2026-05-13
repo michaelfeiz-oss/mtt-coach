@@ -48,15 +48,16 @@ describe("strategy chart presentation", () => {
       spotKey: "CO_vs_MP",
     });
 
-    expect(presentation.sourceStatus).toBe("source_backed");
+    expect(presentation.sourceStatus).toBe("imported_unreviewed");
     expect(presentation.sourcePanelLabel).toBe("CO vs LJ/HJ RFI");
     expect(presentation.sourcePanelGroup).toBe("LJ/HJ");
     expect(presentation.groupedSourcePanel).toBe(true);
     expect(presentation.sourceCoverageNote).toContain("CO vs MP");
     expect(presentation.sourceCoverageNote).toContain("LJ/HJ");
-    expect(presentation.trainerAllowed).toBe(true);
+    expect(presentation.trainerAllowed).toBe(false);
     expect(presentation.provenanceLabel).toBe("Automated integrity pass");
     expect(presentation.provenanceNote).toContain("pending owner review");
+    expect(presentation.sourceBadge).toBe("Imported Candidate");
   });
 
   it("keeps grouped source metadata on actual seeded charts used by the viewer runtime", () => {
@@ -69,12 +70,13 @@ describe("strategy chart presentation", () => {
 
     const presentation = buildStrategyChartPresentation(chart!);
 
-    expect(presentation.sourceStatus).toBe("source_backed");
-    expect(presentation.trainerAllowed).toBe(true);
+    expect(presentation.sourceStatus).toBe("imported_unreviewed");
+    expect(presentation.trainerAllowed).toBe(false);
     expect(presentation.sourcePanelLabel).toBe("UTG+1/+2 vs UTG RFI");
     expect(presentation.sourceCoverageNote).toContain("UTG+1 vs UTG");
     expect(presentation.groupedSourcePanel).toBe(true);
     expect(presentation.provenanceLabel).toBe("Automated integrity pass");
+    expect(presentation.trainingGateMessage).toContain("owner review");
   });
 
   it("formats blind-versus-blind limp nodes explicitly", () => {

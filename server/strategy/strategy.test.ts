@@ -2,7 +2,8 @@
  * server/strategy/strategy.test.ts
  * Tests for the Strategy Module service layer.
  */
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { ALL_HANDS } from "../../shared/strategy";
 import {
   listAvailableSpots,
   getChartWithActions,
@@ -14,35 +15,33 @@ import {
 import { getDb } from "../db";
 import { rangeCharts, rangeChartActions, trainerAttempts } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { ALL_HANDS } from "../../shared/strategy";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+const TEST_CHART_TITLE = "__TEST__ BTN RFI @ 25bb";
 
 async function seedTestChart() {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
 
-  // Clean up any leftover test data by title (unique test marker)
-  // spotKey = "BTN_RFI" so getStrategySourceStatus returns source_backed
-  // and trainerAllowed = true (TEST_BTN_RFI is not in the reviewed catalog)
-  const TEST_TITLE = "__TEST__ BTN RFI @ 25bb";
-
+  // Clean up any leftover test data by spotKey (catches old title variants too)
   const existing = await db
     .select({ id: rangeCharts.id })
     .from(rangeCharts)
-    .where(eq(rangeCharts.title, TEST_TITLE));
+    .where(eq(rangeCharts.spotKey, "TEST_BTN_RFI"));
 
   for (const row of existing) {
     await db.delete(rangeChartActions).where(eq(rangeChartActions.chartId, row.id));
     await db.delete(rangeCharts).where(eq(rangeCharts.id, row.id));
   }
 
+  // Use TEST_BTN_RFI spotKey — the test-only MANUAL_TRAINING_APPROVALS entry for
+  // "25:TEST_BTN_RFI" makes this trainer-allowed in the test environment only.
   const chartId = await createChart({
-    title: TEST_TITLE,
+    title: TEST_CHART_TITLE,
     stackDepth: 25,
     spotGroup: "RFI",
-    // BTN_RFI is in the reviewed catalog at 25bb → source_backed → trainerAllowed = true
-    spotKey: "BTN_RFI",
+    spotKey: "TEST_BTN_RFI",
     heroPosition: "BTN",
     villainPosition: null,
     sourceLabel: "Test",
@@ -50,28 +49,32 @@ async function seedTestChart() {
     isActive: true,
   });
 
-  // Seed all 169 hands so the completeness check passes.
-  // Specific hands have meaningful actions for test assertions;
-  // all others default to FOLD.
-  const specificActions: Record<string, string> = {
+  // Seed all 169 hands — specific overrides for test assertions, rest are FOLD
+  const overrides: Record<string, string> = {
     AA: "RAISE",
     AKo: "CALL",
     AJo: "FOLD",
     T2o: "FOLD",
   };
-  await bulkInsertActions(
-    ALL_HANDS.map(hand => ({
-      chartId,
-      handCode: hand,
-      primaryAction: (specificActions[hand] ?? "FOLD") as "RAISE" | "CALL" | "FOLD",
-      weightPercent: 100,
-      mixJson: null,
-      colorToken: null,
-      note: null,
-    }))
-  );
+  const actions = ALL_HANDS.map((hand) => ({
+    chartId,
+    handCode: hand,
+    primaryAction: overrides[hand] ?? "FOLD",
+    weightPercent: 100,
+    mixJson: null,
+    colorToken: null,
+    note: null,
+  }));
+  await bulkInsertActions(actions);
 
   return chartId;
+}
+
+async function cleanupTestChart(chartId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(rangeChartActions).where(eq(rangeChartActions.chartId, chartId));
+  await db.delete(rangeCharts).where(eq(rangeCharts.id, chartId));
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────
@@ -85,14 +88,17 @@ describeDb("Strategy Module", () => {
     testChartId = await seedTestChart();
   });
 
+  afterAll(async () => {
+    await cleanupTestChart(testChartId);
+  });
+
   describe("listAvailableSpots", () => {
     it("returns at least the seeded test chart", async () => {
       const spots = await listAvailableSpots({});
       expect(spots.length).toBeGreaterThan(0);
-      // Find by id since spotKey BTN_RFI is shared with the production chart
       const testSpot = spots.find(s => s.id === testChartId);
       expect(testSpot).toBeDefined();
-      expect(testSpot?.title).toBe("__TEST__ BTN RFI @ 25bb");
+      expect(testSpot?.title).toBe(TEST_CHART_TITLE);
       expect(testSpot?.stackDepth).toBe(25);
     });
 
@@ -111,8 +117,8 @@ describeDb("Strategy Module", () => {
     it("returns chart with all seeded actions", async () => {
       const chart = await getChartWithActions(testChartId);
       expect(chart).not.toBeNull();
-      expect(chart!.title).toBe("__TEST__ BTN RFI @ 25bb");
-      expect(chart!.actions.length).toBe(169); // full 169-cell chart
+      expect(chart!.title).toBe(TEST_CHART_TITLE);
+      expect(chart!.actions.length).toBe(169);
       const aaPrimary = chart!.actions.find(a => a.handCode === "AA")?.primaryAction;
       expect(aaPrimary).toBe("RAISE");
     });
@@ -127,7 +133,8 @@ describeDb("Strategy Module", () => {
     it("returns a trainer hand from the chart", async () => {
       const spot = await getTrainerSpot({ chartId: testChartId });
       expect(spot).not.toBeNull();
-      // Trainer picks from continue-range hands first (AA=RAISE, AKo=CALL)
+      // With 169 cells where AA=RAISE and AKo=CALL, trainer picks from RAISE/CALL/marginal-FOLD pool
+      expect(["RAISE", "CALL", "FOLD"]).toContain(spot!.correctAction);
       expect(["RAISE", "CALL", "FOLD"]).toContain(spot!.correctAction);
     });
 
@@ -138,11 +145,9 @@ describeDb("Strategy Module", () => {
       });
 
       expect(spot).not.toBeNull();
-      // Trainer should return a marginal fold or another continue hand
-      expect(["RAISE", "CALL", "FOLD"]).toContain(spot!.correctAction);
-      // Should not return the recently-seen hands
-      expect(spot!.handCode).not.toBe("AA");
-      expect(spot!.handCode).not.toBe("AKo");
+      // With AA and AKo in recent history, trainer picks a marginal fold near the continue boundary
+      expect(spot!.correctAction).toBe("FOLD");
+      expect(spot!.handCode).not.toBe("T2o"); // garbage fold should not be picked
     });
 
     it("excludes garbage folds far from the continue boundary", async () => {
@@ -160,7 +165,7 @@ describeDb("Strategy Module", () => {
     it("includes chart metadata", async () => {
       const spot = await getTrainerSpot({ chartId: testChartId });
       expect(spot!.chart.id).toBe(testChartId);
-      expect(spot!.chart.title).toBe("__TEST__ BTN RFI @ 25bb");
+      expect(spot!.chart.title).toBe(TEST_CHART_TITLE);
     });
 
     it("supports current decision family setup filters", async () => {

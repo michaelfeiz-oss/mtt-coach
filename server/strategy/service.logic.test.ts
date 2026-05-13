@@ -116,7 +116,7 @@ describe("strategy service pure logic", () => {
           villainPosition: null,
         })
       )
-    ).toBe("exact_source");
+    ).toBe("derived");
 
     expect(
       mapStrategySourceToAttemptSourceStatus(
@@ -147,7 +147,7 @@ describe("strategy service pure logic", () => {
 
     expect(attempt.canonicalSpotId).toBe("DEFEND_VS_RFI|25|BB|BTN|9P|BBA");
     expect(attempt.spotFamily).toBe("DEFEND_VS_RFI");
-    expect(attempt.sourceStatus).toBe("exact_source");
+    expect(attempt.sourceStatus).toBe("derived");
     expect(attempt.stackBb).toBe(25);
     expect(attempt.heroPosition).toBe("BB");
     expect(attempt.villainPosition).toBe("BTN");

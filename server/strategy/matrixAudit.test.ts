@@ -22,7 +22,7 @@ describe("matrix duplicate audit", () => {
     const duplicateGroups = buildMatrixDuplicateGroups(SEED_CHARTS);
     const reviewGroup = duplicateGroups.find(group =>
       group.classification === "needs_review" &&
-      group.charts.some(chart => chart.sourceStatus === "source_backed")
+      group.charts.some(chart => chart.sourceStatus === "imported_unreviewed")
     );
 
     expect(reviewGroup).toBeDefined();

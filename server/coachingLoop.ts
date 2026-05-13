@@ -52,7 +52,10 @@ import {
   normalizeHandCode,
   normalizePosition,
 } from "./strategy/service";
-import { isTrainerAllowedStrategyChart } from "../shared/sourceTruth";
+import {
+  getStrategyChartTrustMetadata,
+  isTrainerAllowedStrategyChart,
+} from "../shared/sourceTruth";
 
 const RECENT_WINDOW_MS = 1000 * 60 * 60 * 24 * 7;
 const STALE_WINDOW_MS = 1000 * 60 * 60 * 24 * 30;
@@ -886,10 +889,17 @@ export function buildHandTrainingSuggestionModel(input: {
   const chartRoute = input.recommendation
     ? `/strategy/library?chartId=${input.recommendation.chart.id}`
     : null;
+  const recommendationTrust = input.recommendation
+    ? getStrategyChartTrustMetadata(input.recommendation.chart)
+    : null;
   const chartReferenceLabel = input.recommendation
-    ? input.recommendation.confidence === "exact"
-      ? "Exact study reference"
-      : `Nearest ${input.recommendation.chart.stackDepth}bb study reference`
+    ? recommendationTrust?.sourceStatus === "source_backed"
+      ? input.recommendation.confidence === "exact"
+        ? "Exact study reference"
+        : `Nearest ${input.recommendation.chart.stackDepth}bb study reference`
+      : recommendationTrust?.sourceStatus === "imported_unreviewed"
+        ? "Imported study candidate"
+        : `Nearest ${input.recommendation.chart.stackDepth}bb study reference`
     : null;
 
   return {

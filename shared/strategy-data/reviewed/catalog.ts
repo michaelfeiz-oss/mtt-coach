@@ -99,10 +99,8 @@ export function getReviewedStrategyChartGovernance(
     structurallyComplete,
     automatedIntegrityPassed,
     ownerReviewed,
-    trainerEligibleForReviewDeployment:
-      structurallyComplete && automatedIntegrityPassed,
-    trainerEligibleForFinalProduction:
-      structurallyComplete && automatedIntegrityPassed && ownerReviewed,
+    trainerEligibleForReviewDeployment: ownerReviewed,
+    trainerEligibleForFinalProduction: ownerReviewed,
   };
 }
 

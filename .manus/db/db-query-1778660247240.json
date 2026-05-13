@@ -1,0 +1,51 @@
+{
+  "query": "\nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rc.cellMapSource, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.spotKey = 'CO_vs_UTG' AND rc.stackDepth = 25 AND rca.handCode = 'AJo';\n\nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rc.cellMapSource, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.spotKey = 'BTN_vs_MP' AND rc.stackDepth = 25 AND rca.handCode = 'T3s';\n\nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.spotKey = 'UTG_RFI' AND rc.stackDepth = 25 AND rca.handCode IN ('K2s', 'Q2s', 'J2s', 'T2s')\nORDER BY rca.handCode;\n\nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.stackDepth = 25 AND rc.spotGroup = 'VS_UTG_RFI' AND rca.handCode = 'AJo'\nORDER BY rc.spotKey;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute \nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rc.cellMapSource, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.spotKey = 'CO_vs_UTG' AND rc.stackDepth = 25 AND rca.handCode = 'AJo';\n\nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rc.cellMapSource, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.spotKey = 'BTN_vs_MP' AND rc.stackDepth = 25 AND rca.handCode = 'T3s';\n\nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.spotKey = 'UTG_RFI' AND rc.stackDepth = 25 AND rca.handCode IN ('K2s', 'Q2s', 'J2s', 'T2s')\nORDER BY rca.handCode;\n\nSELECT rc.stackDepth, rc.spotKey, rc.title, rc.sourceStatus, rca.handCode, rca.primaryAction as action\nFROM rangeCharts rc JOIN rangeChartActions rca ON rca.chartId = rc.id\nWHERE rc.stackDepth = 25 AND rc.spotGroup = 'VS_UTG_RFI' AND rca.handCode = 'AJo'\nORDER BY rc.spotKey;\n",
+  "rows": [
+    {
+      "stackDepth": "25",
+      "spotKey": "CO_vs_UTG",
+      "title": "CO vs UTG @ 25bb",
+      "sourceStatus": "imported_unreviewed",
+      "cellMapSource": "imported_unreviewed",
+      "handCode": "AJo",
+      "action": "FOLD"
+    },
+    {
+      "stackDepth": "stackDepth",
+      "spotKey": "spotKey",
+      "title": "title",
+      "sourceStatus": "sourceStatus",
+      "cellMapSource": "cellMapSource",
+      "handCode": "handCode",
+      "action": "action"
+    },
+    {
+      "stackDepth": "25",
+      "spotKey": "BTN_vs_MP",
+      "title": "BTN vs MP @ 25bb",
+      "sourceStatus": "imported_unreviewed",
+      "cellMapSource": "imported_unreviewed",
+      "handCode": "T3s",
+      "action": "THREE_BET"
+    }
+  ],
+  "messages": [
+    "stackDepth\tspotKey\ttitle\tsourceStatus\thandCode\taction",
+    "25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tJ2s\tRAISE",
+    "25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tK2s\tRAISE",
+    "25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tQ2s\tRAISE",
+    "25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tT2s\tRAISE",
+    "stackDepth\tspotKey\ttitle\tsourceStatus\thandCode\taction",
+    "25\tBB_vs_UTG\tBB vs UTG @ 25bb\timported_unreviewed\tAJo\tCALL",
+    "25\tBTN_vs_UTG\tBTN vs UTG @ 25bb\timported_unreviewed\tAJo\tTHREE_BET",
+    "25\tCO_vs_UTG\tCO vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD",
+    "25\tHJ_vs_UTG\tHJ vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD",
+    "25\tMP_vs_UTG\tMP vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD",
+    "25\tSB_vs_UTG\tSB vs UTG @ 25bb\timported_unreviewed\tAJo\tTHREE_BET",
+    "25\tUTG1_vs_UTG\tUTG+1 vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD"
+  ],
+  "stdout": "stackDepth\tspotKey\ttitle\tsourceStatus\tcellMapSource\thandCode\taction\n25\tCO_vs_UTG\tCO vs UTG @ 25bb\timported_unreviewed\timported_unreviewed\tAJo\tFOLD\nstackDepth\tspotKey\ttitle\tsourceStatus\tcellMapSource\thandCode\taction\n25\tBTN_vs_MP\tBTN vs MP @ 25bb\timported_unreviewed\timported_unreviewed\tT3s\tTHREE_BET\nstackDepth\tspotKey\ttitle\tsourceStatus\thandCode\taction\n25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tJ2s\tRAISE\n25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tK2s\tRAISE\n25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tQ2s\tRAISE\n25\tUTG_RFI\tUTG RFI @ 25bb\timported_unreviewed\tT2s\tRAISE\nstackDepth\tspotKey\ttitle\tsourceStatus\thandCode\taction\n25\tBB_vs_UTG\tBB vs UTG @ 25bb\timported_unreviewed\tAJo\tCALL\n25\tBTN_vs_UTG\tBTN vs UTG @ 25bb\timported_unreviewed\tAJo\tTHREE_BET\n25\tCO_vs_UTG\tCO vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD\n25\tHJ_vs_UTG\tHJ vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD\n25\tMP_vs_UTG\tMP vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD\n25\tSB_vs_UTG\tSB vs UTG @ 25bb\timported_unreviewed\tAJo\tTHREE_BET\n25\tUTG1_vs_UTG\tUTG+1 vs UTG @ 25bb\timported_unreviewed\tAJo\tFOLD\n",
+  "stderr": "",
+  "execution_time_ms": 2383
+}
