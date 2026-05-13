@@ -402,18 +402,28 @@ export function buildChartCellAuditRows(): ChartCellAuditRow[] {
       let changedYesNo: "yes" | "no" | "n_a" = "n_a";
       let reason = "No exact source comparison available for this chart family.";
 
-      if (spot.trust.sourceStatus === "source_backed") {
+      if (
+        spot.trust.sourceStatus === "source_backed" ||
+        spot.trust.sourceStatus === "imported_unreviewed"
+      ) {
         if (sourceAction) {
           matchYesNo = appAction === sourceAction ? "yes" : "no";
           changedYesNo = matchYesNo === "no" ? "yes" : "no";
           reason =
-            matchYesNo === "yes"
-              ? "Exact imported source cell matches the app matrix."
-              : "Source-backed cell does not match the imported exact chart.";
+            spot.trust.sourceStatus === "source_backed"
+              ? matchYesNo === "yes"
+                ? "Exact imported source cell matches the app matrix."
+                : "Source-backed cell does not match the imported exact chart."
+              : matchYesNo === "yes"
+                ? "Imported candidate cell matches the current app matrix, but owner review is still pending."
+                : "Imported candidate cell does not match the current app matrix.";
         } else {
           matchYesNo = "no";
           changedYesNo = "n_a";
-          reason = "Source-backed chart is missing the imported source cell for this hand.";
+          reason =
+            spot.trust.sourceStatus === "source_backed"
+              ? "Source-backed chart is missing the imported source cell for this hand."
+              : "Imported candidate chart is missing the extracted source cell for this hand.";
         }
       } else if (spot.trust.sourceStatus === "proxy" && sourceAction) {
         matchYesNo = appAction === sourceAction ? "yes" : "no";

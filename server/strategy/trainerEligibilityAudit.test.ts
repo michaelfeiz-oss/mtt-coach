@@ -33,15 +33,15 @@ describe("trainer eligibility audit", () => {
     });
   });
 
-  it("keeps exact source-backed charts trainer-safe", () => {
+  it("keeps exact imported candidates visible for study while blocking them from trainer", () => {
     const rows = buildFullChartInventoryRows();
     const exact = rows.find(row => row.chartId === "15:UTG_RFI");
 
     expect(exact).toMatchObject({
-      sourceStatus: "source_backed",
-      trainerAllowed: true,
+      sourceStatus: "imported_unreviewed",
+      trainerAllowed: false,
       appearsInViewer: true,
-      appearsInTrainer: true,
+      appearsInTrainer: false,
       passFail: "PASS",
     });
     expect(exact?.sourceFile).toBe("15bb-gto-charts.pdf");
@@ -56,7 +56,7 @@ describe("trainer eligibility audit", () => {
     expect(simplified?.passFail).toBe("PASS");
   });
 
-  it("builds exact cell audit rows for source-backed charts", () => {
+  it("builds exact cell audit rows for imported candidate charts", () => {
     const rows = buildChartCellAuditRows();
     const row = rows.find(
       candidate =>
@@ -64,12 +64,13 @@ describe("trainer eligibility audit", () => {
     );
 
     expect(row).toMatchObject({
-      sourceStatus: "source_backed",
+      sourceStatus: "imported_unreviewed",
       appAction: "RAISE",
       sourceAction: "RAISE",
       matchYesNo: "yes",
       changedYesNo: "no",
     });
+    expect(row?.reason).toContain("owner review is still pending");
   });
 
   it("marks simplified cell rows as study-only comparisons", () => {
@@ -87,14 +88,14 @@ describe("trainer eligibility audit", () => {
     expect(row?.reason).toContain("study-only");
   });
 
-  it("summarizes blocked and source-backed counts", () => {
+  it("summarizes blocked imported candidates and study-only coverage", () => {
     const summary = summarizeTrainerEligibilityAudit(
       buildFullChartInventoryRows()
     );
 
     expect(summary.totalCharts).toBeGreaterThan(0);
-    expect(summary.sourceBackedCount).toBeGreaterThan(0);
+    expect(summary.sourceBackedCount).toBe(0);
     expect(summary.blockedCount).toBeGreaterThan(0);
-    expect(summary.trainerAllowedCount).toBe(summary.sourceBackedCount);
+    expect(summary.trainerAllowedCount).toBe(0);
   });
 });

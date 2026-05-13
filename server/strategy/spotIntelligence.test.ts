@@ -108,7 +108,7 @@ describe("preflop study intelligence layer", () => {
       },
     ]);
 
-    expect(pack?.supported).toBe(false);
+    expect(pack?.supported).toBe(true);
     expect(pack?.spotCount).toBe(1);
     expect(pack?.trainerSpotCount).toBe(0);
     expect(pack?.blockedSpotCount).toBe(1);
@@ -204,7 +204,7 @@ describe("preflop study intelligence layer", () => {
       },
     ]);
 
-    expect(resolved?.supported).toBe(false);
+    expect(resolved?.supported).toBe(true);
     expect(resolved?.spotCount).toBe(2);
     expect(resolved?.trainerSpotCount).toBe(0);
     expect(resolved?.blockedSpotCount).toBe(2);

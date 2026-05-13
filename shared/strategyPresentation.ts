@@ -133,7 +133,7 @@ export function buildStrategyChartPresentation(
     trainingGateMessage: trust.trainerAllowed
       ? null
       : sourceStatus === "imported_unreviewed"
-        ? "Imported source candidate only. Training is blocked until the reviewed 169-cell chart is approved."
+        ? "Imported source candidate only. Training is blocked until owner review confirms the 169-cell chart."
         : sourceStatus === "generated_candidate"
           ? "Generated candidate only. Training is blocked until a reviewed source-backed chart exists."
           : sourceStatus === "simplified_population"

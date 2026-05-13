@@ -297,9 +297,9 @@ describe("hand study routing", () => {
       leakFamilyId: null,
     });
 
-    expect(suggestion.drillRoute).toBe("/strategy/trainer?chartId=75");
+    expect(suggestion.drillRoute).toBeNull();
     expect(suggestion.chartRoute).toBe("/strategy/library?chartId=75");
-    expect(suggestion.chartReferenceLabel).toBe("Exact study reference");
+    expect(suggestion.chartReferenceLabel).toBe("Imported study candidate");
   });
 
   it("labels nearest-chart fallbacks honestly", () => {

@@ -15,19 +15,19 @@ import { SEED_CHARTS } from "./seedData";
 import { assertCompleteChartActions } from "./service";
 
 describe("strategy chart integrity", () => {
-  it("keeps every trainer-safe chart complete, unique, and valid", () => {
-    const trainerSafeCharts = SEED_CHARTS.filter(chart =>
-      isTrainerAllowedStrategyChart(chart)
+  it("keeps every automated exact-chart candidate complete, unique, and valid even while trainer stays blocked", () => {
+    const automatedCandidates = SEED_CHARTS.filter(
+      chart => chart.sourceStatus === "imported_unreviewed"
     );
 
-    expect(trainerSafeCharts.length).toBeGreaterThan(0);
+    expect(automatedCandidates.length).toBeGreaterThan(0);
 
-    for (const chart of trainerSafeCharts) {
+    for (const chart of automatedCandidates) {
       const handCodes = chart.actions.map(action => action.handCode);
       const uniqueHandCodes = new Set(handCodes);
 
-      expect(chart.sourceStatus).toBe("source_backed");
-      expect(chart.cellMapSource).toBe("reviewed");
+      expect(chart.sourceStatus).toBe("imported_unreviewed");
+      expect(chart.cellMapSource).toBe("imported_unreviewed");
       expect(chart.dataVersion).toBeTruthy();
       expect(chart.reviewedBy).toBeTruthy();
       expect(chart.reviewedAt).toBeTruthy();
@@ -41,6 +41,7 @@ describe("strategy chart integrity", () => {
       }
 
       expect(() => assertCompleteChartActions(chart)).not.toThrow();
+      expect(isTrainerAllowedStrategyChart(chart)).toBe(false);
     }
   });
 
@@ -77,11 +78,11 @@ describe("strategy chart integrity", () => {
     ).toBe(false);
   });
 
-  it("exposes review metadata on every trainer-safe trust descriptor", () => {
-    for (const chart of SEED_CHARTS.filter(candidate => isTrainerAllowedStrategyChart(candidate))) {
+  it("exposes blocking review metadata on every automated exact-chart trust descriptor", () => {
+    for (const chart of SEED_CHARTS.filter(candidate => candidate.sourceStatus === "imported_unreviewed")) {
       const trust = getStrategyChartTrustMetadata(chart);
-      expect(trust.sourceStatus).toBe("source_backed");
-      expect(trust.trainerAllowed).toBe(true);
+      expect(trust.sourceStatus).toBe("imported_unreviewed");
+      expect(trust.trainerAllowed).toBe(false);
       expect(trust.hasReviewedData).toBe(true);
       expect(trust.reviewStatus).toBe("automated_integrity_pass");
       expect(trust.dataVersion).toBeTruthy();
@@ -91,13 +92,13 @@ describe("strategy chart integrity", () => {
       expect(trust.structurallyComplete).toBe(true);
       expect(trust.automatedIntegrityPassed).toBe(true);
       expect(trust.ownerReviewed).toBe(false);
-      expect(trust.trainerEligibleForReviewDeployment).toBe(true);
+      expect(trust.trainerEligibleForReviewDeployment).toBe(false);
       expect(trust.trainerEligibleForFinalProduction).toBe(false);
-      expect(trust.cellMapSource).toBe("reviewed");
+      expect(trust.cellMapSource).toBe("imported_unreviewed");
     }
   });
 
-  it("treats Codex-reviewed charts as automated deployment-review charts, not owner-reviewed production charts", () => {
+  it("treats Codex-reviewed charts as automated candidates, not trainer-safe production charts", () => {
     const machineReviewedChart = REVIEWED_STRATEGY_CHARTS[0];
     expect(machineReviewedChart).toBeDefined();
     expect(() => validateReviewedStrategyChart(machineReviewedChart!)).not.toThrow();
@@ -109,7 +110,7 @@ describe("strategy chart integrity", () => {
     expect(machineGovernance.structurallyComplete).toBe(true);
     expect(machineGovernance.automatedIntegrityPassed).toBe(true);
     expect(machineGovernance.ownerReviewed).toBe(false);
-    expect(machineGovernance.trainerEligibleForReviewDeployment).toBe(true);
+    expect(machineGovernance.trainerEligibleForReviewDeployment).toBe(false);
     expect(machineGovernance.trainerEligibleForFinalProduction).toBe(false);
 
     const ownerReviewedChart: ReviewedStrategyChart = {

@@ -17,6 +17,7 @@ describe("grouped source panel note UI", () => {
 
     const markup = renderToStaticMarkup(
       React.createElement(StrategySourcePanelNote, {
+        sourceStatus: trust.sourceStatus,
         sourcePanelLabel: trust.sourcePanelLabel,
         sourcePanelGroup: trust.sourcePanelGroup,
         sourceCoverageNote: trust.sourceCoverageNote,
@@ -28,7 +29,7 @@ describe("grouped source panel note UI", () => {
 
     expect(markup).toContain("Automated integrity pass");
     expect(markup).toContain("pending owner review");
-    expect(markup).toContain("Source-backed grouped panel");
+    expect(markup).toContain("Grouped source panel mapping");
     expect(markup).toContain("Source panel: UTG+1/+2 vs UTG RFI");
     expect(markup).toContain("Grouped source panel: UTG+1/+2");
     expect(markup).toContain("UTG+1 vs UTG");

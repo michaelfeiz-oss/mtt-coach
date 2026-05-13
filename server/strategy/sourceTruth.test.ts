@@ -20,7 +20,7 @@ describe("source-of-truth chart coverage", () => {
     expect(SOURCE_BACKED_MAIN_STACKS).toEqual([15, 25, 40]);
   });
 
-  it("keeps 15bb facing-3bet exact-source and exposes 25bb/40bb as simplified population nodes", () => {
+  it("keeps 15bb exact facing-3bet charts visible as imported candidates and exposes 25bb/40bb as simplified population nodes", () => {
     expect(
       getStrategySourceStatus({
         stackDepth: 15,
@@ -29,7 +29,7 @@ describe("source-of-truth chart coverage", () => {
         villainPosition: "BB",
         spotKey: "CO_vs_BB_3bet",
       })
-    ).toBe("source_backed");
+    ).toBe("imported_unreviewed");
 
     expect(
       getStrategySourceStatus({
@@ -106,7 +106,7 @@ describe("source-of-truth chart coverage", () => {
     ).toBe(false);
   });
 
-  it("exposes grouped source panel metadata for source-backed review-deployment charts", () => {
+  it("keeps grouped source panel metadata on automated imported candidates while trainer stays blocked", () => {
     const trust = getStrategyChartTrustMetadata({
       stackDepth: 40,
       spotGroup: "VS_UTG_RFI",
@@ -115,8 +115,8 @@ describe("source-of-truth chart coverage", () => {
       spotKey: "HJ_vs_UTG",
     });
 
-    expect(trust.sourceStatus).toBe("source_backed");
-    expect(trust.trainerAllowed).toBe(true);
+    expect(trust.sourceStatus).toBe("imported_unreviewed");
+    expect(trust.trainerAllowed).toBe(false);
     expect(trust.hasReviewedData).toBe(true);
     expect(trust.reviewStatus).toBe("automated_integrity_pass");
     expect(trust.dataVersion).toBeTruthy();
@@ -126,7 +126,7 @@ describe("source-of-truth chart coverage", () => {
     expect(trust.structurallyComplete).toBe(true);
     expect(trust.automatedIntegrityPassed).toBe(true);
     expect(trust.ownerReviewed).toBe(false);
-    expect(trust.trainerEligibleForReviewDeployment).toBe(true);
+    expect(trust.trainerEligibleForReviewDeployment).toBe(false);
     expect(trust.trainerEligibleForFinalProduction).toBe(false);
     expect(trust.provenanceLabel).toBe("Automated integrity pass");
     expect(trust.provenanceNote).toContain("pending owner review");
@@ -144,8 +144,8 @@ describe("source-of-truth chart coverage", () => {
       spotKey: "HJ_RFI",
     });
 
-    expect(trust.sourceStatus).toBe("source_backed");
-    expect(trust.trainerAllowed).toBe(true);
+    expect(trust.sourceStatus).toBe("imported_unreviewed");
+    expect(trust.trainerAllowed).toBe(false);
     expect(trust.sourcePanelLabel).toBe("Lojack RFI");
     expect(trust.groupedSourcePanel).toBe(false);
     expect(trust.provenanceLabel).toBe("Automated integrity pass");

@@ -433,7 +433,7 @@ function getStrategyReviewProvenanceDescriptor(
     return {
       provenanceLabel: "Automated integrity pass",
       provenanceNote:
-        "Complete 169-cell chart - pending owner review.",
+        "Complete 169-cell imported chart candidate - pending owner review before trainer use.",
     };
   }
 
@@ -565,6 +565,9 @@ export function getStrategySourceStatus(
         spotKey: resolvedSpotKey,
       })
     : null;
+  const reviewedGovernance = reviewedChart
+    ? getReviewedStrategyChartGovernance(reviewedChart)
+    : null;
 
   if (!isSourceBackedMainStack(chart.stackDepth)) {
     return "unsupported";
@@ -575,7 +578,9 @@ export function getStrategySourceStatus(
     case "VS_UTG_RFI":
     case "VS_MP_RFI":
     case "VS_LP_RFI":
-      return reviewedChart ? "source_backed" : "imported_unreviewed";
+      return reviewedGovernance?.ownerReviewed
+        ? "source_backed"
+        : "imported_unreviewed";
     case "VS_3BET":
       if (!supportsFacingThreeBetHero(chart.heroPosition)) {
         return "unsupported";
@@ -583,7 +588,7 @@ export function getStrategySourceStatus(
 
       if (chart.stackDepth === 15) {
         return hasImportedExactFacingThreeBetChart(chart)
-          ? reviewedChart
+          ? reviewedGovernance?.ownerReviewed
             ? "source_backed"
             : "imported_unreviewed"
           : "unsupported";
@@ -745,12 +750,12 @@ export function getStrategySourceHelperText(
         return "Owner-reviewed source-backed chart from the tournament range set.";
       }
 
+      return "Source-backed chart metadata exists, but owner review provenance is incomplete.";
+    case "imported_unreviewed":
       if (metadata.automatedIntegrityPassed) {
-        return "Complete 169-cell source-backed chart from the automated integrity pass. Training is enabled for review deployment, but owner review is still pending.";
+        return "Complete 169-cell imported chart candidate from the PDF extraction pipeline. Training stays blocked until owner review confirms the actions.";
       }
 
-      return "Source-backed chart metadata exists, but the automated integrity pass is incomplete.";
-    case "imported_unreviewed":
       return "Imported source candidate. Review is incomplete, so training stays blocked.";
     case "generated_candidate":
       return "Generated candidate chart. Training stays blocked until a reviewed 169-cell source exists.";
@@ -793,7 +798,7 @@ export function getStrategyTrainingGateMessage(chart: StrategyChartLike) {
   }
 
   if (metadata.sourceStatus === "source_backed") {
-    return "This chart is blocked from training because the automated 169-cell integrity pass is incomplete.";
+    return "This chart is blocked from training because owner review provenance is incomplete.";
   }
 
   if (metadata.sourceStatus === "simplified_population") {
@@ -801,6 +806,10 @@ export function getStrategyTrainingGateMessage(chart: StrategyChartLike) {
   }
 
   if (metadata.sourceStatus === "imported_unreviewed") {
+    if (metadata.automatedIntegrityPassed) {
+      return "This chart is blocked from training because it is only an automated 169-cell import candidate. Owner review is still required before it can be used as answer truth.";
+    }
+
     return "This chart is blocked from training because the imported source candidate has not completed the reviewed 169-cell audit yet.";
   }
 

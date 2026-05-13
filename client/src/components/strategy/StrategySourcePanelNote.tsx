@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface StrategySourcePanelNoteProps {
+  sourceStatus?: string | null;
   sourcePanelLabel: string | null;
   sourcePanelGroup?: string | null;
   sourceCoverageNote?: string | null;
@@ -14,6 +15,7 @@ interface StrategySourcePanelNoteProps {
 }
 
 export function StrategySourcePanelNote({
+  sourceStatus,
   sourcePanelLabel,
   sourcePanelGroup,
   sourceCoverageNote,
@@ -26,8 +28,12 @@ export function StrategySourcePanelNote({
   if (!sourcePanelLabel && !provenanceLabel) return null;
 
   const toneLabel = groupedSourcePanel
-    ? "Source-backed grouped panel"
-    : "Source panel mapping";
+    ? sourceStatus === "source_backed"
+      ? "Source-backed grouped panel"
+      : "Grouped source panel mapping"
+    : sourceStatus === "source_backed"
+      ? "Source-backed panel"
+      : "Source panel mapping";
 
   return (
     <div

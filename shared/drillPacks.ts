@@ -244,7 +244,7 @@ export function resolvePriorityDrillPack(
     spotCount: matchingSpots.length,
     trainerSpotCount: trainerSpots.length,
     blockedSpotCount: blockedSpots.length,
-    supported: trainerSpots.length > 0,
+    supported: matchingSpots.length > 0,
     trainerAvailable: trainerSpots.length > 0,
   };
 }
