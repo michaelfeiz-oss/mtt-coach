@@ -254,6 +254,7 @@ export function TrainerResultReveal({
                   actions={actionMap}
                   compact
                   readonly
+                  strictComplete
                   highlightedHand={handCode}
                   size="sm"
                 />
@@ -262,6 +263,7 @@ export function TrainerResultReveal({
                 <RangeMatrix
                   actions={actionMap}
                   readonly
+                  strictComplete
                   highlightedHand={handCode}
                   size="md"
                 />

@@ -59,6 +59,12 @@ export const ACTION_CELL_STYLES: Record<
   },
 };
 
+export const MISSING_ACTION_CELL_STYLE = {
+  backgroundColor: "#FEF2F2",
+  color: "#B91C1C",
+  label: "Missing data",
+} as const;
+
 export function isStrategyAction(value: string): value is Action {
   return (ACTIONS as readonly string[]).includes(value);
 }
