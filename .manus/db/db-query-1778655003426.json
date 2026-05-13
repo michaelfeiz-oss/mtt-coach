@@ -1,0 +1,13 @@
+{
+  "query": "\nUPDATE rangeCharts\nSET sourceStatus = 'generated_candidate',\n    sourcePanelLabel = 'Interpolated — no PDF source',\n    dataVersion = '2026-05-13-generated-v1'\nWHERE stackDepth = 20\n  AND (sourceStatus IS NULL OR sourceStatus = '');\n\nSELECT COUNT(*) as updated_20bb FROM rangeCharts WHERE stackDepth = 20 AND sourceStatus = 'generated_candidate';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute \nUPDATE rangeCharts\nSET sourceStatus = 'generated_candidate',\n    sourcePanelLabel = 'Interpolated — no PDF source',\n    dataVersion = '2026-05-13-generated-v1'\nWHERE stackDepth = 20\n  AND (sourceStatus IS NULL OR sourceStatus = '');\n\nSELECT COUNT(*) as updated_20bb FROM rangeCharts WHERE stackDepth = 20 AND sourceStatus = 'generated_candidate';\n",
+  "rows": [
+    {
+      "updated_20bb": "54"
+    }
+  ],
+  "messages": [],
+  "stdout": "updated_20bb\n54\n",
+  "stderr": "",
+  "execution_time_ms": 2183
+}

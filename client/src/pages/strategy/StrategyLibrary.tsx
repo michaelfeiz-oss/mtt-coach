@@ -399,7 +399,11 @@ export default function StrategyLibrary() {
                               ? "bg-[#FFF7E6] text-[#9A4D12] border border-amber-200"
                               : chartPresentation.sourceStatus === "proxy"
                                 ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                : "bg-rose-50 text-rose-800 border border-rose-200"
+                                : chartPresentation.sourceStatus === "imported_unreviewed"
+                                  ? "bg-amber-50 text-amber-800 border border-amber-300"
+                                  : chartPresentation.sourceStatus === "generated_candidate"
+                                    ? "bg-slate-100 text-slate-700 border border-slate-300"
+                                    : "bg-rose-50 text-rose-800 border border-rose-200"
                         )}
                       >
                         {chartPresentation.sourceBadge}

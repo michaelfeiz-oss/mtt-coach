@@ -1,0 +1,95 @@
+{
+  "query": "\nUPDATE rangeCharts\nSET sourceStatus = 'imported_unreviewed',\n    sourcePanelLabel = 'Data present — PDF review pending',\n    dataVersion = '2026-05-13-imported-v1'\nWHERE sourceStatus IS NULL\n  AND stackDepth != 20\n  AND spotKey != 'TEST_BTN_RFI';\n\nSELECT spotKey, stackDepth, sourceStatus FROM rangeCharts\nWHERE sourceStatus = 'imported_unreviewed'\nORDER BY stackDepth, spotKey;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute \nUPDATE rangeCharts\nSET sourceStatus = 'imported_unreviewed',\n    sourcePanelLabel = 'Data present — PDF review pending',\n    dataVersion = '2026-05-13-imported-v1'\nWHERE sourceStatus IS NULL\n  AND stackDepth != 20\n  AND spotKey != 'TEST_BTN_RFI';\n\nSELECT spotKey, stackDepth, sourceStatus FROM rangeCharts\nWHERE sourceStatus = 'imported_unreviewed'\nORDER BY stackDepth, spotKey;\n",
+  "rows": [
+    {
+      "spotKey": "BTN_vs_SB_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "CO_vs_BTN_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "HJ_vs_BTN_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "HJ_vs_CO_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "HJ_vs_SB_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "MP_vs_BTN_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "MP_vs_CO_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "MP_vs_HJ_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "MP_vs_SB_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "SB_vs_BB_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "UTG_vs_CO_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "UTG_vs_HJ_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "UTG_vs_MP_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "UTG1_vs_CO_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "UTG1_vs_HJ_3bet",
+      "stackDepth": "15",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "SB_vs_BB_3bet",
+      "stackDepth": "25",
+      "sourceStatus": "imported_unreviewed"
+    },
+    {
+      "spotKey": "SB_vs_BB_3bet",
+      "stackDepth": "40",
+      "sourceStatus": "imported_unreviewed"
+    }
+  ],
+  "messages": [],
+  "stdout": "spotKey\tstackDepth\tsourceStatus\nBTN_vs_SB_3bet\t15\timported_unreviewed\nCO_vs_BTN_3bet\t15\timported_unreviewed\nHJ_vs_BTN_3bet\t15\timported_unreviewed\nHJ_vs_CO_3bet\t15\timported_unreviewed\nHJ_vs_SB_3bet\t15\timported_unreviewed\nMP_vs_BTN_3bet\t15\timported_unreviewed\nMP_vs_CO_3bet\t15\timported_unreviewed\nMP_vs_HJ_3bet\t15\timported_unreviewed\nMP_vs_SB_3bet\t15\timported_unreviewed\nSB_vs_BB_3bet\t15\timported_unreviewed\nUTG_vs_CO_3bet\t15\timported_unreviewed\nUTG_vs_HJ_3bet\t15\timported_unreviewed\nUTG_vs_MP_3bet\t15\timported_unreviewed\nUTG1_vs_CO_3bet\t15\timported_unreviewed\nUTG1_vs_HJ_3bet\t15\timported_unreviewed\nSB_vs_BB_3bet\t25\timported_unreviewed\nSB_vs_BB_3bet\t40\timported_unreviewed\n",
+  "stderr": "",
+  "execution_time_ms": 2049
+}
