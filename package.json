@@ -10,6 +10,8 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
+    "strategy:validate": "tsx server/strategy/validateStrategyData.ts",
+    "strategy:golden": "vitest run server/strategy/goldenCells.test.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {

@@ -19,8 +19,14 @@ import {
   type SpotGroup,
 } from "../../shared/strategy";
 import {
+  getReviewedStrategyChart,
+  type ReviewedStrategyChart,
+} from "../../shared/strategy-data/reviewed";
+import { validateReviewedStrategyCharts } from "../../shared/strategyDataValidation";
+import {
   getSimplifiedVsThreeBetFamily,
   getStrategySourceLabel,
+  getStrategySourceStatus,
   isSourceSupportedStrategyChart,
 } from "../../shared/sourceTruth";
 import { formatStrategyChartTitle } from "../../shared/strategyPresentation";
@@ -43,6 +49,12 @@ export interface SeedChart {
   heroPosition: string;
   villainPosition?: string;
   sourceLabel?: string;
+  sourceStatus?: ReturnType<typeof getStrategySourceStatus>;
+  sourceFile?: string | null;
+  sourcePanelLabel?: string | null;
+  dataVersion?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
   notes?: string[];
   actions: SeedHandAction[];
 }
@@ -853,7 +865,16 @@ function buildChartActions(
 }
 
 function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedChart {
-  // Prefer source-verified PDF chart data over heuristic generation
+  const reviewedChart = getReviewedStrategyChart({
+    stackDepth,
+    spotKey: definition.key,
+  });
+  if (reviewedChart) {
+    return buildReviewedSeedChart(reviewedChart);
+  }
+
+  // Fall back to imported candidate data for study-only charts that are not
+  // yet part of the reviewed trainer-safe catalog.
   const sourceChart = getSourceChart(stackDepth, definition.key);
   if (sourceChart) {
     return {
@@ -869,7 +890,21 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
       spotKey: definition.key,
       heroPosition: definition.heroPosition,
       villainPosition: definition.villainPosition,
-      sourceLabel: sourceChart.sourceLabel,
+      sourceLabel:
+        getStrategySourceLabel({
+          stackDepth,
+          spotGroup: definition.group,
+          heroPosition: definition.heroPosition,
+          villainPosition: definition.villainPosition,
+          spotKey: definition.key,
+        }) ?? sourceChart.sourceLabel,
+      sourceStatus: getStrategySourceStatus({
+        stackDepth,
+        spotGroup: definition.group,
+        heroPosition: definition.heroPosition,
+        villainPosition: definition.villainPosition,
+        spotKey: definition.key,
+      }),
       notes: chartNotes(definition, stackDepth),
       actions: sourceChart.actions.map(a => ({
         handCode: a.handCode,
@@ -889,18 +924,58 @@ function buildSeedChart(definition: SpotDefinition, stackDepth: number): SeedCha
     stackDepth,
     spotGroup: definition.group,
     spotKey: definition.key,
-    heroPosition: definition.heroPosition,
-    villainPosition: definition.villainPosition,
-    sourceLabel:
+      heroPosition: definition.heroPosition,
+      villainPosition: definition.villainPosition,
+      sourceLabel:
       getStrategySourceLabel({
         stackDepth,
         spotGroup: definition.group,
         heroPosition: definition.heroPosition,
-        villainPosition: definition.villainPosition,
-        spotKey: definition.key,
-      }) ?? "MTT Coach structured baseline",
+          villainPosition: definition.villainPosition,
+          spotKey: definition.key,
+        }) ?? "MTT Coach structured baseline",
+    sourceStatus: getStrategySourceStatus({
+      stackDepth,
+      spotGroup: definition.group,
+      heroPosition: definition.heroPosition,
+      villainPosition: definition.villainPosition,
+      spotKey: definition.key,
+    }),
     notes: chartNotes(definition, stackDepth),
     actions: buildChartActions(definition, stackDepth),
+  };
+}
+
+function buildReviewedSeedChart(reviewedChart: ReviewedStrategyChart): SeedChart {
+  return {
+    title: reviewedChart.title,
+    stackDepth: reviewedChart.stackDepth,
+    spotGroup: reviewedChart.spotGroup,
+    spotKey: reviewedChart.spotKey,
+    heroPosition: reviewedChart.heroPosition,
+    villainPosition: reviewedChart.villainPosition ?? undefined,
+    sourceLabel: "Source-backed",
+    sourceStatus: "source_backed",
+    sourceFile: reviewedChart.sourceFile,
+    sourcePanelLabel: reviewedChart.sourcePanelLabel,
+    dataVersion: reviewedChart.dataVersion,
+    reviewedBy: reviewedChart.reviewedBy,
+    reviewedAt: reviewedChart.reviewedAt,
+    notes: chartNotes(
+      {
+        key: reviewedChart.spotKey,
+        label: reviewedChart.title,
+        group: reviewedChart.spotGroup,
+        heroPosition: reviewedChart.heroPosition,
+        villainPosition: reviewedChart.villainPosition ?? undefined,
+      },
+      reviewedChart.stackDepth
+    ),
+    actions: ALL_HANDS.map(handCode => ({
+      handCode,
+      primaryAction: reviewedChart.actions[handCode],
+      weightPercent: 100,
+    })),
   };
 }
 
@@ -970,4 +1045,5 @@ export const SEED_CHARTS: SeedChart[] = STACK_DEPTHS.flatMap(stackDepth =>
   )
 );
 
+validateReviewedStrategyCharts();
 validateSeedCharts(SEED_CHARTS);

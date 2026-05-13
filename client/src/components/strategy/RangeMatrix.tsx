@@ -2,7 +2,7 @@ import React from "react";
 import { generateHandGrid } from "../../../../shared/strategy";
 import type { Action, HandAction } from "../../../../shared/strategy";
 import { cn } from "@/lib/utils";
-import { ACTION_CELL_STYLES } from "./actionStyles";
+import { ACTION_CELL_STYLES, MISSING_ACTION_CELL_STYLE } from "./actionStyles";
 
 export type MatrixSize = "sm" | "md" | "lg";
 
@@ -15,6 +15,7 @@ interface RangeMatrixProps {
   onSelectHand?: (handCode: string) => void;
   readOnly?: boolean;
   readonly?: boolean;
+  strictComplete?: boolean;
   showCellLabels?: boolean;
   size?: MatrixSize;
   className?: string;
@@ -30,8 +31,6 @@ const SIZE_CONFIG: Record<
 };
 
 const COMPACT_SIZE_CONFIG = { minCell: 18, maxCell: 30, font: 9 };
-
-const DEFAULT_ACTION: Action = "FOLD";
 
 export function getRangeGrid(): string[][] {
   return generateHandGrid();
@@ -55,8 +54,27 @@ export function getActionForHand(
   return actions[handCode];
 }
 
-function getActionLabel(action: HandAction | undefined): string {
-  return ACTION_CELL_STYLES[action?.primaryAction ?? DEFAULT_ACTION].label;
+export function getMatrixCellDisplay(
+  action: HandAction | undefined,
+  strictComplete = false
+) {
+  if (!action) {
+    return {
+      primaryAction: null,
+      label: strictComplete ? "Missing data (strict)" : "Missing data",
+      style: MISSING_ACTION_CELL_STYLE,
+      isMissing: true,
+      frequency: null,
+    };
+  }
+
+  return {
+    primaryAction: action.primaryAction,
+    label: ACTION_CELL_STYLES[action.primaryAction].label,
+    style: ACTION_CELL_STYLES[action.primaryAction],
+    isMissing: false,
+    frequency: action.weightPercent ?? null,
+  };
 }
 
 export function RangeMatrix({
@@ -68,6 +86,7 @@ export function RangeMatrix({
   onSelectHand,
   readOnly = false,
   readonly: readOnlyAlias,
+  strictComplete = false,
   showCellLabels = true,
   size = "md",
   className = "",
@@ -112,12 +131,16 @@ export function RangeMatrix({
       >
         {grid.flat().map(handCode => {
           const action = getActionForHand(actionLookup, handCode);
-          const actionName = action?.primaryAction ?? DEFAULT_ACTION;
-          const style = ACTION_CELL_STYLES[actionName];
+          const cellDisplay = getMatrixCellDisplay(action, strictComplete);
+          const style = cellDisplay.style;
           const isHighlighted = handCode === selectedHand;
-          const label = getActionLabel(action);
-          const frequency = action?.weightPercent;
-          const title = `${handCode}: ${label}${frequency ? ` (${frequency}%)` : ""}`;
+          const label = cellDisplay.label;
+          const frequency = cellDisplay.frequency;
+          const title = cellDisplay.isMissing
+            ? strictComplete
+              ? `${handCode}: Missing action data (reviewed/source-backed chart should be complete)`
+              : `${handCode}: Missing action data`
+            : `${handCode}: ${label}${frequency ? ` (${frequency}%)` : ""}`;
 
           return (
             <button
@@ -125,6 +148,7 @@ export function RangeMatrix({
               type="button"
               role="gridcell"
               aria-label={`${handCode} ${label}`}
+              data-missing={cellDisplay.isMissing ? "true" : "false"}
               aria-selected={isHighlighted}
               tabIndex={isInteractive ? 0 : -1}
               title={title}
@@ -132,6 +156,8 @@ export function RangeMatrix({
               className={cn(
                 "relative flex aspect-square min-h-0 items-center justify-center overflow-hidden border border-white font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] transition duration-150",
                 compact ? "rounded-[5px]" : "rounded-md",
+                cellDisplay.isMissing &&
+                  "border-rose-200 shadow-[inset_0_0_0_1px_rgba(220,38,38,0.12)]",
                 isInteractive
                   ? "cursor-pointer hover:-translate-y-0.5 hover:brightness-[1.03] active:translate-y-0 active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FB923C] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   : "cursor-default",
