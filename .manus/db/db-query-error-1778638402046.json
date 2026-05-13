@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE `rangeCharts`\n  ADD COLUMN `sourceStatus` enum(\n    'source_backed',\n    'imported_unreviewed',\n    'generated_candidate',\n    'proxy',\n    'simplified_population',\n    'unsupported'\n  ) DEFAULT NULL AFTER `sourceLabel`,\n  ADD COLUMN `sourceFile` varchar(255) DEFAULT NULL AFTER `sourceStatus`,\n  ADD COLUMN `sourcePanelLabel` varchar(255) DEFAULT NULL AFTER `sourceFile`,\n  ADD COLUMN `dataVersion` varchar(64) DEFAULT NULL AFTER `sourcePanelLabel`,\n  ADD COLUMN `reviewedBy` varchar(255) DEFAULT NULL AFTER `dataVersion`,\n  ADD COLUMN `reviewedAt` varchar(32) DEFAULT NULL AFTER `reviewedBy`;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute ALTER TABLE `rangeCharts`\n  ADD COLUMN `sourceStatus` enum(\n    'source_backed',\n    'imported_unreviewed',\n    'generated_candidate',\n    'proxy',\n    'simplified_population',\n    'unsupported'\n  ) DEFAULT NULL AFTER `sourceLabel`,\n  ADD COLUMN `sourceFile` varchar(255) DEFAULT NULL AFTER `sourceStatus`,\n  ADD COLUMN `sourcePanelLabel` varchar(255) DEFAULT NULL AFTER `sourceFile`,\n  ADD COLUMN `dataVersion` varchar(64) DEFAULT NULL AFTER `sourcePanelLabel`,\n  ADD COLUMN `reviewedBy` varchar(255) DEFAULT NULL AFTER `dataVersion`,\n  ADD COLUMN `reviewedAt` varchar(32) DEFAULT NULL AFTER `reviewedBy`;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'sourcestatus' in 'rangeCharts'"
+  ]
+}

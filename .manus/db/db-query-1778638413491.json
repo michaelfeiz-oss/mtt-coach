@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `rangeCharts` ADD COLUMN `sourceStatus` enum('source_backed','imported_unreviewed','generated_candidate','proxy','simplified_population','unsupported') DEFAULT NULL AFTER `sourceLabel`;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute ALTER TABLE `rangeCharts` ADD COLUMN `sourceStatus` enum('source_backed','imported_unreviewed','generated_candidate','proxy','simplified_population','unsupported') DEFAULT NULL AFTER `sourceLabel`;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2032
+}

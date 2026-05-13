@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `rangeCharts` ADD COLUMN `sourceFile` varchar(255) DEFAULT NULL AFTER `sourceStatus`;\nALTER TABLE `rangeCharts` ADD COLUMN `sourcePanelLabel` varchar(255) DEFAULT NULL AFTER `sourceFile`;\nALTER TABLE `rangeCharts` ADD COLUMN `dataVersion` varchar(64) DEFAULT NULL AFTER `sourcePanelLabel`;\nALTER TABLE `rangeCharts` ADD COLUMN `reviewedBy` varchar(255) DEFAULT NULL AFTER `dataVersion`;\nALTER TABLE `rangeCharts` ADD COLUMN `reviewedAt` varchar(32) DEFAULT NULL AFTER `reviewedBy`;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3SoCqzRfnhrz7B5.fc077db4ca74 --database BFa4yaxy9c4cDn5az6aTTB --execute ALTER TABLE `rangeCharts` ADD COLUMN `sourceFile` varchar(255) DEFAULT NULL AFTER `sourceStatus`;\nALTER TABLE `rangeCharts` ADD COLUMN `sourcePanelLabel` varchar(255) DEFAULT NULL AFTER `sourceFile`;\nALTER TABLE `rangeCharts` ADD COLUMN `dataVersion` varchar(64) DEFAULT NULL AFTER `sourcePanelLabel`;\nALTER TABLE `rangeCharts` ADD COLUMN `reviewedBy` varchar(255) DEFAULT NULL AFTER `dataVersion`;\nALTER TABLE `rangeCharts` ADD COLUMN `reviewedAt` varchar(32) DEFAULT NULL AFTER `reviewedBy`;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3500
+}
