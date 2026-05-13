@@ -71,6 +71,13 @@
       "when": 1777527512304,
       "tag": "0006_coaching_loop_training",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1778623200000,
+      "tag": "0009_strategy_chart_review_metadata",
+      "breakpoints": true
     }
   ]
 }

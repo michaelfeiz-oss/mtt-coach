@@ -128,10 +128,14 @@ export function buildStrategyChartPresentation(
     cellMapSource: trust.cellMapSource,
     trainingGateMessage: trust.trainerAllowed
       ? null
-      : sourceStatus === "simplified_population"
-        ? "Study-only simplified node. Training is blocked until a human approval exists."
-        : sourceStatus === "proxy"
-          ? "Study-only proxy node. Training is blocked until a human approval exists."
-          : "Unsupported node. Training stays blocked until source evidence exists.",
+      : sourceStatus === "imported_unreviewed"
+        ? "Imported source candidate only. Training is blocked until the reviewed 169-cell chart is approved."
+        : sourceStatus === "generated_candidate"
+          ? "Generated candidate only. Training is blocked until a reviewed source-backed chart exists."
+          : sourceStatus === "simplified_population"
+            ? "Study-only simplified node. Training is blocked until a human approval exists."
+            : sourceStatus === "proxy"
+              ? "Study-only proxy node. Training is blocked until a human approval exists."
+              : "Unsupported node. Training stays blocked until source evidence exists.",
   };
 }
