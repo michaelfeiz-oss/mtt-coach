@@ -1,4 +1,4 @@
-import type { Action } from "../../shared/strategy";
+import type { Action } from "../../shared/preflopStrategy";
 
 export interface VerifiedGoldenCell {
   stackDepth: number;

@@ -324,7 +324,7 @@ describe("hand study routing", () => {
       leakFamilyId: "sub_premium_vs_pressure_mistakes",
     });
 
-    expect(suggestion.chartReferenceLabel).toBe("Nearest 40bb study reference");
+    expect(suggestion.chartReferenceLabel).toBe("Imported study candidate");
   });
 
   it("falls back to a drill pack when no chart is available", () => {
@@ -343,6 +343,6 @@ describe("hand study routing", () => {
     expect(mapStackToStudyReferenceBucket(18)).toBe(15);
     expect(mapStackToStudyReferenceBucket(27)).toBe(25);
     expect(mapStackToStudyReferenceBucket(44)).toBe(40);
-    expect(mapStackToStudyReferenceBucket(60)).toBe(40);
+    expect(mapStackToStudyReferenceBucket(60)).toBe(70);
   });
 });

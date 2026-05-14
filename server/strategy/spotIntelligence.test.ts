@@ -49,8 +49,8 @@ describe("preflop study intelligence layer", () => {
 
     expect(context).not.toBeNull();
     expect(getStrategyChartSelector(context!)).toEqual({
-      spotGroup: "VS_LP_RFI",
-      spotKey: "BB_vs_CO",
+      spotGroup: "facing_open_late",
+      spotKey: "BB_vs_CO_open",
     });
   });
 

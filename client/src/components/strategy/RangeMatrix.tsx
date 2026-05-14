@@ -1,6 +1,6 @@
 import React from "react";
-import { generateHandGrid } from "../../../../shared/strategy";
-import type { HandAction } from "../../../../shared/strategy";
+import { generateHandGrid } from "../../../../shared/preflopStrategy";
+import type { HandAction } from "../../../../shared/preflopStrategy";
 import { cn } from "@/lib/utils";
 import { ACTION_CELL_STYLES, MISSING_ACTION_CELL_STYLE } from "./actionStyles";
 

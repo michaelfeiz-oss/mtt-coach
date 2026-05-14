@@ -14,7 +14,12 @@ import {
   listTrainerAvailableSpots,
   submitTrainerAttempt,
 } from "./service";
-import { ACTIONS, POSITIONS, SPOT_GROUPS, STACK_DEPTHS } from "../../shared/strategy";
+import {
+  ACTIONS,
+  POSITIONS,
+  SPOT_GROUPS,
+  STACK_DEPTHS,
+} from "../../shared/preflopStrategy";
 
 const StackDepthInput = z
   .number()

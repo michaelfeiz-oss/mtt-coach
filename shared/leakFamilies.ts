@@ -1,4 +1,4 @@
-import type { Action } from "./strategy";
+import type { Action } from "./preflopStrategy";
 import type { CanonicalSpotContext } from "./spotIds";
 import type { CanonicalSpotFamily } from "./preflopTaxonomy";
 

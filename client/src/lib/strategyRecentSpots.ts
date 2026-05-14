@@ -1,4 +1,4 @@
-import type { SpotGroup } from "../../../shared/strategy";
+import type { SpotGroup } from "../../../shared/preflopStrategy";
 
 export const RECENT_STRATEGY_SPOTS_KEY = "mtt.strategy.recentSpots";
 export const RECENT_STRATEGY_SPOTS_LIMIT = 6;
@@ -11,6 +11,7 @@ export interface RecentStrategySpot {
   spotKey: string;
   heroPosition: string;
   villainPosition?: string | null;
+  villainGroup?: string | null;
 }
 
 function isRecentStrategySpot(value: unknown): value is RecentStrategySpot {

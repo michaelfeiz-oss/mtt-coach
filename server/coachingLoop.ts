@@ -3,10 +3,9 @@ import {
   handLeaks,
   hands,
   leaks,
-  rangeCharts,
-  trainerAttempts,
+  strategyNodes,
+  strategyTrainerAttempts,
   type Hand,
-  type RangeChart,
 } from "../drizzle/schema";
 import { getDb } from "./db";
 import {
@@ -42,7 +41,7 @@ import {
   normalizeStudyStage,
   type CanonicalSpotFamily,
 } from "../shared/preflopTaxonomy";
-import { displayPositionLabel, type Position } from "../shared/strategy";
+import { displayPositionLabel, type Position } from "../shared/preflopStrategy";
 import {
   extractStudyMeta,
   getHandStrategyRecommendation,
@@ -719,6 +718,22 @@ function buildReviewQueueSummaryFromHands(
   };
 }
 
+function canonicalContextFromTypedNode(node: {
+  stackBucket: number;
+  scenarioFamily: string;
+  heroPosition: string;
+  villainPosition?: string | null;
+  villainGroup?: string | null;
+}) {
+  return canonicalSpotContextFromChart({
+    stackDepth: node.stackBucket,
+    spotGroup: node.scenarioFamily as any,
+    heroPosition: node.heroPosition,
+    villainPosition: node.villainPosition ?? null,
+    villainGroup: node.villainGroup ?? null,
+  });
+}
+
 async function requireDb() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -733,13 +748,13 @@ export async function getWeakSpotSummary(
   const [attemptRows, handRows, availableSpots] = await Promise.all([
     db
       .select({
-        attempt: trainerAttempts,
-        chart: rangeCharts,
+        attempt: strategyTrainerAttempts,
+        chart: strategyNodes,
       })
-      .from(trainerAttempts)
-      .innerJoin(rangeCharts, eq(trainerAttempts.chartId, rangeCharts.id))
-      .where(eq(trainerAttempts.userId, userId))
-      .orderBy(desc(trainerAttempts.createdAt)),
+      .from(strategyTrainerAttempts)
+      .innerJoin(strategyNodes, eq(strategyTrainerAttempts.nodeId, strategyNodes.id))
+      .where(eq(strategyTrainerAttempts.userId, userId))
+      .orderBy(desc(strategyTrainerAttempts.createdAt)),
     db
       .select({
         hand: hands,
@@ -753,26 +768,38 @@ export async function getWeakSpotSummary(
     listTrainerAvailableSpots({}),
   ]);
 
-  const attempts: AggregatedTrainerAttempt[] = attemptRows.map(row => ({
-    id: row.attempt.id,
-    chartId: row.attempt.chartId,
-    chartTitle: row.chart.title,
-    canonicalSpotId: row.attempt.canonicalSpotId,
-    spotFamily: row.attempt.spotFamily as CanonicalSpotFamily,
-    sourceStatus: row.attempt.sourceStatus,
-    stackBb: row.attempt.stackBb,
-    heroPosition: normalizePosition(row.attempt.heroPosition),
-    villainPosition: normalizePosition(row.attempt.villainPosition),
-    handCode: row.attempt.handCode,
-    selectedAction: row.attempt.selectedAction,
-    correctAction: row.attempt.correctAction,
-    isCorrect: row.attempt.isCorrect,
-    confidence: row.attempt.confidence as TrainerAttemptConfidence | null,
-    drillPackId: row.attempt.drillPackId,
-    leakFamilyId:
-      (row.attempt.leakFamilyId as CanonicalLeakFamilyId | null) ?? null,
-    createdAt: row.attempt.createdAt,
-  }));
+  const attempts: AggregatedTrainerAttempt[] = attemptRows.map(row => {
+    const canonicalContext = canonicalContextFromTypedNode(row.chart);
+    const trust = getStrategyChartTrustMetadata({
+      stackDepth: row.chart.stackBucket,
+      spotGroup: row.chart.scenarioFamily as any,
+      heroPosition: row.chart.heroPosition,
+      villainPosition: row.chart.villainPosition,
+      villainGroup: row.chart.villainGroup,
+      spotKey: row.chart.spotKey,
+      reviewed: row.chart.reviewed,
+    });
+
+    return {
+      id: row.attempt.id,
+      chartId: row.chart.id,
+      chartTitle: row.chart.title,
+      canonicalSpotId: canonicalContext ? getCanonicalSpotId(canonicalContext) : null,
+      spotFamily: canonicalContext?.family ?? null,
+      sourceStatus: trust.sourceStatus,
+      stackBb: row.attempt.stackBucket,
+      heroPosition: normalizePosition(row.attempt.heroPosition),
+      villainPosition: normalizePosition(row.attempt.villainPosition),
+      handCode: row.attempt.handCode,
+      selectedAction: row.attempt.selectedAction,
+      correctAction: row.attempt.correctAction,
+      isCorrect: row.attempt.isCorrect,
+      confidence: row.attempt.confidence as TrainerAttemptConfidence | null,
+      drillPackId: null,
+      leakFamilyId: null,
+      createdAt: row.attempt.createdAt,
+    };
+  });
 
   const groupedHands = new Map<
     number,

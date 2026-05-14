@@ -17,7 +17,7 @@ import {
   type PushFoldModeKind,
 } from "@shared/pushFold";
 import { getSpotNote } from "@shared/spotNotes";
-import type { Action, HandAction, Position } from "@shared/strategy";
+import type { Action, HandAction, Position } from "@shared/preflopStrategy";
 
 const OPEN_SHOVE_POSITIONS: Position[] = ["UTG", "CO", "BTN", "SB"];
 const CALL_OFF_POSITIONS: Position[] = ["BB"];

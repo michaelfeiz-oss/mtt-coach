@@ -44,7 +44,7 @@ describe("trainer spot insight", () => {
     });
 
     expect(insight?.resultLine).toBe("Correct - 77 is a call here.");
-    expect(insight?.why).toContain("BB versus MP at 25bb");
+    expect(insight?.why).toContain("BB versus UTG+2 at 25bb");
     expect(insight?.why).toContain("enough equity to call");
     expect(insight?.rule).toContain("Small pairs at 15-25bb are stack-sensitive");
   });

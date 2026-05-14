@@ -1,4 +1,4 @@
-import type { Action, HandAction } from "../../../../shared/strategy";
+import type { Action, HandAction } from "../../../../shared/preflopStrategy";
 
 export function formatHandWithSuits(handCode: string): string {
   if (!handCode) return "";

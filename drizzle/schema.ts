@@ -403,6 +403,109 @@ export type TrainerAttempt = typeof trainerAttempts.$inferSelect;
 export type InsertTrainerAttempt = typeof trainerAttempts.$inferInsert;
 
 /**
+ * Typed preflop strategy rebuild: reviewed/manual seed nodes.
+ * This layer replaces legacy chart extraction as the source of truth.
+ */
+export const strategyNodes = mysqlTable("strategyNodes", {
+  id: int("id").autoincrement().primaryKey(),
+  version: varchar("version", { length: 80 }).notNull(),
+  stackBucket: int("stackBucket").notNull(), // 15 | 25 | 40 | 70
+  playerCount: int("playerCount").default(9).notNull(),
+  scenarioFamily: mysqlEnum("scenarioFamily", [
+    "rfi",
+    "facing_open_early",
+    "facing_open_middle",
+    "facing_open_late",
+    "facing_jam",
+    "sb_first_in",
+    "bb_vs_sb_open",
+    "bb_vs_sb_limp",
+  ]).notNull(),
+  heroPosition: varchar("heroPosition", { length: 10 }).notNull(),
+  villainPosition: varchar("villainPosition", { length: 10 }),
+  villainGroup: mysqlEnum("villainGroup", ["early", "middle", "late"]),
+  spotKey: varchar("spotKey", { length: 120 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  sourceLabel: varchar("sourceLabel", { length: 255 }).notNull(),
+  notes: text("notes"),
+  reviewed: boolean("reviewed").default(false).notNull(),
+  structurallyComplete: boolean("structurallyComplete").default(false).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  nodeLookupIdx: index("strategy_node_lookup_idx").on(
+    table.version,
+    table.stackBucket,
+    table.playerCount,
+    table.scenarioFamily,
+    table.heroPosition,
+    table.villainPosition
+  ),
+  nodeSpotIdx: index("strategy_node_spot_idx").on(
+    table.stackBucket,
+    table.scenarioFamily,
+    table.heroPosition,
+    table.villainPosition,
+    table.villainGroup
+  ),
+  activeIdx: index("strategy_node_active_idx").on(table.isActive, table.reviewed),
+}));
+
+export type StrategyNode = typeof strategyNodes.$inferSelect;
+export type InsertStrategyNode = typeof strategyNodes.$inferInsert;
+
+export const strategyNodeRanges = mysqlTable("strategyNodeRanges", {
+  id: int("id").autoincrement().primaryKey(),
+  nodeId: int("nodeId").notNull().references(() => strategyNodes.id, { onDelete: "cascade" }),
+  action: mysqlEnum("action", [
+    "JAM",
+    "FOUR_BET",
+    "THREE_BET",
+    "RAISE",
+    "LIMP",
+    "CALL",
+    "CHECK",
+    "FOLD",
+  ]).notNull(),
+  rangeNotation: text("rangeNotation").notNull(),
+  priority: int("priority").notNull(),
+  notes: text("notes"),
+  reviewed: boolean("reviewed").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  nodeRangeIdx: index("strategy_node_range_idx").on(table.nodeId, table.priority, table.action),
+}));
+
+export type StrategyNodeRange = typeof strategyNodeRanges.$inferSelect;
+export type InsertStrategyNodeRange = typeof strategyNodeRanges.$inferInsert;
+
+export const strategyTrainerAttempts = mysqlTable("strategyTrainerAttempts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").references(() => users.id, { onDelete: "set null" }),
+  nodeId: int("nodeId").notNull().references(() => strategyNodes.id, { onDelete: "cascade" }),
+  stackBucket: int("stackBucket").notNull(),
+  scenarioFamily: varchar("scenarioFamily", { length: 40 }).notNull(),
+  heroPosition: varchar("heroPosition", { length: 10 }).notNull(),
+  villainPosition: varchar("villainPosition", { length: 10 }),
+  villainGroup: varchar("villainGroup", { length: 16 }),
+  handCode: varchar("handCode", { length: 4 }).notNull(),
+  selectedAction: varchar("selectedAction", { length: 20 }).notNull(),
+  correctAction: varchar("correctAction", { length: 20 }).notNull(),
+  isCorrect: boolean("isCorrect").notNull(),
+  confidence: mysqlEnum("confidence", ["knew_it", "unsure", "guessed"]),
+  sessionId: varchar("sessionId", { length: 64 }),
+  responseTimeMs: int("responseTimeMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  trainerAttemptUserIdx: index("strategy_trainer_attempt_user_idx").on(table.userId, table.createdAt),
+  trainerAttemptNodeIdx: index("strategy_trainer_attempt_node_idx").on(table.nodeId, table.createdAt),
+}));
+
+export type StrategyTrainerAttempt = typeof strategyTrainerAttempts.$inferSelect;
+export type InsertStrategyTrainerAttempt = typeof strategyTrainerAttempts.$inferInsert;
+
+/**
  * ICM Study Pack module: high-pressure final-table content packs.
  */
 export const icmPacks = mysqlTable("icmPacks", {

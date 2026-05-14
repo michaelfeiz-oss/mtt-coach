@@ -13,6 +13,8 @@
     "strategy:audit": "tsx server/strategy/auditStrategyCells.ts",
     "strategy:validate": "tsx server/strategy/validateStrategyData.ts",
     "strategy:compare-db": "tsx server/strategy/compareSeedToDb.ts",
+    "strategy:inspect": "tsx server/strategy/inspectStrategyNodes.ts",
+    "strategy:backup-legacy": "tsx server/strategy/exportLegacyStrategyBackup.ts",
     "strategy:golden": "vitest run server/strategy/goldenCells.test.ts server/strategy/chartIntegrity.test.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },

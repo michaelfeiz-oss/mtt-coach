@@ -1,9 +1,12 @@
 /**
- * One-shot seed script for the strategy module.
+ * One-shot seed script for the typed strategy module.
  * Run with: node server/strategy/seedStrategy.mjs
  *
- * The script is idempotent by stackDepth + spotKey. Existing charts are
- * updated, and their action rows are replaced so seed fixes reach prod data.
+ * This seeds the fresh typed strategy tables only:
+ * - strategyNodes
+ * - strategyNodeRanges
+ *
+ * Legacy rangeCharts / rangeChartActions are intentionally ignored.
  */
 
 import { register } from "tsx/esm/api";
@@ -11,90 +14,100 @@ import { register } from "tsx/esm/api";
 register();
 
 async function main() {
-  const { SEED_CHARTS, validateSeedCharts } = await import("./seedData.ts");
   const { getDb } = await import("../db.ts");
-  const { rangeCharts, rangeChartActions } = await import("../../drizzle/schema.ts");
-  const { eq, and } = await import("drizzle-orm");
+  const {
+    strategyNodes,
+    strategyNodeRanges,
+  } = await import("../../drizzle/schema.ts");
+  const { and, eq } = await import("drizzle-orm");
+  const {
+    loadStrategySeedNodesSync,
+  } = await import("./typedSeedFiles.ts");
 
-  validateSeedCharts(SEED_CHARTS);
-
+  const nodes = loadStrategySeedNodesSync();
   const db = await getDb();
   if (!db) {
     console.error("Database not available. Set DATABASE_URL env var.");
     process.exit(1);
   }
 
-  console.log(`Seeding ${SEED_CHARTS.length} strategy charts...`);
+  console.log(`Seeding ${nodes.length} typed strategy nodes...`);
 
-  for (const chart of SEED_CHARTS) {
+  for (const node of nodes) {
     const existing = await db
-      .select({ id: rangeCharts.id })
-      .from(rangeCharts)
+      .select({ id: strategyNodes.id })
+      .from(strategyNodes)
       .where(
         and(
-          eq(rangeCharts.stackDepth, chart.stackDepth),
-          eq(rangeCharts.spotKey, chart.spotKey)
+          eq(strategyNodes.version, node.summary.version),
+          eq(strategyNodes.stackBucket, node.summary.stackBucket),
+          eq(strategyNodes.playerCount, node.summary.playerCount),
+          eq(strategyNodes.scenarioFamily, node.summary.scenarioFamily),
+          eq(strategyNodes.heroPosition, node.summary.heroPosition),
+          eq(strategyNodes.spotKey, node.summary.spotKey)
         )
       )
       .limit(1);
 
-    const chartValues = {
-      title: chart.title,
-      stackDepth: chart.stackDepth,
-      spotGroup: chart.spotGroup,
-      spotKey: chart.spotKey,
-      heroPosition: chart.heroPosition,
-      villainPosition: chart.villainPosition ?? null,
-      sourceLabel: chart.sourceLabel ?? null,
-      sourceStatus: chart.sourceStatus ?? null,
-      cellMapSource: chart.cellMapSource ?? null,
-      sourceFile: chart.sourceFile ?? null,
-      sourcePanelLabel: chart.sourcePanelLabel ?? null,
-      dataVersion: chart.dataVersion ?? null,
-      reviewedBy: chart.reviewedBy ?? null,
-      reviewedAt: chart.reviewedAt ?? null,
-      notesJson: chart.notes ? JSON.stringify(chart.notes) : null,
+    const nodeValues = {
+      version: node.summary.version,
+      stackBucket: node.summary.stackBucket,
+      playerCount: node.summary.playerCount,
+      scenarioFamily: node.summary.scenarioFamily,
+      heroPosition: node.summary.heroPosition,
+      villainPosition: node.summary.villainPosition ?? null,
+      villainGroup: node.summary.villainGroup ?? null,
+      spotKey: node.summary.spotKey,
+      title: node.summary.title,
+      sourceLabel: node.summary.sourceLabel,
+      notes:
+        node.rows
+          .map(row => row.notes?.trim())
+          .filter(Boolean)
+          .filter((note, index, array) => array.indexOf(note) === index)
+          .join("\n") || null,
+      reviewed: node.summary.reviewed,
+      structurallyComplete: node.summary.reviewed,
       isActive: true,
     };
 
-    let chartId;
+    let nodeId;
 
     if (existing.length > 0) {
-      chartId = existing[0].id;
-      await db.update(rangeCharts).set(chartValues).where(eq(rangeCharts.id, chartId));
-      await db.delete(rangeChartActions).where(eq(rangeChartActions.chartId, chartId));
-      console.log(`  Updated chart "${chart.title}" (id=${chartId})`);
+      nodeId = existing[0].id;
+      await db.update(strategyNodes).set(nodeValues).where(eq(strategyNodes.id, nodeId));
+      await db.delete(strategyNodeRanges).where(eq(strategyNodeRanges.nodeId, nodeId));
+      console.log(`  Updated node "${node.summary.title}" (id=${nodeId})`);
     } else {
-      const result = await db.insert(rangeCharts).values(chartValues);
-      chartId = result[0].insertId;
-      console.log(`  Inserted chart "${chart.title}" (id=${chartId})`);
+      const [result] = await db.insert(strategyNodes).values(nodeValues);
+      nodeId = result.insertId;
+      console.log(`  Inserted node "${node.summary.title}" (id=${nodeId})`);
     }
 
-    if (chart.actions.length > 0) {
-      const actionRows = chart.actions.map((action) => ({
-        chartId,
-        handCode: action.handCode,
-        primaryAction: action.primaryAction,
-        weightPercent: action.weightPercent ?? null,
-        mixJson: action.mixJson ?? null,
-        colorToken: action.colorToken ?? null,
-        note: action.note ?? null,
+    if (node.rows.length > 0) {
+      const rangeRows = node.rows.map(row => ({
+        nodeId,
+        action: row.action,
+        rangeNotation: row.rangeNotation,
+        priority: row.priority,
+        notes: row.notes ?? null,
+        reviewed: node.summary.reviewed,
       }));
 
-      const batchSize = 100;
-      for (let i = 0; i < actionRows.length; i += batchSize) {
-        await db.insert(rangeChartActions).values(actionRows.slice(i, i + batchSize));
+      for (let index = 0; index < rangeRows.length; index += 100) {
+        await db
+          .insert(strategyNodeRanges)
+          .values(rangeRows.slice(index, index + 100));
       }
-
-      console.log(`     Inserted ${chart.actions.length} hand actions`);
+      console.log(`     Inserted ${node.rows.length} notation rows`);
     }
   }
 
-  console.log("Seed complete.");
+  console.log("Typed strategy seed complete.");
   process.exit(0);
 }
 
-main().catch((error) => {
-  console.error("Seed failed:", error);
+main().catch(error => {
+  console.error("Typed strategy seed failed:", error);
   process.exit(1);
 });

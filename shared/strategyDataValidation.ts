@@ -1,149 +1,144 @@
-import { pathToFileURL } from "node:url";
-import { ACTIONS, ALL_HANDS, POSITIONS, SPOT_GROUPS, STACK_DEPTHS, type Action } from "./strategy";
 import {
-  REVIEWED_STRATEGY_CHARTS,
-  REVIEWED_STRATEGY_DATA_VERSION,
-  type ReviewedStrategyChart,
-  type ReviewedStrategyReviewStatus,
-} from "./strategy-data/reviewed";
+  ACTIONS,
+  ALL_HANDS,
+  PLAYER_COUNTS,
+  POSITIONS,
+  SPOT_GROUPS,
+  STACK_DEPTHS,
+  VILLAIN_GROUPS,
+  type Action,
+  type StrategyNodeIdentity,
+  type StrategyNodeRangeRow,
+} from "./preflopStrategy";
+import { compileNotationRows } from "./strategyNotation";
 
-const VALID_HANDS = new Set(ALL_HANDS);
 const VALID_ACTIONS = new Set<Action>(ACTIONS);
 const VALID_STACKS = new Set<number>(STACK_DEPTHS);
+const VALID_PLAYERS = new Set<number>(PLAYER_COUNTS);
 const VALID_SPOT_GROUPS = new Set<string>(SPOT_GROUPS);
 const VALID_POSITIONS = new Set<string>(POSITIONS);
-const VALID_REVIEW_STATUSES = new Set<ReviewedStrategyReviewStatus>([
-  "candidate",
-  "automated_integrity_pass",
-  "owner_reviewed",
-]);
+const VALID_VILLAIN_GROUPS = new Set<string>(VILLAIN_GROUPS);
 
-function isIsoDateLike(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+export interface TypedStrategyNodeDefinition extends StrategyNodeIdentity {
+  reviewed: boolean;
+  rows: StrategyNodeRangeRow[];
 }
 
-export function validateReviewedStrategyChart(chart: ReviewedStrategyChart) {
-  const chartLabel = `${chart.stackDepth}:${chart.spotKey}`;
+function nodeLabel(node: TypedStrategyNodeDefinition) {
+  return `${node.version}:${node.stackBucket}:${node.scenarioFamily}:${node.heroPosition}:${node.villainPosition ?? node.villainGroup ?? "none"}`;
+}
 
-  if (!VALID_STACKS.has(chart.stackDepth)) {
-    throw new Error(`Reviewed chart ${chartLabel} has invalid stack depth ${chart.stackDepth}.`);
+function validateNodeIdentity(node: TypedStrategyNodeDefinition) {
+  const label = nodeLabel(node);
+
+  if (!node.version.trim()) {
+    throw new Error(`${label}: missing version.`);
   }
-
-  if (!VALID_SPOT_GROUPS.has(chart.spotGroup)) {
-    throw new Error(`Reviewed chart ${chartLabel} has invalid spot group ${chart.spotGroup}.`);
+  if (!VALID_STACKS.has(node.stackBucket)) {
+    throw new Error(`${label}: invalid stack bucket ${node.stackBucket}.`);
   }
-
-  if (!VALID_POSITIONS.has(chart.heroPosition)) {
-    throw new Error(`Reviewed chart ${chartLabel} has invalid hero position ${chart.heroPosition}.`);
+  if (!VALID_PLAYERS.has(node.playerCount)) {
+    throw new Error(`${label}: invalid player count ${node.playerCount}.`);
   }
-
-  if (chart.villainPosition !== null && !VALID_POSITIONS.has(chart.villainPosition)) {
-    throw new Error(
-      `Reviewed chart ${chartLabel} has invalid villain position ${chart.villainPosition}.`
-    );
+  if (!VALID_SPOT_GROUPS.has(node.scenarioFamily)) {
+    throw new Error(`${label}: invalid scenario family ${node.scenarioFamily}.`);
   }
-
-  if (chart.dataVersion.trim().length === 0) {
-    throw new Error(`Reviewed chart ${chartLabel} is missing dataVersion.`);
+  if (!VALID_POSITIONS.has(node.heroPosition)) {
+    throw new Error(`${label}: invalid hero position ${node.heroPosition}.`);
   }
-
-  if (chart.source.sourceFile.trim().length === 0) {
-    throw new Error(`Reviewed chart ${chartLabel} is missing sourceFile.`);
+  if (node.villainPosition && !VALID_POSITIONS.has(node.villainPosition)) {
+    throw new Error(`${label}: invalid villain position ${node.villainPosition}.`);
   }
-
-  if (chart.source.sourcePanelLabel.trim().length === 0) {
-    throw new Error(`Reviewed chart ${chartLabel} is missing sourcePanelLabel.`);
-  }
-
-  if (!VALID_REVIEW_STATUSES.has(chart.review.status)) {
-    throw new Error(
-      `Reviewed chart ${chartLabel} has invalid review status ${chart.review.status}.`
-    );
-  }
-
-  if (chart.review.reviewedBy.trim().length === 0) {
-    throw new Error(`Reviewed chart ${chartLabel} is missing reviewedBy.`);
-  }
-
-  if (
-    chart.review.reviewedAt.trim().length === 0 ||
-    !isIsoDateLike(chart.review.reviewedAt)
-  ) {
-    throw new Error(
-      `Reviewed chart ${chartLabel} has invalid reviewedAt ${chart.review.reviewedAt}.`
-    );
-  }
-
-  const actionEntries = Object.entries(chart.actions);
-  const seenHands = new Set<string>();
-
-  if (actionEntries.length !== ALL_HANDS.length) {
-    throw new Error(
-      `Reviewed chart ${chartLabel} must contain exactly ${ALL_HANDS.length} explicit hands; found ${actionEntries.length}.`
-    );
-  }
-
-  for (const [handCode, action] of actionEntries) {
-    if (!VALID_HANDS.has(handCode)) {
-      throw new Error(`Reviewed chart ${chartLabel} has invalid hand code ${handCode}.`);
-    }
-
-    if (seenHands.has(handCode)) {
-      throw new Error(`Reviewed chart ${chartLabel} duplicates hand code ${handCode}.`);
-    }
-
-    if (!VALID_ACTIONS.has(action)) {
-      throw new Error(`Reviewed chart ${chartLabel} has invalid action ${action} for ${handCode}.`);
-    }
-
-    seenHands.add(handCode);
-  }
-
-  const missingHands = ALL_HANDS.filter(handCode => !seenHands.has(handCode));
-  if (missingHands.length > 0) {
-    throw new Error(
-      `Reviewed chart ${chartLabel} is missing hands: ${missingHands.join(", ")}.`
-    );
+  if (node.villainGroup && !VALID_VILLAIN_GROUPS.has(node.villainGroup)) {
+    throw new Error(`${label}: invalid villain group ${node.villainGroup}.`);
   }
 }
 
-export function validateReviewedStrategyCharts(
-  charts: ReviewedStrategyChart[] = REVIEWED_STRATEGY_CHARTS
-) {
-  const seenCharts = new Set<string>();
+function validateNodeRouting(node: TypedStrategyNodeDefinition) {
+  const label = nodeLabel(node);
 
-  for (const chart of charts) {
-    validateReviewedStrategyChart(chart);
+  switch (node.scenarioFamily) {
+    case "rfi":
+    case "sb_first_in":
+      if (node.villainPosition || node.villainGroup) {
+        throw new Error(
+          `${label}: ${node.scenarioFamily} must not set villainPosition or villainGroup.`
+        );
+      }
+      return;
+    case "facing_open_early":
+    case "facing_open_middle":
+    case "facing_open_late":
+    case "facing_jam":
+      if (!node.villainPosition && !node.villainGroup) {
+        throw new Error(
+          `${label}: ${node.scenarioFamily} requires villainPosition or villainGroup.`
+        );
+      }
+      return;
+    case "bb_vs_sb_open":
+    case "bb_vs_sb_limp":
+      if (node.heroPosition !== "BB") {
+        throw new Error(`${label}: ${node.scenarioFamily} must use BB as hero.`);
+      }
+      if (node.villainPosition !== "SB") {
+        throw new Error(
+          `${label}: ${node.scenarioFamily} must use SB as villainPosition.`
+        );
+      }
+      return;
+  }
+}
 
-    const chartKey = `${chart.stackDepth}:${chart.spotKey}`;
-    if (seenCharts.has(chartKey)) {
-      throw new Error(`Duplicate reviewed chart definition ${chartKey}.`);
-    }
-    seenCharts.add(chartKey);
+function validateNodeRows(node: TypedStrategyNodeDefinition) {
+  const label = nodeLabel(node);
+
+  if (node.rows.length === 0) {
+    throw new Error(`${label}: node must contain at least one range row.`);
   }
 
-  return {
-    charts: charts.length,
-    dataVersion: REVIEWED_STRATEGY_DATA_VERSION,
-  };
+  for (const row of node.rows) {
+    if (!VALID_ACTIONS.has(row.action)) {
+      throw new Error(`${label}: invalid action ${row.action}.`);
+    }
+    if (!row.rangeNotation.trim()) {
+      throw new Error(`${label}: row for ${row.action} is missing rangeNotation.`);
+    }
+    if (!Number.isFinite(row.priority)) {
+      throw new Error(`${label}: row for ${row.action} has invalid priority.`);
+    }
+  }
 }
 
-export function reviewedActionsToSeedActions(chart: ReviewedStrategyChart) {
-  validateReviewedStrategyChart(chart);
+export function validateTypedStrategyNode(node: TypedStrategyNodeDefinition) {
+  validateNodeIdentity(node);
+  validateNodeRouting(node);
+  validateNodeRows(node);
 
-  return ALL_HANDS.map(handCode => ({
-    handCode,
-    primaryAction: chart.actions[handCode],
-    weightPercent: 100,
-  }));
+  const compiled = compileNotationRows(node.rows, {
+    requireComplete: node.reviewed,
+  });
+
+  if (node.reviewed && compiled.actions.length !== ALL_HANDS.length) {
+    throw new Error(
+      `${nodeLabel(node)}: reviewed nodes must compile to exactly ${ALL_HANDS.length} hands.`
+    );
+  }
+
+  return compiled;
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
-  const result = validateReviewedStrategyCharts();
-  console.log(
-    `Reviewed strategy data valid: ${result.charts} charts @ ${result.dataVersion}`
-  );
+export function typedNodeToSeedActions(node: TypedStrategyNodeDefinition) {
+  const compiled = validateTypedStrategyNode(node);
+  return ALL_HANDS.filter(handCode =>
+    compiled.actions.some(action => action.handCode === handCode)
+  ).map(handCode => {
+    const action = compiled.actions.find(candidate => candidate.handCode === handCode)!;
+    return {
+      handCode,
+      primaryAction: action.primaryAction,
+      weightPercent: action.weightPercent ?? 100,
+      note: action.note ?? null,
+    };
+  });
 }

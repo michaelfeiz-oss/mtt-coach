@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RangeChartAction } from "../../drizzle/schema";
+import type { RangeChartWithActions } from "../../shared/preflopStrategy";
 import {
   buildTrainerAttemptInsert,
   buildTrainerActionPool,
@@ -9,44 +9,41 @@ import {
   mapStrategySourceToAttemptSourceStatus,
   normalizeHandCode,
 } from "./service";
-import type { RangeChart } from "../../drizzle/schema";
 
 function makeAction(
   handCode: string,
-  primaryAction: RangeChartAction["primaryAction"]
-): RangeChartAction {
+  primaryAction: RangeChartWithActions["actions"][number]["primaryAction"]
+) {
   return {
-    id: 0,
-    chartId: 1,
     handCode,
     primaryAction,
-    mixJson: null,
-    weightPercent: null,
-    colorToken: null,
-    note: null,
   };
 }
 
 function makeChart(
-  overrides: Partial<RangeChart> = {}
-): RangeChart {
+  overrides: Partial<RangeChartWithActions> = {}
+): RangeChartWithActions {
   return {
     id: 1,
+    version: "population-v1",
+    stackBucket: 25,
+    playerCount: 9,
+    scenarioFamily: "facing_open_late",
     title: "BB vs BTN @ 25bb",
     stackDepth: 25,
-    spotGroup: "VS_LP_RFI",
-    spotKey: "BB_vs_BTN",
+    spotGroup: "facing_open_late",
+    spotKey: "BB_vs_BTN_open",
     heroPosition: "BB",
     villainPosition: "BTN",
-    sourceLabel: "Exact chart",
-    notesJson: null,
-    isActive: true,
-    createdAt: new Date("2026-04-30T10:00:00Z"),
+    villainGroup: null,
+    reviewed: false,
+    sourceLabel: "Not yet reviewed",
+    actions: [],
     ...overrides,
   };
 }
 
-describe("strategy service pure logic", () => {
+describe("typed strategy service logic", () => {
   it("maps suited, offsuit, and pair hand codes to matrix coordinates", () => {
     expect(getHandCoordinate("AKs")).toEqual({ row: 0, col: 1 });
     expect(getHandCoordinate("KJo")).toEqual({ row: 3, col: 1 });
@@ -61,7 +58,6 @@ describe("strategy service pure logic", () => {
     expect(aa).not.toBeNull();
     expect(ajo).not.toBeNull();
     expect(t2o).not.toBeNull();
-
     expect(handDistance(aa!, ajo!)).toBe(3);
     expect(handDistance(ajo!, t2o!)).toBeGreaterThan(2);
   });
@@ -105,33 +101,27 @@ describe("strategy service pure logic", () => {
     expect(normalizeHandCode("z9o")).toBeNull();
   });
 
-  it("maps chart source status into persisted trainer attempt status", () => {
+  it("maps reviewed nodes to exact_source and everything else to derived", () => {
     expect(
       mapStrategySourceToAttemptSourceStatus(
         makeChart({
-          stackDepth: 15,
-          spotGroup: "RFI",
-          spotKey: "BTN_RFI",
-          heroPosition: "BTN",
-          villainPosition: null,
+          reviewed: true,
+          actions: [makeAction("AA", "RAISE")],
+        })
+      )
+    ).toBe("exact_source");
+
+    expect(
+      mapStrategySourceToAttemptSourceStatus(
+        makeChart({
+          reviewed: false,
+          actions: [makeAction("AA", "RAISE")],
         })
       )
     ).toBe("derived");
-
-    expect(
-      mapStrategySourceToAttemptSourceStatus(
-        makeChart({
-          stackDepth: 40,
-          spotGroup: "VS_3BET",
-          spotKey: "CO_vs_BB_3bet",
-          heroPosition: "CO",
-          villainPosition: "BB",
-        })
-      )
-    ).toBe("simplified_population");
   });
 
-  it("builds persisted trainer attempts with canonical spot metadata", () => {
+  it("builds persisted trainer attempts with typed node metadata", () => {
     const attempt = buildTrainerAttemptInsert({
       userId: 1,
       chart: makeChart(),
@@ -140,46 +130,45 @@ describe("strategy service pure logic", () => {
       correctAction: "CALL",
       isCorrect: false,
       confidence: "unsure",
-      drillPackId: "bb-vs-sb-marginal-defense",
       sessionId: "session-1",
       responseTimeMs: 1425.6,
     });
 
-    expect(attempt.canonicalSpotId).toBe("DEFEND_VS_RFI|25|BB|BTN|9P|BBA");
-    expect(attempt.spotFamily).toBe("DEFEND_VS_RFI");
-    expect(attempt.sourceStatus).toBe("derived");
-    expect(attempt.stackBb).toBe(25);
+    expect(attempt.nodeId).toBe(1);
+    expect(attempt.stackBucket).toBe(25);
+    expect(attempt.scenarioFamily).toBe("facing_open_late");
     expect(attempt.heroPosition).toBe("BB");
     expect(attempt.villainPosition).toBe("BTN");
+    expect(attempt.handCode).toBe("K9o");
+    expect(attempt.selectedAction).toBe("FOLD");
+    expect(attempt.correctAction).toBe("CALL");
     expect(attempt.confidence).toBe("unsure");
-    expect(attempt.drillPackId).toBe("bb-vs-sb-marginal-defense");
     expect(attempt.sessionId).toBe("session-1");
     expect(attempt.responseTimeMs).toBe(1426);
-    expect(attempt.leakFamilyId).toBe("blind_defense_too_tight");
   });
 
-  it("sanitizes trainer attempt response times and supports simplified nodes", () => {
+  it("sanitizes trainer attempt response times for deep-stack charts too", () => {
     const attempt = buildTrainerAttemptInsert({
       userId: 1,
       chart: makeChart({
-        title: "CO vs BB 3-Bet @ 40bb",
-        stackDepth: 40,
-        spotGroup: "VS_3BET",
-        spotKey: "CO_vs_BB_3bet",
+        stackDepth: 70,
+        stackBucket: 70,
+        scenarioFamily: "rfi",
+        spotGroup: "rfi",
         heroPosition: "CO",
-        villainPosition: "BB",
-        sourceLabel: "Simplified population",
+        villainPosition: null,
+        spotKey: "CO_rfi",
+        title: "CO RFI @ 70bb",
       }),
       handCode: "AQo",
-      selectedAction: "CALL",
-      correctAction: "CALL",
+      selectedAction: "RAISE",
+      correctAction: "RAISE",
       isCorrect: true,
       responseTimeMs: -10,
     });
 
-    expect(attempt.sourceStatus).toBe("simplified_population");
-    expect(attempt.spotFamily).toBe("FACING_3BET");
+    expect(attempt.stackBucket).toBe(70);
+    expect(attempt.scenarioFamily).toBe("rfi");
     expect(attempt.responseTimeMs).toBe(0);
-    expect(attempt.leakFamilyId).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import type { CanonicalLeakFamilyId } from "./leakFamilies";
 import type { CanonicalSpotFamily } from "./preflopTaxonomy";
-import type { Position } from "./strategy";
+import type { Position } from "./preflopStrategy";
 
 export const TRAINER_ATTEMPT_CONFIDENCES = [
   "knew_it",
@@ -102,11 +102,12 @@ export function isHandReviewStatus(
 
 export function mapStackToStudyReferenceBucket(
   stackBb: number | null | undefined
-): 15 | 25 | 40 {
+): 15 | 25 | 40 | 70 {
   if (typeof stackBb !== "number" || !Number.isFinite(stackBb)) return 25;
   if (stackBb <= 20) return 15;
   if (stackBb <= 32) return 25;
-  return 40;
+  if (stackBb <= 55) return 40;
+  return 70;
 }
 
 export function buildReviewQueueHref(filters: {

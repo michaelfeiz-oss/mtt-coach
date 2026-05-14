@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RangeMatrix, getMatrixCellDisplay } from "../../client/src/components/strategy/RangeMatrix";
+import { compileNotationRows } from "../../shared/strategyNotation";
 
 describe("range matrix integrity rendering", () => {
   afterEach(() => {
@@ -58,5 +59,31 @@ describe("range matrix integrity rendering", () => {
     expect(display.isMissing).toBe(true);
     expect(display.label).toBe("Missing");
     expect(display.primaryAction).toBeNull();
+  });
+
+  it("renders the grid from typed notation output rather than guessing cells", () => {
+    const compiled = compileNotationRows([
+      { action: "RAISE", rangeNotation: "AKs, AQs", priority: 500 },
+      { action: "CALL", rangeNotation: "77", priority: 300 },
+    ]);
+
+    const actionMap = Object.fromEntries(
+      compiled.actions.map(action => [action.handCode, action])
+    );
+
+    const markup = renderToStaticMarkup(
+      React.createElement(RangeMatrix, {
+        actions: actionMap,
+        strictComplete: false,
+        size: "sm",
+        compact: true,
+        readonly: true,
+      })
+    );
+
+    expect(markup).toContain('aria-label="AKs Raise"');
+    expect(markup).toContain('aria-label="AQs Raise"');
+    expect(markup).toContain('aria-label="77 Call"');
+    expect(markup).toContain('aria-label="AJo missing action"');
   });
 });

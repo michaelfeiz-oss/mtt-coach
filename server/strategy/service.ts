@@ -1,66 +1,34 @@
-import { and, asc, desc, eq, inArray, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "../db";
-import {
-  rangeCharts,
-  rangeChartActions,
-  hands,
-  trainerAttempts,
-  type InsertRangeChart,
-  type InsertRangeChartAction,
-  type InsertTrainerAttempt,
-  type Hand,
-  type RangeChart,
-  type RangeChartAction,
-} from "../../drizzle/schema";
-import {
-  mapStackToStudyReferenceBucket,
-  type TrainerAttemptConfidence,
-  type TrainerAttemptSourceStatus,
-} from "../../shared/coachingLoop";
-import {
-  getLeakFamily,
-  suggestLeakFamilyFromHandLog,
-  suggestLeakFamilyFromTrainerMiss,
-  type CanonicalLeakFamilyId,
-} from "../../shared/leakFamilies";
+import { hands, strategyNodeRanges, strategyNodes, strategyTrainerAttempts, type Hand, type InsertStrategyNode, type InsertStrategyNodeRange, type InsertStrategyTrainerAttempt, type StrategyTrainerAttempt } from "../../drizzle/schema";
+import { type TrainerAttemptConfidence, type TrainerAttemptSourceStatus } from "../../shared/coachingLoop";
 import {
   ACTIONS,
+  ACTION_PRIORITY,
   ALL_HANDS,
   POSITIONS,
-  STACK_DEPTHS,
+  RANKS,
+  buildSpotKey,
+  displayPositionLabel,
+  displayVillainGroupLabel,
+  formatStrategyNodeTitle,
   type Action,
   type HandAction,
+  type Position,
   type RangeChartWithActions,
+  type SpotGroup,
   type StrategyMissedHand,
   type StrategyProgressSummary,
   type StrategyRecommendation,
   type StrategySpotProgress,
-  type Position,
-  type SpotGroup,
   type TrainerQuestion,
   type TrainerStats,
-} from "../../shared/strategy";
-import {
-  getHandCoordinate as getCanonicalHandCoordinate,
-  handDistance as getCanonicalHandDistance,
-  normalizeHandCode as normalizeCanonicalHandCode,
-} from "../../shared/handMatrix";
-import {
-  canonicalSpotContextFromChart,
-  getCanonicalSpotId,
-} from "../../shared/spotIds";
-import {
-  getStrategySourceStatus,
-  isStudyVisibleStrategyChart,
-  isTrainerAllowedStrategyChart,
-} from "../../shared/sourceTruth";
+  type VillainGroup,
+} from "../../shared/preflopStrategy";
+import { getStrategySourceStatus, isTrainerAllowedStrategyChart } from "../../shared/sourceTruth";
+import { loadStrategyCatalogCharts, getStrategyCatalogChartById, getStrategyCatalogChartBySpot, type StrategyCatalogFilters } from "./catalog";
 
-export interface ListSpotsFilters {
-  stackDepth?: number;
-  spotGroup?: SpotGroup;
-  heroPosition?: Position;
-  villainPosition?: Position;
-}
+export interface ListSpotsFilters extends StrategyCatalogFilters {}
 
 export interface TrainerSpotFilters extends ListSpotsFilters {
   chartId?: number;
@@ -78,6 +46,7 @@ export interface ChartSummary {
   spotKey: string;
   heroPosition: string;
   villainPosition: string | null;
+  villainGroup: string | null;
   sourceLabel: string | null;
 }
 
@@ -93,7 +62,7 @@ export interface TrainerAttemptResult {
   correctAction: Action;
   correctNote?: string | null;
   canonicalSpotId?: string | null;
-  leakFamilyId?: CanonicalLeakFamilyId | null;
+  leakFamilyId?: null;
   sourceStatus?: TrainerAttemptSourceStatus | null;
 }
 
@@ -101,74 +70,70 @@ const HAND_ORDER = new Map(ALL_HANDS.map((hand, index) => [hand, index]));
 const VALID_HAND_CODES = new Set(ALL_HANDS);
 const VALID_PRIMARY_ACTIONS = new Set<Action>(ACTIONS);
 const TRAINER_ACTION_ORDER: Action[] = [
+  "JAM",
+  "FOUR_BET",
+  "THREE_BET",
   "RAISE",
   "CALL",
-  "THREE_BET",
-  "JAM",
-  "LIMP",
   "CHECK",
+  "LIMP",
   "FOLD",
 ];
-const VALID_POSITIONS = new Set<string>(POSITIONS);
 const RECENT_CHART_GUARD_LIMIT = 8;
 const RECENT_HAND_GUARD_LIMIT = 20;
 const FOLD_SAMPLE_TARGET = 0.32;
 const MARGINAL_FOLD_DISTANCE = 2;
-
-type JsonObject = Record<string, unknown>;
-
-interface SpotInference {
-  spotKey: string;
-  reason: string;
-}
-
-interface HandStatsAccumulator {
-  chartId: number;
-  chartTitle: string;
-  handCode: string;
-  attempts: number;
-  missed: number;
-  correctAction: Action;
-}
-
-interface TrainerSelectionRow {
-  chart: RangeChart;
-  action: RangeChartAction;
-}
+const PRE_FLOP_SPOT_TYPES = new Set([
+  "RFI",
+  "DEFEND_VS_RFI",
+  "THREE_BET",
+  "FACING_3BET",
+  "LIMP_ISO",
+  "FOUR_BET_JAM",
+  "OTHER_PREFLOP",
+  "SINGLE_RAISED_POT",
+  "3BET_POT",
+  "BVB",
+  "LIMPED_POT",
+]);
 
 interface HandCoordinate {
   row: number;
   col: number;
 }
 
-async function requireDb() {
-  const db = await getDb();
-  if (!db) {
-    throw new Error("Database not available");
-  }
-  return db;
+interface PersistedTrainerAttemptInput {
+  userId: number;
+  chart: RangeChartWithActions;
+  handCode: string;
+  selectedAction: Action;
+  correctAction: Action;
+  isCorrect: boolean;
+  confidence?: TrainerAttemptConfidence | null;
+  sessionId?: string | null;
+  responseTimeMs?: number | null;
+}
+
+interface StudyMeta {
+  source: Record<string, unknown> | null;
+  meta: Record<string, unknown> | null;
+  canonicalSpotId: string | null;
+  chartId: number | null;
+  spotKey: string | null;
+  stackDepth: number | null;
+  heroPosition: string | null;
+  villainPosition: string | null;
+  villainGroup: VillainGroup | null;
+  spotGroup: SpotGroup | null;
 }
 
 function compareHandCode(a: string, b: string): number {
   const aIndex = HAND_ORDER.get(a) ?? Number.MAX_SAFE_INTEGER;
   const bIndex = HAND_ORDER.get(b) ?? Number.MAX_SAFE_INTEGER;
-
-  if (aIndex !== bIndex) return aIndex - bIndex;
-  return a.localeCompare(b);
+  return aIndex - bIndex || a.localeCompare(b);
 }
 
-function mapAction(row: RangeChartAction): HandAction {
-  return {
-    handCode: row.handCode,
-    primaryAction: row.primaryAction,
-    weightPercent: row.weightPercent,
-    mixJson: row.mixJson,
-    colorToken: row.colorToken,
-    note: row.note,
-  };
-}
-
-function mapChartSummary(chart: RangeChart): ChartSummary {
+function mapChartSummary(chart: RangeChartWithActions): ChartSummary {
   return {
     id: chart.id,
     title: chart.title,
@@ -176,113 +141,27 @@ function mapChartSummary(chart: RangeChart): ChartSummary {
     spotGroup: chart.spotGroup,
     spotKey: chart.spotKey,
     heroPosition: chart.heroPosition,
-    villainPosition: chart.villainPosition,
-    sourceLabel: chart.sourceLabel,
+    villainPosition: chart.villainPosition ?? null,
+    villainGroup: chart.villainGroup ?? null,
+    sourceLabel: chart.sourceLabel ?? null,
   };
 }
 
-function mapChartWithActions(
-  chart: RangeChart,
-  actions: RangeChartAction[]
-): RangeChartWithActions {
-  return {
-    id: chart.id,
-    title: chart.title,
-    stackDepth: chart.stackDepth,
-    spotGroup: chart.spotGroup,
-    spotKey: chart.spotKey,
-    heroPosition: chart.heroPosition,
-    villainPosition: chart.villainPosition,
-    sourceLabel: chart.sourceLabel,
-    notesJson: chart.notesJson,
-    actions: [...actions]
-      .sort((a, b) => compareHandCode(a.handCode, b.handCode))
-      .map(mapAction),
-  };
-}
-
-function buildChartConditions(filters: ListSpotsFilters): SQL[] {
-  const conditions: SQL[] = [eq(rangeCharts.isActive, true)];
-
-  if (filters.stackDepth !== undefined) {
-    conditions.push(eq(rangeCharts.stackDepth, filters.stackDepth));
-  }
-
-  if (filters.spotGroup !== undefined) {
-    conditions.push(eq(rangeCharts.spotGroup, filters.spotGroup));
-  }
-
-  if (filters.heroPosition !== undefined) {
-    conditions.push(eq(rangeCharts.heroPosition, filters.heroPosition));
-  }
-
-  if (filters.villainPosition !== undefined) {
-    conditions.push(eq(rangeCharts.villainPosition, filters.villainPosition));
-  }
-
-  return conditions;
-}
-
-function isStudyVisibleChart(chart: {
-  stackDepth: number;
-  spotGroup: SpotGroup;
-  heroPosition: string;
-  villainPosition?: string | null;
-  spotKey?: string | null;
-}) {
-  return isStudyVisibleStrategyChart(chart);
-}
-
-function isTrainerAllowedChart(chart: {
-  stackDepth: number;
-  spotGroup: SpotGroup;
-  heroPosition: string;
-  villainPosition?: string | null;
-  spotKey?: string | null;
-}) {
-  return isTrainerAllowedStrategyChart(chart);
-}
-
-export function mapStrategySourceToAttemptSourceStatus(chart: {
-  stackDepth: number;
-  spotGroup: SpotGroup;
-  heroPosition: string;
-  villainPosition?: string | null;
-}): TrainerAttemptSourceStatus {
-  const sourceStatus = getStrategySourceStatus(chart);
-
-  switch (sourceStatus) {
-    case "source_backed":
-      return "exact_source";
-    case "simplified_population":
-      return "simplified_population";
-    case "proxy":
-      return "derived";
-    default:
-      return "derived";
-  }
-}
-
-function buildTrainerChoices(correctAction: Action): Action[] {
-  const choices = [
-    correctAction,
-    ...TRAINER_ACTION_ORDER.filter(action => action !== correctAction),
-  ];
-
-  return choices.slice(0, 4);
-}
-
-function createEmptyActionStats(): TrainerStats["byAction"] {
-  return ACTIONS.reduce<TrainerStats["byAction"]>(
-    (stats, action) => {
-      stats[action] = { total: 0, correct: 0 };
-      return stats;
-    },
-    {} as TrainerStats["byAction"]
+function buildTrainerChoices(correctAction: Action, chart: RangeChartWithActions) {
+  const visibleActions = Array.from(
+    new Set(chart.actions.map(action => action.primaryAction))
   );
+  const orderedDistractors = TRAINER_ACTION_ORDER.filter(
+    action => action !== correctAction && visibleActions.includes(action)
+  );
+  const fallbackDistractors = TRAINER_ACTION_ORDER.filter(
+    action => action !== correctAction && !orderedDistractors.includes(action)
+  );
+
+  return [correctAction, ...orderedDistractors, ...fallbackDistractors].slice(0, 4);
 }
 
-function handHistoryKey(chartId: number, handCode: string): string {
+function handHistoryKey(chartId: number, handCode: string) {
   return `${chartId}:${handCode}`;
 }
 
@@ -290,132 +169,38 @@ function randomItem<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)];
 }
 
-function pickWeighted<T>(
-  items: T[],
-  weightForItem: (item: T) => number
-): T {
-  const weighted = items.map(item => ({
-    item,
-    weight: Math.max(0, weightForItem(item)),
-  }));
-  const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
-
-  if (totalWeight <= 0) return randomItem(items);
-
-  let cursor = Math.random() * totalWeight;
-  for (const entry of weighted) {
-    cursor -= entry.weight;
-    if (cursor <= 0) return entry.item;
-  }
-
-  return weighted[weighted.length - 1].item;
-}
-
-function uniqueCharts(rows: TrainerSelectionRow[]): RangeChart[] {
-  const byId = new Map<number, RangeChart>();
-
-  for (const row of rows) {
-    byId.set(row.chart.id, row.chart);
-  }
-
-  return Array.from(byId.values()).sort(
-    (a, b) =>
-      a.stackDepth - b.stackDepth ||
-      a.spotGroup.localeCompare(b.spotGroup) ||
-      a.title.localeCompare(b.title)
-  );
-}
-
-function recentChartSet(filters: TrainerSpotFilters, chartCount: number) {
-  if (chartCount <= 1) return new Set<number>();
-
-  const guardSize = Math.min(
-    RECENT_CHART_GUARD_LIMIT,
-    Math.max(0, chartCount - 1)
-  );
-
-  return new Set((filters.recentChartIds ?? []).slice(0, guardSize));
-}
-
-function chartBucketKey(chart: RangeChart, filters: TrainerSpotFilters) {
-  if (filters.spotGroup !== undefined && filters.stackDepth === undefined) {
-    return `${chart.stackDepth}`;
-  }
-
-  if (filters.stackDepth !== undefined && filters.spotGroup === undefined) {
-    return chart.spotGroup;
-  }
-
-  return `${chart.spotGroup}:${chart.stackDepth}`;
-}
-
-function pickChartForTrainer(
-  rows: TrainerSelectionRow[],
-  filters: TrainerSpotFilters
-): RangeChart | null {
-  const charts = uniqueCharts(rows);
-  if (charts.length === 0) return null;
-
-  if (filters.chartId !== undefined) {
-    return charts.find(chart => chart.id === filters.chartId) ?? null;
-  }
-
-  const recentIds = recentChartSet(filters, charts.length);
-  const repeatSafeCharts = charts.filter(chart => !recentIds.has(chart.id));
-  const eligibleCharts = repeatSafeCharts.length > 0 ? repeatSafeCharts : charts;
-
-  const buckets = new Map<string, RangeChart[]>();
-  for (const chart of eligibleCharts) {
-    const key = chartBucketKey(chart, filters);
-    const bucket = buckets.get(key) ?? [];
-    bucket.push(chart);
-    buckets.set(key, bucket);
-  }
-
-  const selectedBucket = randomItem(Array.from(buckets.values()));
-  return randomItem(selectedBucket);
-}
-
-function actionBucketWeight(action: Action): number {
-  switch (action) {
-    case "THREE_BET":
-    case "JAM":
-      return 1.15;
-    case "RAISE":
-    case "CALL":
-      return 1;
-    case "LIMP":
-    case "CHECK":
-      return 0.8;
-    case "FOLD":
-      return 0.7;
-  }
-}
-
-function groupRowsByAction(rows: RangeChartAction[]) {
-  const byAction = new Map<Action, RangeChartAction[]>();
-
-  for (const row of rows) {
-    if (!isAction(row.primaryAction) || row.handCode.length === 0) continue;
-    const bucket = byAction.get(row.primaryAction) ?? [];
-    bucket.push(row);
-    byAction.set(row.primaryAction, bucket);
-  }
-
-  return byAction;
+function isAction(value: string): value is Action {
+  return (ACTIONS as readonly string[]).includes(value);
 }
 
 export function getHandCoordinate(handCode: string): HandCoordinate | null {
-  return getCanonicalHandCoordinate(handCode);
+  const normalized = normalizeHandCode(handCode);
+  if (!normalized) return null;
+
+  for (let row = 0; row < RANKS.length; row += 1) {
+    for (let col = 0; col < RANKS.length; col += 1) {
+      const candidate =
+        row === col
+          ? `${RANKS[row]}${RANKS[col]}`
+          : row < col
+            ? `${RANKS[row]}${RANKS[col]}s`
+            : `${RANKS[col]}${RANKS[row]}o`;
+      if (candidate === normalized) {
+        return { row, col };
+      }
+    }
+  }
+
+  return null;
 }
 
 export function handDistance(a: HandCoordinate, b: HandCoordinate): number {
-  return getCanonicalHandDistance(a, b);
+  return Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
 }
 
 export function getMarginalFoldActions(
-  actions: RangeChartAction[]
-): RangeChartAction[] {
+  actions: Array<{ handCode: string; primaryAction: Action; note?: string | null }>
+) {
   const continueCoordinates = actions
     .filter(action => action.primaryAction !== "FOLD")
     .map(action => getHandCoordinate(action.handCode))
@@ -430,16 +215,14 @@ export function getMarginalFoldActions(
     if (!foldCoordinate) return false;
 
     return continueCoordinates.some(
-      continueCoordinate =>
-        handDistance(foldCoordinate, continueCoordinate) <=
-        MARGINAL_FOLD_DISTANCE
+      coordinate => handDistance(foldCoordinate, coordinate) <= MARGINAL_FOLD_DISTANCE
     );
   });
 }
 
 export function buildTrainerActionPool(
-  actions: RangeChartAction[]
-): RangeChartAction[] {
+  actions: Array<{ handCode: string; primaryAction: Action; note?: string | null }>
+) {
   const continueActions = actions.filter(action => action.primaryAction !== "FOLD");
   const marginalFolds = getMarginalFoldActions(actions);
 
@@ -451,247 +234,177 @@ export function buildTrainerActionPool(
   );
 }
 
-function pickActionBucket(byAction: Map<Action, RangeChartAction[]>): Action {
-  const foldRows = byAction.get("FOLD") ?? [];
-  const continueActions = ACTIONS.filter(
-    action => action !== "FOLD" && (byAction.get(action)?.length ?? 0) > 0
-  );
-
-  if (foldRows.length > 0 && continueActions.length > 0) {
-    if (Math.random() < FOLD_SAMPLE_TARGET) return "FOLD";
-    return pickWeighted(continueActions, actionBucketWeight);
+function pickChartForTrainer(
+  charts: RangeChartWithActions[],
+  filters: TrainerSpotFilters
+) {
+  if (charts.length === 0) return null;
+  if (filters.chartId !== undefined) {
+    return charts.find(chart => chart.id === filters.chartId) ?? null;
   }
 
-  const availableActions = ACTIONS.filter(
-    action => (byAction.get(action)?.length ?? 0) > 0
+  const recentIds = new Set(
+    (filters.recentChartIds ?? []).slice(0, Math.min(RECENT_CHART_GUARD_LIMIT, charts.length))
   );
-
-  return pickWeighted(availableActions, actionBucketWeight);
+  const repeatSafeCharts = charts.filter(chart => !recentIds.has(chart.id));
+  const eligible = repeatSafeCharts.length > 0 ? repeatSafeCharts : charts;
+  return randomItem(eligible);
 }
 
 function pickHandForTrainer(
-  chart: RangeChart,
-  rows: TrainerSelectionRow[],
+  chart: RangeChartWithActions,
   filters: TrainerSpotFilters
-): RangeChartAction | null {
-  const chartActions = rows
-    .filter(row => row.chart.id === chart.id)
-    .map(row => row.action)
-    .filter(action => action.handCode.length > 0 && isAction(action.primaryAction))
-    .sort((a, b) => compareHandCode(a.handCode, b.handCode));
+) {
+  const trainerPool = buildTrainerActionPool(chart.actions);
+  if (trainerPool.length === 0) return null;
 
-  if (chartActions.length === 0) return null;
-
-  const trainerActionPool = buildTrainerActionPool(chartActions);
-  if (trainerActionPool.length === 0) return null;
-
-  const focusedHandCodes = new Set(filters.focusHandCodes ?? []);
-  const focusedActions =
-    focusedHandCodes.size > 0
-      ? trainerActionPool.filter(action => focusedHandCodes.has(action.handCode))
+  const focusSet = new Set(filters.focusHandCodes ?? []);
+  const focusedPool =
+    focusSet.size > 0
+      ? trainerPool.filter(action => focusSet.has(action.handCode))
       : [];
-  const prioritizedActionPool =
-    focusedActions.length > 0 ? focusedActions : trainerActionPool;
-
+  const prioritizedPool = focusedPool.length > 0 ? focusedPool : trainerPool;
   const recentHands = new Set(
     (filters.recentHandKeys ?? []).slice(0, RECENT_HAND_GUARD_LIMIT)
   );
-  const repeatSafeActions = prioritizedActionPool.filter(
+  const repeatSafePool = prioritizedPool.filter(
     action => !recentHands.has(handHistoryKey(chart.id, action.handCode))
   );
-  const actionPool =
-    repeatSafeActions.length > 0 ? repeatSafeActions : prioritizedActionPool;
-  const byAction = groupRowsByAction(actionPool);
-  const selectedAction = pickActionBucket(byAction);
-  const selectedActionRows = byAction.get(selectedAction) ?? actionPool;
+  const actionPool = repeatSafePool.length > 0 ? repeatSafePool : prioritizedPool;
+  const folds = actionPool.filter(action => action.primaryAction === "FOLD");
+  const continues = actionPool.filter(action => action.primaryAction !== "FOLD");
 
-  return randomItem(selectedActionRows);
+  if (folds.length > 0 && continues.length > 0 && Math.random() < FOLD_SAMPLE_TARGET) {
+    return randomItem(folds);
+  }
+
+  return randomItem(continues.length > 0 ? continues : actionPool);
 }
 
 function calcAccuracy(correct: number, total: number): number {
   return total > 0 ? Math.round((correct / total) * 100) : 0;
 }
 
-function isAction(value: string): value is Action {
-  return (ACTIONS as readonly string[]).includes(value);
+function nearestStackDepth(input: number | null | undefined) {
+  const target = typeof input === "number" && Number.isFinite(input) ? input : 25;
+  return [15, 25, 40, 70].sort(
+    (a, b) => Math.abs(a - target) - Math.abs(b - target)
+  )[0];
 }
 
-interface PersistedTrainerAttemptInput {
-  userId: number;
-  chart: RangeChart;
-  handCode: string;
-  selectedAction: Action;
-  correctAction: Action;
-  isCorrect: boolean;
-  confidence?: TrainerAttemptConfidence | null;
-  drillPackId?: string | null;
-  sessionId?: string | null;
-  responseTimeMs?: number | null;
+function normalizeRank(rank: string) {
+  const upper = rank.toUpperCase();
+  return RANKS.includes(upper as (typeof RANKS)[number]) ? upper : null;
 }
 
-export function buildTrainerAttemptInsert(
-  input: PersistedTrainerAttemptInput
-): InsertTrainerAttempt {
-  const context = canonicalSpotContextFromChart(input.chart);
-  const canonicalSpotId = context ? getCanonicalSpotId(context) : null;
-  const leakFamilyId =
-    context && !input.isCorrect
-      ? suggestLeakFamilyFromTrainerMiss({
-          context,
-          handCode: input.handCode,
-          selectedAction: input.selectedAction,
-          correctAction: input.correctAction,
-        })
-      : null;
-
-  return {
-    userId: input.userId,
-    chartId: input.chart.id,
-    canonicalSpotId,
-    spotFamily: context?.family ?? "OPEN_RFI",
-    sourceStatus: mapStrategySourceToAttemptSourceStatus(input.chart),
-    stackBb: input.chart.stackDepth,
-    heroPosition: input.chart.heroPosition,
-    villainPosition: input.chart.villainPosition,
-    handCode: input.handCode,
-    selectedAction: input.selectedAction,
-    correctAction: input.correctAction,
-    isCorrect: input.isCorrect,
-    confidence: input.confidence ?? null,
-    drillPackId: input.drillPackId ?? null,
-    leakFamilyId,
-    sessionId: input.sessionId ?? null,
-    responseTimeMs:
-      typeof input.responseTimeMs === "number" &&
-      Number.isFinite(input.responseTimeMs)
-        ? Math.max(0, Math.round(input.responseTimeMs))
-        : null,
-  };
-}
-
-interface CompleteChartActionsLike {
-  title: string;
-  actions: Array<{
-    handCode: string;
-    primaryAction: Action;
-  }>;
-}
-
-export function assertCompleteChartActions(chart: CompleteChartActionsLike) {
-  const seen = new Set<string>();
-
-  for (const action of chart.actions) {
-    if (seen.has(action.handCode)) {
-      throw new Error(`${chart.title}: duplicate hand ${action.handCode}`);
-    }
-
-    seen.add(action.handCode);
-
-    if (!VALID_HAND_CODES.has(action.handCode)) {
-      throw new Error(`${chart.title}: invalid hand ${action.handCode}`);
-    }
-
-    if (!VALID_PRIMARY_ACTIONS.has(action.primaryAction)) {
-      throw new Error(`${chart.title}: invalid action ${action.primaryAction}`);
-    }
-  }
-
-  const missing = ALL_HANDS.filter(hand => !seen.has(hand));
-
-  if (missing.length > 0) {
-    throw new Error(
-      `${chart.title}: missing ${missing.length} hands: ${missing.join(", ")}`
-    );
-  }
-}
-
-function handleTrainerIntegrityFailure(context: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  if (process.env.NODE_ENV !== "production") {
-    throw error instanceof Error ? error : new Error(message);
-  }
-
-  console.warn(`[Strategy trainer integrity] ${context}: ${message}`);
-}
-
-function isCompleteTrainerChart(
-  chart: CompleteChartActionsLike,
-  context: string
-): boolean {
-  try {
-    assertCompleteChartActions(chart);
-    return true;
-  } catch (error) {
-    handleTrainerIntegrityFailure(context, error);
-    return false;
-  }
-}
-
-function toJsonObject(value: unknown): JsonObject | null {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as JsonObject;
-  }
-  return null;
-}
-
-function parseJsonObject(raw: string | null): JsonObject | null {
+export function normalizeHandCode(raw: string | null | undefined): string | null {
   if (!raw) return null;
 
-  try {
-    return toJsonObject(JSON.parse(raw));
-  } catch {
-    return null;
+  const compact = raw.replace(/[^AKQJT98765432shdcSoO]/gi, "").toUpperCase();
+  if (/^[AKQJT98765432]{2}[SO]$/.test(compact)) {
+    const first = compact[0];
+    const second = compact[1];
+    const suffix = compact[2] === "S" ? "s" : "o";
+    if (first === second) return `${first}${second}`;
+    const firstIndex = RANKS.indexOf(first as (typeof RANKS)[number]);
+    const secondIndex = RANKS.indexOf(second as (typeof RANKS)[number]);
+    return firstIndex < secondIndex
+      ? `${first}${second}${suffix}`
+      : `${second}${first}${suffix}`;
   }
+
+  if (/^[AKQJT98765432]{2}$/.test(compact)) {
+    return compact[0] === compact[1] ? compact : null;
+  }
+
+  const cardPattern = /([AKQJT98765432])([SHDC])/g;
+  const cards = Array.from(compact.matchAll(cardPattern));
+  if (cards.length !== 2) return null;
+
+  const [firstRankRaw, firstSuit] = [cards[0][1], cards[0][2]];
+  const [secondRankRaw, secondSuit] = [cards[1][1], cards[1][2]];
+  const firstRank = normalizeRank(firstRankRaw);
+  const secondRank = normalizeRank(secondRankRaw);
+  if (!firstRank || !secondRank) return null;
+  if (firstRank === secondRank) return `${firstRank}${secondRank}`;
+
+  const firstIndex = RANKS.indexOf(firstRank as (typeof RANKS)[number]);
+  const secondIndex = RANKS.indexOf(secondRank as (typeof RANKS)[number]);
+  const suffix = firstSuit === secondSuit ? "s" : "o";
+  return firstIndex < secondIndex
+    ? `${firstRank}${secondRank}${suffix}`
+    : `${secondRank}${firstRank}${suffix}`;
 }
 
-function getNestedString(source: JsonObject | null, path: string[]): string | null {
-  let current: unknown = source;
-
-  for (const key of path) {
-    const object = toJsonObject(current);
-    if (!object) return null;
-    current = object[key];
-  }
-
-  return typeof current === "string" && current.trim().length > 0
-    ? current
+function toJsonObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
     : null;
 }
 
-function getNestedNumber(source: JsonObject | null, path: string[]): number | null {
+function getNestedString(source: Record<string, unknown> | null, path: string[]) {
   let current: unknown = source;
-
   for (const key of path) {
     const object = toJsonObject(current);
     if (!object) return null;
     current = object[key];
   }
+  return typeof current === "string" && current.trim().length > 0 ? current : null;
+}
 
+function getNestedNumber(source: Record<string, unknown> | null, path: string[]) {
+  let current: unknown = source;
+  for (const key of path) {
+    const object = toJsonObject(current);
+    if (!object) return null;
+    current = object[key];
+  }
   return typeof current === "number" && Number.isFinite(current) ? current : null;
 }
 
-export function extractStudyMeta(hand: Hand) {
-  const streetData = parseJsonObject(hand.streetDataJson);
-  const study = toJsonObject(streetData?.meta);
-  const nestedStudy = toJsonObject(study?.study);
-  const chartId = getNestedNumber(streetData, ["meta", "study", "chartId"]);
-  const spotKey = getNestedString(streetData, ["meta", "study", "spotKey"]);
-  const stackDepth = getNestedNumber(streetData, ["meta", "study", "stackDepth"]);
-  const heroPosition = getNestedString(streetData, ["meta", "study", "heroPosition"]);
-  const villainPosition = getNestedString(streetData, ["meta", "study", "villainPosition"]);
-  const spotGroup = getNestedString(streetData, ["meta", "study", "spotGroup"]);
-  const canonicalSpotId = getNestedString(streetData, ["meta", "study", "canonicalSpotId"]);
+export function extractStudyMeta(hand: Hand): StudyMeta {
+  const parsed = hand.streetDataJson
+    ? (() => {
+        try {
+          return JSON.parse(hand.streetDataJson) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
+
+  const meta = toJsonObject(parsed?.meta);
+  const study = toJsonObject(meta?.study);
+  const spotGroup = getNestedString(parsed, ["meta", "study", "spotGroup"]);
+  const villainGroup = getNestedString(parsed, ["meta", "study", "villainGroup"]);
 
   return {
-    source: streetData,
-    meta: nestedStudy,
-    chartId,
-    spotKey,
-    stackDepth,
-    heroPosition,
-    villainPosition,
-    spotGroup,
-    canonicalSpotId,
+    source: parsed,
+    meta: study,
+    canonicalSpotId: getNestedString(parsed, ["meta", "study", "canonicalSpotId"]),
+    chartId: getNestedNumber(parsed, ["meta", "study", "chartId"]),
+    spotKey: getNestedString(parsed, ["meta", "study", "spotKey"]),
+    stackDepth: getNestedNumber(parsed, ["meta", "study", "stackDepth"]),
+    heroPosition: getNestedString(parsed, ["meta", "study", "heroPosition"]),
+    villainPosition: getNestedString(parsed, ["meta", "study", "villainPosition"]),
+    villainGroup:
+      villainGroup === "early" || villainGroup === "middle" || villainGroup === "late"
+        ? villainGroup
+        : null,
+    spotGroup:
+      spotGroup &&
+      [
+        "rfi",
+        "facing_open_early",
+        "facing_open_middle",
+        "facing_open_late",
+        "facing_jam",
+        "sb_first_in",
+        "bb_vs_sb_open",
+        "bb_vs_sb_limp",
+      ].includes(spotGroup)
+        ? (spotGroup as SpotGroup)
+        : null,
   };
 }
 
@@ -703,198 +416,224 @@ export function normalizePosition(value: string | null | undefined): Position | 
     .toUpperCase()
     .replace("UTG+1", "UTG1")
     .replace("UTG 1", "UTG1")
-    .replace("UTG-1", "UTG1");
+    .replace("UTG+2", "UTG2")
+    .replace("UTG 2", "UTG2")
+    .replace("LOJACK", "LJ")
+    .replace("HIJACK", "HJ")
+    .replace("CUTOFF", "CO")
+    .replace("BUTTON", "BTN");
 
-  return VALID_POSITIONS.has(normalized) ? (normalized as Position) : null;
+  if (normalized === "MP") return "UTG2";
+  return POSITIONS.includes(normalized as Position)
+    ? (normalized as Position)
+    : null;
 }
 
-export function normalizeHandCode(value: string | null | undefined): string | null {
-  return normalizeCanonicalHandCode(value);
-}
-
-export function nearestStackDepth(stackDepth: number | null | undefined): number {
-  return mapStackToStudyReferenceBucket(stackDepth);
-}
-
-export function extractVillainPosition(hand: Hand): Position | null {
-  const streetData = parseJsonObject(hand.streetDataJson);
-  const candidates = [
-    getNestedString(streetData, ["preflop", "villainPosition"]),
-    getNestedString(streetData, ["preflop", "openerPosition"]),
-    getNestedString(streetData, ["meta", "villainPosition"]),
-    getNestedString(streetData, ["meta", "villain", "position"]),
-    getNestedString(streetData, ["villainPosition"]),
-    getNestedString(streetData, ["openerPosition"]),
-  ];
-
-  for (const candidate of candidates) {
-    const position = normalizePosition(candidate);
-    if (position) return position;
-  }
-
+function villainGroupForPosition(position: Position | null): VillainGroup | null {
+  if (!position) return null;
+  if (position === "UTG" || position === "UTG1" || position === "UTG2") return "early";
+  if (position === "LJ" || position === "HJ") return "middle";
+  if (position === "CO" || position === "BTN") return "late";
   return null;
 }
 
-export function isPreflopMistake(hand: Hand): boolean {
-  return hand.mistakeStreet === "PREFLOP" && hand.mistakeSeverity > 0;
+function inferScenarioFamily(hero: Position | null, villain: Position | null, spotType: string | null) {
+  if (spotType === "LIMPED_POT" && hero === "BB" && villain === "SB") {
+    return "bb_vs_sb_limp" as const;
+  }
+  if (hero === "BB" && villain === "SB") {
+    return "bb_vs_sb_open" as const;
+  }
+  if (hero === "SB" && !villain) {
+    return "sb_first_in" as const;
+  }
+  if (!villain && hero && hero !== "BB") {
+    return "rfi" as const;
+  }
+  const group = villainGroupForPosition(villain);
+  if (spotType === "FOUR_BET_JAM") return "facing_jam" as const;
+  if (group === "early") return "facing_open_early" as const;
+  if (group === "middle") return "facing_open_middle" as const;
+  if (group === "late") return "facing_open_late" as const;
+  return null;
 }
 
-export function inferSpotFromHand(hand: Hand): SpotInference | null {
-  const studyMeta = extractStudyMeta(hand);
-  if (studyMeta.spotKey) {
-    return {
-      spotKey: studyMeta.spotKey,
-      reason: studyMeta.canonicalSpotId
-        ? `Matched from the saved canonical study spot (${studyMeta.canonicalSpotId}).`
-        : "Matched from the saved study spot metadata.",
-    };
-  }
+export function isPreflopMistake(hand: Hand) {
+  return (
+    hand.mistakeStreet === "PREFLOP" ||
+    (hand.spotType !== null && PRE_FLOP_SPOT_TYPES.has(hand.spotType))
+  );
+}
 
+export function inferSpotFromHand(hand: Hand): {
+  spotKey: string;
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  heroPosition: Position;
+  villainPosition: Position | null;
+  villainGroup: VillainGroup | null;
+  reason: string;
+} | null {
   const heroPosition = normalizePosition(hand.heroPosition);
-  if (!heroPosition) return null;
+  const villainPosition = normalizePosition(
+    hand.openerPosition ?? hand.villainPosition
+  );
+  const stackDepth = nearestStackDepth(hand.effectiveStackBb ?? hand.actualStackBB);
+  const scenarioFamily = inferScenarioFamily(heroPosition, villainPosition, hand.spotType);
+  if (!heroPosition || !scenarioFamily) return null;
 
-  const villainPosition = extractVillainPosition(hand);
+  const villainGroup =
+    villainPosition && scenarioFamily.startsWith("facing_open")
+      ? villainGroupForPosition(villainPosition)
+      : null;
 
-  if (hand.spotType === "BVB") {
-    if (heroPosition === "SB") {
-      return {
-        spotKey: "SB_vs_BB_limp",
-        reason: "Matched as a blind-versus-blind small-blind decision.",
-      };
-    }
+  const spotKey = buildSpotKey({
+    version: "v1",
+    stackBucket: stackDepth as 15 | 25 | 40 | 70,
+    playerCount: 9,
+    scenarioFamily,
+    heroPosition,
+    villainPosition:
+      scenarioFamily === "bb_vs_sb_open" || scenarioFamily === "bb_vs_sb_limp"
+        ? "SB"
+        : villainPosition,
+    villainGroup,
+  });
 
-    if (heroPosition === "BB") {
-      return {
-        spotKey: "BB_vs_SB_limp",
-        reason: "Matched as a blind-versus-blind big-blind response.",
-      };
-    }
-  }
+  const contextTarget = villainPosition
+    ? displayPositionLabel(villainPosition)
+    : villainGroup
+      ? `${displayVillainGroupLabel(villainGroup)} open`
+      : "first-in";
 
-  if (hand.spotType === "3BET_POT") {
-    if (villainPosition) {
-      return {
-        spotKey: `${heroPosition}_vs_${villainPosition}_3bet`,
-        reason: `Matched hero ${heroPosition} facing a ${villainPosition} 3-bet.`,
-      };
-    }
-
-    if (heroPosition === "CO") {
-      return {
-        spotKey: "CO_vs_BB_3bet",
-        reason: "Matched to the closest cutoff continue-versus-3-bet chart.",
-      };
-    }
-
-    if (heroPosition === "BTN" && villainPosition === "SB") {
-      return {
-        spotKey: "BTN_vs_SB_3bet",
-        reason: "Matched button versus small-blind 3-bet.",
-      };
-    }
-
-    if (heroPosition === "BTN") {
-      return {
-        spotKey: "BTN_vs_BB_3bet",
-        reason: "Matched to the closest button continue-versus-3-bet chart.",
-      };
-    }
-
-    if (heroPosition === "HJ") {
-      return {
-        spotKey: "HJ_vs_BTN_3bet",
-        reason: "Matched to the closest hijack continue-versus-late-position 3-bet chart.",
-      };
-    }
-
-    if (heroPosition === "MP") {
-      return {
-        spotKey: "MP_vs_BTN_3bet",
-        reason: "Matched to the closest middle-position continue-versus-late-position 3-bet chart.",
-      };
-    }
-
-    if (heroPosition === "UTG1") {
-      return {
-        spotKey: "UTG1_vs_CO_3bet",
-        reason: "Matched to the closest UTG+1 continue-versus-late-position 3-bet chart.",
-      };
-    }
-
-    if (heroPosition === "UTG") {
-      return {
-        spotKey: "UTG_vs_HJ_3bet",
-        reason: "Matched to the closest UTG continue-versus-late-position 3-bet chart.",
-      };
-    }
-
-    if (heroPosition === "SB") {
-      return {
-        spotKey: "SB_vs_BB_3bet",
-        reason: "Matched small blind versus big blind 3-bet.",
-      };
-    }
-  }
-
-  if (hand.spotType === "SINGLE_RAISED_POT" || hand.spotType === null) {
-    if (villainPosition) {
-      const facingOpenKey = `${heroPosition}_vs_${villainPosition}`;
-      return {
-        spotKey: facingOpenKey,
-        reason: `Matched hero ${heroPosition} versus ${villainPosition} open.`,
-      };
-    }
-
-    if (heroPosition !== "BB") {
-      return {
-        spotKey: `${heroPosition}_RFI`,
-        reason: `No opener position was logged, so ${heroPosition} RFI is the nearest preflop study spot.`,
-      };
-    }
-
-    return {
-      spotKey: "BB_vs_BTN",
-      reason: "No opener position was logged, so BB versus BTN is the nearest common blind-defense spot.",
-    };
-  }
-
-  if (hand.spotType === "LIMPED_POT" && heroPosition === "BB") {
-    return {
-      spotKey: "BB_vs_SB_limp",
-      reason: "Matched to the big-blind response versus small-blind limp chart.",
-    };
-  }
-
-  return null;
+  return {
+    spotKey,
+    stackDepth,
+    spotGroup: scenarioFamily,
+    heroPosition,
+    villainPosition,
+    villainGroup,
+    reason: `${displayPositionLabel(heroPosition)} matched against ${contextTarget}.`,
+  };
 }
 
-export async function findNearestChartBySpotKey(
-  spotKey: string,
-  targetStackDepth: number
-): Promise<{ chart: RangeChart; confidence: "exact" | "nearest" } | null> {
-  const db = await requireDb();
-  const charts = await db
-    .select()
-    .from(rangeCharts)
-    .where(and(eq(rangeCharts.spotKey, spotKey), eq(rangeCharts.isActive, true)))
-    .orderBy(asc(rangeCharts.stackDepth), asc(rangeCharts.title));
-  const visibleCharts = charts.filter(isStudyVisibleChart);
+export function mapStrategySourceToAttemptSourceStatus(chart: {
+  reviewed?: boolean | null;
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  heroPosition: string;
+  villainPosition?: string | null;
+  villainGroup?: string | null;
+}): TrainerAttemptSourceStatus {
+  const sourceStatus = getStrategySourceStatus(chart);
+  return sourceStatus === "source_backed" ? "exact_source" : "derived";
+}
 
-  if (visibleCharts.length === 0) return null;
+export function buildTrainerAttemptInsert(
+  input: PersistedTrainerAttemptInput
+): InsertStrategyTrainerAttempt {
+  return {
+    userId: input.userId,
+    nodeId: input.chart.id,
+    stackBucket: input.chart.stackDepth,
+    scenarioFamily: input.chart.spotGroup,
+    heroPosition: input.chart.heroPosition,
+    villainPosition: input.chart.villainPosition ?? null,
+    villainGroup: input.chart.villainGroup ?? null,
+    handCode: input.handCode,
+    selectedAction: input.selectedAction,
+    correctAction: input.correctAction,
+    isCorrect: input.isCorrect,
+    confidence: input.confidence ?? null,
+    sessionId: input.sessionId ?? null,
+    responseTimeMs:
+      typeof input.responseTimeMs === "number" && Number.isFinite(input.responseTimeMs)
+        ? Math.max(0, Math.round(input.responseTimeMs))
+        : null,
+  };
+}
 
-  const exact = visibleCharts.find(
-    chart => chart.stackDepth === targetStackDepth
-  );
-  if (exact) return { chart: exact, confidence: "exact" };
+export function assertCompleteChartActions(chart: {
+  title: string;
+  actions: Array<{ handCode: string; primaryAction: Action }>;
+}) {
+  const seen = new Set<string>();
 
-  const [nearest] = [...visibleCharts].sort(
-    (a, b) =>
-      Math.abs(a.stackDepth - targetStackDepth) -
-        Math.abs(b.stackDepth - targetStackDepth) ||
-      a.stackDepth - b.stackDepth
-  );
+  for (const action of chart.actions) {
+    if (seen.has(action.handCode)) {
+      throw new Error(`${chart.title}: duplicate hand ${action.handCode}`);
+    }
+    seen.add(action.handCode);
+    if (!VALID_HAND_CODES.has(action.handCode)) {
+      throw new Error(`${chart.title}: invalid hand ${action.handCode}`);
+    }
+    if (!VALID_PRIMARY_ACTIONS.has(action.primaryAction)) {
+      throw new Error(`${chart.title}: invalid action ${action.primaryAction}`);
+    }
+  }
 
-  return nearest ? { chart: nearest, confidence: "nearest" } : null;
+  const missing = ALL_HANDS.filter(hand => !seen.has(hand));
+  if (missing.length > 0) {
+    throw new Error(`${chart.title}: missing ${missing.length} hands: ${missing.join(", ")}`);
+  }
+}
+
+function isCompleteTrainerChart(chart: RangeChartWithActions) {
+  try {
+    assertCompleteChartActions({
+      title: chart.title,
+      actions: chart.actions.map(action => ({
+        handCode: action.handCode,
+        primaryAction: action.primaryAction,
+      })),
+    });
+    return true;
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      throw error;
+    }
+    console.warn(`[typed strategy] ${chart.title}: ${(error as Error).message}`);
+    return false;
+  }
+}
+
+async function persistTrainerAttempt(
+  attempt: InsertStrategyTrainerAttempt
+): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(strategyTrainerAttempts).values(attempt);
+  return result.insertId;
+}
+
+function filterChartsByIds(charts: RangeChartWithActions[], filters: TrainerSpotFilters) {
+  if (filters.chartId !== undefined) {
+    return charts.filter(chart => chart.id === filters.chartId);
+  }
+  if (filters.chartIds && filters.chartIds.length > 0) {
+    const set = new Set(filters.chartIds);
+    return charts.filter(chart => set.has(chart.id));
+  }
+  return charts;
+}
+
+export async function listAvailableSpots(filters: ListSpotsFilters = {}) {
+  const charts = await loadStrategyCatalogCharts(filters);
+  return charts.map(mapChartSummary);
+}
+
+export async function listTrainerAvailableSpots(filters: ListSpotsFilters = {}) {
+  const charts = await loadStrategyCatalogCharts(filters);
+  return charts
+    .filter(chart => isTrainerAllowedStrategyChart(chart))
+    .filter(isCompleteTrainerChart)
+    .map(mapChartSummary);
+}
+
+export async function getChartWithActions(
+  chartId: number
+): Promise<RangeChartWithActions | null> {
+  return getStrategyCatalogChartById(chartId);
 }
 
 export async function getChartsBySpot(
@@ -902,217 +641,42 @@ export async function getChartsBySpot(
   spotGroup: SpotGroup,
   spotKey: string
 ) {
-  const db = await requireDb();
-
-  const charts = await db
-    .select()
-    .from(rangeCharts)
-    .where(
-      and(
-        eq(rangeCharts.stackDepth, stackDepth),
-        eq(rangeCharts.spotGroup, spotGroup),
-        eq(rangeCharts.spotKey, spotKey),
-        eq(rangeCharts.isActive, true)
-      )
-    )
-    .orderBy(asc(rangeCharts.stackDepth), asc(rangeCharts.title));
-
-  return charts.filter(isStudyVisibleChart);
-}
-
-export async function getChartWithActions(
-  chartId: number
-): Promise<RangeChartWithActions | null> {
-  const db = await requireDb();
-  const [chart] = await db
-    .select()
-    .from(rangeCharts)
-    .where(and(eq(rangeCharts.id, chartId), eq(rangeCharts.isActive, true)))
-    .limit(1);
-
-  if (!chart || !isStudyVisibleChart(chart)) return null;
-
-  const actions = await db
-    .select()
-    .from(rangeChartActions)
-    .where(eq(rangeChartActions.chartId, chartId));
-  const chartWithActions = mapChartWithActions(chart, actions);
-
-  if (isTrainerAllowedChart(chart)) {
-    assertCompleteChartActions(chartWithActions);
-  }
-
-  return chartWithActions;
+  const charts = await loadStrategyCatalogCharts({ stackDepth, spotGroup });
+  return charts.filter(chart => chart.spotKey === spotKey).map(mapChartSummary);
 }
 
 export async function getChartBySpotSelector(
   stackDepth: number,
   spotGroup: SpotGroup,
   spotKey: string
-): Promise<RangeChartWithActions | null> {
-  const [chart] = await getChartsBySpot(stackDepth, spotGroup, spotKey);
-  if (!chart) return null;
-  return getChartWithActions(chart.id);
-}
-
-export async function listAvailableSpots(filters: ListSpotsFilters = {}) {
-  const db = await requireDb();
-  const conditions = buildChartConditions(filters);
-
-  const spots = await db
-    .select({
-      id: rangeCharts.id,
-      title: rangeCharts.title,
-      stackDepth: rangeCharts.stackDepth,
-      spotGroup: rangeCharts.spotGroup,
-      spotKey: rangeCharts.spotKey,
-      heroPosition: rangeCharts.heroPosition,
-      villainPosition: rangeCharts.villainPosition,
-      sourceLabel: rangeCharts.sourceLabel,
-    })
-    .from(rangeCharts)
-    .where(and(...conditions))
-    .orderBy(
-      asc(rangeCharts.stackDepth),
-      asc(rangeCharts.spotGroup),
-      asc(rangeCharts.title)
-    );
-
-  return spots.filter(isStudyVisibleChart);
-}
-
-export async function listTrainerAvailableSpots(filters: ListSpotsFilters = {}) {
-  const db = await requireDb();
-  const spots = (await listAvailableSpots(filters)).filter(isTrainerAllowedChart);
-
-  if (spots.length === 0) return spots;
-
-  const actionRows = await db
-    .select()
-    .from(rangeChartActions)
-    .where(inArray(rangeChartActions.chartId, spots.map(spot => spot.id)));
-
-  const actionsByChartId = new Map<number, RangeChartAction[]>();
-  for (const action of actionRows) {
-    const bucket = actionsByChartId.get(action.chartId) ?? [];
-    bucket.push(action);
-    actionsByChartId.set(action.chartId, bucket);
-  }
-
-  return spots.filter(spot =>
-    isCompleteTrainerChart(
-      {
-        title: spot.title,
-        actions: (actionsByChartId.get(spot.id) ?? []).map(action => ({
-          handCode: action.handCode,
-          primaryAction: action.primaryAction,
-        })),
-      },
-      `${spot.title} trainer list`
-    )
-  );
-}
-
-export async function createChart(data: InsertRangeChart): Promise<number> {
-  const db = await requireDb();
-  const [result] = await db.insert(rangeCharts).values(data);
-  return result.insertId;
-}
-
-export async function bulkInsertActions(
-  rows: InsertRangeChartAction[]
-): Promise<void> {
-  if (rows.length === 0) return;
-
-  const db = await requireDb();
-  await db.insert(rangeChartActions).values(rows);
+) {
+  return getStrategyCatalogChartBySpot(stackDepth, spotGroup, spotKey);
 }
 
 export async function getTrainerSpot(
   filters: TrainerSpotFilters = {}
 ): Promise<TrainerQuestionWithChart | null> {
-  const db = await requireDb();
-  const conditions = buildChartConditions(filters);
-
-  if (filters.chartId !== undefined) {
-    conditions.push(eq(rangeCharts.id, filters.chartId));
-  }
-
-  if (filters.chartIds !== undefined) {
-    if (filters.chartIds.length === 0) return null;
-    conditions.push(inArray(rangeCharts.id, filters.chartIds));
-  }
-
-  const rows = await db
-    .select({
-      chart: rangeCharts,
-      action: rangeChartActions,
-    })
-    .from(rangeChartActions)
-    .innerJoin(rangeCharts, eq(rangeChartActions.chartId, rangeCharts.id))
-    .where(and(...conditions))
-    .orderBy(
-      asc(rangeCharts.stackDepth),
-      asc(rangeCharts.spotGroup),
-      asc(rangeCharts.title),
-      asc(rangeChartActions.handCode)
-    );
-
-  const trainableRows = rows
-    .filter(
-      ({ chart, action }) =>
-        action.handCode.length > 0 &&
-        isAction(action.primaryAction) &&
-        isTrainerAllowedChart(chart)
-    )
-    .sort((a, b) => compareHandCode(a.action.handCode, b.action.handCode));
-
-  if (trainableRows.length === 0) return null;
-
-  const rowsByChartId = new Map<number, TrainerSelectionRow[]>();
-  for (const row of trainableRows) {
-    const bucket = rowsByChartId.get(row.chart.id) ?? [];
-    bucket.push(row);
-    rowsByChartId.set(row.chart.id, bucket);
-  }
-
-  const integritySafeRows = Array.from(rowsByChartId.values())
-    .filter(chartRows =>
-      isCompleteTrainerChart(
-        {
-          title: chartRows[0].chart.title,
-          actions: chartRows.map(({ action }) => ({
-            handCode: action.handCode,
-            primaryAction: action.primaryAction,
-          })),
-        },
-        `${chartRows[0].chart.title} trainer selection`
-      )
-    )
-    .flat();
-
-  if (integritySafeRows.length === 0) return null;
-
-  const selectedChart = pickChartForTrainer(integritySafeRows, filters);
-  if (!selectedChart) return null;
-
-  const selectedAction = pickHandForTrainer(
-    selectedChart,
-    integritySafeRows,
+  const charts = filterChartsByIds(
+    await loadStrategyCatalogCharts(filters),
     filters
-  );
+  )
+    .filter(chart => isTrainerAllowedStrategyChart(chart))
+    .filter(isCompleteTrainerChart);
+
+  if (charts.length === 0) return null;
+
+  const selectedChart = pickChartForTrainer(charts, filters);
+  if (!selectedChart) return null;
+  const selectedAction = pickHandForTrainer(selectedChart, filters);
   if (!selectedAction) return null;
 
-  const selected = { chart: selectedChart, action: selectedAction };
-  const correctAction = selected.action.primaryAction;
-
   return {
-    chartId: selected.chart.id,
-    handCode: selected.action.handCode,
-    correctAction,
-    correctNote: selected.action.note,
-    choices: buildTrainerChoices(correctAction),
-    chart: mapChartSummary(selected.chart),
+    chartId: selectedChart.id,
+    handCode: selectedAction.handCode,
+    correctAction: selectedAction.primaryAction,
+    correctNote: selectedAction.note ?? null,
+    choices: buildTrainerChoices(selectedAction.primaryAction, selectedChart),
+    chart: mapChartSummary(selectedChart),
   };
 }
 
@@ -1123,218 +687,177 @@ export async function submitTrainerAttempt(
     handCode: string;
     selectedAction: Action;
     confidence?: TrainerAttemptConfidence | null;
-    drillPackId?: string | null;
     sessionId?: string | null;
     responseTimeMs?: number | null;
   }
 ): Promise<TrainerAttemptResult | null> {
-  const db = await requireDb();
-
-  const [row] = await db
-    .select({
-      chart: rangeCharts,
-      action: rangeChartActions,
-    })
-    .from(rangeChartActions)
-    .innerJoin(rangeCharts, eq(rangeChartActions.chartId, rangeCharts.id))
-    .where(
-      and(
-        eq(rangeCharts.id, input.chartId),
-        eq(rangeCharts.isActive, true),
-        eq(rangeChartActions.handCode, input.handCode)
-      )
-    )
-    .limit(1);
-
-  if (!row) return null;
-  if (!isTrainerAllowedChart(row.chart)) return null;
-
-  const chartActions = await db
-    .select({
-      handCode: rangeChartActions.handCode,
-      primaryAction: rangeChartActions.primaryAction,
-    })
-    .from(rangeChartActions)
-    .where(eq(rangeChartActions.chartId, row.chart.id));
-
-  if (
-    !isCompleteTrainerChart(
-      {
-        title: row.chart.title,
-        actions: chartActions,
-      },
-      `${row.chart.title} trainer submit`
-    )
-  ) {
+  const chart = await getStrategyCatalogChartById(input.chartId);
+  if (!chart) return null;
+  if (!isTrainerAllowedStrategyChart(chart) || !isCompleteTrainerChart(chart)) {
     return null;
   }
 
-  const correctAction = row.action.primaryAction;
-  const isCorrect = input.selectedAction === correctAction;
-  const context = canonicalSpotContextFromChart(row.chart);
-  const attemptRecord =
-    userId !== null
-      ? buildTrainerAttemptInsert({
-          userId,
-          chart: row.chart,
-          handCode: input.handCode,
-          selectedAction: input.selectedAction,
-          correctAction,
-          isCorrect,
-          confidence: input.confidence,
-          drillPackId: input.drillPackId,
-          sessionId: input.sessionId,
-          responseTimeMs: input.responseTimeMs,
-        })
-      : null;
-  let attemptId: number | null = null;
+  const action = chart.actions.find(candidate => candidate.handCode === input.handCode);
+  if (!action) return null;
 
-  // Only persist the attempt when a user is authenticated
-  if (attemptRecord) {
-    attemptId = await logTrainerAttempt(attemptRecord);
-  }
+  const isCorrect = action.primaryAction === input.selectedAction;
+  const attemptId =
+    userId !== null
+      ? await persistTrainerAttempt(
+          buildTrainerAttemptInsert({
+            userId,
+            chart,
+            handCode: input.handCode,
+            selectedAction: input.selectedAction,
+            correctAction: action.primaryAction,
+            isCorrect,
+            confidence: input.confidence,
+            sessionId: input.sessionId,
+            responseTimeMs: input.responseTimeMs,
+          })
+        )
+      : null;
 
   return {
     success: true,
     attemptId,
     persisted: attemptId !== null,
     isCorrect,
-    correctAction,
-    correctNote: row.action.note,
-    canonicalSpotId: context ? getCanonicalSpotId(context) : null,
-    leakFamilyId:
-      context && !isCorrect
-        ? suggestLeakFamilyFromTrainerMiss({
-            context,
-            handCode: input.handCode,
-            selectedAction: input.selectedAction,
-            correctAction,
-          })
-        : null,
-    sourceStatus: mapStrategySourceToAttemptSourceStatus(row.chart),
+    correctAction: action.primaryAction,
+    correctNote: action.note ?? null,
+    canonicalSpotId: chart.spotKey,
+    leakFamilyId: null,
+    sourceStatus: mapStrategySourceToAttemptSourceStatus(chart),
   };
-}
-
-export async function logTrainerAttempt(
-  data: InsertTrainerAttempt
-): Promise<number> {
-  const db = await requireDb();
-  const [result] = await db.insert(trainerAttempts).values(data);
-  return result.insertId;
 }
 
 export async function updateTrainerAttemptConfidence(
   userId: number,
   attemptId: number,
   confidence: TrainerAttemptConfidence
-): Promise<boolean> {
-  const db = await requireDb();
+) {
+  const db = await getDb();
+  if (!db) return false;
 
   await db
-    .update(trainerAttempts)
+    .update(strategyTrainerAttempts)
     .set({ confidence })
-    .where(and(eq(trainerAttempts.id, attemptId), eq(trainerAttempts.userId, userId)));
+    .where(
+      and(
+        eq(strategyTrainerAttempts.id, attemptId),
+        eq(strategyTrainerAttempts.userId, userId)
+      )
+    );
 
-  const [updated] = await db
-    .select({ id: trainerAttempts.id })
-    .from(trainerAttempts)
-    .where(and(eq(trainerAttempts.id, attemptId), eq(trainerAttempts.userId, userId)))
+  const [row] = await db
+    .select({ id: strategyTrainerAttempts.id })
+    .from(strategyTrainerAttempts)
+    .where(
+      and(
+        eq(strategyTrainerAttempts.id, attemptId),
+        eq(strategyTrainerAttempts.userId, userId)
+      )
+    )
     .limit(1);
 
-  return Boolean(updated);
+  return Boolean(row);
+}
+
+async function loadTrainerAttemptsForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      attempt: strategyTrainerAttempts,
+      node: strategyNodes,
+    })
+    .from(strategyTrainerAttempts)
+    .innerJoin(strategyNodes, eq(strategyTrainerAttempts.nodeId, strategyNodes.id))
+    .where(eq(strategyTrainerAttempts.userId, userId))
+    .orderBy(desc(strategyTrainerAttempts.createdAt));
+
+  return rows;
+}
+
+function createEmptyActionStats(): TrainerStats["byAction"] {
+  return ACTIONS.reduce<TrainerStats["byAction"]>((accumulator, action) => {
+    accumulator[action] = { total: 0, correct: 0 };
+    return accumulator;
+  }, {} as TrainerStats["byAction"]);
 }
 
 export async function getTrainerStats(userId: number): Promise<TrainerStats> {
-  const db = await requireDb();
-  const rows = await db
-    .select({
-      attempt: trainerAttempts,
-      chart: rangeCharts,
-    })
-    .from(trainerAttempts)
-    .innerJoin(rangeCharts, eq(trainerAttempts.chartId, rangeCharts.id))
-    .where(eq(trainerAttempts.userId, userId));
-
-  const supportedRows = rows.filter(({ chart }) => isTrainerAllowedChart(chart));
-
-  const total = supportedRows.length;
-  const correct = supportedRows.filter(row => row.attempt.isCorrect).length;
-  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const rows = await loadTrainerAttemptsForUser(userId);
+  const total = rows.length;
+  const correct = rows.filter(row => row.attempt.isCorrect).length;
   const byAction = createEmptyActionStats();
 
-  for (const row of supportedRows) {
-    const action = ACTIONS.find(
-      candidate => candidate === row.attempt.correctAction
-    );
-    if (!action) continue;
-
-    byAction[action].total += 1;
+  for (const row of rows) {
+    if (!isAction(row.attempt.correctAction)) continue;
+    byAction[row.attempt.correctAction].total += 1;
     if (row.attempt.isCorrect) {
-      byAction[action].correct += 1;
+      byAction[row.attempt.correctAction].correct += 1;
     }
   }
 
-  return { total, correct, accuracy, byAction };
+  return {
+    total,
+    correct,
+    accuracy: calcAccuracy(correct, total),
+    byAction,
+  };
+}
+
+export async function getRecentAttempts(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(strategyTrainerAttempts)
+    .where(eq(strategyTrainerAttempts.userId, userId))
+    .orderBy(desc(strategyTrainerAttempts.createdAt))
+    .limit(limit);
 }
 
 export async function getTrainerProgress(
   userId: number
 ): Promise<StrategyProgressSummary> {
-  const db = await requireDb();
-  const rows = await db
-    .select({
-      attempt: trainerAttempts,
-      chart: rangeCharts,
-    })
-    .from(trainerAttempts)
-    .innerJoin(rangeCharts, eq(trainerAttempts.chartId, rangeCharts.id))
-    .where(eq(trainerAttempts.userId, userId))
-    .orderBy(desc(trainerAttempts.createdAt));
-
-  const supportedRows = rows.filter(({ chart }) => isTrainerAllowedChart(chart));
-
+  const rows = await loadTrainerAttemptsForUser(userId);
   const bySpot = new Map<number, StrategySpotProgress>();
-  const byHand = new Map<string, HandStatsAccumulator>();
+  const byHand = new Map<string, StrategyMissedHand>();
 
-  for (const { attempt, chart } of supportedRows) {
-    const existingSpot = bySpot.get(chart.id);
-    const spotProgress: StrategySpotProgress = existingSpot ?? {
-      chartId: chart.id,
-      chartTitle: chart.title,
-      stackDepth: chart.stackDepth,
-      spotGroup: chart.spotGroup,
-      spotKey: chart.spotKey,
+  for (const row of rows) {
+    const existingSpot = bySpot.get(row.node.id) ?? {
+      chartId: row.node.id,
+      chartTitle: row.node.title,
+      stackDepth: row.node.stackBucket as 15 | 25 | 40 | 70,
+      spotGroup: row.node.scenarioFamily as SpotGroup,
+      spotKey: row.node.spotKey,
       attempts: 0,
       correct: 0,
       accuracy: 0,
     };
+    existingSpot.attempts += 1;
+    if (row.attempt.isCorrect) existingSpot.correct += 1;
+    existingSpot.accuracy = calcAccuracy(existingSpot.correct, existingSpot.attempts);
+    bySpot.set(row.node.id, existingSpot);
 
-    spotProgress.attempts += 1;
-    if (attempt.isCorrect) spotProgress.correct += 1;
-    spotProgress.accuracy = calcAccuracy(
-      spotProgress.correct,
-      spotProgress.attempts
-    );
-    bySpot.set(chart.id, spotProgress);
-
-    const action = isAction(attempt.correctAction)
-      ? attempt.correctAction
-      : "FOLD";
-    const handKey = `${chart.id}:${attempt.handCode}`;
-    const existingHand = byHand.get(handKey);
-    const handProgress: HandStatsAccumulator = existingHand ?? {
-      chartId: chart.id,
-      chartTitle: chart.title,
-      handCode: attempt.handCode,
-      attempts: 0,
+    const handKey = `${row.node.id}:${row.attempt.handCode}`;
+    const existingHand = byHand.get(handKey) ?? {
+      chartId: row.node.id,
+      chartTitle: row.node.title,
+      handCode: row.attempt.handCode,
       missed: 0,
-      correctAction: action,
+      attempts: 0,
+      correctAction: isAction(row.attempt.correctAction)
+        ? row.attempt.correctAction
+        : "FOLD",
     };
-
-    handProgress.attempts += 1;
-    handProgress.correctAction = action;
-    if (!attempt.isCorrect) handProgress.missed += 1;
-    byHand.set(handKey, handProgress);
+    existingHand.attempts += 1;
+    if (!row.attempt.isCorrect) existingHand.missed += 1;
+    byHand.set(handKey, existingHand);
   }
 
   const bySpotList = Array.from(bySpot.values()).sort(
@@ -1343,9 +866,7 @@ export async function getTrainerProgress(
       a.stackDepth - b.stackDepth ||
       a.chartTitle.localeCompare(b.chartTitle)
   );
-
-  const weakSpots = Array.from(bySpot.values())
-    .filter(spot => spot.attempts > 0)
+  const weakSpots = [...bySpotList]
     .sort(
       (a, b) =>
         a.accuracy - b.accuracy ||
@@ -1353,8 +874,7 @@ export async function getTrainerProgress(
         a.chartTitle.localeCompare(b.chartTitle)
     )
     .slice(0, 6);
-
-  const missedHands: StrategyMissedHand[] = Array.from(byHand.values())
+  const missedHands = Array.from(byHand.values())
     .filter(hand => hand.missed > 0)
     .sort(
       (a, b) =>
@@ -1362,110 +882,120 @@ export async function getTrainerProgress(
         b.attempts - a.attempts ||
         compareHandCode(a.handCode, b.handCode)
     )
-    .slice(0, 10)
-    .map(hand => ({
-      chartId: hand.chartId,
-      chartTitle: hand.chartTitle,
-      handCode: hand.handCode,
-      missed: hand.missed,
-      attempts: hand.attempts,
-      correctAction: hand.correctAction,
-    }));
+    .slice(0, 10);
 
   return { bySpot: bySpotList, weakSpots, missedHands };
 }
 
-export async function getRecentAttempts(userId: number, limit = 50) {
-  const db = await requireDb();
+export async function createChart(data: {
+  title: string;
+  stackDepth: number;
+  spotGroup: SpotGroup;
+  spotKey: string;
+  heroPosition: string;
+  villainPosition?: string | null;
+  villainGroup?: VillainGroup | null;
+  sourceLabel?: string | null;
+  notesJson?: string | null;
+  isActive?: boolean;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
-  return db
-    .select()
-    .from(trainerAttempts)
-    .where(eq(trainerAttempts.userId, userId))
-    .orderBy(desc(trainerAttempts.createdAt))
-    .limit(limit);
+  const [result] = await db.insert(strategyNodes).values({
+    version: "test",
+    stackBucket: data.stackDepth,
+    playerCount: 9,
+    scenarioFamily: data.spotGroup,
+    heroPosition: data.heroPosition,
+    villainPosition: data.villainPosition ?? null,
+    villainGroup: data.villainGroup ?? null,
+    spotKey: data.spotKey,
+    title: data.title,
+    sourceLabel: data.sourceLabel ?? (data.isActive === false ? "Inactive" : "Not yet reviewed"),
+    notes: data.notesJson ?? null,
+    reviewed: false,
+    structurallyComplete: false,
+    isActive: data.isActive ?? true,
+  } satisfies InsertStrategyNode);
+
+  return result.insertId;
+}
+
+export async function bulkInsertActions(rows: Array<{
+  chartId: number;
+  handCode: string;
+  primaryAction: Action;
+  weightPercent?: number | null;
+  note?: string | null;
+}>) {
+  if (rows.length === 0) return;
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(strategyNodeRanges).values(
+    rows.map(row => ({
+      nodeId: row.chartId,
+      action: row.primaryAction,
+      rangeNotation: row.handCode,
+      priority: ACTION_PRIORITY[row.primaryAction],
+      notes: row.note ?? null,
+      reviewed: false,
+    } satisfies InsertStrategyNodeRange))
+  );
 }
 
 export async function getHandStrategyRecommendation(
   handId: number
 ): Promise<StrategyRecommendation | null> {
-  const db = await requireDb();
-  const [hand] = await db
-    .select()
-    .from(hands)
-    .where(eq(hands.id, handId))
-    .limit(1);
+  const db = await getDb();
+  if (!db) return null;
 
+  const [hand] = await db.select().from(hands).where(eq(hands.id, handId)).limit(1);
   if (!hand || !isPreflopMistake(hand)) return null;
 
-  const studyMeta = extractStudyMeta(hand);
-  const inference = inferSpotFromHand(hand);
-  if (!inference) return null;
+  const inferred = inferSpotFromHand(hand);
+  if (!inferred) return null;
 
-  const targetStackDepth = nearestStackDepth(
-    studyMeta.stackDepth ?? hand.effectiveStackBb
-  );
+  const chart =
+    (await getStrategyCatalogChartBySpot(
+      inferred.stackDepth,
+      inferred.spotGroup,
+      inferred.spotKey
+    )) ??
+    (await loadStrategyCatalogCharts({
+      stackDepth: inferred.stackDepth,
+      spotGroup: inferred.spotGroup,
+      heroPosition: inferred.heroPosition,
+      villainPosition: inferred.villainPosition ?? undefined,
+    })).find(candidate => candidate.villainGroup === inferred.villainGroup) ??
+    null;
 
-  let match:
-    | { chart: RangeChart; confidence: "exact" | "nearest" }
-    | null = null;
-
-  if (studyMeta.chartId) {
-    const [exactChart] = await db
-      .select()
-      .from(rangeCharts)
-      .where(and(eq(rangeCharts.id, studyMeta.chartId), eq(rangeCharts.isActive, true)))
-      .limit(1);
-
-    if (exactChart && isStudyVisibleChart(exactChart)) {
-      match = { chart: exactChart, confidence: "exact" };
-    }
+  if (!chart) {
+    return null;
   }
-
-  if (!match) {
-    match = await findNearestChartBySpotKey(inference.spotKey, targetStackDepth);
-  }
-
-  if (!match) return null;
 
   const handCode = normalizeHandCode(hand.heroHand);
-  let recommendedAction: Action | null = null;
-
-  if (handCode) {
-    const [action] = await db
-      .select({
-        primaryAction: rangeChartActions.primaryAction,
-      })
-      .from(rangeChartActions)
-      .where(
-        and(
-          eq(rangeChartActions.chartId, match.chart.id),
-          eq(rangeChartActions.handCode, handCode)
-        )
-      )
-      .limit(1);
-
-    recommendedAction = action?.primaryAction ?? null;
-  }
-
-  const stackReason =
-    match.confidence === "exact"
-      ? `${targetStackDepth}bb stack bucket matched.`
-      : `Using nearest available ${match.chart.stackDepth}bb chart for a ${targetStackDepth}bb bucket.`;
+  const recommendedAction =
+    handCode && chart.reviewed
+      ? chart.actions.find(action => action.handCode === handCode)?.primaryAction ?? null
+      : null;
 
   return {
     chart: {
-      id: match.chart.id,
-      title: match.chart.title,
-      stackDepth: match.chart.stackDepth,
-      spotGroup: match.chart.spotGroup,
-      spotKey: match.chart.spotKey,
-      heroPosition: match.chart.heroPosition,
-      villainPosition: match.chart.villainPosition,
+      id: chart.id,
+      title: chart.title,
+      stackDepth: chart.stackDepth,
+      spotGroup: chart.spotGroup,
+      spotKey: chart.spotKey,
+      heroPosition: chart.heroPosition,
+      villainPosition: chart.villainPosition ?? null,
     },
     handCode,
     recommendedAction,
-    reason: `${inference.reason} ${stackReason}`,
-    confidence: match.confidence,
+    reason: chart.reviewed
+      ? inferred.reason
+      : `${inferred.reason} This node exists but is not yet reviewed, so no action is shown as truth.`,
+    confidence: "exact",
   };
 }

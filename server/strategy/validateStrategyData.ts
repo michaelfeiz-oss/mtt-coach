@@ -1,10 +1,13 @@
-import { validateReviewedStrategyCharts } from "../../shared/strategyDataValidation";
+import {
+  loadStrategySeedNodesSync,
+  loadStrategySeedRowsSync,
+} from "./typedSeedFiles";
 import { SEED_CHARTS, validateSeedCharts } from "./seedData";
 
-const reviewed = validateReviewedStrategyCharts();
+const rows = loadStrategySeedRowsSync();
+const nodes = loadStrategySeedNodesSync();
 validateSeedCharts(SEED_CHARTS);
 
 console.log(
-  `Strategy data valid: ${reviewed.charts} reviewed charts, ${SEED_CHARTS.length} seeded charts.`
+  `Typed strategy data valid: ${rows.length} rows, ${nodes.length} nodes, ${SEED_CHARTS.length} compiled charts.`
 );
-

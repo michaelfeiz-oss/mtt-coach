@@ -2,9 +2,10 @@ import {
   ACTION_LABELS,
   ACTIONS,
   type Action,
-} from "../../../../shared/strategy";
+} from "../../../../shared/preflopStrategy";
 
 export const STRATEGY_ACTION_ORDER: Action[] = [
+  "FOUR_BET",
   "RAISE",
   "CALL",
   "THREE_BET",
@@ -41,6 +42,11 @@ export const ACTION_CELL_STYLES: Record<
     backgroundColor: "#2563EB",
     color: "#ffffff",
     label: ACTION_LABELS.THREE_BET,
+  },
+  FOUR_BET: {
+    backgroundColor: "#7C3AED",
+    color: "#ffffff",
+    label: ACTION_LABELS.FOUR_BET,
   },
   JAM: {
     backgroundColor: "#D96B1D",

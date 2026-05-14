@@ -2,16 +2,18 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   displayPositionLabel,
+  displayVillainGroupLabel,
   POSITIONS,
   SPOT_GROUP_LABELS,
   type SpotGroup,
-} from "../../../../shared/strategy";
+} from "../../../../shared/preflopStrategy";
 
 interface TableContextProps {
   title?: string;
   stackDepth?: number;
   heroPosition?: string | null;
   villainPosition?: string | null;
+  villainGroup?: string | null;
   spotGroup?: SpotGroup;
   playerCount?: number;
   blindAnteLabel?: string;
@@ -26,8 +28,9 @@ type SeatAnchor = {
 
 const SEAT_LAYOUT: Record<string, SeatAnchor> = {
   UTG: { x: 50, y: 10 },
-  UTG1: { x: 68, y: 16 },
-  MP: { x: 80, y: 32 },
+  UTG1: { x: 63, y: 13 },
+  UTG2: { x: 75, y: 21 },
+  LJ: { x: 83, y: 36 },
   HJ: { x: 79, y: 53 },
   CO: { x: 66, y: 69 },
   BTN: { x: 50, y: 76 },
@@ -56,6 +59,7 @@ export function TableContext({
   stackDepth,
   heroPosition,
   villainPosition,
+  villainGroup,
   spotGroup,
   playerCount = 9,
   blindAnteLabel = "BBA",
@@ -155,10 +159,14 @@ export function TableContext({
         </div>
         <div className="rounded-lg border border-border bg-secondary px-2.5 py-1.5">
           <span className="font-semibold text-foreground">
-            {villainPosition ? displayPositionLabel(villainPosition) : "No opener"}
+            {villainPosition
+              ? displayPositionLabel(villainPosition)
+              : villainGroup
+                ? `${displayVillainGroupLabel(villainGroup as "early" | "middle" | "late")} open`
+                : "No opener"}
           </span>
           <span className="ml-1">
-            {villainPosition ? "opener" : "RFI/mixed"}
+            {villainPosition || villainGroup ? "opener" : "RFI/mixed"}
           </span>
         </div>
       </div>

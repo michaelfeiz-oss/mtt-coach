@@ -5,7 +5,7 @@ import {
   ACTION_LABELS,
   type Action,
   type RangeChartWithActions,
-} from "../../../../shared/strategy";
+} from "../../../../shared/preflopStrategy";
 import {
   TRAINER_ATTEMPT_CONFIDENCES,
   type TrainerAttemptConfidence,

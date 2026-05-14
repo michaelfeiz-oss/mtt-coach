@@ -26,6 +26,7 @@ import { canonicalSpotContextFromChart } from "@shared/spotIds";
 import { buildStrategyChartPresentation } from "@shared/strategyPresentation";
 import {
   displayPositionLabel,
+  displayVillainGroupLabel,
   POSITIONS,
   SPOT_GROUP_LABELS,
   SPOT_GROUPS,
@@ -33,7 +34,7 @@ import {
   type Action,
   type Position,
   type SpotGroup,
-} from "@shared/strategy";
+} from "@shared/preflopStrategy";
 
 type TrainerMode =
   | "current_spot"
@@ -62,8 +63,10 @@ type SpotSummary = {
   title: string;
   stackDepth: number;
   spotGroup: SpotGroup;
+  spotKey?: string;
   heroPosition: string;
   villainPosition?: string | null;
+  villainGroup?: string | null;
   sourceLabel?: string | null;
 };
 
@@ -149,7 +152,7 @@ function filterSummary(
     return `Drilling ${SPOT_GROUP_LABELS[spotGroup]} across trainer-safe stacks.`;
   }
   if (stackDepth) return `Drilling preflop spots at ${stackDepth}bb.`;
-  return "Drilling trainer-safe 15bb / 25bb / 40bb preflop spots.";
+  return "Drilling trainer-safe 15bb / 25bb / 40bb / 70bb preflop spots.";
 }
 
 function scrollElementIntoComfortView(element: HTMLElement | null) {
@@ -722,14 +725,16 @@ export default function RangeTrainer() {
                   BBA
                 </Badge>
                 <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
-                  15bb / 25bb / 40bb
+                  15bb / 25bb / 40bb / 70bb
                 </Badge>
                 {activeSpot && (
                   <Badge className="rounded-full border-border bg-background/85 text-secondary-foreground">
                     {displayPositionLabel(activeSpot.heroPosition)}
                     {activeSpot.villainPosition
                       ? ` vs ${displayPositionLabel(activeSpot.villainPosition)}`
-                      : ""}
+                      : activeSpot.villainGroup
+                        ? ` vs ${displayVillainGroupLabel(activeSpot.villainGroup as "early" | "middle" | "late")} open`
+                        : ""}
                   </Badge>
                 )}
                 {activeSpotPresentation?.sourceBadge && (
@@ -894,6 +899,7 @@ export default function RangeTrainer() {
                   stackDepth={trainerSpot.chart.stackDepth}
                   heroPosition={trainerSpot.chart.heroPosition}
                   villainPosition={trainerSpot.chart.villainPosition}
+                  villainGroup={trainerSpot.chart.villainGroup}
                   spotGroup={trainerSpot.chart.spotGroup}
                   embedded
                 />
@@ -909,10 +915,11 @@ export default function RangeTrainer() {
                     activeSpotPresentation?.contextLine ??
                     SPOT_GROUP_LABELS[trainerSpot.chart.spotGroup]
                   }
-                  stackDepth={trainerSpot.chart.stackDepth}
-                  heroPosition={trainerSpot.chart.heroPosition}
-                  villainPosition={trainerSpot.chart.villainPosition}
-                  correctAction={trainerSpot.correctAction}
+                      stackDepth={trainerSpot.chart.stackDepth}
+                      heroPosition={trainerSpot.chart.heroPosition}
+                      villainPosition={trainerSpot.chart.villainPosition}
+                      villainGroup={trainerSpot.chart.villainGroup}
+                      correctAction={trainerSpot.correctAction}
                   explanation={trainerSpot.correctNote}
                   isPersisted={isAuthenticated}
                   choices={trainerSpot.choices}

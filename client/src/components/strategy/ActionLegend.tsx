@@ -1,5 +1,5 @@
 import React from "react";
-import type { Action } from "../../../../shared/strategy";
+import type { Action } from "../../../../shared/preflopStrategy";
 import { cn } from "@/lib/utils";
 import { ACTION_CELL_STYLES, STRATEGY_ACTION_ORDER } from "./actionStyles";
 

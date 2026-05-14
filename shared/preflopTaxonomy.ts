@@ -1,5 +1,15 @@
 import type { PreflopScenarioId } from "./preflopScenarios";
-import type { Position, SpotGroup } from "./strategy";
+import type {
+  Position as LegacyPosition,
+  SpotGroup as LegacySpotGroup,
+} from "./strategy";
+import type {
+  Position as TypedPosition,
+  SpotGroup as TypedSpotGroup,
+} from "./preflopStrategy";
+
+export type Position = LegacyPosition | TypedPosition;
+export type SpotGroup = LegacySpotGroup | TypedSpotGroup;
 
 export const PRELFOP_PLAYERS_COUNT = 9;
 export const PRELFOP_ANTE_FORMAT = "BBA" as const;
@@ -29,7 +39,7 @@ export const CANONICAL_STACK_BUCKETS = [
 ] as const;
 export type CanonicalStackBucket = (typeof CANONICAL_STACK_BUCKETS)[number];
 
-export const MAIN_STUDY_STACK_BUCKETS = [15, 25, 40] as const;
+export const MAIN_STUDY_STACK_BUCKETS = [15, 25, 40, 70] as const;
 export const PUSH_FOLD_STACK_BUCKETS = [5, 6, 7, 8, 9, 10] as const;
 
 export const STUDY_STAGE_CONTEXTS = [
@@ -59,14 +69,23 @@ export function canonicalFamilyFromSpotGroup(
 ): CanonicalSpotFamily {
   switch (spotGroup) {
     case "RFI":
+    case "rfi":
+    case "sb_first_in":
       return "OPEN_RFI";
     case "VS_UTG_RFI":
     case "VS_MP_RFI":
     case "VS_LP_RFI":
+    case "facing_open_early":
+    case "facing_open_middle":
+    case "facing_open_late":
       return "DEFEND_VS_RFI";
     case "VS_3BET":
       return "FACING_3BET";
+    case "facing_jam":
+      return "FOUR_BET_JAM";
     case "BVB":
+    case "bb_vs_sb_open":
+    case "bb_vs_sb_limp":
       return "BLIND_VS_BLIND";
   }
 }
@@ -146,7 +165,12 @@ export function nearestCanonicalStackBucket(
 }
 
 export function isEarlyPosition(position: Position | null | undefined) {
-  return position === "UTG" || position === "UTG1" || position === "MP";
+  return (
+    position === "UTG" ||
+    position === "UTG1" ||
+    position === "UTG2" ||
+    position === "MP"
+  );
 }
 
 export function isLatePosition(position: Position | null | undefined) {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Target } from "lucide-react";
 import { toast } from "sonner";
-import { ACTION_LABELS } from "../../../shared/strategy";
+import { ACTION_LABELS } from "../../../shared/preflopStrategy";
 import { findLeakFamilyByLabel } from "@shared/leakFamilies";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";

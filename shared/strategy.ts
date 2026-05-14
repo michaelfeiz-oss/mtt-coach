@@ -92,7 +92,9 @@ export type Position = (typeof POSITIONS)[number];
 
 export function displayPositionLabel(position?: string | null): string {
   if (!position) return "No opener";
-  return position === "UTG1" ? "UTG+1" : position;
+  if (position === "UTG1") return "UTG+1";
+  if (position === "UTG2") return "UTG+2";
+  return position;
 }
 
 // ─── Hand grid ───────────────────────────────────────────────────────────────

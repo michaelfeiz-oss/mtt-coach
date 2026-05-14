@@ -1,161 +1,163 @@
 import { describe, expect, it } from "vitest";
+import { ALL_HANDS, type StrategyNodeRangeRow } from "../../shared/preflopStrategy";
+import type { ParsedStrategySeedNode } from "./typedSeedFiles";
 import {
-  SPOT_DEFINITIONS,
-  STACK_DEPTHS,
-} from "../../shared/strategy";
-import { isSourceSupportedStrategyChart } from "../../shared/sourceTruth";
-import { SEED_CHARTS, validateSeedCharts } from "./seedData";
+  SEED_CHARTS,
+  buildActionMapFromSeedChart,
+  buildSeedCharts,
+  validateSeedCharts,
+} from "./seedData";
 
-describe("strategy seed coverage", () => {
-  it("only seeds source-supported chart selectors at the supported stacks", () => {
-    const expectedCount = STACK_DEPTHS.flatMap(stackDepth =>
-      SPOT_DEFINITIONS.filter(definition =>
-        isSourceSupportedStrategyChart({
-          stackDepth,
-          spotGroup: definition.group,
-          heroPosition: definition.heroPosition,
-          villainPosition: definition.villainPosition,
-          spotKey: definition.key,
-        })
-      )
-    ).length;
+function exactRows(primaryAction: StrategyNodeRangeRow["action"]) {
+  return ALL_HANDS.map<StrategyNodeRangeRow>(handCode => ({
+    action: primaryAction,
+    rangeNotation: handCode,
+    priority: primaryAction === "FOLD" ? 100 : 500,
+  }));
+}
 
-    expect(SEED_CHARTS).toHaveLength(expectedCount);
-  });
-
-  it("keeps the backed parity spots and trims unsupported 3-bet stacks", () => {
-    const keys = new Set(
-      SEED_CHARTS.map(chart => `${chart.stackDepth}:${chart.spotKey}`)
-    );
-
-    expect(keys).toContain("15:UTG1_vs_UTG");
-    expect(keys).toContain("25:MP_vs_UTG");
-    expect(keys).toContain("40:SB_vs_CO");
-    expect(keys).toContain("15:UTG_vs_BTN_3bet");
-    expect(keys).not.toContain("15:HJ_vs_BTN_3bet");
-    expect(keys).toContain("25:CO_vs_BB_3bet");
-    expect(keys).toContain("40:BTN_vs_SB_3bet");
-    expect(keys).not.toContain("25:SB_vs_BB_3bet");
-    expect(keys).not.toContain("40:SB_vs_BB_3bet");
-    expect(SEED_CHARTS.some(chart => chart.stackDepth === 20)).toBe(false);
-  });
-
-  it("labels 25bb/40bb facing-3bet nodes as simplified population coverage", () => {
-    const upgraded25 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 25 && chart.spotKey === "CO_vs_BB_3bet"
-    );
-    const upgraded40 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 40 && chart.spotKey === "BTN_vs_SB_3bet"
-    );
-
-    expect(upgraded25?.sourceLabel).toBe("Simplified Population");
-    expect(upgraded40?.sourceLabel).toBe("Simplified Population");
-  });
-
-  it("uses the new 25bb simplified-vs-3bet family rules instead of leaving nodes empty", () => {
-    const oop25 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 25 && chart.spotKey === "HJ_vs_BTN_3bet"
-    );
-    const ipSmallBlind25 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 25 && chart.spotKey === "BTN_vs_SB_3bet"
-    );
-    const ipBlind25 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 25 && chart.spotKey === "BTN_vs_BB_3bet"
-    );
-
-    expect(
-      oop25?.actions.find(action => action.handCode === "A5s")?.primaryAction
-    ).toBe("JAM");
-    expect(
-      oop25?.actions.find(action => action.handCode === "ATo")?.primaryAction
-    ).toBe("FOLD");
-    expect(
-      ipSmallBlind25?.actions.find(action => action.handCode === "ATo")
-        ?.primaryAction
-    ).toBe("CALL");
-    expect(
-      ipBlind25?.actions.find(action => action.handCode === "ATo")
-        ?.primaryAction
-    ).toBe("FOLD");
-    expect(
-      ipSmallBlind25?.actions.find(action => action.handCode === "88")
-        ?.primaryAction
-    ).toBe("JAM");
-    expect(
-      ipBlind25?.actions.find(action => action.handCode === "88")?.primaryAction
-    ).toBe("CALL");
-    expect(
-      ipBlind25?.actions.find(action => action.handCode === "AQo")?.primaryAction
-    ).toBe("JAM");
-  });
-
-  it("separates the 40bb simplified blind branches instead of cloning them", () => {
-    const ipBlind40 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 40 && chart.spotKey === "CO_vs_BB_3bet"
-    );
-    const ipSmallBlind40 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 40 && chart.spotKey === "CO_vs_SB_3bet"
-    );
-
-    expect(
-      ipBlind40?.actions.find(action => action.handCode === "QQ")?.primaryAction
-    ).toBe("JAM");
-    expect(
-      ipBlind40?.actions.find(action => action.handCode === "AQs")?.primaryAction
-    ).toBe("CALL");
-    expect(
-      ipBlind40?.actions.find(action => action.handCode === "JJ")?.primaryAction
-    ).toBe("CALL");
-    expect(
-      ipBlind40?.actions.find(action => action.handCode === "KTs")?.primaryAction
-    ).toBe("FOLD");
-    expect(
-      ipSmallBlind40?.actions.find(action => action.handCode === "KTs")
-        ?.primaryAction
-    ).toBe("CALL");
-  });
-
-  it("keeps grouped-source-backed chart actions unchanged while labels become more explicit", () => {
-    const utgGrouped40 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 40 && chart.spotKey === "UTG1_vs_UTG"
-    );
-    const mpGrouped40 = SEED_CHARTS.find(
-      chart => chart.stackDepth === 40 && chart.spotKey === "CO_vs_MP"
-    );
-
-    expect(
-      utgGrouped40?.actions.find(action => action.handCode === "99")
-        ?.primaryAction
-    ).toBe("CALL");
-    expect(
-      utgGrouped40?.actions.find(action => action.handCode === "QJo")
-        ?.primaryAction
-    ).toBe("THREE_BET");
-    expect(
-      mpGrouped40?.actions.find(action => action.handCode === "77")
-        ?.primaryAction
-    ).toBe("CALL");
-    expect(
-      mpGrouped40?.actions.find(action => action.handCode === "QJo")
-        ?.primaryAction
-    ).toBe("FOLD");
-  });
-
-  it("builds structurally complete imported candidates from reviewed data instead of the candidate import map", () => {
-    const reviewedChart = SEED_CHARTS.find(
-      chart => chart.stackDepth === 15 && chart.spotKey === "UTG1_vs_UTG"
-    );
-
-    expect(reviewedChart?.sourceStatus).toBe("imported_unreviewed");
-    expect(reviewedChart?.sourceLabel).toBe("Imported Candidate");
-    expect(reviewedChart?.dataVersion).toBeTruthy();
-    expect(reviewedChart?.reviewedBy).toBeTruthy();
-    expect(reviewedChart?.reviewedAt).toBeTruthy();
-    expect(reviewedChart?.sourceFile).toBe("15bb-gto-charts.pdf");
-    expect(reviewedChart?.sourcePanelLabel).toBe("UTG+1/+2 vs UTG RFI");
-  });
-
-  it("validates all generated seed charts", () => {
+describe("typed strategy seed data", () => {
+  it("stays empty until real manually reviewed seed files are provided", () => {
+    expect(SEED_CHARTS).toEqual([]);
     expect(() => validateSeedCharts(SEED_CHARTS)).not.toThrow();
+  });
+
+  it("builds unreviewed charts from parsed typed seed nodes", () => {
+    const nodes: ParsedStrategySeedNode[] = [
+      {
+        summary: {
+          id: 1,
+          version: "population-v1",
+          stackBucket: 25,
+          playerCount: 9,
+          scenarioFamily: "facing_open_middle",
+          heroPosition: "BTN",
+          villainPosition: "HJ",
+          villainGroup: null,
+          title: "BTN vs HJ @ 25bb",
+          spotKey: "BTN_vs_HJ_open",
+          stackDepth: 25,
+          spotGroup: "facing_open_middle",
+          reviewed: false,
+          sourceLabel: "Not yet reviewed",
+        },
+        rows: [
+          {
+            action: "CALL",
+            rangeNotation: "AJs, KQs",
+            priority: 300,
+            notes: "Continue the suited top-end.",
+          },
+          {
+            action: "FOLD",
+            rangeNotation: "AJo, KQo",
+            priority: 100,
+            notes: "Boundary folds until reviewed.",
+          },
+        ],
+      },
+    ];
+
+    const charts = buildSeedCharts(nodes);
+    const chart = charts[0]!;
+
+    expect(chart.sourceStatus).toBe("imported_unreviewed");
+    expect(chart.cellMapSource).toBe("imported_unreviewed");
+    expect(chart.dataVersion).toBe("population-v1");
+    expect(chart.sourceLabel).toBe("Not yet reviewed");
+    expect(chart.notes).toContain("Continue the suited top-end.");
+    expect(chart.actions).toHaveLength(4);
+  });
+
+  it("requires reviewed seed nodes to cover all 169 hands", () => {
+    const reviewedNode: ParsedStrategySeedNode = {
+      summary: {
+        id: 2,
+        version: "population-v1",
+        stackBucket: 15,
+        playerCount: 9,
+        scenarioFamily: "rfi",
+        heroPosition: "UTG",
+        villainPosition: null,
+        villainGroup: null,
+        title: "UTG RFI @ 15bb",
+        spotKey: "UTG_rfi",
+        stackDepth: 15,
+        spotGroup: "rfi",
+        reviewed: true,
+        sourceLabel: "Reviewed typed seed",
+      },
+      rows: [
+        {
+          action: "RAISE",
+          rangeNotation: "AA, KK",
+          priority: 500,
+        },
+      ],
+    };
+
+    expect(() => buildSeedCharts([reviewedNode])).toThrow(/missing/i);
+  });
+
+  it("maps compiled seed actions into a hand lookup object", () => {
+    const chart = buildSeedCharts([
+      {
+        summary: {
+          id: 3,
+          version: "population-v1",
+          stackBucket: 40,
+          playerCount: 9,
+          scenarioFamily: "rfi",
+          heroPosition: "CO",
+          villainPosition: null,
+          villainGroup: null,
+          title: "CO RFI @ 40bb",
+          spotKey: "CO_rfi",
+          stackDepth: 40,
+          spotGroup: "rfi",
+          reviewed: false,
+          sourceLabel: "Not yet reviewed",
+        },
+        rows: [
+          {
+            action: "RAISE",
+            rangeNotation: "AKs, AQs",
+            priority: 500,
+          },
+        ],
+      },
+    ])[0]!;
+
+    const actionMap = buildActionMapFromSeedChart(chart);
+    expect(actionMap.AKs?.primaryAction).toBe("RAISE");
+    expect(actionMap.AQs?.primaryAction).toBe("RAISE");
+    expect(actionMap.AJo).toBeUndefined();
+  });
+
+  it("validates custom complete reviewed charts", () => {
+    const charts = buildSeedCharts([
+      {
+        summary: {
+          id: 4,
+          version: "population-v1",
+          stackBucket: 70,
+          playerCount: 9,
+          scenarioFamily: "sb_first_in",
+          heroPosition: "SB",
+          villainPosition: null,
+          villainGroup: null,
+          title: "SB First In @ 70bb",
+          spotKey: "sb_first_in",
+          stackDepth: 70,
+          spotGroup: "sb_first_in",
+          reviewed: true,
+          sourceLabel: "Reviewed typed seed",
+        },
+        rows: exactRows("FOLD"),
+      },
+    ]);
+
+    expect(charts[0]?.actions).toHaveLength(ALL_HANDS.length);
+    expect(() => validateSeedCharts(charts)).not.toThrow();
   });
 });

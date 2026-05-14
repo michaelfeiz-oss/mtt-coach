@@ -31,7 +31,7 @@ import {
   ACTION_LABELS,
   SPOT_GROUP_LABELS,
   type Action,
-} from "@shared/strategy";
+} from "@shared/preflopStrategy";
 
 function formatSpotMeta(spot: RecentStrategySpot) {
   const positions = spot.villainPosition

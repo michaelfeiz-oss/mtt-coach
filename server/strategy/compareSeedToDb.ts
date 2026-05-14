@@ -1,7 +1,5 @@
-import { and, asc, eq } from "drizzle-orm";
-import { rangeChartActions, rangeCharts } from "../../drizzle/schema";
-import { getDb } from "../db";
 import { SEED_CHARTS } from "./seedData";
+import { loadStrategyCatalogChartsFromDb } from "./catalog";
 
 interface CompareOptions {
   handCodes?: string[];
@@ -45,38 +43,17 @@ function parseArgs(argv: string[]): CompareOptions {
   return options;
 }
 
-function chartKey(chart: { stackDepth: number; spotKey: string }) {
-  return `${chart.stackDepth}:${chart.spotKey}`;
+function chartKey(chart: { version: string; stackDepth: number; spotKey: string }) {
+  return `${chart.version}:${chart.stackDepth}:${chart.spotKey}`;
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const db = await getDb();
-  if (!db) {
-    throw new Error("Database not available. Set DATABASE_URL before comparing seed to DB.");
-  }
-
-  const dbCharts = await db
-    .select()
-    .from(rangeCharts)
-    .where(eq(rangeCharts.isActive, true))
-    .orderBy(asc(rangeCharts.stackDepth), asc(rangeCharts.spotGroup), asc(rangeCharts.spotKey));
-
-  const dbActions = await db
-    .select()
-    .from(rangeChartActions)
-    .orderBy(asc(rangeChartActions.chartId), asc(rangeChartActions.handCode));
-
-  const dbChartsByKey = new Map(dbCharts.map(chart => [chartKey(chart), chart]));
-  const seedChartKeys = new Set(SEED_CHARTS.map(chartKey));
-  const dbActionBuckets = new Map<number, typeof dbActions>();
-  for (const action of dbActions) {
-    const bucket = dbActionBuckets.get(action.chartId) ?? [];
-    bucket.push(action);
-    dbActionBuckets.set(action.chartId, bucket);
-  }
+  const dbCharts = (await loadStrategyCatalogChartsFromDb()) ?? [];
 
   const mismatches: Array<Record<string, string | number>> = [];
+  const dbChartsByKey = new Map(dbCharts.map(chart => [chartKey(chart), chart]));
+  const seedChartKeys = new Set(SEED_CHARTS.map(chartKey));
 
   for (const seedChart of SEED_CHARTS) {
     const key = chartKey(seedChart);
@@ -86,62 +63,50 @@ async function main() {
       mismatches.push({
         chartKey: key,
         type: "missing_chart",
-        detail: "Chart missing from DB",
+        detail: "Typed node missing from DB",
       });
       continue;
     }
 
-    const dbRows = dbActionBuckets.get(dbChart.id) ?? [];
-    const dbRowsByHand = new Map<string, string[]>();
-    for (const row of dbRows) {
-      const bucket = dbRowsByHand.get(row.handCode) ?? [];
-      bucket.push(row.primaryAction);
-      dbRowsByHand.set(row.handCode, bucket);
-    }
-
+    const dbActionsByHand = new Map(
+      dbChart.actions.map(action => [action.handCode, action.primaryAction])
+    );
     const expectedHands = options.handCodes
       ? seedChart.actions.filter(action => options.handCodes!.includes(action.handCode))
       : seedChart.actions;
 
     for (const expected of expectedHands) {
-      const dbActionsForHand = dbRowsByHand.get(expected.handCode) ?? [];
-      if (dbActionsForHand.length === 0) {
+      const dbAction = dbActionsByHand.get(expected.handCode);
+
+      if (!dbAction) {
         mismatches.push({
           chartKey: key,
           handCode: expected.handCode,
           type: "missing_hand",
-          detail: "Hand missing from DB",
+          detail: "Hand missing from DB node",
         });
         continue;
       }
 
-      if (dbActionsForHand.length > 1) {
-        mismatches.push({
-          chartKey: key,
-          handCode: expected.handCode,
-          type: "duplicate_hand",
-          detail: dbActionsForHand.join(", "),
-        });
-      }
-
-      if (!dbActionsForHand.includes(expected.primaryAction)) {
+      if (dbAction !== expected.primaryAction) {
         mismatches.push({
           chartKey: key,
           handCode: expected.handCode,
           type: "action_mismatch",
-          detail: `seed=${expected.primaryAction}; db=${dbActionsForHand.join("|")}`,
+          detail: `seed=${expected.primaryAction}; db=${dbAction}`,
         });
       }
     }
 
     if (!options.handCodes) {
-      for (const handCode of Array.from(dbRowsByHand.keys())) {
-        if (!seedChart.actions.some(action => action.handCode === handCode)) {
+      const seedHands = new Set(seedChart.actions.map(action => action.handCode));
+      for (const action of dbChart.actions) {
+        if (!seedHands.has(action.handCode)) {
           mismatches.push({
             chartKey: key,
-            handCode,
+            handCode: action.handCode,
             type: "extra_hand",
-            detail: "Extra hand exists in DB",
+            detail: "Hand exists in DB node but not in typed seed",
           });
         }
       }
@@ -151,20 +116,19 @@ async function main() {
   for (const dbChart of dbCharts) {
     const key = chartKey(dbChart);
     if (seedChartKeys.has(key)) continue;
-
     mismatches.push({
       chartKey: key,
       type: "extra_chart",
-      detail: "Chart exists in DB but not in seed catalog",
+      detail: "Typed DB node exists but not in seed manifest",
     });
   }
 
   console.log(
-    `Compared ${SEED_CHARTS.length} seed charts against ${dbCharts.length} DB charts.`
+    `Compared ${SEED_CHARTS.length} typed seed nodes against ${dbCharts.length} DB nodes.`
   );
 
   if (mismatches.length === 0) {
-    console.log("No seed/DB mismatches found.");
+    console.log("No typed seed/DB mismatches found.");
     return;
   }
 

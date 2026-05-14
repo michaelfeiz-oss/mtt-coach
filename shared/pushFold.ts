@@ -7,7 +7,7 @@ import {
   getCanonicalSpotId,
   type CanonicalSpotContext,
 } from "./spotIds";
-import { ALL_HANDS, type HandAction, type Position } from "./strategy";
+import { ALL_HANDS, type HandAction, type Position } from "./preflopStrategy";
 import {
   getHandCoordinate,
   handDistance,

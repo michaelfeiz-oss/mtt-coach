@@ -7,14 +7,15 @@ import {
   canonicalFamilyFromSpotGroup,
   nearestMainStudyStackBucket,
   type CanonicalSpotFamily,
+  type SpotGroup,
   type StudyStageContext,
 } from "./preflopTaxonomy";
 import {
-  POSITIONS,
+  buildSpotKey,
   displayPositionLabel,
-  type SpotGroup,
   type Position,
-} from "./strategy";
+  type VillainGroup,
+} from "./preflopStrategy";
 
 export interface CanonicalSpotContext {
   family: CanonicalSpotFamily;
@@ -31,6 +32,7 @@ export interface ChartLikeSpotContext {
   spotGroup: SpotGroup;
   heroPosition: string;
   villainPosition?: string | null;
+  villainGroup?: string | null;
 }
 
 export interface LoggedSpotContextInput {
@@ -55,9 +57,29 @@ export function normalizeCanonicalPosition(
     .toUpperCase()
     .replace("UTG+1", "UTG1")
     .replace("UTG 1", "UTG1")
-    .replace("UTG-1", "UTG1");
+    .replace("UTG-1", "UTG1")
+    .replace("UTG+2", "UTG2")
+    .replace("UTG 2", "UTG2")
+    .replace("LOJACK", "LJ")
+    .replace("HIJACK", "HJ")
+    .replace("CUTOFF", "CO")
+    .replace("BUTTON", "BTN");
 
-  return (POSITIONS as readonly string[]).includes(normalized)
+  if (normalized === "MP") return "UTG2";
+
+  return (
+    [
+      "UTG",
+      "UTG1",
+      "UTG2",
+      "LJ",
+      "HJ",
+      "CO",
+      "BTN",
+      "SB",
+      "BB",
+    ] as const
+  ).includes(normalized as Position)
     ? (normalized as Position)
     : undefined;
 }
@@ -93,11 +115,30 @@ export function canonicalSpotContextFromChart(
   const heroPosition = normalizeCanonicalPosition(chart.heroPosition);
   if (!heroPosition) return null;
 
+  const villainPosition = normalizeCanonicalPosition(chart.villainPosition);
+  const villainGroup =
+    !villainPosition &&
+    (chart.villainGroup === "early" ||
+      chart.villainGroup === "middle" ||
+      chart.villainGroup === "late")
+      ? chart.villainGroup
+      : null;
+
+  const canonicalVillainPosition =
+    villainPosition ??
+    (villainGroup === "early"
+      ? "UTG"
+      : villainGroup === "middle"
+        ? "HJ"
+        : villainGroup === "late"
+          ? "CO"
+          : undefined);
+
   return {
     family: canonicalFamilyFromSpotGroup(chart.spotGroup),
     stackDepth: nearestMainStudyStackBucket(chart.stackDepth),
     heroPosition,
-    villainPosition: normalizeCanonicalPosition(chart.villainPosition),
+    villainPosition: canonicalVillainPosition,
     playersCount: PRELFOP_PLAYERS_COUNT,
     anteFormat: PRELFOP_ANTE_FORMAT,
   };
@@ -122,45 +163,92 @@ export function inferCanonicalSpotContextFromLog(
 export function getStrategyChartSelector(
   context: CanonicalSpotContext
 ): StrategyChartSelector | null {
+  const stackBucket = nearestMainStudyStackBucket(context.stackDepth) as
+    | 15
+    | 25
+    | 40
+    | 70;
+
   switch (context.family) {
     case "OPEN_RFI":
       return {
-        spotGroup: "RFI",
-        spotKey: `${context.heroPosition}_RFI`,
+        spotGroup: "rfi",
+        spotKey: buildSpotKey({
+          version: "v1",
+          stackBucket,
+          playerCount: PRELFOP_PLAYERS_COUNT,
+          scenarioFamily: context.heroPosition === "SB" ? "sb_first_in" : "rfi",
+          heroPosition: context.heroPosition,
+        }),
       };
     case "DEFEND_VS_RFI":
       if (!context.villainPosition) return null;
-      if (context.villainPosition === "UTG") {
-        return {
-          spotGroup: "VS_UTG_RFI",
-          spotKey: `${context.heroPosition}_vs_UTG`,
-        };
-      }
-      if (context.villainPosition === "MP") {
-        return {
-          spotGroup: "VS_MP_RFI",
-          spotKey: `${context.heroPosition}_vs_MP`,
-        };
-      }
-      if (context.villainPosition === "CO" || context.villainPosition === "BTN") {
-        return {
-          spotGroup: "VS_LP_RFI",
-          spotKey: `${context.heroPosition}_vs_${context.villainPosition}`,
-        };
-      }
-      return null;
+      return {
+        spotGroup:
+          context.villainPosition === "UTG" ||
+          context.villainPosition === "UTG1" ||
+          context.villainPosition === "UTG2"
+            ? "facing_open_early"
+            : context.villainPosition === "LJ" || context.villainPosition === "HJ"
+              ? "facing_open_middle"
+              : "facing_open_late",
+        spotKey: buildSpotKey({
+          version: "v1",
+          stackBucket,
+          playerCount: PRELFOP_PLAYERS_COUNT,
+          scenarioFamily:
+            context.villainPosition === "UTG" ||
+            context.villainPosition === "UTG1" ||
+            context.villainPosition === "UTG2"
+              ? "facing_open_early"
+              : context.villainPosition === "LJ" || context.villainPosition === "HJ"
+                ? "facing_open_middle"
+                : "facing_open_late",
+          heroPosition: context.heroPosition,
+          villainPosition: context.villainPosition,
+        }),
+      };
     case "FACING_3BET":
+    case "THREE_BET":
+      return null;
+    case "FOUR_BET_JAM":
       if (!context.villainPosition) return null;
       return {
-        spotGroup: "VS_3BET",
-        spotKey: `${context.heroPosition}_vs_${context.villainPosition}_3bet`,
+        spotGroup: "facing_jam",
+        spotKey: buildSpotKey({
+          version: "v1",
+          stackBucket,
+          playerCount: PRELFOP_PLAYERS_COUNT,
+          scenarioFamily: "facing_jam",
+          heroPosition: context.heroPosition,
+          villainPosition: context.villainPosition,
+        }),
       };
     case "BLIND_VS_BLIND":
       if (context.heroPosition === "SB") {
-        return { spotGroup: "BVB", spotKey: "SB_vs_BB_limp" };
+        return {
+          spotGroup: "sb_first_in",
+          spotKey: buildSpotKey({
+            version: "v1",
+            stackBucket,
+            playerCount: PRELFOP_PLAYERS_COUNT,
+            scenarioFamily: "sb_first_in",
+            heroPosition: "SB",
+          }),
+        };
       }
       if (context.heroPosition === "BB") {
-        return { spotGroup: "BVB", spotKey: "BB_vs_SB_limp" };
+        return {
+          spotGroup: "bb_vs_sb_limp",
+          spotKey: buildSpotKey({
+            version: "v1",
+            stackBucket,
+            playerCount: PRELFOP_PLAYERS_COUNT,
+            scenarioFamily: "bb_vs_sb_limp",
+            heroPosition: "BB",
+            villainPosition: "SB",
+          }),
+        };
       }
       return null;
     default:

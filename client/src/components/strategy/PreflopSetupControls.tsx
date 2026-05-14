@@ -14,7 +14,7 @@ import {
   SPOT_GROUPS,
   STACK_DEPTHS,
   type SpotGroup,
-} from "@shared/strategy";
+} from "@shared/preflopStrategy";
 
 const ANY_VALUE = "any";
 const PLAYER_COUNT = "9";

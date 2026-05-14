@@ -3,91 +3,77 @@ import {
   buildStrategyChartPresentation,
   formatStrategyChartTitle,
 } from "../../shared/strategyPresentation";
-import { SEED_CHARTS } from "./seedData";
+import { ALL_HANDS } from "../../shared/preflopStrategy";
 
-describe("strategy chart presentation", () => {
-  it("keeps versus-RFI titles aligned with the real spot family", () => {
+const COMPLETE_FOLD_ACTIONS = ALL_HANDS.map(handCode => ({
+  handCode,
+  primaryAction: "FOLD" as const,
+}));
+
+describe("typed strategy presentation", () => {
+  it("formats typed facing-open titles and labels", () => {
     const presentation = buildStrategyChartPresentation({
       stackDepth: 40,
-      spotGroup: "VS_MP_RFI",
+      spotGroup: "facing_open_middle",
       heroPosition: "BTN",
-      villainPosition: "MP",
-      spotKey: "BTN_vs_MP",
+      villainPosition: "UTG2",
+      spotKey: "BTN_vs_UTG2_open",
     });
 
-    expect(presentation.title).toBe("BTN vs MP @ 40bb");
-    expect(presentation.decisionLabel).toBe("vs Mid-Position RFI");
-    expect(presentation.contextLine).toContain("vs Mid-Position RFI");
+    expect(presentation.title).toBe("BTN vs UTG+2 @ 40bb");
+    expect(presentation.decisionLabel).toBe("Facing Middle Open");
+    expect(presentation.contextLine).toContain("BTN vs UTG+2");
   });
 
-  it("labels simplified 40bb versus-3bet charts as shared family nodes instead of exact charts", () => {
+  it("surfaces not-yet-reviewed training gates for typed nodes", () => {
     const presentation = buildStrategyChartPresentation({
-      stackDepth: 40,
-      spotGroup: "VS_3BET",
-      heroPosition: "CO",
-      villainPosition: "BB",
-      spotKey: "CO_vs_BB_3bet",
-    });
-
-    expect(presentation.title).toBe("CO vs BB 3-Bet @ 40bb");
-    expect(presentation.sourceBadge).toBe("Simplified Population");
-    expect(presentation.sharedFamilyLabel).toBe("Shared IP vs BB 3-Bet family");
-    expect(presentation.sourceHelper).toBe(
-      "Simplified study note - not an exact source chart."
-    );
-    expect(presentation.trainerAllowed).toBe(false);
-    expect(presentation.trainingGateMessage?.toLowerCase()).toContain("study-only");
-  });
-
-  it("surfaces grouped source panel notes for narrower app labels", () => {
-    const presentation = buildStrategyChartPresentation({
-      stackDepth: 40,
-      spotGroup: "VS_MP_RFI",
-      heroPosition: "CO",
-      villainPosition: "MP",
-      spotKey: "CO_vs_MP",
+      stackDepth: 25,
+      spotGroup: "rfi",
+      heroPosition: "HJ",
+      spotKey: "HJ_rfi",
+      reviewed: false,
+      dataVersion: "population-v1",
+      actions: COMPLETE_FOLD_ACTIONS,
     });
 
     expect(presentation.sourceStatus).toBe("imported_unreviewed");
-    expect(presentation.sourcePanelLabel).toBe("CO vs LJ/HJ RFI");
-    expect(presentation.sourcePanelGroup).toBe("LJ/HJ");
-    expect(presentation.groupedSourcePanel).toBe(true);
-    expect(presentation.sourceCoverageNote).toContain("CO vs MP");
-    expect(presentation.sourceCoverageNote).toContain("LJ/HJ");
+    expect(presentation.sourceBadge).toBe("Not Yet Reviewed");
     expect(presentation.trainerAllowed).toBe(false);
-    expect(presentation.provenanceLabel).toBe("Automated integrity pass");
-    expect(presentation.provenanceNote).toContain("pending owner review");
-    expect(presentation.sourceBadge).toBe("Imported Candidate");
+    expect(presentation.trainingGateMessage).toContain("Not yet reviewed");
   });
 
-  it("keeps grouped source metadata on actual seeded charts used by the viewer runtime", () => {
-    const chart = SEED_CHARTS.find(
-      candidate =>
-        candidate.stackDepth === 15 && candidate.spotKey === "UTG1_vs_UTG"
-    );
+  it("carries grouped source panel descriptors into the viewer presentation", () => {
+    const presentation = buildStrategyChartPresentation({
+      stackDepth: 15,
+      spotGroup: "facing_open_early",
+      heroPosition: "UTG1",
+      villainPosition: "UTG",
+      spotKey: "UTG1_vs_UTG_open",
+      reviewed: false,
+      dataVersion: "population-v1",
+      actions: COMPLETE_FOLD_ACTIONS,
+      sourcePanelLabel: "UTG+1/+2 vs UTG Open",
+      sourcePanelGroup: "UTG+1/+2",
+      sourceCoverageNote:
+        "Displayed as UTG+1 vs UTG in the app, but seeded from a grouped source panel.",
+      groupedSourcePanel: true,
+    });
 
-    expect(chart).toBeDefined();
-
-    const presentation = buildStrategyChartPresentation(chart!);
-
-    expect(presentation.sourceStatus).toBe("imported_unreviewed");
-    expect(presentation.trainerAllowed).toBe(false);
-    expect(presentation.sourcePanelLabel).toBe("UTG+1/+2 vs UTG RFI");
-    expect(presentation.sourceCoverageNote).toContain("UTG+1 vs UTG");
+    expect(presentation.sourcePanelLabel).toBe("UTG+1/+2 vs UTG Open");
+    expect(presentation.sourcePanelGroup).toBe("UTG+1/+2");
     expect(presentation.groupedSourcePanel).toBe(true);
-    expect(presentation.provenanceLabel).toBe("Automated integrity pass");
-    expect(presentation.trainingGateMessage).toContain("owner review");
+    expect(presentation.sourceCoverageNote).toContain("grouped source panel");
   });
 
-  it("formats blind-versus-blind limp nodes explicitly", () => {
+  it("formats blind-versus-blind limp titles with the typed naming", () => {
     expect(
       formatStrategyChartTitle({
         stackDepth: 25,
-        spotGroup: "BVB",
-        heroPosition: "SB",
-        villainPosition: "BB",
-        spotKey: "SB_vs_BB_limp",
+        spotGroup: "bb_vs_sb_limp",
+        heroPosition: "BB",
+        villainPosition: "SB",
+        spotKey: "bb_vs_sb_limp",
       })
-    ).toBe("SB vs BB (limp) @ 25bb");
+    ).toBe("BB vs SB Limp @ 25bb");
   });
 });

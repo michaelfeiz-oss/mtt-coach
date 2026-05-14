@@ -25,13 +25,14 @@ import {
 import { getStrategyChartTrustMetadata } from "@shared/sourceTruth";
 import {
   displayPositionLabel,
+  displayVillainGroupLabel,
   POSITIONS,
   SPOT_GROUPS,
   STACK_DEPTHS,
   type Action,
   type Position,
   type SpotGroup,
-} from "@shared/strategy";
+} from "@shared/preflopStrategy";
 import { buildStrategyChartPresentation } from "@shared/strategyPresentation";
 
 type SpotSummary = {
@@ -42,6 +43,7 @@ type SpotSummary = {
   spotKey: string;
   heroPosition: string;
   villainPosition?: string | null;
+  villainGroup?: string | null;
   sourceLabel?: string | null;
 };
 
@@ -466,7 +468,9 @@ export default function StrategyLibrary() {
                     {displayPositionLabel(chart.heroPosition)}
                     {chart.villainPosition
                       ? ` vs ${displayPositionLabel(chart.villainPosition)}`
-                      : ""}
+                      : chart.villainGroup
+                        ? ` vs ${displayVillainGroupLabel(chart.villainGroup as "early" | "middle" | "late")} open`
+                        : ""}
                   </Badge>
                   <Badge className="h-6 rounded-full border-[var(--border-strong)] bg-card px-2.5 text-[10.5px] font-semibold text-secondary-foreground">
                     BBA
@@ -513,7 +517,9 @@ export default function StrategyLibrary() {
                 <p className="mt-3 text-sm font-bold">No chart selected</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {spotsError?.message ??
-                    "Choose a setup to load a preflop chart."}
+                    (matchingSpots.length === 0
+                      ? "Not yet reviewed. This setup does not have a manually seeded typed node yet."
+                      : "Choose a setup to load a preflop chart.")}
                 </p>
               </div>
             )}

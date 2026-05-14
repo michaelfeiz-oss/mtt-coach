@@ -15,6 +15,7 @@ import {
   HAND_REVIEW_STATUSES,
   TRAINER_ATTEMPT_CONFIDENCES,
 } from "../shared/coachingLoop";
+import { ACTIONS } from "../shared/preflopStrategy";
 import {
   getHandTrainingSuggestion,
   getReviewQueueSummary,
@@ -629,15 +630,7 @@ export const appRouter = router({
         z.object({
           chartId: z.number().int().positive(),
           handCode: z.string().min(2).max(4),
-          selectedAction: z.enum([
-            "FOLD",
-            "RAISE",
-            "CALL",
-            "THREE_BET",
-            "JAM",
-            "LIMP",
-            "CHECK",
-          ]),
+          selectedAction: z.enum(ACTIONS),
           drillPackId: z.string().optional(),
           sessionId: z.string().optional(),
           responseTimeMs: z.number().int().min(0).optional(),

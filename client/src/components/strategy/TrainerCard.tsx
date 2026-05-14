@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ACTIONS, ACTION_LABELS } from "../../../../shared/strategy";
-import type { Action } from "../../../../shared/strategy";
+import { ACTIONS, ACTION_LABELS } from "../../../../shared/preflopStrategy";
+import type { Action } from "../../../../shared/preflopStrategy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HandCards } from "@/components/cards/HandCards";
@@ -14,6 +14,7 @@ interface TrainerCardProps {
   stackDepth?: number;
   heroPosition?: string;
   villainPosition?: string | null;
+  villainGroup?: string | null;
   correctAction: Action;
   explanation?: string | null;
   isPersisted?: boolean;
@@ -36,6 +37,7 @@ export function TrainerCard({
   stackDepth,
   heroPosition,
   villainPosition,
+  villainGroup,
   correctAction,
   explanation,
   choices = [...ACTIONS],
@@ -117,7 +119,11 @@ export function TrainerCard({
                 className="rounded-full border-[var(--border-strong)] bg-secondary px-2.5 py-0.5 text-secondary-foreground"
               >
                 {heroPosition}
-                {villainPosition ? ` vs ${villainPosition}` : ""}
+                {villainPosition
+                  ? ` vs ${villainPosition}`
+                  : villainGroup
+                    ? ` vs ${villainGroup} open`
+                    : ""}
               </Badge>
             )}
           </div>

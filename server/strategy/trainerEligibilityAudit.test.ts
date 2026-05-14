@@ -1,101 +1,137 @@
 import { describe, expect, it } from "vitest";
+import { ALL_HANDS } from "../../shared/preflopStrategy";
 import {
   buildChartCellAuditRows,
   buildFullChartInventoryRows,
   summarizeTrainerEligibilityAudit,
 } from "./trainerEligibilityAudit";
+import type { SeedChart } from "./seedData";
 
-describe("trainer eligibility audit", () => {
-  it("marks simplified, proxy, and unsupported charts as blocked from trainer", () => {
-    const rows = buildFullChartInventoryRows();
+function makeChart(overrides: Partial<SeedChart> = {}): SeedChart {
+  return {
+    id: 1,
+    version: "population-v1",
+    stackBucket: 25,
+    playerCount: 9,
+    scenarioFamily: "facing_open_middle",
+    heroPosition: "BTN",
+    villainPosition: "HJ",
+    villainGroup: null,
+    title: "BTN vs HJ @ 25bb",
+    spotKey: "BTN_vs_HJ_open",
+    stackDepth: 25,
+    spotGroup: "facing_open_middle",
+    reviewed: false,
+    sourceLabel: "Not yet reviewed",
+    notesJson: null,
+    actions: ALL_HANDS.map(handCode => ({
+      handCode,
+      primaryAction: "FOLD" as const,
+    })),
+    sourceStatus: "imported_unreviewed",
+    cellMapSource: "imported_unreviewed",
+    dataVersion: "population-v1",
+    reviewedBy: null,
+    reviewedAt: null,
+    sourceFile: null,
+    sourcePanelLabel: null,
+    notes: [],
+    ...overrides,
+  };
+}
 
-    const simplified = rows.find(row => row.chartId === "25:CO_vs_BB_3bet");
-    const proxy = rows.find(row => row.chartId === "25:SB_vs_BB_limp");
-    const unsupported = rows.find(row => row.chartId === "25:SB_vs_BB_3bet");
-
-    expect(simplified).toMatchObject({
-      sourceStatus: "simplified_population",
-      trainerAllowed: false,
-      appearsInTrainer: false,
-      appearsInWeakSpotEngine: false,
-    });
-    expect(proxy).toMatchObject({
-      sourceStatus: "proxy",
-      trainerAllowed: false,
-      appearsInTrainer: false,
-      appearsInWeakSpotEngine: false,
-    });
-    expect(unsupported).toMatchObject({
-      sourceStatus: "unsupported",
-      trainerAllowed: false,
-      appearsInViewer: false,
-      appearsInTrainer: false,
+describe("typed trainer eligibility audit", () => {
+  it("returns no rows until typed seed charts exist", () => {
+    expect(buildFullChartInventoryRows()).toEqual([]);
+    expect(buildChartCellAuditRows()).toEqual([]);
+    expect(summarizeTrainerEligibilityAudit([])).toEqual({
+      totalCharts: 0,
+      appearsInViewerCount: 0,
+      trainerAllowedCount: 0,
+      blockedCount: 0,
+      sourceBackedCount: 0,
+      simplifiedCount: 0,
+      proxyCount: 0,
+      unsupportedCount: 0,
+      manuallyApprovedCount: 0,
+      needsHumanReviewCount: 0,
+      failedInventoryCount: 0,
+      exactSourceGapCount: 0,
     });
   });
 
-  it("keeps exact imported candidates visible for study while blocking them from trainer", () => {
-    const rows = buildFullChartInventoryRows();
-    const exact = rows.find(row => row.chartId === "15:UTG_RFI");
+  it("marks imported typed charts as study-visible but blocked from trainer", () => {
+    const row = buildFullChartInventoryRows([
+      makeChart(),
+    ])[0];
 
-    expect(exact).toMatchObject({
+    expect(row).toMatchObject({
       sourceStatus: "imported_unreviewed",
       trainerAllowed: false,
       appearsInViewer: true,
       appearsInTrainer: false,
+      appearsInDrillPack: false,
+      appearsInWeakSpotEngine: false,
       passFail: "PASS",
     });
-    expect(exact?.sourceFile).toBe("15bb-gto-charts.pdf");
-    expect(exact?.sourceMappedCellCount).toBe(169);
   });
 
-  it("does not expose blocked charts through trainer-startable drill packs", () => {
-    const rows = buildFullChartInventoryRows();
-    const simplified = rows.find(row => row.chartId === "40:CO_vs_BB_3bet");
+  it("marks reviewed complete typed charts as trainer-safe", () => {
+    const row = buildFullChartInventoryRows([
+      makeChart({
+        reviewed: true,
+        sourceStatus: "source_backed",
+        cellMapSource: "reviewed",
+        sourceLabel: "Reviewed typed seed",
+      }),
+    ])[0];
 
-    expect(simplified?.appearsInDrillPack).toBe(false);
-    expect(simplified?.passFail).toBe("PASS");
+    expect(row).toMatchObject({
+      sourceStatus: "source_backed",
+      trainerAllowed: true,
+      appearsInTrainer: true,
+      appearsInWeakSpotEngine: true,
+      cellCount: 169,
+      missingCellCount: 0,
+    });
   });
 
-  it("builds exact cell audit rows for imported candidate charts", () => {
-    const rows = buildChartCellAuditRows();
-    const row = rows.find(
-      candidate =>
-        candidate.chartId === "15:UTG_RFI" && candidate.hand === "AKs"
-    );
+  it("builds study-only cell audit rows for unreviewed nodes", () => {
+    const row = buildChartCellAuditRows([
+      makeChart({
+        actions: ALL_HANDS.map(handCode => ({
+          handCode,
+          primaryAction: handCode === "AJo" ? ("CALL" as const) : ("FOLD" as const),
+        })),
+      }),
+    ]).find(candidate => candidate.hand === "AJo");
 
     expect(row).toMatchObject({
       sourceStatus: "imported_unreviewed",
-      appAction: "RAISE",
-      sourceAction: "RAISE",
-      matchYesNo: "yes",
-      changedYesNo: "no",
-    });
-    expect(row?.reason).toContain("owner review is still pending");
-  });
-
-  it("marks simplified cell rows as study-only comparisons", () => {
-    const rows = buildChartCellAuditRows();
-    const row = rows.find(
-      candidate =>
-        candidate.chartId === "40:CO_vs_BB_3bet" && candidate.hand === "AQs"
-    );
-
-    expect(row).toMatchObject({
-      sourceStatus: "simplified_population",
+      appAction: "CALL",
+      sourceAction: "",
       matchYesNo: "n_a",
       changedYesNo: "n_a",
     });
-    expect(row?.reason).toContain("study-only");
   });
 
-  it("summarizes blocked imported candidates and study-only coverage", () => {
+  it("summarizes blocked versus trainer-safe typed nodes", () => {
     const summary = summarizeTrainerEligibilityAudit(
-      buildFullChartInventoryRows()
+      buildFullChartInventoryRows([
+        makeChart(),
+        makeChart({
+          id: 2,
+          reviewed: true,
+          sourceStatus: "source_backed",
+          cellMapSource: "reviewed",
+          sourceLabel: "Reviewed typed seed",
+        }),
+      ])
     );
 
-    expect(summary.totalCharts).toBeGreaterThan(0);
-    expect(summary.sourceBackedCount).toBe(0);
-    expect(summary.blockedCount).toBeGreaterThan(0);
-    expect(summary.trainerAllowedCount).toBe(0);
+    expect(summary.totalCharts).toBe(2);
+    expect(summary.blockedCount).toBe(1);
+    expect(summary.trainerAllowedCount).toBe(1);
+    expect(summary.sourceBackedCount).toBe(1);
   });
 });

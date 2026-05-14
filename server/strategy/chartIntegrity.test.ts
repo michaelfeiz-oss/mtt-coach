@@ -1,134 +1,109 @@
 import { describe, expect, it } from "vitest";
-import { ACTIONS, ALL_HANDS } from "../../shared/strategy";
 import {
-  getStrategyChartTrustMetadata,
-  getStrategySourceStatus,
-  isTrainerAllowedStrategyChart,
-} from "../../shared/sourceTruth";
+  ALL_HANDS,
+  type StrategyNodeRangeRow,
+} from "../../shared/preflopStrategy";
 import {
-  REVIEWED_STRATEGY_CHARTS,
-  getReviewedStrategyChartGovernance,
-  type ReviewedStrategyChart,
-} from "../../shared/strategy-data/reviewed";
-import { validateReviewedStrategyChart } from "../../shared/strategyDataValidation";
+  type TypedStrategyNodeDefinition,
+  typedNodeToSeedActions,
+  validateTypedStrategyNode,
+} from "../../shared/strategyDataValidation";
+import { getStrategyChartTrustMetadata, isTrainerAllowedStrategyChart } from "../../shared/sourceTruth";
 import { SEED_CHARTS } from "./seedData";
 import { assertCompleteChartActions } from "./service";
 
-describe("strategy chart integrity", () => {
-  it("keeps every automated exact-chart candidate complete, unique, and valid even while trainer stays blocked", () => {
-    const automatedCandidates = SEED_CHARTS.filter(
-      chart => chart.sourceStatus === "imported_unreviewed"
-    );
+function fullRows(action: StrategyNodeRangeRow["action"]) {
+  const priorityByAction = {
+    JAM: 800,
+    FOUR_BET: 700,
+    THREE_BET: 600,
+    RAISE: 500,
+    LIMP: 400,
+    CALL: 300,
+    CHECK: 200,
+    FOLD: 100,
+  } as const;
 
-    expect(automatedCandidates.length).toBeGreaterThan(0);
+  return ALL_HANDS.map<StrategyNodeRangeRow>(handCode => ({
+    action,
+    rangeNotation: handCode,
+    priority: priorityByAction[action],
+  }));
+}
 
-    for (const chart of automatedCandidates) {
-      const handCodes = chart.actions.map(action => action.handCode);
-      const uniqueHandCodes = new Set(handCodes);
+function makeNode(overrides: Partial<TypedStrategyNodeDefinition> = {}): TypedStrategyNodeDefinition {
+  return {
+    version: "population-v1",
+    stackBucket: 25,
+    playerCount: 9,
+    scenarioFamily: "rfi",
+    heroPosition: "CO",
+    villainPosition: null,
+    villainGroup: null,
+    reviewed: false,
+    rows: fullRows("FOLD"),
+    ...overrides,
+  };
+}
 
-      expect(chart.sourceStatus).toBe("imported_unreviewed");
-      expect(chart.cellMapSource).toBe("imported_unreviewed");
-      expect(chart.dataVersion).toBeTruthy();
-      expect(chart.reviewedBy).toBeTruthy();
-      expect(chart.reviewedAt).toBeTruthy();
-      expect(chart.actions).toHaveLength(ALL_HANDS.length);
-      expect(uniqueHandCodes.size).toBe(ALL_HANDS.length);
-      expect(new Set(handCodes)).toEqual(new Set(ALL_HANDS));
-
-      for (const action of chart.actions) {
-        expect(ALL_HANDS).toContain(action.handCode);
-        expect(ACTIONS).toContain(action.primaryAction);
-      }
-
-      expect(() => assertCompleteChartActions(chart)).not.toThrow();
-      expect(isTrainerAllowedStrategyChart(chart)).toBe(false);
-    }
+describe("typed strategy chart integrity", () => {
+  it("keeps the real seed catalog empty until trusted typed files are provided", () => {
+    expect(SEED_CHARTS).toEqual([]);
   });
 
-  it("never marks unreviewed or non-source-backed charts as trainer-safe", () => {
-    const importedCandidate = {
-      stackDepth: 15,
-      spotGroup: "RFI" as const,
-      heroPosition: "UTG",
-      villainPosition: null,
-      spotKey: "UTG_RFI_unreviewed_candidate",
+  it("accepts structurally complete nodes without treating them as reviewed by default", () => {
+    const node = makeNode({ reviewed: false });
+    const compiled = validateTypedStrategyNode(node);
+    const trust = getStrategyChartTrustMetadata({
+      stackDepth: node.stackBucket,
+      spotGroup: node.scenarioFamily,
+      heroPosition: node.heroPosition,
+      villainPosition: node.villainPosition,
+      villainGroup: node.villainGroup,
+      reviewed: node.reviewed,
+      actions: compiled.actions,
+    });
+
+    expect(compiled.actions).toHaveLength(ALL_HANDS.length);
+    expect(trust.structurallyComplete).toBe(true);
+    expect(trust.trainerAllowed).toBe(false);
+    expect(isTrainerAllowedStrategyChart({
+      stackDepth: node.stackBucket,
+      spotGroup: node.scenarioFamily,
+      heroPosition: node.heroPosition,
+      reviewed: node.reviewed,
+      actions: compiled.actions,
+    })).toBe(false);
+  });
+
+  it("allows reviewed complete nodes to become trainer-safe", () => {
+    const node = makeNode({
+      reviewed: true,
+      heroPosition: "HJ",
+      stackBucket: 40,
+      rows: fullRows("RAISE"),
+    });
+    const compiled = validateTypedStrategyNode(node);
+    const chart = {
+      stackDepth: node.stackBucket,
+      spotGroup: node.scenarioFamily,
+      heroPosition: node.heroPosition,
+      villainPosition: node.villainPosition,
+      villainGroup: node.villainGroup,
+      reviewed: true,
+      actions: compiled.actions,
     };
 
-    expect(getStrategySourceStatus(importedCandidate)).toBe("imported_unreviewed");
-    expect(isTrainerAllowedStrategyChart(importedCandidate)).toBe(false);
-
-    expect(
-      isTrainerAllowedStrategyChart({
-        stackDepth: 25,
-        spotGroup: "VS_3BET",
-        heroPosition: "CO",
-        villainPosition: "BB",
-        spotKey: "CO_vs_BB_3bet",
-      })
-    ).toBe(false);
-
-    expect(
-      isTrainerAllowedStrategyChart({
-        stackDepth: 25,
-        spotGroup: "BVB",
-        heroPosition: "SB",
-        villainPosition: "BB",
-        spotKey: "SB_vs_BB_limp",
-      })
-    ).toBe(false);
+    expect(isTrainerAllowedStrategyChart(chart)).toBe(true);
+    expect(getStrategyChartTrustMetadata(chart).trainerAllowed).toBe(true);
   });
 
-  it("exposes blocking review metadata on every automated exact-chart trust descriptor", () => {
-    for (const chart of SEED_CHARTS.filter(candidate => candidate.sourceStatus === "imported_unreviewed")) {
-      const trust = getStrategyChartTrustMetadata(chart);
-      expect(trust.sourceStatus).toBe("imported_unreviewed");
-      expect(trust.trainerAllowed).toBe(false);
-      expect(trust.hasReviewedData).toBe(true);
-      expect(trust.reviewStatus).toBe("automated_integrity_pass");
-      expect(trust.dataVersion).toBeTruthy();
-      expect(trust.reviewedBy).toBeTruthy();
-      expect(trust.reviewedAt).toBeTruthy();
-      expect(trust.has169Cells).toBe(true);
-      expect(trust.structurallyComplete).toBe(true);
-      expect(trust.automatedIntegrityPassed).toBe(true);
-      expect(trust.ownerReviewed).toBe(false);
-      expect(trust.trainerEligibleForReviewDeployment).toBe(false);
-      expect(trust.trainerEligibleForFinalProduction).toBe(false);
-      expect(trust.cellMapSource).toBe("imported_unreviewed");
-    }
-  });
+  it("converts a validated typed node into explicit 169-cell seed actions", () => {
+    const actions = typedNodeToSeedActions(makeNode({ reviewed: true }));
 
-  it("treats Codex-reviewed charts as automated candidates, not trainer-safe production charts", () => {
-    const machineReviewedChart = REVIEWED_STRATEGY_CHARTS[0];
-    expect(machineReviewedChart).toBeDefined();
-    expect(() => validateReviewedStrategyChart(machineReviewedChart!)).not.toThrow();
-
-    const machineGovernance = getReviewedStrategyChartGovernance(
-      machineReviewedChart!
-    );
-    expect(machineGovernance.has169Cells).toBe(true);
-    expect(machineGovernance.structurallyComplete).toBe(true);
-    expect(machineGovernance.automatedIntegrityPassed).toBe(true);
-    expect(machineGovernance.ownerReviewed).toBe(false);
-    expect(machineGovernance.trainerEligibleForReviewDeployment).toBe(false);
-    expect(machineGovernance.trainerEligibleForFinalProduction).toBe(false);
-
-    const ownerReviewedChart: ReviewedStrategyChart = {
-      ...machineReviewedChart!,
-      review: {
-        ...machineReviewedChart!.review,
-        status: "owner_reviewed",
-        reviewedBy: "Michael",
-        reviewedAt: "2026-05-13",
-      },
-    };
-
-    expect(() => validateReviewedStrategyChart(ownerReviewedChart)).not.toThrow();
-    const ownerGovernance = getReviewedStrategyChartGovernance(ownerReviewedChart);
-    expect(ownerGovernance.automatedIntegrityPassed).toBe(true);
-    expect(ownerGovernance.ownerReviewed).toBe(true);
-    expect(ownerGovernance.trainerEligibleForReviewDeployment).toBe(true);
-    expect(ownerGovernance.trainerEligibleForFinalProduction).toBe(true);
+    expect(actions).toHaveLength(ALL_HANDS.length);
+    expect(actions[0]?.handCode).toBe("AA");
+    expect(actions[0]?.primaryAction).toBe("FOLD");
   });
 
   it("throws on missing, duplicate, invalid hand, and invalid action integrity failures", () => {

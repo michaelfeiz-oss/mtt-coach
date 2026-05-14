@@ -13,9 +13,11 @@ export interface MatrixAuditChartEntry {
   spotGroup: SeedChart["spotGroup"];
   spotKey: string;
   heroPosition: string;
-  villainPosition?: string;
+  villainPosition?: string | null;
   sourceStatus: StrategySourceStatus;
-  simplifiedFamily: ReturnType<typeof getSimplifiedVsThreeBetFamily>;
+  simplifiedFamily:
+    | ReturnType<typeof getSimplifiedVsThreeBetFamily>
+    | "shared_facing_jam_population";
 }
 
 export interface MatrixDuplicateGroup {
@@ -38,6 +40,18 @@ export function buildMatrixSignature(chart: SeedChart) {
 }
 
 function mapChartEntry(chart: SeedChart): MatrixAuditChartEntry {
+  const simplifiedFamily =
+    chart.spotGroup === "facing_jam"
+      ? "shared_facing_jam_population"
+      : getSimplifiedVsThreeBetFamily({
+          stackDepth: chart.stackDepth,
+          spotGroup: chart.spotGroup,
+          heroPosition: chart.heroPosition,
+          villainPosition: chart.villainPosition,
+          spotKey: chart.spotKey,
+          sourceStatus: chart.sourceStatus,
+        });
+
   return {
     id: `${chart.stackDepth}:${chart.spotKey}`,
     title: chart.title,
@@ -52,14 +66,9 @@ function mapChartEntry(chart: SeedChart): MatrixAuditChartEntry {
       heroPosition: chart.heroPosition,
       villainPosition: chart.villainPosition,
       spotKey: chart.spotKey,
+      sourceStatus: chart.sourceStatus,
     }),
-    simplifiedFamily: getSimplifiedVsThreeBetFamily({
-      stackDepth: chart.stackDepth,
-      spotGroup: chart.spotGroup,
-      heroPosition: chart.heroPosition,
-      villainPosition: chart.villainPosition,
-      spotKey: chart.spotKey,
-    }),
+    simplifiedFamily,
   };
 }
 
@@ -69,7 +78,7 @@ function classifyDuplicateGroup(
   const allSimplifiedFacingThreeBet = charts.every(
     chart =>
       chart.sourceStatus === "simplified_population" &&
-      chart.spotGroup === "VS_3BET" &&
+      chart.spotGroup === "facing_jam" &&
       chart.simplifiedFamily
   );
 
