@@ -150,4 +150,35 @@ describe("typed seed file loading", () => {
     expect(nodes[1]?.summary.scenarioFamily).toBe("bb_vs_sb_open");
     expect(nodes[1]?.summary.spotKey).toBe("bb_vs_sb_open");
   });
+
+  it("supports mixed manifest files that contain multiple scenario families", async () => {
+    const manifestPath = await makeTempSeedBundle({
+      "manifest.json": JSON.stringify({
+        version: "population-v1c",
+        files: [
+          {
+            path: "blind-vs-blind.csv",
+            stackBucket: 25,
+            scenarioFamily: "mixed",
+            reviewedRowsExpected: 2,
+          },
+        ],
+      }),
+      "blind-vs-blind.csv": [
+        "version,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed,scenarioFamily",
+        "population-v1c,SB,BTN,late,call,\"KQs\",mostly,300,Out-of-position defend,true,facing_open_late",
+        "population-v1c,BB,SB,,call,\"QJs\",mostly,300,Blind-vs-blind defend,true,bb_vs_sb_open",
+      ].join("\n"),
+    });
+
+    const rows = await loadStrategySeedRows(manifestPath);
+    const nodes = await loadStrategySeedNodes(manifestPath);
+
+    expect(rows).toHaveLength(2);
+    expect(nodes).toHaveLength(2);
+    expect(nodes.map(node => node.summary.scenarioFamily).sort()).toEqual([
+      "bb_vs_sb_open",
+      "facing_open_late",
+    ]);
+  });
 });

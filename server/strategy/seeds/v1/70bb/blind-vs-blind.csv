@@ -1,0 +1,5 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1c-clean,70,facing_open_late,SB,BTN,late,three_bet,"99+,AJs+,KQs,AQo+,A5s-A2s,KTs,QTs,JTs",mostly,30,"70bb SB vs BTN 3bet. Deeper stack, still value/blocker focused.",true
+population-v1c-clean,70,facing_open_late,SB,BTN,late,call,"22-88,A9s-A6s,K9s,KJs,Q9s,QJs,J9s,T9s,98s,87s,76s,65s,54s,AJo-ATo,KQo,KJo,QJo,JTo,T9o",mostly,20,70bb SB vs BTN call. KTs/QTs removed due 3bet overlap.,true
+population-v1c-clean,70,bb_vs_sb_open,BB,SB,blind,three_bet,"99+,AJs+,KQs,AQo+,A5s-A2s,KTs,QTs,JTs,T9s",mostly,30,70bb BB vs SB 3bet. Wider pressure versus SB steal.,true
+population-v1c-clean,70,bb_vs_sb_open,BB,SB,blind,call,"22-88,A9s-A6s,K2s-K9s,Q5s-Q9s,J5s-J9s,T5s-T8s,95s+,84s+,74s+,64s+,54s,A2o-AJo,K5o-KJo,Q7o-QJo,J7o+,T7o+,97o+,87o,76o",mostly,20,70bb BB vs SB call defence. T9s removed due 3bet overlap.,true

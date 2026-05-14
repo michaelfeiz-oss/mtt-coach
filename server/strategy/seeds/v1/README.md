@@ -1,14 +1,17 @@
-# MTT Population Seed Pack v1a + v1b clean
+# MTT Population Seed Pack v1a + v1b clean + v1c clean
 
 This is a starter data pack only.
 
 Scope:
 - RFI
 - BB defence versus late opens
+- SB versus BTN opens
+- BB versus SB opens
 - Stack buckets: 15bb, 25bb, 40bb, 70bb
 - Positions:
   - RFI: UTG, HJ, CO, BTN, SB
   - Facing late opens: BB vs CO, BB vs BTN
+  - Blind-versus-blind: SB vs BTN, BB vs SB
 - Population-based, lower-variance MTT strategy
 - Designed for live and low-to-mid stakes MTTs
 
@@ -25,6 +28,5 @@ Rules:
 - Do not priority-resolve seed mistakes. Correct the seed data instead.
 
 Next packs:
-- v1c: BTN/CO/HJ vs open
 - v1d: facing jam / call jam
-- v1e: blind vs blind
+- v1e: limp and post-limp preflop responses

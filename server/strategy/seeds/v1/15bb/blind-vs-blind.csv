@@ -1,0 +1,5 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1c-clean,15,facing_open_late,SB,BTN,late,jam,"22+,A2s+,KTs+,QJs,A8o+,KQo",mostly,30,15bb SB vs BTN open. Practical reshove; no flatting from SB in v1 except rare playable traps.,true
+population-v1c-clean,15,facing_open_late,SB,BTN,late,call,"JTs,T9s,98s",rare,20,15bb SB vs BTN rare flat only. KQs/QJs removed due jam overlap.,true
+population-v1c-clean,15,bb_vs_sb_open,BB,SB,blind,jam,"22+,A2s+,K9s+,QTs+,JTs,A7o+,KTo+,QJo",mostly,30,15bb BB vs SB open. Wide practical reshove versus SB steal.,true
+population-v1c-clean,15,bb_vs_sb_open,BB,SB,blind,call,"K2s-K8s,Q6s-Q9s,J7s-J9s,T7s+,97s+,86s+,75s+,64s+,54s,A2o-A6o,K7o-K9o,Q9o-QTo,J9o-JTo,T9o",mostly,20,15bb BB vs SB open call. Defends playable hands; avoids worst trash.,true

@@ -1,0 +1,5 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1c-clean,40,facing_open_late,SB,BTN,late,three_bet,"99+,AJs+,KQs,AQo+,A5s-A4s",mostly,30,40bb SB vs BTN 3bet. Linear with clean wheel blockers.,true
+population-v1c-clean,40,facing_open_late,SB,BTN,late,call,"22-88,A9s-A6s,A3s-A2s,KTs-K9s,QTs-Q9s,JTs-J9s,T9s,98s,87s,76s,KJo,QJo,JTo",mostly,20,40bb SB vs BTN call. Kept tighter due positional disadvantage.,true
+population-v1c-clean,40,bb_vs_sb_open,BB,SB,blind,three_bet,"99+,AJs+,KQs,AQo+,A5s-A4s,KTs,QTs,JTs",mostly,30,40bb BB vs SB 3bet. Wider than versus BTN.,true
+population-v1c-clean,40,bb_vs_sb_open,BB,SB,blind,call,"22-88,A9s-A6s,A3s-A2s,K2s-K9s,Q5s-Q9s,J6s-J9s,T6s-T9s,96s+,85s+,75s+,64s+,54s,A2o-AJo,K7o-KJo,Q8o-QJo,J8o+,T8o+,98o,87o",mostly,20,40bb BB vs SB call defence. Wide but disciplined.,true

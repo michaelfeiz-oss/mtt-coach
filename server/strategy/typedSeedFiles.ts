@@ -32,7 +32,7 @@ export const STRATEGY_SEED_MANIFEST = path.join(
 interface StrategySeedManifestFile {
   path: string;
   stackBucket?: StackDepth;
-  scenarioFamily?: StrategyRangeSeedRow["scenarioFamily"];
+  scenarioFamily?: StrategyRangeSeedRow["scenarioFamily"] | "mixed";
   reviewedRowsExpected?: number;
 }
 
@@ -90,6 +90,15 @@ function parseNullableString(value: string) {
 
 function mapObjectToSeedRow(candidate: Record<string, unknown>): StrategyRangeSeedRow {
   const action = String(candidate.action ?? "").trim().toUpperCase() as Action;
+  const scenarioFamily = String(candidate.scenarioFamily ?? "").trim() as StrategyRangeSeedRow["scenarioFamily"];
+  const villainPosition = parseNullableString(String(candidate.villainPosition ?? "")) as Position | null;
+  const rawVillainGroup = parseNullableString(String(candidate.villainGroup ?? ""));
+  const villainGroup =
+    (scenarioFamily === "bb_vs_sb_open" || scenarioFamily === "bb_vs_sb_limp") &&
+    villainPosition === "SB" &&
+    rawVillainGroup === "blind"
+      ? null
+      : (rawVillainGroup as VillainGroup | null);
   const priority =
     typeof candidate.priority === "number"
       ? candidate.priority
@@ -99,10 +108,10 @@ function mapObjectToSeedRow(candidate: Record<string, unknown>): StrategyRangeSe
     version: String(candidate.version ?? "").trim(),
     stackBucket: Number(candidate.stackBucket) as StackDepth,
     playerCount: Number(candidate.playerCount ?? 9) as PlayerCount,
-    scenarioFamily: String(candidate.scenarioFamily ?? "").trim() as StrategyRangeSeedRow["scenarioFamily"],
+    scenarioFamily,
     heroPosition: String(candidate.heroPosition ?? "").trim() as Position,
-    villainPosition: parseNullableString(String(candidate.villainPosition ?? "")) as Position | null,
-    villainGroup: parseNullableString(String(candidate.villainGroup ?? "")) as VillainGroup | null,
+    villainPosition,
+    villainGroup,
     action,
     rangeNotation: String(candidate.rangeNotation ?? "").trim(),
     priority,
@@ -124,7 +133,11 @@ function normalizeManifestFile(file: string | StrategySeedManifestFile) {
     };
   }
 
-  return file;
+  return {
+    ...file,
+    scenarioFamily:
+      file.scenarioFamily === "mixed" ? undefined : file.scenarioFamily,
+  };
 }
 
 function applyManifestDefaults(
