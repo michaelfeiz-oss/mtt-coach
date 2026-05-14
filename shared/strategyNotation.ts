@@ -8,6 +8,11 @@ import {
 } from "./preflopStrategy";
 
 const VALID_HANDS = new Set(ALL_HANDS);
+const FORBIDDEN_OVERLAP_PAIRS = new Set([
+  "CALL|FOLD",
+  "CALL|JAM",
+  "FOLD|THREE_BET",
+]);
 const RANK_PATTERN = "[AKQJT98765432]";
 const EXACT_PAIR_REGEX = new RegExp(`^(${RANK_PATTERN})\\1$`);
 const EXACT_HAND_REGEX = new RegExp(`^(${RANK_PATTERN})(${RANK_PATTERN})(s|o)$`);
@@ -289,6 +294,25 @@ export function compileNotationRows(
   );
 
   if (overlaps.length > 0) {
+    const forbiddenOverlaps = overlaps.filter(overlap => {
+      const pair = [overlap.firstAction, overlap.secondAction]
+        .sort()
+        .join("|");
+      return FORBIDDEN_OVERLAP_PAIRS.has(pair);
+    });
+
+    if (forbiddenOverlaps.length > 0) {
+      const overlapSummary = forbiddenOverlaps
+        .slice(0, 8)
+        .map(overlap => {
+          const [left, right] = [overlap.firstAction, overlap.secondAction].sort();
+          return `${overlap.handCode}: ${left} and ${right}`;
+        })
+        .join(", ");
+
+      throw new Error(`Strategy node has forbidden action overlaps: ${overlapSummary}`);
+    }
+
     const overlapSummary = overlaps
       .slice(0, 8)
       .map(

@@ -1,4 +1,5 @@
 import {
+  ACTIONS,
   PLAYER_COUNTS,
   POSITIONS,
   SPOT_GROUPS,
@@ -14,6 +15,7 @@ const VALID_PLAYERS = new Set<number>(PLAYER_COUNTS);
 const VALID_GROUPS = new Set<string>(SPOT_GROUPS);
 const VALID_POSITIONS = new Set<string>(POSITIONS);
 const VALID_VILLAIN_GROUPS = new Set<string>(VILLAIN_GROUPS);
+const VALID_ACTIONS = new Set<string>(ACTIONS);
 
 function identityKey(identity: StrategyNodeIdentity) {
   return [
@@ -92,6 +94,10 @@ export function validateSeedRow(row: StrategyRangeSeedRow) {
 
   if (!row.rangeNotation.trim()) {
     throw new Error("Strategy seed row is missing rangeNotation.");
+  }
+
+  if (!VALID_ACTIONS.has(row.action)) {
+    throw new Error(`Unsupported action ${row.action}.`);
   }
 
   if (row.priority <= 0) {

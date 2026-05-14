@@ -1,0 +1,5 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1b-clean,15,facing_open_late,BB,BTN,late,jam,"22+,A2s+,KTs+,QJs,A8o+,KQo",mostly,30,"15bb BB vs BTN open. Practical reshove range, value/blocker heavy.",true
+population-v1b-clean,15,facing_open_late,BB,BTN,late,call,"K8s-K9s,Q9s-QTs,J9s-JTs,T9s,98s,87s,76s,65s,KJo,QJo,JTo",mostly,20,15bb BB vs BTN flat-call range. Wheel suited aces removed due jam overlap.,true
+population-v1b-clean,15,facing_open_late,BB,CO,late,jam,"33+,A5s+,ATo+,KQs",mostly,30,15bb BB vs CO open. Tighter reshove versus stronger CO range.,true
+population-v1b-clean,15,facing_open_late,BB,CO,late,call,"A2s-A4s,K9s-KJs,QTs+,JTs,T9s,98s,87s,KQo,QJo",mostly,20,15bb BB vs CO flat-call range. Conservative versus CO.,true

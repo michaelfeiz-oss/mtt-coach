@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1b-clean,25,facing_open_late,BB,BTN,late,three_bet,"TT+,AJs+,KQs,AQo+",mostly,30,25bb BB vs BTN value-heavy 3bet range.,true
+population-v1b-clean,25,facing_open_late,BB,BTN,late,jam,"55-99,A5s-A2s,ATs-A9s,KJs,QJs,AJo",mostly,25,25bb BB vs BTN reshove/semi-jam range. KQs removed due 3bet overlap.,true
+population-v1b-clean,25,facing_open_late,BB,BTN,late,call,"22-44,A8s-A6s,K2s-KTs,Q7s-QTs,J7s-JTs,T7s+,97s+,86s+,75s+,64s+,54s,A2o-A9o,K9o-KJo,Q9o-QJo,J9o+,T9o",mostly,20,25bb BB vs BTN defend. Tighter than solver; no trash offsuit.,true
+population-v1b-clean,25,facing_open_late,BB,CO,late,three_bet,"JJ+,AQs+,AKo",mostly,30,25bb BB vs CO value 3bet range.,true
+population-v1b-clean,25,facing_open_late,BB,CO,late,jam,"66-TT,AJs-ATs,KQs,AQo",mostly,25,25bb BB vs CO reshove range. Stronger and tighter than vs BTN.,true
+population-v1b-clean,25,facing_open_late,BB,CO,late,call,"22-55,A9s-A2s,K9s-KJs,Q9s-QJs,J9s-JTs,T8s+,98s,87s,76s,65s,AJo-ATo,KQo,KJo,QJo,JTo",mostly,20,25bb BB vs CO call defence. Population-safe.,true

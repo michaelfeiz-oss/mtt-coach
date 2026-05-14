@@ -36,6 +36,6 @@ describe("typed strategy notation parser", () => {
         { action: "CALL", rangeNotation: "AJo", priority: 300 },
         { action: "FOLD", rangeNotation: "AJo", priority: 100 },
       ])
-    ).toThrow(/overlapping actions/i);
+    ).toThrow(/forbidden action overlaps|overlapping actions/i);
   });
 });

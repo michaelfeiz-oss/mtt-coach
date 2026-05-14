@@ -17,17 +17,38 @@ function exactRows(primaryAction: StrategyNodeRangeRow["action"]) {
 }
 
 describe("typed strategy seed data", () => {
-  it("loads the reviewed starter RFI pack from the typed seed files", () => {
-    expect(SEED_CHARTS.length).toBe(20);
+  it("loads the reviewed starter RFI and cleaned late-open packs from the typed seed files", () => {
+    expect(SEED_CHARTS.length).toBe(28);
     expect(() => validateSeedCharts(SEED_CHARTS)).not.toThrow();
 
     const utg25 = SEED_CHARTS.find(
       chart => chart.stackDepth === 25 && chart.spotKey === "UTG_rfi"
     );
+    const bbVsBtn25 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 25 && chart.spotKey === "BB_vs_BTN_open"
+    );
+    const bbVsCo15 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 15 && chart.spotKey === "BB_vs_CO_open"
+    );
 
     expect(utg25?.reviewed).toBe(true);
     expect(utg25?.sourceStatus).toBe("source_backed");
     expect(utg25?.actions).toHaveLength(ALL_HANDS.length);
+    expect(bbVsBtn25?.reviewed).toBe(true);
+    expect(bbVsBtn25?.sourceStatus).toBe("source_backed");
+    expect(bbVsBtn25?.actions).toHaveLength(ALL_HANDS.length);
+    expect(bbVsBtn25?.actions.find(action => action.handCode === "KQs")?.primaryAction).toBe(
+      "THREE_BET"
+    );
+    expect(bbVsBtn25?.actions.find(action => action.handCode === "AJo")?.primaryAction).toBe(
+      "JAM"
+    );
+    expect(bbVsCo15?.actions.find(action => action.handCode === "A5s")?.primaryAction).toBe(
+      "JAM"
+    );
+    expect(bbVsCo15?.actions.find(action => action.handCode === "A4s")?.primaryAction).toBe(
+      "CALL"
+    );
   });
 
   it("builds unreviewed charts from parsed typed seed nodes", () => {

@@ -1,6 +1,6 @@
 {
-  "version": "population-v1a",
-  "description": "Starter population-based MTT seed pack. RFI only. Conservative, lower-variance live / low-to-mid stakes MTT ranges. Not GTO-complete.",
+  "version": "population-v1b-clean",
+  "description": "Starter population-based MTT seed pack. RFI plus cleaned BB defence versus late opens. Conservative, lower-variance live / low-to-mid stakes MTT ranges. Not GTO-complete.",
   "reviewStatus": "starter_review_required",
   "stacks": [
     15,
@@ -9,7 +9,8 @@
     70
   ],
   "scenarioFamilies": [
-    "rfi"
+    "rfi",
+    "facing_open_late"
   ],
   "files": [
     {
@@ -35,6 +36,30 @@
       "scenarioFamily": "rfi",
       "path": "70bb/rfi.csv",
       "reviewedRowsExpected": 5
+    },
+    {
+      "stackBucket": 15,
+      "scenarioFamily": "facing_open_late",
+      "path": "15bb/facing-open-late.csv",
+      "reviewedRowsExpected": 4
+    },
+    {
+      "stackBucket": 25,
+      "scenarioFamily": "facing_open_late",
+      "path": "25bb/facing-open-late.csv",
+      "reviewedRowsExpected": 6
+    },
+    {
+      "stackBucket": 40,
+      "scenarioFamily": "facing_open_late",
+      "path": "40bb/facing-open-late.csv",
+      "reviewedRowsExpected": 4
+    },
+    {
+      "stackBucket": 70,
+      "scenarioFamily": "facing_open_late",
+      "path": "70bb/facing-open-late.csv",
+      "reviewedRowsExpected": 4
     }
   ],
   "rules": {

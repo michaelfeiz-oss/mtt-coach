@@ -82,4 +82,154 @@ describe("typed strategy seed validation", () => {
       ])
     ).not.toThrow();
   });
+
+  it("accepts v1b-style late-open and blind-versus-blind rows with call, three_bet, jam, and fold", () => {
+    expect(() =>
+      validateSeedRows([
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "CALL",
+          rangeNotation: "AJs,KQs",
+          priority: 300,
+        }),
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "THREE_BET",
+          rangeNotation: "QQ+,AKs",
+          priority: 600,
+        }),
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "JAM",
+          rangeNotation: "55",
+          priority: 800,
+        }),
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "FOLD",
+          rangeNotation: "72o",
+          priority: 100,
+        }),
+        makeRow({
+          scenarioFamily: "bb_vs_sb_open",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          action: "CALL",
+          rangeNotation: "KQs,QJs",
+          priority: 300,
+        }),
+        makeRow({
+          scenarioFamily: "bb_vs_sb_open",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          action: "THREE_BET",
+          rangeNotation: "AA,KK,AKs",
+          priority: 600,
+        }),
+        makeRow({
+          scenarioFamily: "bb_vs_sb_open",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          action: "JAM",
+          rangeNotation: "22",
+          priority: 800,
+        }),
+        makeRow({
+          scenarioFamily: "bb_vs_sb_open",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          action: "FOLD",
+          rangeNotation: "32o",
+          priority: 100,
+        }),
+      ])
+    ).not.toThrow();
+  });
+
+  it("rejects unsupported actions in seed rows", () => {
+    expect(() =>
+      validateSeedRows([
+        makeRow({
+          action: "MIN_CLICK" as StrategyRangeSeedRow["action"],
+        }),
+      ])
+    ).toThrow(/unsupported action/i);
+  });
+
+  it("rejects call and fold overlap within the same node", () => {
+    expect(() =>
+      validateSeedRows([
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "CALL",
+          rangeNotation: "AJo",
+          priority: 300,
+        }),
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "FOLD",
+          rangeNotation: "AJo",
+          priority: 100,
+        }),
+      ])
+    ).toThrow(/CALL and FOLD/i);
+  });
+
+  it("rejects call and jam overlap within the same node", () => {
+    expect(() =>
+      validateSeedRows([
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "CALL",
+          rangeNotation: "99",
+          priority: 300,
+        }),
+        makeRow({
+          scenarioFamily: "facing_open_late",
+          heroPosition: "SB",
+          villainPosition: "BTN",
+          action: "JAM",
+          rangeNotation: "99",
+          priority: 800,
+        }),
+      ])
+    ).toThrow(/CALL and JAM/i);
+  });
+
+  it("rejects three_bet and fold overlap within the same node", () => {
+    expect(() =>
+      validateSeedRows([
+        makeRow({
+          scenarioFamily: "bb_vs_sb_open",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          action: "THREE_BET",
+          rangeNotation: "AKs",
+          priority: 600,
+        }),
+        makeRow({
+          scenarioFamily: "bb_vs_sb_open",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          action: "FOLD",
+          rangeNotation: "AKs",
+          priority: 100,
+        }),
+      ])
+    ).toThrow(/FOLD and THREE_BET/i);
+  });
 });
