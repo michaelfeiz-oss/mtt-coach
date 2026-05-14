@@ -1,6 +1,6 @@
 {
-  "version": "population-v1d",
-  "description": "Starter population-based MTT seed pack. RFI plus cleaned late-open defence, blind-vs-blind defence, and reviewed facing-jam call-off baselines for 15bb and 25bb. Conservative, lower-variance live / low-to-mid stakes MTT ranges. Not GTO-complete.",
+  "version": "population-v1e",
+  "description": "Starter population-based MTT seed pack. RFI plus reviewed in-position defence versus opens, cleaned late-open defence, blind-vs-blind defence, and reviewed facing-jam call-off baselines for 15bb and 25bb. Conservative, lower-variance live / low-to-mid stakes MTT ranges. Not GTO-complete.",
   "reviewStatus": "starter_review_required",
   "stacks": [
     15,
@@ -10,6 +10,8 @@
   ],
   "scenarioFamilies": [
     "rfi",
+    "facing_open_early",
+    "facing_open_middle",
     "facing_open_late",
     "bb_vs_sb_open",
     "facing_jam"
@@ -38,6 +40,30 @@
       "scenarioFamily": "rfi",
       "path": "70bb/rfi.csv",
       "reviewedRowsExpected": 5
+    },
+    {
+      "stackBucket": 15,
+      "scenarioFamily": "mixed",
+      "path": "15bb/facing-open-in-position.csv",
+      "reviewedRowsExpected": 6
+    },
+    {
+      "stackBucket": 25,
+      "scenarioFamily": "mixed",
+      "path": "25bb/facing-open-in-position.csv",
+      "reviewedRowsExpected": 9
+    },
+    {
+      "stackBucket": 40,
+      "scenarioFamily": "mixed",
+      "path": "40bb/facing-open-in-position.csv",
+      "reviewedRowsExpected": 6
+    },
+    {
+      "stackBucket": 70,
+      "scenarioFamily": "mixed",
+      "path": "70bb/facing-open-in-position.csv",
+      "reviewedRowsExpected": 6
     },
     {
       "stackBucket": 15,

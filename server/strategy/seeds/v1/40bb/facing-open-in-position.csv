@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1e,40,facing_open_early,HJ,UTG,early,three_bet,"QQ+,AKs,AKo",mostly,30,40bb HJ vs UTG open. Value-heavy 3bet.,true
+population-v1e,40,facing_open_early,HJ,UTG,early,call,"66-JJ,AQs-AJs,KQs,AQo",mostly,20,40bb HJ vs UTG open. Tight IP call.,true
+population-v1e,40,facing_open_middle,CO,HJ,middle,three_bet,"JJ+,AQs+,AKo,A5s-A4s,KQs",mostly,30,40bb CO vs HJ open. Value plus blockers.,true
+population-v1e,40,facing_open_middle,CO,HJ,middle,call,"55-TT,AJs-ATs,KJs,QJs,JTs,T9s,98s,AQo,KQo",mostly,20,40bb CO vs HJ open. Practical IP call range.,true
+population-v1e,40,facing_open_late,BTN,CO,late,three_bet,"TT+,AJs+,KQs,AQo+,A5s-A2s",mostly,30,40bb BTN vs CO open. Linear plus wheel blocker 3bet.,true
+population-v1e,40,facing_open_late,BTN,CO,late,call,"22-99,ATs-A6s,KJs-K9s,QJs-Q9s,JTs-J8s,T9s,T8s,98s,87s,76s,65s,AJo-ATo,KQo,KJo,QJo,JTo,T9o",mostly,20,"40bb BTN vs CO open. Wider IP call, still population-safe.",true

@@ -1,0 +1,10 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1e,25,facing_open_early,HJ,UTG,early,three_bet,"QQ+,AKs,AKo",mostly,30,25bb HJ vs UTG open. Value-heavy 3bet.,true
+population-v1e,25,facing_open_early,HJ,UTG,early,jam,"TT-JJ,AQs",mostly,25,25bb HJ vs UTG open. Practical reshove tier.,true
+population-v1e,25,facing_open_early,HJ,UTG,early,call,"77-99,AJs,KQs,AQo",mostly,20,25bb HJ vs UTG open. Tight call range.,true
+population-v1e,25,facing_open_middle,CO,HJ,middle,three_bet,"QQ+,AKs,AKo,A5s",mostly,30,25bb CO vs HJ open. Value plus one clean blocker.,true
+population-v1e,25,facing_open_middle,CO,HJ,middle,jam,"99-JJ,AQs-AJs,KQs,AQo",mostly,25,25bb CO vs HJ open. Reshove/value tier.,true
+population-v1e,25,facing_open_middle,CO,HJ,middle,call,"66-88,ATs,KJs,QJs,JTs,T9s,98s,KQo",mostly,20,25bb CO vs HJ open. Practical IP call range.,true
+population-v1e,25,facing_open_late,BTN,CO,late,three_bet,"JJ+,AQs+,AKo,A5s-A4s,KQs",mostly,30,25bb BTN vs CO open. Value-heavy 3bet plus blockers.,true
+population-v1e,25,facing_open_late,BTN,CO,late,jam,"66-TT,AJs-ATs,KJs,QJs,AQo,AJo,KQo",mostly,25,25bb BTN vs CO open. Practical reshove tier.,true
+population-v1e,25,facing_open_late,BTN,CO,late,call,"22-55,A9s-A6s,A3s-A2s,KTs-K9s,QTs-Q9s,JTs-J9s,T9s,98s,87s,76s,KJo,QJo,JTo",mostly,20,25bb BTN vs CO open. IP defence; A4s-A5s removed due 3bet overlap.,true

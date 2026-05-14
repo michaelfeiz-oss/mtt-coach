@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1e,15,facing_open_early,HJ,UTG,early,jam,"77+,AJs+,KQs,AQo+",mostly,30,15bb HJ vs UTG open. Tight reshove baseline.,true
+population-v1e,15,facing_open_early,HJ,UTG,early,call,"66,ATs,KJs,QJs,JTs",rare,20,15bb HJ vs UTG open. Rare call range; mostly jam-or-fold.,true
+population-v1e,15,facing_open_middle,CO,HJ,middle,jam,"55+,A9s+,KQs,AJo+,KQo",mostly,30,15bb CO vs HJ open. Practical reshove.,true
+population-v1e,15,facing_open_middle,CO,HJ,middle,call,"A5s-A2s,KJs,QJs,JTs,T9s,98s",rare,20,15bb CO vs HJ open. Rare IP call with playable hands.,true
+population-v1e,15,facing_open_late,BTN,CO,late,jam,"44+,A8s+,KTs+,QTs+,JTs,AJo+,KQo",mostly,30,15bb BTN vs CO open. Late-position reshove.,true
+population-v1e,15,facing_open_late,BTN,CO,late,call,"A7s-A2s,K9s,Q9s,J9s,T9s,98s,87s,KJo,QJo,JTo",mostly,20,15bb BTN vs CO open. Playable IP call range outside reshove hands.,true
