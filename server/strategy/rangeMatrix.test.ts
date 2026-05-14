@@ -61,6 +61,26 @@ describe("range matrix integrity rendering", () => {
     expect(display.primaryAction).toBeNull();
   });
 
+  it("renders unknown action tokens as warnings instead of crashing", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(RangeMatrix, {
+        actions: {
+          AJo: {
+            handCode: "AJo",
+            primaryAction: "CALL_OFF" as any,
+          },
+        },
+        strictComplete: false,
+        size: "sm",
+        compact: true,
+        readonly: true,
+      })
+    );
+
+    expect(markup).toContain('aria-label="AJo unknown action"');
+    expect(markup).toContain("Unknown action token");
+  });
+
   it("renders the grid from typed notation output rather than guessing cells", () => {
     const compiled = compileNotationRows([
       { action: "RAISE", rangeNotation: "AKs, AQs", priority: 500 },

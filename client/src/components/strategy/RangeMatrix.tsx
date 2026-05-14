@@ -2,7 +2,10 @@ import React from "react";
 import { generateHandGrid } from "../../../../shared/preflopStrategy";
 import type { HandAction } from "../../../../shared/preflopStrategy";
 import { cn } from "@/lib/utils";
-import { ACTION_CELL_STYLES, MISSING_ACTION_CELL_STYLE } from "./actionStyles";
+import {
+  getActionCellStyle,
+  MISSING_ACTION_CELL_STYLE,
+} from "./actionStyles";
 
 export type MatrixSize = "sm" | "md" | "lg";
 
@@ -90,11 +93,15 @@ export function getMatrixCellDisplay(
     };
   }
 
+  const style = getActionCellStyle(action.primaryAction);
+  const isUnknownAction = style.label === "Unknown action";
+
   return {
     primaryAction: action.primaryAction,
-    label: ACTION_CELL_STYLES[action.primaryAction].label,
-    style: ACTION_CELL_STYLES[action.primaryAction],
+    label: style.label,
+    style,
     isMissing: false,
+    isUnknownAction,
     frequency: action.weightPercent ?? null,
   };
 }
@@ -181,9 +188,13 @@ export function RangeMatrix({
             ? strictComplete
               ? `${handCode}: Missing action data (reviewed/source-backed chart should be complete)`
               : `${handCode}: Missing action data`
+            : cellDisplay.isUnknownAction
+              ? `${handCode}: Unknown action token (${action?.primaryAction ?? "unknown"})`
             : `${handCode}: ${label}${frequency ? ` (${frequency}%)` : ""}`;
           const ariaLabel = cellDisplay.isMissing
             ? `${handCode} missing action`
+            : cellDisplay.isUnknownAction
+              ? `${handCode} unknown action`
             : `${handCode} ${label}`;
 
           return (
@@ -202,6 +213,8 @@ export function RangeMatrix({
                 compact ? "rounded-[5px]" : "rounded-md",
                 cellDisplay.isMissing &&
                   "border-rose-200 shadow-[inset_0_0_0_1px_rgba(220,38,38,0.12)]",
+                cellDisplay.isUnknownAction &&
+                  "border-amber-200 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.12)]",
                 isInteractive
                   ? "cursor-pointer hover:-translate-y-0.5 hover:brightness-[1.03] active:translate-y-0 active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FB923C] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   : "cursor-default",

@@ -76,4 +76,18 @@ describe("typed strategy presentation", () => {
       })
     ).toBe("BB vs SB Limp @ 25bb");
   });
+
+  it("keeps blind-versus-blind open titles and labels on the open path", () => {
+    const presentation = buildStrategyChartPresentation({
+      stackDepth: 40,
+      spotGroup: "bb_vs_sb_open",
+      heroPosition: "BB",
+      villainPosition: "SB",
+      spotKey: "bb_vs_sb_open",
+    });
+
+    expect(presentation.title).toBe("BB vs SB Open @ 40bb");
+    expect(presentation.decisionLabel).toBe("BB vs SB Open");
+    expect(presentation.contextLine).toContain("small-blind open");
+  });
 });

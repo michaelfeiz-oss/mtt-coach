@@ -66,6 +66,7 @@ function normalizeSpotGroup(spotGroup: AnyStrategySpotGroup): TypedSpotGroup | n
     case "sb_first_in":
       return "sb_first_in";
     case "bb_vs_sb_open":
+      return "bb_vs_sb_open";
     case "bb_vs_sb_limp":
     case "BVB":
       return "bb_vs_sb_limp";

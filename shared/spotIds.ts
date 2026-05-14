@@ -239,12 +239,12 @@ export function getStrategyChartSelector(
       }
       if (context.heroPosition === "BB") {
         return {
-          spotGroup: "bb_vs_sb_limp",
+          spotGroup: "bb_vs_sb_open",
           spotKey: buildSpotKey({
             version: "v1",
             stackBucket,
             playerCount: PRELFOP_PLAYERS_COUNT,
-            scenarioFamily: "bb_vs_sb_limp",
+            scenarioFamily: "bb_vs_sb_open",
             heroPosition: "BB",
             villainPosition: "SB",
           }),

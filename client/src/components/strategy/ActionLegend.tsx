@@ -1,7 +1,7 @@
 import React from "react";
 import type { Action } from "../../../../shared/preflopStrategy";
 import { cn } from "@/lib/utils";
-import { ACTION_CELL_STYLES, STRATEGY_ACTION_ORDER } from "./actionStyles";
+import { getActionCellStyle, STRATEGY_ACTION_ORDER } from "./actionStyles";
 
 interface ActionLegendProps {
   actions?: Action[];
@@ -36,7 +36,7 @@ export function ActionLegend({
       aria-label="Range action legend"
     >
       {visibleActions.map(action => {
-        const style = ACTION_CELL_STYLES[action];
+        const style = getActionCellStyle(action);
 
         return (
           <div

@@ -54,6 +54,20 @@ describe("preflop study intelligence layer", () => {
     });
   });
 
+  it("routes blind-versus-blind big-blind chart selection to the reviewed open node", () => {
+    const selector = getStrategyChartSelector({
+      family: "BLIND_VS_BLIND",
+      stackDepth: 40,
+      heroPosition: "BB",
+      villainPosition: "SB",
+    });
+
+    expect(selector).toEqual({
+      spotGroup: "bb_vs_sb_open",
+      spotKey: "bb_vs_sb_open",
+    });
+  });
+
   it("returns structured spot notes without unsupported stage adjustments", () => {
     const note = getSpotNote({
       family: "DEFEND_VS_RFI",
