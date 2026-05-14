@@ -77,7 +77,7 @@ export default function StudyNotes() {
               Personal note space
             </p>
             <p className="mt-1 text-sm text-foreground">
-              Use one bullet per line. These boxes stay separate from chart and trainer notes, so nothing is auto-copied here.
+              Use one bullet per line. These boxes start with a small starter pack from the existing study guidance, then stay fully yours to edit.
             </p>
           </div>
         </section>

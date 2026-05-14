@@ -43,6 +43,39 @@ export interface StudyNotesState {
   generalNotes: string;
 }
 
+const STARTER_NOTES: StudyNotesState = {
+  notes15bb: [
+    "- Treat 15bb spots as threshold decisions. Most mistakes come from adding curiosity flats where the tree is already compressed.",
+    "- Use the exact cutoff, not hand vanity. Pretty offsuit broadways still become folds quickly at this stack.",
+    "- In blind-vs-blind limp nodes, know your answer versus a raise before you complete.",
+    "- Late-position opens widen through suited pressure and clean connectivity, not weak offsuit junk.",
+  ].join("\n"),
+  notes25bb: [
+    "- At 25bb, dominated offsuit hands lose value fast once pressure arrives.",
+    "- Facing a 3-bet: sort the hand into jam, disciplined call, or fold. Do not auto-flat just because it looks playable.",
+    "- Versus opens, keep pairs, suited aces, strong broadways, and clean realization hands. Cut dominated broadways first.",
+    "- Review boundary hands before autopilot: AJo, KQo, QJo, and medium pairs.",
+  ].join("\n"),
+  notes40bb: [
+    "- At 40bb, position helps, but it does not rescue dominated fringe hands.",
+    "- Versus 3-bets, separate stack-off hands, clean calls, and dominated folds before looking for creative continues.",
+    "- In SB/BB limp battles, choose hands for playability, not because the price feels cheap.",
+    "- Defend late opens with suited and connected hands that realize well; trim weak offsuit bluff-catchers first.",
+  ].join("\n"),
+  notes70bb: [
+    "- Use this section for deeper-stack reminders that are not yet charted cleanly in the app.",
+    "- Favor playability and nut potential over offsuit one-pair traps as stacks deepen.",
+    "- Write down postflop plans here, not just preflop actions: c-bet textures, turn overfolds, river bluff-catchers.",
+    "- If a spot changes a lot by player type or live read, note the adjustment explicitly.",
+  ].join("\n"),
+  generalNotes: [
+    "- One bullet per line: hand or spot, what went wrong, and the correction.",
+    "- Separate baseline strategy from exploit notes so they do not blur together.",
+    "- If a miss keeps repeating, turn it into a short drill cue you can skim before a session.",
+    "- Delete vague notes. Keep only reminders that change a real decision.",
+  ].join("\n"),
+};
+
 export function createEmptyStudyNotes(): StudyNotesState {
   return {
     notes15bb: "",
@@ -51,6 +84,10 @@ export function createEmptyStudyNotes(): StudyNotesState {
     notes70bb: "",
     generalNotes: "",
   };
+}
+
+export function createStarterStudyNotes(): StudyNotesState {
+  return { ...STARTER_NOTES };
 }
 
 export function normalizeStudyNotes(value: unknown): StudyNotesState {
@@ -74,14 +111,14 @@ export function normalizeStudyNotes(value: unknown): StudyNotesState {
 }
 
 export function loadStudyNotes(): StudyNotesState {
-  if (typeof window === "undefined") return createEmptyStudyNotes();
+  if (typeof window === "undefined") return createStarterStudyNotes();
 
   try {
     const raw = window.localStorage.getItem(STUDY_NOTES_STORAGE_KEY);
-    if (!raw) return createEmptyStudyNotes();
+    if (!raw) return createStarterStudyNotes();
     return normalizeStudyNotes(JSON.parse(raw));
   } catch {
-    return createEmptyStudyNotes();
+    return createStarterStudyNotes();
   }
 }
 
