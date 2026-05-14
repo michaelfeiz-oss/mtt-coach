@@ -215,9 +215,9 @@ export default function Dashboard() {
               onClick: () => setLocation("/log"),
             },
             {
-              label: "Add Note",
+              label: "Study Notes",
               icon: FileText,
-              onClick: () => setLocation("/log"),
+              onClick: () => setLocation("/study/notes"),
             },
           ].map(action => (
             <button
@@ -234,7 +234,7 @@ export default function Dashboard() {
           ))}
         </section>
 
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <button
             type="button"
             onClick={() => setLocation("/strategy/library")}
@@ -262,6 +262,21 @@ export default function Dashboard() {
               <p className="text-sm font-semibold">Range Trainer</p>
               <p className="text-xs text-muted-foreground">
                 Drill current spot and review misses.
+              </p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocation("/study/notes")}
+            className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 ring-1 ring-blue-200/70">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Study Notes</p>
+              <p className="text-xs text-muted-foreground">
+                Review your saved bullet-point reminders.
               </p>
             </div>
           </button>

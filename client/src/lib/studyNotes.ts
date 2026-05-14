@@ -4,26 +4,31 @@ export const STUDY_NOTE_SECTIONS = [
   {
     key: "notes15bb",
     label: "15bb",
+    title: "15bb Notes",
     helper: "Short-stack reminders, shove thresholds, and pool exploits.",
   },
   {
     key: "notes25bb",
     label: "25bb",
+    title: "25bb Notes",
     helper: "Middle-stack spots, facing-RFI decisions, and boundary hands.",
   },
   {
     key: "notes40bb",
     label: "40bb",
+    title: "40bb Notes",
     helper: "Deeper BBA spots, defend ranges, and postflop setup reminders.",
   },
   {
     key: "notes70bb",
     label: "70bb",
+    title: "70bb Notes",
     helper: "Deep-stack ideas, live adjustments, and future review notes.",
   },
   {
     key: "generalNotes",
-    label: "General Notes",
+    label: "General",
+    title: "General Notes",
     helper: "Personal reminders, reflections, and hand-study takeaways.",
   },
 ] as const;

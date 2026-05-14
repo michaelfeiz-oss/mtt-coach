@@ -93,7 +93,7 @@ export default function StudyNotes() {
                   {section.label}
                 </p>
                 <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                  {section.label} Notes
+                  {section.title}
                 </h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {section.helper}
