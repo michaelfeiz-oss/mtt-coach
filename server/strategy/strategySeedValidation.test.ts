@@ -154,6 +154,35 @@ describe("typed strategy seed validation", () => {
     ).not.toThrow();
   });
 
+  it("accepts facing_jam rows that use call_jam only and compile the remainder to fold", () => {
+    expect(() =>
+      validateSeedRows([
+        makeRow({
+          stackBucket: 15,
+          scenarioFamily: "facing_jam",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          villainGroup: null,
+          action: "CALL_JAM",
+          rangeNotation: "22+,A2s+,K8s+",
+          priority: 350,
+          reviewed: true,
+        }),
+        makeRow({
+          stackBucket: 25,
+          scenarioFamily: "facing_jam",
+          heroPosition: "HJ",
+          villainPosition: "UTG",
+          villainGroup: "early",
+          action: "CALL_JAM",
+          rangeNotation: "TT+,AQs+,AKo",
+          priority: 350,
+          reviewed: true,
+        }),
+      ])
+    ).not.toThrow();
+  });
+
   it("rejects unsupported actions in seed rows", () => {
     expect(() =>
       validateSeedRows([
@@ -231,5 +260,30 @@ describe("typed strategy seed validation", () => {
         }),
       ])
     ).toThrow(/FOLD and THREE_BET/i);
+  });
+
+  it("rejects call_jam and fold overlap within the same node", () => {
+    expect(() =>
+      validateSeedRows([
+        makeRow({
+          scenarioFamily: "facing_jam",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          villainGroup: null,
+          action: "CALL_JAM",
+          rangeNotation: "AJo",
+          priority: 350,
+        }),
+        makeRow({
+          scenarioFamily: "facing_jam",
+          heroPosition: "BB",
+          villainPosition: "SB",
+          villainGroup: null,
+          action: "FOLD",
+          rangeNotation: "AJo",
+          priority: 100,
+        }),
+      ])
+    ).toThrow(/CALL_JAM and FOLD|overlapping actions/i);
   });
 });

@@ -98,6 +98,10 @@ function mapObjectToSeedRow(candidate: Record<string, unknown>): StrategyRangeSe
     villainPosition === "SB" &&
     rawVillainGroup === "blind"
       ? null
+      : scenarioFamily === "facing_jam" &&
+          villainPosition === "SB" &&
+          rawVillainGroup === "blind"
+      ? null
       : (rawVillainGroup as VillainGroup | null);
   const priority =
     typeof candidate.priority === "number"

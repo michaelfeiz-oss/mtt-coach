@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1d,25,facing_jam,HJ,UTG,early,call_jam,"TT+,AQs+,AKo",mostly,30,25bb HJ facing UTG open jam. Population 25bb jams are strong; call tight.,true
+population-v1d,25,facing_jam,CO,HJ,middle,call_jam,"99+,AJs+,KQs,AQo+",mostly,30,25bb CO facing HJ open jam. Disciplined non-bubble call-off.,true
+population-v1d,25,facing_jam,BTN,CO,late,call_jam,"88+,ATs+,KQs,AJo+",mostly,30,25bb BTN facing CO open jam. Late but still 25bb call-off remains tight.,true
+population-v1d,25,facing_jam,SB,BTN,late,call_jam,"77+,A9s+,KQs,ATo+",mostly,30,25bb SB facing BTN open jam. Avoid dominated loose calls.,true
+population-v1d,25,facing_jam,BB,BTN,late,call_jam,"66+,A8s+,KJs+,QJs,ATo+,KQo",mostly,30,25bb BB facing BTN open jam. Closing action allows slightly wider calls.,true
+population-v1d,25,facing_jam,BB,SB,blind,call_jam,"55+,A7s+,KTs+,QJs,A9o+,KQo",mostly,30,25bb BB facing SB open jam. Blind-vs-blind call-off; still not solver reckless.,true

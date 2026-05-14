@@ -1,6 +1,6 @@
 {
-  "version": "population-v1c-clean",
-  "description": "Starter population-based MTT seed pack. RFI plus cleaned late-open defence and blind-vs-blind defence. Conservative, lower-variance live / low-to-mid stakes MTT ranges. Not GTO-complete.",
+  "version": "population-v1d",
+  "description": "Starter population-based MTT seed pack. RFI plus cleaned late-open defence, blind-vs-blind defence, and reviewed facing-jam call-off baselines for 15bb and 25bb. Conservative, lower-variance live / low-to-mid stakes MTT ranges. Not GTO-complete.",
   "reviewStatus": "starter_review_required",
   "stacks": [
     15,
@@ -11,7 +11,8 @@
   "scenarioFamilies": [
     "rfi",
     "facing_open_late",
-    "bb_vs_sb_open"
+    "bb_vs_sb_open",
+    "facing_jam"
   ],
   "files": [
     {
@@ -85,6 +86,18 @@
       "scenarioFamily": "mixed",
       "path": "70bb/blind-vs-blind.csv",
       "reviewedRowsExpected": 4
+    },
+    {
+      "stackBucket": 15,
+      "scenarioFamily": "facing_jam",
+      "path": "15bb/facing-jam.csv",
+      "reviewedRowsExpected": 6
+    },
+    {
+      "stackBucket": 25,
+      "scenarioFamily": "facing_jam",
+      "path": "25bb/facing-jam.csv",
+      "reviewedRowsExpected": 6
     }
   ],
   "rules": {

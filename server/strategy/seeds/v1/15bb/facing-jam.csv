@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1d,15,facing_jam,HJ,UTG,early,call_jam,"77+,AJs+,KQs,AQo+",mostly,30,15bb HJ facing UTG open jam. Tight population call-off.,true
+population-v1d,15,facing_jam,CO,HJ,middle,call_jam,"66+,ATs+,KQs,AJo+",mostly,30,15bb CO facing HJ open jam. Practical non-bubble call-off.,true
+population-v1d,15,facing_jam,BTN,CO,late,call_jam,"55+,A9s+,KQs,ATo+,KQo",mostly,30,15bb BTN facing CO open jam. Late-position population call.,true
+population-v1d,15,facing_jam,SB,BTN,late,call_jam,"44+,A8s+,KJs+,QJs,ATo+,KQo",mostly,30,15bb SB facing BTN open jam. Out of position but late ranges are wider.,true
+population-v1d,15,facing_jam,BB,BTN,late,call_jam,"33+,A5s+,KTs+,QTs+,JTs,A8o+,KJo+,QJo",mostly,30,15bb BB facing BTN open jam. Wider due closing action and price.,true
+population-v1d,15,facing_jam,BB,SB,blind,call_jam,"22+,A2s+,K8s+,QTs+,JTs,T9s,A5o+,KTo+,QTo+,JTo",mostly,30,15bb BB facing SB open jam. Widest call-off in this pack.,true

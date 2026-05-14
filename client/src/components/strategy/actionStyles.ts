@@ -7,6 +7,7 @@ import {
 export const STRATEGY_ACTION_ORDER: Action[] = [
   "FOUR_BET",
   "RAISE",
+  "CALL_JAM",
   "CALL",
   "THREE_BET",
   "JAM",
@@ -37,6 +38,11 @@ export const ACTION_CELL_STYLES: Record<
     backgroundColor: "#16A34A",
     color: "#ffffff",
     label: ACTION_LABELS.CALL,
+  },
+  CALL_JAM: {
+    backgroundColor: "#0F9F6E",
+    color: "#ffffff",
+    label: ACTION_LABELS.CALL_JAM,
   },
   THREE_BET: {
     backgroundColor: "#2563EB",

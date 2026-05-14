@@ -181,4 +181,37 @@ describe("typed seed file loading", () => {
       "facing_open_late",
     ]);
   });
+
+  it("loads facing_jam rows with call_jam and normalizes redundant blind villain groups", async () => {
+    const manifestPath = await makeTempSeedBundle({
+      "manifest.json": JSON.stringify({
+        version: "population-v1d",
+        files: [
+          {
+            path: "facing-jam.csv",
+            stackBucket: 15,
+            scenarioFamily: "facing_jam",
+            reviewedRowsExpected: 2,
+          },
+        ],
+      }),
+      "facing-jam.csv": [
+        "version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed",
+        "population-v1d,15,facing_jam,BB,SB,blind,call_jam,\"22+,A2s+\",mostly,30,Blind-vs-blind call-off,true",
+        "population-v1d,15,facing_jam,HJ,UTG,early,call_jam,\"77+,AQo+\",mostly,30,Early-position jam call,true",
+      ].join("\n"),
+    });
+
+    const rows = await loadStrategySeedRows(manifestPath);
+    const nodes = await loadStrategySeedNodes(manifestPath);
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.action).toBe("CALL_JAM");
+    expect(rows[0]?.villainGroup).toBeNull();
+    expect(nodes).toHaveLength(2);
+    expect(nodes.map(node => node.summary.spotKey).sort()).toEqual([
+      "BB_vs_SB_jam",
+      "HJ_vs_UTG_jam",
+    ]);
+  });
 });

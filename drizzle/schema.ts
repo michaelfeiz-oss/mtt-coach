@@ -464,6 +464,7 @@ export const strategyNodeRanges = mysqlTable("strategyNodeRanges", {
     "THREE_BET",
     "RAISE",
     "LIMP",
+    "CALL_JAM",
     "CALL",
     "CHECK",
     "FOLD",

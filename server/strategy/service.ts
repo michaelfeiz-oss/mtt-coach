@@ -74,6 +74,7 @@ const TRAINER_ACTION_ORDER: Action[] = [
   "FOUR_BET",
   "THREE_BET",
   "RAISE",
+  "CALL_JAM",
   "CALL",
   "CHECK",
   "LIMP",
