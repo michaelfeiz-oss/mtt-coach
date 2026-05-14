@@ -1,4 +1,47 @@
 {
-  "version": "v1",
-  "files": []
+  "version": "population-v1a",
+  "description": "Starter population-based MTT seed pack. RFI only. Conservative, lower-variance live / low-to-mid stakes MTT ranges. Not GTO-complete.",
+  "reviewStatus": "starter_review_required",
+  "stacks": [
+    15,
+    25,
+    40,
+    70
+  ],
+  "scenarioFamilies": [
+    "rfi"
+  ],
+  "files": [
+    {
+      "stackBucket": 15,
+      "scenarioFamily": "rfi",
+      "path": "15bb/rfi.csv",
+      "reviewedRowsExpected": 5
+    },
+    {
+      "stackBucket": 25,
+      "scenarioFamily": "rfi",
+      "path": "25bb/rfi.csv",
+      "reviewedRowsExpected": 5
+    },
+    {
+      "stackBucket": 40,
+      "scenarioFamily": "rfi",
+      "path": "40bb/rfi.csv",
+      "reviewedRowsExpected": 5
+    },
+    {
+      "stackBucket": 70,
+      "scenarioFamily": "rfi",
+      "path": "70bb/rfi.csv",
+      "reviewedRowsExpected": 5
+    }
+  ],
+  "rules": {
+    "doNotInferMissingRows": true,
+    "doNotUseLegacyDb": true,
+    "doNotUseOcrOrPdfExtraction": true,
+    "missingNodeLabel": "Not yet reviewed",
+    "gridSourceOfTruth": "typed rangeNotation only"
+  }
 }

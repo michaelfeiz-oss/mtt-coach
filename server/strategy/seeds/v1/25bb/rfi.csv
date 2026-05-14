@@ -1,0 +1,6 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1a,25,rfi,UTG,,,raise,"77+,AJs+,KQs,AQo+",always,10,Tight live/low-mid MTT UTG open. No fancy low suited aces.,true
+population-v1a,25,rfi,HJ,,,raise,"55+,A8s+,KTs+,QTs+,JTs,T9s,98s,AJo+,KQo",always,10,Practical 25bb HJ open.,true
+population-v1a,25,rfi,CO,,,raise,"44+,A2s+,K9s+,Q9s+,J9s+,T8s+,98s,87s,76s,65s,ATo+,KJo+,QJo",mostly,10,Wider CO open but still population-safe.,true
+population-v1a,25,rfi,BTN,,,raise,"22+,A2s+,K2s+,Q7s+,J7s+,T7s+,97s+,86s+,75s+,64s+,54s,A2o+,K9o+,Q9o+,J9o+,T9o",mostly,10,Button open. Simplified lower-variance live MTT range.,true
+population-v1a,25,rfi,SB,,,raise,"22+,A2s+,K5s+,Q8s+,J8s+,T8s+,98s,87s,76s,65s,54s,A7o+,KTo+,QTo+,JTo",mostly,10,Raise-first SB model. Limp strategy intentionally excluded from v1.,true

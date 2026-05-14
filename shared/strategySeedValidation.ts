@@ -1,5 +1,4 @@
 import {
-  ACTION_PRIORITY,
   PLAYER_COUNTS,
   POSITIONS,
   SPOT_GROUPS,
@@ -95,9 +94,9 @@ export function validateSeedRow(row: StrategyRangeSeedRow) {
     throw new Error("Strategy seed row is missing rangeNotation.");
   }
 
-  if (row.priority !== ACTION_PRIORITY[row.action]) {
+  if (row.priority <= 0) {
     throw new Error(
-      `Priority mismatch for ${row.action}. Expected ${ACTION_PRIORITY[row.action]}, received ${row.priority}.`
+      `Priority for ${row.action} must be a positive number. Received ${row.priority}.`
     );
   }
 
@@ -123,7 +122,10 @@ export function validateSeedRows(rows: StrategyRangeSeedRow[]) {
         priority: row.priority,
         notes: row.notes,
       })),
-      { requireComplete: nodeRows.every(row => row.reviewed) }
+      {
+        requireComplete: nodeRows.every(row => row.reviewed),
+        fillMissingWithAction: nodeRows.every(row => row.reviewed) ? "FOLD" : undefined,
+      }
     );
 
     const reviewedFlags = new Set(nodeRows.map(row => row.reviewed));

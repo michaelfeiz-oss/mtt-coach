@@ -39,6 +39,7 @@ function uniqueNotes(values: Array<string | null | undefined>) {
 function mapNodeToSeedChart(node: ParsedStrategySeedNode): SeedChart {
   const compiled = compileNotationRows(node.rows, {
     requireComplete: node.summary.reviewed,
+    fillMissingWithAction: node.summary.reviewed ? "FOLD" : undefined,
   });
 
   return {

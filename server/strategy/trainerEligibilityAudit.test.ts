@@ -41,9 +41,9 @@ function makeChart(overrides: Partial<SeedChart> = {}): SeedChart {
 }
 
 describe("typed trainer eligibility audit", () => {
-  it("returns no rows until typed seed charts exist", () => {
-    expect(buildFullChartInventoryRows()).toEqual([]);
-    expect(buildChartCellAuditRows()).toEqual([]);
+  it("can still summarize an empty inventory explicitly", () => {
+    expect(buildFullChartInventoryRows([])).toEqual([]);
+    expect(buildChartCellAuditRows([])).toEqual([]);
     expect(summarizeTrainerEligibilityAudit([])).toEqual({
       totalCharts: 0,
       appearsInViewerCount: 0,
@@ -58,6 +58,14 @@ describe("typed trainer eligibility audit", () => {
       failedInventoryCount: 0,
       exactSourceGapCount: 0,
     });
+  });
+
+  it("loads reviewed starter nodes as trainer-safe inventory rows", () => {
+    const rows = buildFullChartInventoryRows();
+
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every(row => row.cellCount === 169)).toBe(true);
+    expect(rows.every(row => row.trainerAllowed)).toBe(true);
   });
 
   it("marks imported typed charts as study-visible but blocked from trainer", () => {

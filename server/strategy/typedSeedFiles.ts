@@ -29,9 +29,16 @@ export const STRATEGY_SEED_MANIFEST = path.join(
   "manifest.json"
 );
 
+interface StrategySeedManifestFile {
+  path: string;
+  stackBucket?: StackDepth;
+  scenarioFamily?: StrategyRangeSeedRow["scenarioFamily"];
+  reviewedRowsExpected?: number;
+}
+
 interface StrategySeedManifest {
   version: string;
-  files: string[];
+  files: Array<string | StrategySeedManifestFile>;
 }
 
 export interface ParsedStrategySeedNode {
@@ -107,6 +114,63 @@ function mapObjectToSeedRow(candidate: Record<string, unknown>): StrategyRangeSe
   };
 }
 
+function normalizeManifestFile(file: string | StrategySeedManifestFile) {
+  if (typeof file === "string") {
+    return {
+      path: file,
+      stackBucket: undefined,
+      scenarioFamily: undefined,
+      reviewedRowsExpected: undefined,
+    };
+  }
+
+  return file;
+}
+
+function applyManifestDefaults(
+  rows: StrategyRangeSeedRow[],
+  file: ReturnType<typeof normalizeManifestFile>,
+  manifestVersion: string
+) {
+  return rows.map(row => ({
+    ...row,
+    version: row.version || manifestVersion,
+    playerCount: row.playerCount || 9,
+    stackBucket: (row.stackBucket || file.stackBucket) as StackDepth,
+    scenarioFamily: (row.scenarioFamily || file.scenarioFamily) as StrategyRangeSeedRow["scenarioFamily"],
+  }));
+}
+
+function validateManifestFileRows(
+  rows: StrategyRangeSeedRow[],
+  file: ReturnType<typeof normalizeManifestFile>
+) {
+  if (
+    file.reviewedRowsExpected !== undefined &&
+    rows.filter(row => row.reviewed).length !== file.reviewedRowsExpected
+  ) {
+    throw new Error(
+      `Seed file ${file.path} expected ${file.reviewedRowsExpected} reviewed rows but loaded ${rows.filter(row => row.reviewed).length}.`
+    );
+  }
+
+  if (file.stackBucket !== undefined) {
+    const mismatches = rows.filter(row => row.stackBucket !== file.stackBucket);
+    if (mismatches.length > 0) {
+      throw new Error(`Seed file ${file.path} contains rows outside stack ${file.stackBucket}.`);
+    }
+  }
+
+  if (file.scenarioFamily !== undefined) {
+    const mismatches = rows.filter(row => row.scenarioFamily !== file.scenarioFamily);
+    if (mismatches.length > 0) {
+      throw new Error(
+        `Seed file ${file.path} contains rows outside scenarioFamily ${file.scenarioFamily}.`
+      );
+    }
+  }
+}
+
 function parseCsvRows(content: string) {
   const lines = content
     .split(/\r?\n/)
@@ -164,19 +228,23 @@ function buildSourceLabel(reviewed: boolean) {
   return reviewed ? "Reviewed typed seed" : "Not yet reviewed";
 }
 
+function buildNodeIdentityKey(row: StrategyRangeSeedRow) {
+  return [
+    row.version,
+    row.stackBucket,
+    row.playerCount,
+    row.scenarioFamily,
+    row.heroPosition,
+    row.villainPosition ?? "",
+    row.villainGroup ?? "",
+  ].join("|");
+}
+
 function groupSeedRows(rows: StrategyRangeSeedRow[]): ParsedStrategySeedNode[] {
   const byNode = new Map<string, StrategyRangeSeedRow[]>();
 
   for (const row of rows) {
-    const key = buildSpotKey({
-      version: row.version,
-      stackBucket: row.stackBucket,
-      playerCount: row.playerCount,
-      scenarioFamily: row.scenarioFamily,
-      heroPosition: row.heroPosition,
-      villainPosition: row.villainPosition,
-      villainGroup: row.villainGroup,
-    });
+    const key = buildNodeIdentityKey(row);
     const bucket = byNode.get(key) ?? [];
     bucket.push(row);
     byNode.set(key, bucket);
@@ -251,9 +319,15 @@ export async function loadStrategySeedRows(
   const manifest = await readStrategySeedManifest(manifestPath);
   const rows: StrategyRangeSeedRow[] = [];
 
-  for (const relativeFile of manifest.files) {
-    const absoluteFile = path.resolve(path.dirname(manifestPath), relativeFile);
-    rows.push(...(await readSeedRowsFromFile(absoluteFile)));
+  for (const manifestFile of manifest.files.map(normalizeManifestFile)) {
+    const absoluteFile = path.resolve(path.dirname(manifestPath), manifestFile.path);
+    const loadedRows = applyManifestDefaults(
+      await readSeedRowsFromFile(absoluteFile),
+      manifestFile,
+      manifest.version
+    );
+    validateManifestFileRows(loadedRows, manifestFile);
+    rows.push(...loadedRows);
   }
 
   validateSeedRows(rows);
@@ -266,9 +340,15 @@ export function loadStrategySeedRowsSync(
   const manifest = readStrategySeedManifestSync(manifestPath);
   const rows: StrategyRangeSeedRow[] = [];
 
-  for (const relativeFile of manifest.files) {
-    const absoluteFile = path.resolve(path.dirname(manifestPath), relativeFile);
-    rows.push(...readSeedRowsFromFileSync(absoluteFile));
+  for (const manifestFile of manifest.files.map(normalizeManifestFile)) {
+    const absoluteFile = path.resolve(path.dirname(manifestPath), manifestFile.path);
+    const loadedRows = applyManifestDefaults(
+      readSeedRowsFromFileSync(absoluteFile),
+      manifestFile,
+      manifest.version
+    );
+    validateManifestFileRows(loadedRows, manifestFile);
+    rows.push(...loadedRows);
   }
 
   validateSeedRows(rows);
@@ -293,6 +373,7 @@ export function describeSeedNode(node: ParsedStrategySeedNode) {
   const { summary } = node;
   const compiled = compileNotationRows(node.rows, {
     requireComplete: summary.reviewed,
+    fillMissingWithAction: summary.reviewed ? "FOLD" : undefined,
   });
 
   return {

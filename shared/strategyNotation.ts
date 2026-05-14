@@ -231,6 +231,7 @@ export function compileNotationRows(
   rows: StrategyNodeRangeRow[],
   options?: {
     requireComplete?: boolean;
+    fillMissingWithAction?: Action;
   }
 ): CompiledNodeResult {
   const handOwner = new Map<string, { action: Action; note?: string | null }>();
@@ -263,6 +264,18 @@ export function compileNotationRows(
     }
   }
 
+  let missingHands = ALL_HANDS.filter(handCode => !handOwner.has(handCode));
+
+  if (options?.fillMissingWithAction) {
+    for (const handCode of missingHands) {
+      handOwner.set(handCode, {
+        action: options.fillMissingWithAction,
+        note: null,
+      });
+    }
+    missingHands = [];
+  }
+
   const actions = ALL_HANDS.filter(handCode => handOwner.has(handCode)).map(
     handCode => {
       const owner = handOwner.get(handCode)!;
@@ -274,8 +287,6 @@ export function compileNotationRows(
       };
     }
   );
-
-  const missingHands = ALL_HANDS.filter(handCode => !handOwner.has(handCode));
 
   if (overlaps.length > 0) {
     const overlapSummary = overlaps

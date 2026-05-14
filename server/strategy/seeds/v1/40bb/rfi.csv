@@ -1,0 +1,6 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1a,40,rfi,UTG,,,raise,"66+,ATs+,KQs,AJo+,KQo",mostly,10,40bb UTG. Slightly wider than 25bb but still avoids loose live leaks.,true
+population-v1a,40,rfi,HJ,,,raise,"44+,A7s+,KTs+,QTs+,JTs,T9s,98s,87s,ATo+,KJo+,QJo",mostly,10,40bb HJ open. Practical population range.,true
+population-v1a,40,rfi,CO,,,raise,"33+,A2s+,K8s+,Q9s+,J9s+,T8s+,98s,87s,76s,65s,54s,A9o+,KTo+,QTo+,JTo",mostly,10,40bb CO open. Includes suited connectors; avoids junk offsuit.,true
+population-v1a,40,rfi,BTN,,,raise,"22+,A2s+,K2s+,Q5s+,J6s+,T7s+,97s+,86s+,75s+,64s+,54s,A2o+,K8o+,Q9o+,J9o+,T9o",mostly,10,"40bb BTN open. Wider, but not GTO-max wide.",true
+population-v1a,40,rfi,SB,,,raise,"22+,A2s+,K4s+,Q7s+,J8s+,T8s+,98s,87s,76s,65s,54s,A5o+,K9o+,QTo+,JTo",mostly,10,40bb SB raise-first simplification. Limp tree excluded for now.,true

@@ -17,9 +17,17 @@ function exactRows(primaryAction: StrategyNodeRangeRow["action"]) {
 }
 
 describe("typed strategy seed data", () => {
-  it("stays empty until real manually reviewed seed files are provided", () => {
-    expect(SEED_CHARTS).toEqual([]);
+  it("loads the reviewed starter RFI pack from the typed seed files", () => {
+    expect(SEED_CHARTS.length).toBe(20);
     expect(() => validateSeedCharts(SEED_CHARTS)).not.toThrow();
+
+    const utg25 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 25 && chart.spotKey === "UTG_rfi"
+    );
+
+    expect(utg25?.reviewed).toBe(true);
+    expect(utg25?.sourceStatus).toBe("source_backed");
+    expect(utg25?.actions).toHaveLength(ALL_HANDS.length);
   });
 
   it("builds unreviewed charts from parsed typed seed nodes", () => {
@@ -69,7 +77,7 @@ describe("typed strategy seed data", () => {
     expect(chart.actions).toHaveLength(4);
   });
 
-  it("requires reviewed seed nodes to cover all 169 hands", () => {
+  it("fills reviewed seed nodes with implicit folds", () => {
     const reviewedNode: ParsedStrategySeedNode = {
       summary: {
         id: 2,
@@ -96,7 +104,11 @@ describe("typed strategy seed data", () => {
       ],
     };
 
-    expect(() => buildSeedCharts([reviewedNode])).toThrow(/missing/i);
+    const chart = buildSeedCharts([reviewedNode])[0]!;
+
+    expect(chart.actions).toHaveLength(ALL_HANDS.length);
+    expect(chart.actions.find(action => action.handCode === "AA")?.primaryAction).toBe("RAISE");
+    expect(chart.actions.find(action => action.handCode === "AKo")?.primaryAction).toBe("FOLD");
   });
 
   it("maps compiled seed actions into a hand lookup object", () => {

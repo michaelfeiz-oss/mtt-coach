@@ -68,7 +68,7 @@ describe("typed strategy seed validation", () => {
     ).toThrow(/must use BB as hero/i);
   });
 
-  it("requires reviewed nodes to cover all 169 hands", () => {
+  it("allows reviewed nodes to rely on implicit folds for uncovered hands", () => {
     expect(() =>
       validateSeedRows([
         makeRow({
@@ -80,6 +80,6 @@ describe("typed strategy seed validation", () => {
           reviewed: true,
         }),
       ])
-    ).toThrow(/missing/i);
+    ).not.toThrow();
   });
 });

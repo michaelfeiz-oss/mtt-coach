@@ -117,6 +117,7 @@ export function validateTypedStrategyNode(node: TypedStrategyNodeDefinition) {
 
   const compiled = compileNotationRows(node.rows, {
     requireComplete: node.reviewed,
+    fillMissingWithAction: node.reviewed ? "FOLD" : undefined,
   });
 
   if (node.reviewed && compiled.actions.length !== ALL_HANDS.length) {

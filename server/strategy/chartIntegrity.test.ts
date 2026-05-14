@@ -47,8 +47,9 @@ function makeNode(overrides: Partial<TypedStrategyNodeDefinition> = {}): TypedSt
 }
 
 describe("typed strategy chart integrity", () => {
-  it("keeps the real seed catalog empty until trusted typed files are provided", () => {
-    expect(SEED_CHARTS).toEqual([]);
+  it("loads the reviewed starter seed catalog with complete 169-cell charts", () => {
+    expect(SEED_CHARTS.length).toBeGreaterThan(0);
+    expect(SEED_CHARTS.every(chart => chart.actions.length === ALL_HANDS.length)).toBe(true);
   });
 
   it("accepts structurally complete nodes without treating them as reviewed by default", () => {

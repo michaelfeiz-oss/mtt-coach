@@ -35,11 +35,18 @@ describe("typed seed file loading", () => {
     const manifestPath = await makeTempSeedBundle({
       "manifest.json": JSON.stringify({
         version: "v1",
-        files: ["ranges.csv"],
+        files: [
+          {
+            path: "ranges.csv",
+            stackBucket: 25,
+            scenarioFamily: "facing_open_middle",
+            reviewedRowsExpected: 1,
+          },
+        ],
       }),
       "ranges.csv": [
-        "version,stackBucket,playerCount,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,priority,notes,reviewed",
-        "population-v1,25,9,facing_open_middle,BTN,HJ,,CALL,\"AJs, KQs\",300,Continue the suited top-end,false",
+        "version,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed",
+        "population-v1,BTN,HJ,,CALL,\"AJs, KQs\",always,300,Continue the suited top-end,true",
       ].join("\n"),
     });
 
@@ -55,7 +62,11 @@ describe("typed seed file loading", () => {
     const manifestPath = await makeTempSeedBundle({
       "manifest.json": JSON.stringify({
         version: "v1",
-        files: ["ranges.json"],
+        files: [
+          {
+            path: "ranges.json",
+          },
+        ],
       }),
       "ranges.json": JSON.stringify({
         rows: [

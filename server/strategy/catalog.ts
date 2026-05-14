@@ -33,6 +33,7 @@ function buildNotesJson(notes: Array<string | null | undefined>) {
 function mapSeedNodeToChart(node: ParsedStrategySeedNode): RangeChartWithActions {
   const compiled = compileNotationRows(node.rows, {
     requireComplete: node.summary.reviewed,
+    fillMissingWithAction: node.summary.reviewed ? "FOLD" : undefined,
   });
 
   return {
@@ -53,7 +54,11 @@ function mapDbNodeToChart(
       priority: row.priority,
       notes: row.notes,
     })),
-    { requireComplete: node.reviewed || node.structurallyComplete }
+    {
+      requireComplete: node.reviewed || node.structurallyComplete,
+      fillMissingWithAction:
+        node.reviewed || node.structurallyComplete ? "FOLD" : undefined,
+    }
   );
 
   return {
