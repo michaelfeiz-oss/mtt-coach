@@ -2,8 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEmptyStudyNotes,
   createStarterStudyNotes,
+  hasStudyNoteContent,
   loadStudyNotes,
   normalizeStudyNotes,
+  saveStudyNotes,
+  STUDY_NOTES_SEEDED_STORAGE_KEY,
+  STUDY_NOTES_STORAGE_KEY,
 } from "./studyNotes";
 
 describe("study notes storage helpers", () => {
@@ -29,6 +33,16 @@ describe("study notes storage helpers", () => {
       notes70bb: expect.stringContaining("Use this section for deeper-stack reminders that are not yet charted cleanly in the app."),
       generalNotes: expect.stringContaining("One bullet per line: hand or spot, what went wrong, and the correction."),
     });
+  });
+
+  it("detects whether note content is present", () => {
+    expect(hasStudyNoteContent(createEmptyStudyNotes())).toBe(false);
+    expect(
+      hasStudyNoteContent({
+        ...createEmptyStudyNotes(),
+        notes25bb: "- review AJo boundary",
+      })
+    ).toBe(true);
   });
 
   it("normalizes unknown values into empty note buckets", () => {
@@ -81,5 +95,59 @@ describe("study notes storage helpers", () => {
     });
 
     expect(loadStudyNotes()).toEqual(savedNotes);
+  });
+
+  it("upgrades legacy all-empty saved notes into the starter pack once", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => {
+          if (key === STUDY_NOTES_STORAGE_KEY) {
+            return JSON.stringify(createEmptyStudyNotes());
+          }
+
+          return null;
+        },
+      },
+    });
+
+    expect(loadStudyNotes()).toEqual(createStarterStudyNotes());
+  });
+
+  it("respects intentionally cleared notes after the starter pack has been seeded", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => {
+          if (key === STUDY_NOTES_STORAGE_KEY) {
+            return JSON.stringify(createEmptyStudyNotes());
+          }
+
+          if (key === STUDY_NOTES_SEEDED_STORAGE_KEY) {
+            return "true";
+          }
+
+          return null;
+        },
+      },
+    });
+
+    expect(loadStudyNotes()).toEqual(createEmptyStudyNotes());
+  });
+
+  it("marks notes as seeded when saving", () => {
+    const storage = new Map<string, string>();
+
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          storage.set(key, value);
+        },
+      },
+    });
+
+    saveStudyNotes(createStarterStudyNotes());
+
+    expect(storage.get(STUDY_NOTES_STORAGE_KEY)).toBeTruthy();
+    expect(storage.get(STUDY_NOTES_SEEDED_STORAGE_KEY)).toBe("true");
   });
 });

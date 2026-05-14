@@ -1,4 +1,5 @@
 export const STUDY_NOTES_STORAGE_KEY = "mtt.study.notes";
+export const STUDY_NOTES_SEEDED_STORAGE_KEY = "mtt.study.notes.seeded";
 
 export const STUDY_NOTE_SECTIONS = [
   {
@@ -90,6 +91,10 @@ export function createStarterStudyNotes(): StudyNotesState {
   return { ...STARTER_NOTES };
 }
 
+export function hasStudyNoteContent(notes: StudyNotesState) {
+  return Object.values(notes).some(note => note.trim().length > 0);
+}
+
 export function normalizeStudyNotes(value: unknown): StudyNotesState {
   const empty = createEmptyStudyNotes();
   if (!value || typeof value !== "object") return empty;
@@ -116,7 +121,15 @@ export function loadStudyNotes(): StudyNotesState {
   try {
     const raw = window.localStorage.getItem(STUDY_NOTES_STORAGE_KEY);
     if (!raw) return createStarterStudyNotes();
-    return normalizeStudyNotes(JSON.parse(raw));
+    const normalized = normalizeStudyNotes(JSON.parse(raw));
+    const isSeeded =
+      window.localStorage.getItem(STUDY_NOTES_SEEDED_STORAGE_KEY) === "true";
+
+    if (!hasStudyNoteContent(normalized) && !isSeeded) {
+      return createStarterStudyNotes();
+    }
+
+    return normalized;
   } catch {
     return createStarterStudyNotes();
   }
@@ -130,6 +143,7 @@ export function saveStudyNotes(notes: StudyNotesState) {
       STUDY_NOTES_STORAGE_KEY,
       JSON.stringify(normalizeStudyNotes(notes))
     );
+    window.localStorage.setItem(STUDY_NOTES_SEEDED_STORAGE_KEY, "true");
   } catch {
     // Personal study notes are convenience state only.
   }
