@@ -30,6 +30,9 @@ describe("typed strategy seed data", () => {
     const bbVsCo15 = SEED_CHARTS.find(
       chart => chart.stackDepth === 15 && chart.spotKey === "BB_vs_CO_open"
     );
+    const sbRfi15 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 15 && chart.spotKey === "SB_rfi"
+    );
     const sbVsBtn25 = SEED_CHARTS.find(
       chart => chart.stackDepth === 25 && chart.spotKey === "SB_vs_BTN_open"
     );
@@ -60,6 +63,15 @@ describe("typed strategy seed data", () => {
     );
     expect(bbVsCo15?.actions.find(action => action.handCode === "A4s")?.primaryAction).toBe(
       "CALL"
+    );
+    expect(sbRfi15?.actions.find(action => action.handCode === "T9s")?.primaryAction).toBe(
+      "JAM"
+    );
+    expect(sbRfi15?.actions.find(action => action.handCode === "T8s")?.primaryAction).toBe(
+      "JAM"
+    );
+    expect(sbRfi15?.actions.find(action => action.handCode === "98s")?.primaryAction).toBe(
+      "JAM"
     );
     expect(sbVsBtn25?.actions.find(action => action.handCode === "AJo")?.primaryAction).toBe(
       "JAM"

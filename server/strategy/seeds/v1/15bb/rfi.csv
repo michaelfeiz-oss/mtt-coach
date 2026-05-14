@@ -3,4 +3,4 @@ population-v1a,15,rfi,UTG,,,jam,"66+,ATs+,KQs,AJo+",mostly,30,15bb population-sa
 population-v1a,15,rfi,HJ,,,jam,"55+,A9s+,KQs,ATo+,KQo",mostly,30,15bb HJ first-in. Conservative live MTT shove/open model.,true
 population-v1a,15,rfi,CO,,,jam,"44+,A5s+,KTs+,QTs+,JTs,T9s,A8o+,KJo+,QJo",mostly,30,15bb CO first-in. Lower-variance population range.,true
 population-v1a,15,rfi,BTN,,,jam,"22+,A2s+,K7s+,Q9s+,J9s+,T9s,98s,A5o+,KTo+,QTo+,JTo",mostly,30,15bb BTN first-in. Practical shove range; not maximum solver aggression.,true
-population-v1a,15,rfi,SB,,,jam,"22+,A2s+,K5s+,Q8s+,J8s+,T8s,98s,A2o+,K8o+,QTo+,JTo",mostly,30,15bb SB first-in. Population exploit: pressure BB without going too wide.,true
+population-v1a,15,rfi,SB,,,jam,"22+,A2s+,K5s+,Q8s+,J8s+,T8s+,98s,A2o+,K8o+,QTo+,JTo",mostly,30,15bb SB first-in. Population exploit: pressure BB without going too wide.,true
