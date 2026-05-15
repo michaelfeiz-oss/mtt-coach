@@ -13,8 +13,10 @@ docker compose up -d
 Open:
 
 ```text
-http://localhost:3000
+http://localhost:3100
 ```
+
+`http://localhost:3000` is intentionally left free for the Orange Painting quoting app.
 
 View logs:
 
@@ -42,7 +44,7 @@ Inside the container the database lives at:
 /data/mtt-study.sqlite
 ```
 
-Docker publishes the app to `127.0.0.1:3000` by default, so it is reachable only from this computer.
+Docker publishes the MTT Study app to `127.0.0.1:3100` by default, so it is reachable only from this computer. The container still listens on port `3000` internally.
 
 Security warning: do not expose this app to public networks. Admin editing/import/restore is not password-protected yet. LAN/iPhone access should be added later behind a simple password.
 
@@ -85,10 +87,10 @@ From the UI:
 Command-line examples after the app is running:
 
 ```bash
-curl http://localhost:3000/api/local/export/approved -o approved-strategy-pack.json
-curl http://localhost:3000/api/local/backup -o mtt-study-full-backup.json
-curl -X POST http://localhost:3000/api/local/import/approved -H "Content-Type: application/json" --data-binary @approved-strategy-pack.json
-curl -X POST http://localhost:3000/api/local/restore -H "Content-Type: application/json" --data-binary @mtt-study-full-backup.json
+curl http://localhost:3100/api/local/export/approved -o approved-strategy-pack.json
+curl http://localhost:3100/api/local/backup -o mtt-study-full-backup.json
+curl -X POST http://localhost:3100/api/local/import/approved -H "Content-Type: application/json" --data-binary @approved-strategy-pack.json
+curl -X POST http://localhost:3100/api/local/restore -H "Content-Type: application/json" --data-binary @mtt-study-full-backup.json
 ```
 
 ## Intentional Reset
