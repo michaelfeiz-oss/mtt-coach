@@ -1109,6 +1109,7 @@ export function chooseTrainerQuestion(filters?: { stackBb?: number; spotType?: s
 
   return {
     chart: chart.chart,
+    snapshot,
     source: chart.source,
     handCode,
     correctAction,

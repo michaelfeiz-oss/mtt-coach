@@ -54,6 +54,8 @@ export function ChartGrid({
   density,
   wrap = false,
   fixedCellSizePx,
+  highlightedHand,
+  highlightTone = "neutral",
 }: {
   cells: Partial<ChartCells> | null | undefined;
   allowedActions: ActionToken[];
@@ -63,6 +65,8 @@ export function ChartGrid({
   density?: "comfortable" | "compact";
   wrap?: boolean;
   fixedCellSizePx?: number;
+  highlightedHand?: string;
+  highlightTone?: "correct" | "wrong" | "neutral";
 }) {
   const grid = generateHandGrid();
   const selected = new Set(selectedHands);
@@ -98,8 +102,16 @@ export function ChartGrid({
         {grid.flat().map(hand => {
           const action = cells[hand] as ActionToken;
           const isSelected = selected.has(hand);
+          const isHighlighted = highlightedHand === hand;
           const label = ACTION_LABELS[action];
           const cell = <span className={`block font-bold leading-none ${isCompact ? "text-[0.64rem]" : "text-[0.7rem] sm:text-xs"}`}>{hand}</span>;
+          const highlightClass = isHighlighted
+            ? highlightTone === "correct"
+              ? "ring-4 ring-emerald-300 ring-offset-2"
+              : highlightTone === "wrong"
+                ? "ring-4 ring-red-300 ring-offset-2"
+                : "ring-4 ring-orange-300 ring-offset-2"
+            : "";
 
           if (!onToggleHand) {
             return (
@@ -108,7 +120,7 @@ export function ChartGrid({
                 title={`${hand}: ${label}`}
                 className={`aspect-square border text-center shadow-sm ${ACTION_CLASS[action]} flex items-center justify-center ${
                   isCompact ? "rounded-md" : "rounded-lg"
-                }`}
+                } ${highlightClass}`}
               >
                 {cell}
               </div>
@@ -126,7 +138,7 @@ export function ChartGrid({
                 isCompact ? "rounded-md" : "rounded-lg"
               } ${
                 isSelected ? "ring-4 ring-amber-300 ring-offset-1" : ""
-              }`}
+              } ${highlightClass}`}
             >
               {cell}
             </button>
