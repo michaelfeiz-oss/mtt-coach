@@ -1,53 +1,28 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import LeakDetail from "@/pages/LeakDetail";
-import TournamentDetail from "@/pages/TournamentDetail";
-import StudyPlan from "@/pages/StudyPlan";
-import GuidedSession from "@/pages/GuidedSession";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Dashboard from "./pages/Dashboard";
-import LogStudySession from "./pages/LogStudySession";
-import LogTournament from "./pages/LogTournament";
-import HandsList from "./pages/HandsList";
-import HandDetail from "./pages/HandDetail";
-import BottomNav from "./components/BottomNav";
-import Log from "./pages/Log";
-import Study from "./pages/Study";
-import StudyNotes from "./pages/StudyNotes";
-import StudyHub from "./pages/strategy/StudyHub";
-import StrategyLibrary from "./pages/strategy/StrategyLibrary";
-import RangeTrainer from "./pages/strategy/RangeTrainer";
-import IcmizerReference from "./pages/strategy/IcmizerReference";
-import IcmPacks from "./pages/icm/IcmPacks";
-import IcmPackDetail from "./pages/icm/IcmPackDetail";
-import IcmSpotDetail from "./pages/icm/IcmSpotDetail";
+import AuditV2 from "./pages/local/AuditV2";
+import ChartEditorV2 from "./pages/local/ChartEditorV2";
+import ChartViewerV2 from "./pages/local/ChartViewerV2";
+import ImportExportV2 from "./pages/local/ImportExportV2";
+import LocalDashboard from "./pages/local/LocalDashboard";
+import StrategyLibraryV2 from "./pages/local/StrategyLibraryV2";
+import TrainerV2 from "./pages/local/TrainerV2";
 
 function Router() {
   return (
     <Switch>
-      <Route key="home" path={"/"} component={Dashboard} />
-      <Route key="log" path={"/log"} component={Log} />
-      <Route key="study" path={"/study"} component={Study} />
-      <Route key="study-notes" path={"/study/notes"} component={StudyNotes} />
-      <Route key="log-session" path={"/log-session"} component={LogStudySession} />
-      <Route key="log-tournament" path={"/log-tournament"} component={LogTournament} />
-      <Route key="hands" path={"/hands"} component={HandsList} />
-      <Route key="hands-detail" path={"/hands/:id"} component={HandDetail} />
-      <Route key="leak-detail" path={"/leaks/:id"} component={LeakDetail} />
-      <Route key="tournament-detail" path={"/tournaments/:id"} component={TournamentDetail} />
-      <Route key="study-plan" path={"/study-plan"} component={StudyPlan} />
-      <Route key="guided-session" path={"/guided-session"} component={GuidedSession} />
-      <Route key="icm-spot" path={"/study/icm/spot/:spotId"} component={IcmSpotDetail} />
-      <Route key="icm-pack" path={"/study/icm/:packSlug"} component={IcmPackDetail} />
-      <Route key="icm-packs" path={"/study/icm"} component={IcmPacks} />
-      <Route key="strategy" path={"/strategy"} component={StudyHub} />
-      <Route key="strategy-library" path={"/strategy/library"} component={StrategyLibrary} />
-      <Route key="strategy-trainer" path={"/strategy/trainer"} component={RangeTrainer} />
-      <Route key="strategy-push-fold" path={"/strategy/push-fold"} component={IcmizerReference} />
-      <Route key="not-found-404" path={"/404"} component={NotFound} />
+      <Route key="home" path="/" component={LocalDashboard} />
+      <Route key="strategy-library" path="/strategy/library" component={StrategyLibraryV2} />
+      <Route key="strategy-chart" path="/strategy/chart/:nodeKey" component={ChartViewerV2} />
+      <Route key="strategy-editor" path="/strategy/editor/:nodeKey" component={ChartEditorV2} />
+      <Route key="strategy-trainer" path="/strategy/trainer" component={TrainerV2} />
+      <Route key="admin-import-export" path="/admin/import-export" component={ImportExportV2} />
+      <Route key="admin-audit" path="/admin/audit" component={AuditV2} />
+      <Route key="not-found-404" path="/404" component={NotFound} />
       <Route key="not-found-default" component={NotFound} />
     </Switch>
   );
@@ -60,7 +35,6 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
-          <BottomNav />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
