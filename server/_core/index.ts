@@ -2,11 +2,10 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
-import { appRouter } from "../routers";
-import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import path from "node:path";
+import { listCharts } from "../local-study/db";
+import { importTypedSeedsIntoLocalDb } from "../local-study/seedImport";
+import { registerLocalStudyRoutes } from "../local-study/routes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -33,21 +32,22 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
+  registerLocalStudyRoutes(app);
+  if (process.env.LOCAL_AUTO_IMPORT_SEEDS !== "false" && listCharts().length === 0) {
+    const result = importTypedSeedsIntoLocalDb();
+    console.log(
+      `[Local Study] Imported typed seeds: ${result.imported} imported, ${result.skipped} skipped.`
+    );
+  }
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
+    const importDevServer = new Function("specifier", "return import(specifier)") as (
+      specifier: string
+    ) => Promise<typeof import("./vite")>;
+    const { setupVite } = await importDevServer("./vite");
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    serveStaticLocal(app);
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
@@ -59,6 +59,14 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+  });
+}
+
+function serveStaticLocal(app: express.Express) {
+  const distPath = path.resolve(import.meta.dirname, "public");
+  app.use(express.static(distPath));
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
 

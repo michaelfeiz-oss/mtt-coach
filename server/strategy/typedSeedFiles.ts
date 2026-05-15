@@ -19,11 +19,17 @@ import {
 import { compileNotationRows } from "../../shared/strategyNotation";
 import { validateSeedRows } from "../../shared/strategySeedValidation";
 
-export const STRATEGY_SEED_ROOT = path.resolve(
-  import.meta.dirname,
-  "seeds",
-  "v1"
-);
+function resolveStrategySeedRoot() {
+  const bundledRoot = path.resolve(import.meta.dirname, "seeds", "v1");
+  if (fsSync.existsSync(bundledRoot)) return bundledRoot;
+
+  const sourceRoot = path.resolve(process.cwd(), "server", "strategy", "seeds", "v1");
+  if (fsSync.existsSync(sourceRoot)) return sourceRoot;
+
+  return bundledRoot;
+}
+
+export const STRATEGY_SEED_ROOT = resolveStrategySeedRoot();
 export const STRATEGY_SEED_MANIFEST = path.join(
   STRATEGY_SEED_ROOT,
   "manifest.json"

@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+.env.*
+local-data
+.playwright-cli
+docs/LOCAL_RANGE_VIEWER_SOURCE_AUDIT.md
+docs/PASS4_RANGE_REVIEW_SUMMARY.md
+docs/PDF_FIRST_40BB_REVIEW.md
+tools

@@ -1,0 +1,10 @@
+{
+  "name": "MTT Study Local",
+  "short_name": "MTT Study",
+  "description": "Local-only MTT preflop chart study app.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#c96a1b",
+  "icons": []
+}

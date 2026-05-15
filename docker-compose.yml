@@ -1,0 +1,17 @@
+services:
+  mtt-study:
+    build: .
+    container_name: mtt-study-local
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      LOCAL_DATA_DIR: /data
+      LOCAL_AUTO_IMPORT_SEEDS: "true"
+    volumes:
+      - mtt-study-data:/data
+    restart: unless-stopped
+
+volumes:
+  mtt-study-data:
