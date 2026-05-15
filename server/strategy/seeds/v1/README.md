@@ -1,4 +1,4 @@
-# MTT Population Seed Pack v1a + v1b clean + v1c clean + v1d + v1e
+# MTT Population Seed Pack v1a + v1b clean + v1c clean + v1d + v1e + v1f
 
 This is a starter data pack only.
 
@@ -6,6 +6,7 @@ Scope:
 - RFI
 - BB defence versus late opens
 - In-position defence versus opens
+- Remaining common in-position defence versus early/middle opens
 - SB versus BTN opens
 - BB versus SB opens
 - Facing open-jam / call-jam
@@ -13,7 +14,7 @@ Scope:
 - Positions:
   - RFI: UTG, HJ, CO, BTN, SB
   - Facing late opens: BB vs CO, BB vs BTN
-  - In-position open defence: HJ vs UTG, CO vs HJ, BTN vs CO
+  - In-position open defence: HJ vs UTG, CO vs UTG, BTN vs UTG, CO vs HJ, BTN vs HJ, BTN vs CO
   - Blind-versus-blind: SB vs BTN, BB vs SB
   - Facing jam: HJ vs UTG, CO vs HJ, BTN vs CO, SB vs BTN, BB vs BTN, BB vs SB
 - Population-based, lower-variance MTT strategy
@@ -35,4 +36,5 @@ Rules:
 - Do not seed 40bb or 70bb facing_jam spots until they are manually reviewed.
 
 Next packs:
-- v1f: limp and post-limp preflop responses
+- out-of-position blind defence versus early/middle opens
+- limp and post-limp preflop responses

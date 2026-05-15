@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1f,40,facing_open_early,CO,UTG,early,three_bet,"QQ+,AKs,AKo,A5s",mostly,30,40bb CO vs UTG open. Value plus one blocker.,true
+population-v1f,40,facing_open_early,CO,UTG,early,call,"66-JJ,AQs-AJs,KQs,AQo,KQo,QJs,JTs",mostly,20,40bb CO vs UTG open. Tight IP call range.,true
+population-v1f,40,facing_open_early,BTN,UTG,early,three_bet,"QQ+,AKs,AKo,A5s-A4s",mostly,30,40bb BTN vs UTG open. Value plus wheel blockers.,true
+population-v1f,40,facing_open_early,BTN,UTG,early,call,"55-JJ,AQs-AJs,A3s-A2s,KQs,KJs,QJs,JTs,T9s,AQo,KQo",mostly,20,40bb BTN vs UTG open. Deeper IP call; A4s-A5s removed due 3bet.,true
+population-v1f,40,facing_open_middle,BTN,HJ,middle,three_bet,"JJ+,AQs+,AKo,A5s-A2s,KQs",mostly,30,40bb BTN vs HJ open. Value plus wheel blockers.,true
+population-v1f,40,facing_open_middle,BTN,HJ,middle,call,"44-TT,AJs-ATs,KJs-KTs,QJs-QTs,JTs,T9s,98s,87s,AQo-AJo,KQo,KJo,QJo,JTo",mostly,20,40bb BTN vs HJ open. Wider IP call range.,true

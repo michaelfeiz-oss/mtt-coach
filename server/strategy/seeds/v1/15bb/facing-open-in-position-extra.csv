@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1f,15,facing_open_early,CO,UTG,early,jam,"77+,AJs+,KQs,AQo+",mostly,30,15bb CO vs UTG open. Tight reshove baseline.,true
+population-v1f,15,facing_open_early,CO,UTG,early,call,"66,ATs,KJs,QJs,JTs",rare,20,15bb CO vs UTG open. Rare playable IP call tier.,true
+population-v1f,15,facing_open_early,BTN,UTG,early,jam,"77+,AJs+,KQs,AQo+",mostly,30,15bb BTN vs UTG open. Tight reshove baseline even on button.,true
+population-v1f,15,facing_open_early,BTN,UTG,early,call,"55-66,ATs,KJs,QJs,JTs,T9s,AJo,KQo",mostly,20,15bb BTN vs UTG open. Button can flat slightly wider than CO.,true
+population-v1f,15,facing_open_middle,BTN,HJ,middle,jam,"66+,ATs+,KQs,AJo+,KQo",mostly,30,15bb BTN vs HJ open. Practical reshove range.,true
+population-v1f,15,facing_open_middle,BTN,HJ,middle,call,"44-55,A5s-A2s,KJs-KTs,QJs-QTs,JTs,T9s,98s,KJo,QJo,JTo",mostly,20,15bb BTN vs HJ open. Playable IP call tier outside jam hands.,true

@@ -1,0 +1,7 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1f,70,facing_open_early,CO,UTG,early,three_bet,"QQ+,AKs,AKo,A5s-A4s",mostly,30,70bb CO vs UTG open. Value plus blockers.,true
+population-v1f,70,facing_open_early,CO,UTG,early,call,"55-JJ,AQs-AJs,A3s-A2s,KQs,QJs,JTs,T9s,AQo,KQo",mostly,20,70bb CO vs UTG open. Deeper IP call; A4s-A5s removed due 3bet.,true
+population-v1f,70,facing_open_early,BTN,UTG,early,three_bet,"QQ+,AKs,AKo,A5s-A2s,KQs",mostly,30,70bb BTN vs UTG open. Value plus blocker 3bet.,true
+population-v1f,70,facing_open_early,BTN,UTG,early,call,"44-JJ,AQs-AJs,KJs-KTs,QJs-QTs,JTs,T9s,98s,87s,AQo,KQo,QJo",mostly,20,70bb BTN vs UTG open. Deeper button call range; KQs and A2s-A5s removed due 3bet.,true
+population-v1f,70,facing_open_middle,BTN,HJ,middle,three_bet,"TT+,AQs+,AKo,A5s-A2s,KQs,KTs,QTs,JTs",mostly,30,70bb BTN vs HJ open. Deeper value/blocker 3bet.,true
+population-v1f,70,facing_open_middle,BTN,HJ,middle,call,"22-99,AJs-ATs,KJs,K9s,QJs,Q9s,J9s,T9s,98s,87s,76s,65s,AQo-AJo,KQo,KJo,QJo,JTo,T9o",mostly,20,70bb BTN vs HJ open. Deeper IP call; 3bet combos removed.,true
