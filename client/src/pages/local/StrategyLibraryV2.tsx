@@ -166,19 +166,19 @@ function MatchingChartSelect({
   onSelect: (nodeKey: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm sm:flex-row sm:items-center">
-      <label className="shrink-0 text-xs font-bold uppercase tracking-wide text-slate-500" htmlFor="matching-chart-select">
+    <div className="flex w-full max-w-[34.25rem] flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm sm:flex-row sm:items-center">
+      <label className="shrink-0 text-xs font-bold text-slate-500" htmlFor="matching-chart-select">
         {charts.length} matches
       </label>
       <select
         id="matching-chart-select"
-        className="min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold"
+        className="min-h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold"
         value={selectedNodeKey ?? charts[0]?.nodeKey ?? ""}
         onChange={event => onSelect(event.target.value)}
       >
         {charts.map(chart => (
           <option key={chart.nodeKey} value={chart.nodeKey}>
-            {chart.title} / {chart.stackBb}bb / {chart.position}{chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
+            {chart.title}
           </option>
         ))}
       </select>
