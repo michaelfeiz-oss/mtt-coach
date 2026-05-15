@@ -1,10 +1,10 @@
-import { ChevronLeft, ChevronRight, Edit3, Search } from "lucide-react";
+import { Edit3 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { getChart, listCharts } from "@/local-study/api";
 import { ActionLegend, ChartGrid } from "@/local-study/ChartGrid";
-import { LocalShell, PageHeader } from "@/local-study/LocalShell";
+import { LocalShell } from "@/local-study/LocalShell";
 import {
   POSITIONS,
   SPOT_TYPES,
@@ -21,7 +21,6 @@ type FilterState = {
   position: string;
   villainPosition: string;
   status: string;
-  search: string;
 };
 
 const EMPTY_FILTERS: FilterState = {
@@ -30,7 +29,6 @@ const EMPTY_FILTERS: FilterState = {
   position: "all",
   villainPosition: "all",
   status: "all",
-  search: "",
 };
 
 const STATUS_OPTIONS = ["all", "seed", "draft", "reviewed", "approved", "not_yet_reviewed"] as const;
@@ -80,10 +78,6 @@ function SourceBadge({ source }: { source: string }) {
   return <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${className}`}>source: {source}</span>;
 }
 
-function normalizeQuery(value: string) {
-  return value.trim().toLowerCase();
-}
-
 function chartMatchesFilters(chart: StrategyChartRecord, filters: FilterState) {
   if (filters.stackBb !== "all" && chart.stackBb !== Number(filters.stackBb)) return false;
   if (filters.spotType !== "all" && chart.spotType !== filters.spotType) return false;
@@ -94,19 +88,7 @@ function chartMatchesFilters(chart: StrategyChartRecord, filters: FilterState) {
     if (chart.status !== filters.status) return false;
   }
 
-  const query = normalizeQuery(filters.search);
-  if (!query) return true;
-  const searchable = [
-    chart.nodeKey,
-    chart.title,
-    chart.spotType,
-    chart.position,
-    chart.villainPosition ?? "",
-    `${chart.stackBb}bb`,
-  ]
-    .join(" ")
-    .toLowerCase();
-  return searchable.includes(query);
+  return true;
 }
 
 function hasOptionMatch(
@@ -116,7 +98,7 @@ function hasOptionMatch(
   value: string
 ) {
   if (value === "all") return true;
-  return charts.some(chart => chartMatchesFilters(chart, { ...filters, [key]: value, search: "" }));
+  return charts.some(chart => chartMatchesFilters(chart, { ...filters, [key]: value }));
 }
 
 function parseFilters(search: string): { filters: FilterState; selectedNodeKey: string | null } {
@@ -128,7 +110,6 @@ function parseFilters(search: string): { filters: FilterState; selectedNodeKey: 
       position: params.get("hero") ?? EMPTY_FILTERS.position,
       villainPosition: params.get("villain") ?? EMPTY_FILTERS.villainPosition,
       status: params.get("status") ?? EMPTY_FILTERS.status,
-      search: params.get("q") ?? EMPTY_FILTERS.search,
     },
     selectedNodeKey: params.get("chart"),
   };
@@ -141,7 +122,6 @@ function buildLibraryHref(filters: FilterState, selectedNodeKey?: string | null)
   if (filters.position !== "all") params.set("hero", filters.position);
   if (filters.villainPosition !== "all") params.set("villain", filters.villainPosition);
   if (filters.status !== "all") params.set("status", filters.status);
-  if (filters.search.trim()) params.set("q", filters.search.trim());
   if (selectedNodeKey) params.set("chart", selectedNodeKey);
   const query = params.toString();
   return `/strategy/library${query ? `?${query}` : ""}`;
@@ -163,7 +143,7 @@ function FilterButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`min-h-10 rounded-xl border px-3 text-sm font-bold transition ${
+      className={`min-h-9 rounded-xl border px-2.5 text-sm font-bold transition ${
         active
           ? "border-orange-300 bg-orange-100 text-orange-800"
           : disabled
@@ -176,7 +156,7 @@ function FilterButton({
   );
 }
 
-function ChartMatchList({
+function MatchingChartSelect({
   charts,
   selectedNodeKey,
   onSelect,
@@ -186,39 +166,37 @@ function ChartMatchList({
   onSelect: (nodeKey: string) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="text-sm font-black">{charts.length} matching charts</p>
-        <p className="text-xs font-semibold text-slate-500">Choose one to preview</p>
-      </div>
-      <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
-        {charts.map(chart => {
-          const active = chart.nodeKey === selectedNodeKey;
-          return (
-            <button
-              key={chart.nodeKey}
-              type="button"
-              onClick={() => onSelect(chart.nodeKey)}
-              className={`rounded-xl border p-3 text-left transition ${
-                active
-                  ? "border-orange-300 bg-orange-50"
-                  : "border-slate-200 bg-white hover:border-orange-200"
-              }`}
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-black">{chart.title}</span>
-                <StatusBadge status={chart.status} />
-              </div>
-              <p className="mt-1 break-all font-mono text-[0.72rem] text-slate-500">{chart.nodeKey}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-600">
-                {chart.stackBb}bb / {SPOT_LABELS[chart.spotType] ?? chart.spotType} / {chart.position}
-                {chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
-              </p>
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:flex-row sm:items-center">
+      <label className="shrink-0 text-xs font-bold uppercase tracking-wide text-slate-500" htmlFor="matching-chart-select">
+        {charts.length} matches
+      </label>
+      <select
+        id="matching-chart-select"
+        className="min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold"
+        value={selectedNodeKey ?? charts[0]?.nodeKey ?? ""}
+        onChange={event => onSelect(event.target.value)}
+      >
+        {charts.map(chart => (
+          <option key={chart.nodeKey} value={chart.nodeKey}>
+            {chart.title} / {chart.stackBb}bb / {chart.position}{chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
+          </option>
+        ))}
+      </select>
     </div>
+  );
+}
+
+function CompactHeader({ chartsCount, approvedCount }: { chartsCount: number; approvedCount: number }) {
+  return (
+    <section className="mb-3 flex flex-wrap items-end justify-between gap-2">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Strategy Library</p>
+        <h1 className="text-2xl font-black tracking-tight">Range Browser</h1>
+      </div>
+      <p className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
+        {chartsCount} charts • {approvedCount} approved
+      </p>
+    </section>
   );
 }
 
@@ -236,19 +214,19 @@ function ChartPreview({
 
   if (loading) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-500 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-500 shadow-sm">
         Loading selected chart...
       </section>
     );
   }
 
   if (error) {
-    return <section className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">{error}</section>;
+    return <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</section>;
   }
 
   if (!chart) {
     return (
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
         <p className="font-black">Not yet reviewed / not seeded</p>
         <p className="mt-1 text-sm">No existing chart matches this combination. Nothing is inferred or rendered as Fold.</p>
       </section>
@@ -257,7 +235,7 @@ function ChartPreview({
 
   if (!snapshot) {
     return (
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
         <p className="font-black">Not yet reviewed</p>
         <p className="mt-1 text-sm">This node exists, but no seed, reviewed, or approved snapshot is available.</p>
       </section>
@@ -265,32 +243,32 @@ function ChartPreview({
   }
 
   return (
-    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="mb-2 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-2xl font-black tracking-tight">{chart.title}</h2>
+            <h2 className="text-xl font-black tracking-tight">{chart.title}</h2>
             <StatusBadge status={chart.status} />
             <SourceBadge source={resolved.source} />
           </div>
           <p className="mt-1 break-all font-mono text-xs text-slate-500">{chart.nodeKey}</p>
-          <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
-            <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-800">{chart.stackBb}bb</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{SPOT_LABELS[chart.spotType] ?? chart.spotType}</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+          <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs font-bold">
+            <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-orange-800">{chart.stackBb}bb</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">{SPOT_LABELS[chart.spotType] ?? chart.spotType}</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">
               {chart.position}{chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
             </span>
           </div>
         </div>
         <Link
           href={`/strategy/editor/${chart.nodeKey}`}
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-orange-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200"
+          className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-600 px-3 py-2 text-sm font-bold text-white shadow-lg shadow-orange-200"
         >
           <Edit3 className="h-4 w-4" />
           Edit Chart
         </Link>
       </div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <ActionLegend actions={snapshot.allowedActions} />
         {resolved.source === "seed" ? (
           <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
@@ -304,7 +282,7 @@ function ChartPreview({
 }
 
 export default function StrategyLibraryV2() {
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const [charts, setCharts] = useState<StrategyChartRecord[]>([]);
   const [filters, setFilters] = useState<FilterState>(() => parseFilters(window.location.search).filters);
   const [selectedNodeKey, setSelectedNodeKey] = useState<string | null>(() => parseFilters(window.location.search).selectedNodeKey);
@@ -361,7 +339,7 @@ export default function StrategyLibraryV2() {
     if (href !== currentHref) {
       navigate(href, { replace: true });
     }
-  }, [filters, location, navigate, selectedChart?.nodeKey, selectedNodeKey]);
+  }, [filters, navigate, selectedChart?.nodeKey, selectedNodeKey]);
 
   const updateFilters = (patch: Partial<FilterState>) => {
     setFilters(current => ({ ...current, ...patch }));
@@ -372,14 +350,6 @@ export default function StrategyLibraryV2() {
     setSelectedNodeKey(nodeKey);
     navigate(buildLibraryHref(filters, nodeKey), { replace: true });
   };
-
-  const selectedIndex = selectedChart
-    ? filteredCharts.findIndex(chart => chart.nodeKey === selectedChart.nodeKey)
-    : -1;
-  const previousChart = selectedIndex > 0 ? filteredCharts[selectedIndex - 1] : null;
-  const nextChart = selectedIndex >= 0 && selectedIndex < filteredCharts.length - 1
-    ? filteredCharts[selectedIndex + 1]
-    : null;
 
   const stackOptions = Array.from(new Set([...STACK_BUCKETS, ...charts.map(chart => chart.stackBb)])).sort((a, b) => a - b);
   const spotOptions = Array.from(new Set([...SPOT_TYPES, ...charts.map(chart => chart.spotType)])) as SpotType[];
@@ -396,36 +366,16 @@ export default function StrategyLibraryV2() {
 
   return (
     <LocalShell>
-      <PageHeader
-        eyebrow="Strategy Library"
-        title="Range Browser"
-        body={`${charts.length} charts loaded. ${approvedCount} approved. Missing combinations stay Not yet reviewed.`}
-      />
+      <CompactHeader chartsCount={charts.length} approvedCount={approvedCount} />
 
       {error ? <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</div> : null}
 
-      <div className="grid gap-4 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <label className="text-xs font-bold uppercase tracking-wide text-slate-500" htmlFor="range-browser-search">
-              Search
-            </label>
-            <div className="mt-2 flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3">
-              <Search className="h-4 w-4 text-slate-400" />
-              <input
-                id="range-browser-search"
-                value={filters.search}
-                onChange={event => updateFilters({ search: event.target.value })}
-                placeholder="bb vs sb, 15bb, rfi, btn"
-                className="w-full bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
-              />
-            </div>
-          </section>
-
-          <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="grid gap-3 lg:grid-cols-[17rem_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-3 lg:self-start">
+          <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Stack size</p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                 <FilterButton active={filters.stackBb === "all"} onClick={() => updateFilters({ stackBb: "all" })}>
                   Any
                 </FilterButton>
@@ -452,7 +402,7 @@ export default function StrategyLibraryV2() {
               </label>
               <select
                 id="range-browser-spot"
-                className="mt-2 min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-bold"
+                className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold"
                 value={filters.spotType}
                 onChange={event => updateFilters({ spotType: event.target.value, villainPosition: "all" })}
               >
@@ -471,7 +421,7 @@ export default function StrategyLibraryV2() {
 
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Hero position</p>
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                 <FilterButton active={filters.position === "all"} onClick={() => updateFilters({ position: "all" })}>
                   Any
                 </FilterButton>
@@ -491,7 +441,7 @@ export default function StrategyLibraryV2() {
             {selectedSpotUsesVillain && villainOptions.length > 0 ? (
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Villain / opponent</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                   <FilterButton
                     active={filters.villainPosition === "all"}
                     onClick={() => updateFilters({ villainPosition: "all" })}
@@ -513,55 +463,32 @@ export default function StrategyLibraryV2() {
             ) : null}
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Status</p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <label className="text-xs font-bold uppercase tracking-wide text-slate-500" htmlFor="range-browser-status">
+                Status
+              </label>
+              <select
+                id="range-browser-status"
+                className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold"
+                value={filters.status}
+                onChange={event => updateFilters({ status: event.target.value })}
+              >
                 {STATUS_OPTIONS.map(status => (
-                  <FilterButton
+                  <option
                     key={status}
-                    active={filters.status === status}
+                    value={status}
                     disabled={status !== "not_yet_reviewed" && !hasOptionMatch(charts, filters, "status", status)}
-                    onClick={() => updateFilters({ status })}
                   >
                     {STATUS_LABELS[status]}
-                  </FilterButton>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
           </section>
         </aside>
 
-        <section className="min-w-0 space-y-4">
-          <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Current selection</p>
-              <p className="mt-1 text-sm font-bold text-slate-700">
-                {selectedChart ? selectedChart.nodeKey : "Not yet reviewed / not seeded"}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!previousChart}
-                onClick={() => previousChart && selectNodeKey(previousChart.nodeKey)}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-bold text-slate-700 disabled:text-slate-300"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={!nextChart}
-                onClick={() => nextChart && selectNodeKey(nextChart.nodeKey)}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-bold text-slate-700 disabled:text-slate-300"
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
+        <section className="min-w-0 space-y-2.5">
           {filteredCharts.length > 1 ? (
-            <ChartMatchList
+            <MatchingChartSelect
               charts={filteredCharts}
               selectedNodeKey={selectedChart?.nodeKey ?? null}
               onSelect={selectNodeKey}
