@@ -9,9 +9,11 @@ process.env.LOCAL_DATA_DIR = tempDir;
 process.env.LOCAL_SQLITE_PATH = path.join(tempDir, "test.sqlite");
 
 let dbModule: typeof import("./db");
+let seedImportModule: typeof import("./seedImport");
 
 beforeAll(async () => {
   dbModule = await import("./db");
+  seedImportModule = await import("./seedImport");
 });
 
 describe("local strategy database", () => {
@@ -82,5 +84,40 @@ describe("local strategy database", () => {
 
     expect(result.skipped).toBe(true);
     expect(dbModule.resolveChart("rfi_15bb_utg_bba")?.snapshot?.cells.QQ).toBe("RAISE");
+  });
+
+  it("preserves CALL_JAM through seed import, snapshots, resolution, export, backup/restore, and trainer choices", () => {
+    seedImportModule.importTypedSeedsIntoLocalDb();
+
+    const nodeKey = "facing_jam_15bb_bb_vs_sb_bba";
+    const seeded = dbModule.resolveChart(nodeKey);
+    expect(seeded?.source).toBe("seed");
+    expect(seeded?.snapshot?.allowedActions).toContain("CALL_JAM");
+    expect(Object.values(seeded!.snapshot!.cells).filter(action => action === "CALL_JAM").length).toBeGreaterThan(0);
+
+    const approved = dbModule.createSnapshotFromCells({
+      nodeKey,
+      status: "approved",
+      allowedActions: seeded!.snapshot!.allowedActions,
+      cells: seeded!.snapshot!.cells,
+      notes: "CALL_JAM preservation regression.",
+    });
+    expect(approved.allowedActions).toContain("CALL_JAM");
+    expect(dbModule.resolveChart(nodeKey)?.snapshot?.cells.AA).toBe("CALL_JAM");
+
+    const approvedPack = dbModule.exportApprovedPack();
+    const exportedChart = approvedPack.charts.find(chart => chart.nodeKey === nodeKey);
+    expect(exportedChart?.allowedActions).toContain("CALL_JAM");
+    expect(Object.values(exportedChart!.cells)).toContain("CALL_JAM");
+
+    const backup = dbModule.exportFullBackup();
+    dbModule.restoreFullBackup(backup);
+    const restored = dbModule.resolveChart(nodeKey);
+    expect(restored?.source).toBe("approved");
+    expect(restored?.snapshot?.allowedActions).toContain("CALL_JAM");
+    expect(Object.values(restored!.snapshot!.cells)).toContain("CALL_JAM");
+
+    const trainer = dbModule.chooseTrainerQuestion({ stackBb: 15, spotType: "facing_jam" });
+    expect(trainer?.allowedActions).toContain("CALL_JAM");
   });
 });

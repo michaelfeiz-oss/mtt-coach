@@ -42,7 +42,9 @@ Inside the container the database lives at:
 /data/mtt-study.sqlite
 ```
 
-The server binds to `0.0.0.0:3000`, so it can later be opened from a phone on the same Wi-Fi by using the computer's LAN IP address.
+Docker publishes the app to `127.0.0.1:3000` by default, so it is reachable only from this computer.
+
+Security warning: do not expose this app to public networks. Admin editing/import/restore is not password-protected yet. LAN/iPhone access should be added later behind a simple password.
 
 ## Strategy Truth Model
 
@@ -59,7 +61,7 @@ Rules:
 - Missing/unseeded spots are shown as `Not yet reviewed`.
 - Action colours are display only.
 
-The initial local import migrates the existing reviewed typed seed rows into seed snapshots. Existing v1 `CALL_JAM` rows are normalized to canonical V2 `CALL` because the V2 action token set is intentionally smaller.
+The initial local import migrates the existing reviewed typed seed rows into seed snapshots. Existing v1 `CALL_JAM` rows are preserved as canonical V2 `CALL_JAM`; they are not flattened to `CALL`.
 
 ## Routes
 

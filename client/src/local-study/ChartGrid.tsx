@@ -13,6 +13,7 @@ const ACTION_CLASS: Record<ActionToken, string> = {
   JAM: "bg-orange-700 text-white border-orange-700",
   LIMP: "bg-amber-200 text-amber-950 border-amber-300",
   CALL: "bg-emerald-600 text-white border-emerald-600",
+  CALL_JAM: "bg-rose-600 text-white border-rose-600",
   CHECK: "bg-slate-500 text-white border-slate-500",
   THREE_BET: "bg-blue-600 text-white border-blue-600",
   FOUR_BET: "bg-purple-600 text-white border-purple-600",

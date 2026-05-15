@@ -13,11 +13,6 @@ import {
 } from "../strategy/typedSeedFiles";
 import { upsertSeedChart } from "./db";
 
-function normalizeAction(action: string): ActionToken {
-  if (action === "CALL_JAM") return "CALL";
-  return action as ActionToken;
-}
-
 function nodeKeyFor(node: ParsedStrategySeedNode) {
   const { summary } = node;
   const stack = `${summary.stackBucket}bb`;
@@ -50,7 +45,7 @@ function chartDescription(node: ParsedStrategySeedNode) {
   const parts = [
     "Migrated from reviewed typed seed rows.",
     node.rows.some(row => row.action === "CALL_JAM")
-      ? "V1 CALL_JAM rows are normalized to canonical V2 CALL for facing-jam spots."
+      ? "V1 CALL_JAM rows are preserved as canonical V2 CALL_JAM facing-jam actions."
       : null,
   ].filter(Boolean);
   return parts.join(" ");
@@ -65,7 +60,7 @@ function compileNode(node: ParsedStrategySeedNode) {
   const cells: ChartCells = Object.fromEntries(
     compiled.actions.map(action => [
       action.handCode,
-      normalizeAction(action.primaryAction),
+      action.primaryAction as ActionToken,
     ])
   ) as ChartCells;
 

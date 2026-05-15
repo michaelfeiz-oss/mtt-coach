@@ -100,8 +100,8 @@ export default function ChartEditorV2() {
       {message ? <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">{message}</div> : null}
 
       {chart && cells ? (
-        <section className="grid gap-4 lg:grid-cols-[1fr_18rem]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <ActionLegend actions={allowedActions} />
               <span className="text-sm text-slate-500">{selectedHands.length} selected</span>
@@ -114,7 +114,7 @@ export default function ChartEditorV2() {
             />
           </div>
 
-          <aside className="space-y-3">
+          <aside className="min-w-0 space-y-3">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <p className="font-bold">Action Palette</p>
               <div className="mt-3 grid gap-2">

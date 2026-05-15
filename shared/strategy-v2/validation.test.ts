@@ -24,6 +24,7 @@ describe("strategy v2 canonical model", () => {
       "JAM",
       "LIMP",
       "CALL",
+      "CALL_JAM",
       "CHECK",
       "THREE_BET",
       "FOUR_BET",
@@ -73,8 +74,27 @@ describe("strategy v2 chart validation", () => {
     ).toThrow(/expected 169 cells|invalid hand/);
   });
 
+  it("accepts CALL_JAM only when it is explicitly allowed", () => {
+    const cells = { ...createEmptyCells("FOLD"), AA: "CALL_JAM" };
+    expect(
+      validateChartCells({
+        nodeKey: "facing_jam_15bb_bb_vs_sb_bba",
+        allowedActions: ["CALL_JAM", "FOLD"],
+        cells,
+      }).AA
+    ).toBe("CALL_JAM");
+
+    expect(() =>
+      validateChartCells({
+        nodeKey: "facing_jam_15bb_bb_vs_sb_bba",
+        allowedActions: ["FOLD"],
+        cells,
+      })
+    ).toThrow(/outside allowedActions/);
+  });
+
   it("rejects invalid actions and actions outside allowedActions", () => {
-    const invalid = { ...createEmptyCells("FOLD"), AA: "CALL_JAM" };
+    const invalid = { ...createEmptyCells("FOLD"), AA: "CALL_FOLD" };
     expect(() =>
       validateChartCells({
         nodeKey: "rfi_15bb_utg_bba",
