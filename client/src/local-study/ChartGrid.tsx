@@ -52,6 +52,7 @@ export function ChartGrid({
   onToggleHand,
   compact = false,
   density,
+  wrap = false,
 }: {
   cells: Partial<ChartCells> | null | undefined;
   allowedActions: ActionToken[];
@@ -59,6 +60,7 @@ export function ChartGrid({
   onToggleHand?: (handCode: string) => void;
   compact?: boolean;
   density?: "comfortable" | "compact";
+  wrap?: boolean;
 }) {
   const grid = generateHandGrid();
   const selected = new Set(selectedHands);
@@ -75,7 +77,11 @@ export function ChartGrid({
   }
 
   return (
-    <div className={`w-full overflow-x-auto bg-slate-100 ${isCompact ? "rounded-xl p-1.5" : "rounded-2xl p-2"}`}>
+    <div
+      className={`overflow-x-auto bg-slate-100 ${isCompact ? "rounded-xl p-1" : "rounded-2xl p-2"} ${
+        wrap ? "w-fit max-w-full" : "w-full"
+      }`}
+    >
       <div
         className={`mx-auto grid w-max ${isCompact ? "gap-0.5" : "gap-1"}`}
         style={{
