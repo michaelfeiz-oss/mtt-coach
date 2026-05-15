@@ -17,8 +17,8 @@ function exactRows(primaryAction: StrategyNodeRangeRow["action"]) {
 }
 
 describe("typed strategy seed data", () => {
-  it("loads the reviewed starter RFI, in-position open defence, extra early/middle IP defence, late-open, blind-vs-blind, and facing-jam packs from the typed seed files", () => {
-    expect(SEED_CHARTS.length).toBe(72);
+  it("loads the reviewed starter RFI, in-position open defence, extra early/middle IP defence, blind defence versus early/middle opens, late-open, blind-vs-blind, and facing-jam packs from the typed seed files", () => {
+    expect(SEED_CHARTS.length).toBe(88);
     expect(() => validateSeedCharts(SEED_CHARTS)).not.toThrow();
 
     const utg25 = SEED_CHARTS.find(
@@ -86,6 +86,18 @@ describe("typed strategy seed data", () => {
     );
     const coVsUtgOpen70 = SEED_CHARTS.find(
       chart => chart.stackDepth === 70 && chart.spotKey === "CO_vs_UTG_open"
+    );
+    const sbVsUtgOpen15 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 15 && chart.spotKey === "SB_vs_UTG_open"
+    );
+    const bbVsUtgOpen25 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 25 && chart.spotKey === "BB_vs_UTG_open"
+    );
+    const sbVsHjOpen40 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 40 && chart.spotKey === "SB_vs_HJ_open"
+    );
+    const bbVsHjOpen70 = SEED_CHARTS.find(
+      chart => chart.stackDepth === 70 && chart.spotKey === "BB_vs_HJ_open"
     );
 
     expect(utg25?.reviewed).toBe(true);
@@ -250,6 +262,50 @@ describe("typed strategy seed data", () => {
       "THREE_BET"
     );
     expect(coVsUtgOpen70?.actions.find(action => action.handCode === "T9s")?.primaryAction).toBe(
+      "CALL"
+    );
+    expect(sbVsUtgOpen15?.reviewed).toBe(true);
+    expect(sbVsUtgOpen15?.actions).toHaveLength(ALL_HANDS.length);
+    expect(sbVsUtgOpen15?.actions.find(action => action.handCode === "AJo")?.primaryAction).toBe(
+      "FOLD"
+    );
+    expect(sbVsUtgOpen15?.actions.find(action => action.handCode === "AQo")?.primaryAction).toBe(
+      "JAM"
+    );
+    expect(sbVsUtgOpen15?.actions.find(action => action.handCode === "66")?.primaryAction).toBe(
+      "CALL"
+    );
+    expect(bbVsUtgOpen25?.reviewed).toBe(true);
+    expect(bbVsUtgOpen25?.actions).toHaveLength(ALL_HANDS.length);
+    expect(bbVsUtgOpen25?.actions.find(action => action.handCode === "AJo")?.primaryAction).toBe(
+      "FOLD"
+    );
+    expect(bbVsUtgOpen25?.actions.find(action => action.handCode === "AQo")?.primaryAction).toBe(
+      "CALL"
+    );
+    expect(bbVsUtgOpen25?.actions.find(action => action.handCode === "55")?.primaryAction).toBe(
+      "CALL"
+    );
+    expect(sbVsHjOpen40?.reviewed).toBe(true);
+    expect(sbVsHjOpen40?.actions).toHaveLength(ALL_HANDS.length);
+    expect(sbVsHjOpen40?.actions.find(action => action.handCode === "AJo")?.primaryAction).toBe(
+      "FOLD"
+    );
+    expect(sbVsHjOpen40?.actions.find(action => action.handCode === "A5s")?.primaryAction).toBe(
+      "THREE_BET"
+    );
+    expect(sbVsHjOpen40?.actions.find(action => action.handCode === "T9s")?.primaryAction).toBe(
+      "CALL"
+    );
+    expect(bbVsHjOpen70?.reviewed).toBe(true);
+    expect(bbVsHjOpen70?.actions).toHaveLength(ALL_HANDS.length);
+    expect(bbVsHjOpen70?.actions.find(action => action.handCode === "AJo")?.primaryAction).toBe(
+      "CALL"
+    );
+    expect(bbVsHjOpen70?.actions.find(action => action.handCode === "T9s")?.primaryAction).toBe(
+      "THREE_BET"
+    );
+    expect(bbVsHjOpen70?.actions.find(action => action.handCode === "T8s")?.primaryAction).toBe(
       "CALL"
     );
   });

@@ -1,0 +1,9 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1g,15,facing_open_early,SB,UTG,early,jam,"77+,AJs+,KQs,AQo+",mostly,30,15bb SB vs UTG open. Tight reshove baseline; SB flatting is kept narrow.,true
+population-v1g,15,facing_open_early,SB,UTG,early,call,"55-66,ATs,KJs,QJs,JTs",rare,20,15bb SB vs UTG open. Rare playable call tier outside jam hands.,true
+population-v1g,15,facing_open_early,BB,UTG,early,jam,"77+,AJs+,KQs,AQo+",mostly,30,15bb BB vs UTG open. Tight reshove baseline.,true
+population-v1g,15,facing_open_early,BB,UTG,early,call,"22-66,A2s-ATs,KTs-KJs,QTs-QJs,JTs,T9s,98s,AJo,KQo",mostly,20,15bb BB vs UTG open. Closing action allows playable calls; still respects UTG.,true
+population-v1g,15,facing_open_middle,SB,HJ,middle,jam,"66+,ATs+,KQs,AJo+,KQo",mostly,30,15bb SB vs HJ open. Practical reshove range.,true
+population-v1g,15,facing_open_middle,SB,HJ,middle,call,"22-55,A5s-A2s,KJs-KTs,QJs-QTs,JTs,T9s,98s",rare,20,15bb SB vs HJ open. Rare call tier; mostly jam-or-fold from SB.,true
+population-v1g,15,facing_open_middle,BB,HJ,middle,jam,"55+,A9s+,KQs,AJo+,KQo",mostly,30,15bb BB vs HJ open. Practical reshove range.,true
+population-v1g,15,facing_open_middle,BB,HJ,middle,call,"22-44,A8s-A2s,K9s-KJs,Q9s-QJs,J9s-JTs,T9s,98s,87s,KJo,QJo,JTo",mostly,20,15bb BB vs HJ open. Playable BB call tier outside jam hands.,true

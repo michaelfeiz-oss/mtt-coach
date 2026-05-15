@@ -1,0 +1,13 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1g,25,facing_open_early,SB,UTG,early,three_bet,"QQ+,AKs,AKo",mostly,30,25bb SB vs UTG open. Pure value-heavy 3bet.,true
+population-v1g,25,facing_open_early,SB,UTG,early,jam,"TT-JJ,AQs",mostly,25,25bb SB vs UTG open. Practical reshove tier.,true
+population-v1g,25,facing_open_early,SB,UTG,early,call,"77-99,AJs,KQs,AQo",mostly,20,25bb SB vs UTG open. Tight OOP call range.,true
+population-v1g,25,facing_open_early,BB,UTG,early,three_bet,"QQ+,AKs,AKo",mostly,30,25bb BB vs UTG open. Value-heavy 3bet.,true
+population-v1g,25,facing_open_early,BB,UTG,early,jam,"TT-JJ,AQs",mostly,25,25bb BB vs UTG open. Practical reshove tier.,true
+population-v1g,25,facing_open_early,BB,UTG,early,call,"22-99,AJs-ATs,KQs,KJs,QJs,JTs,T9s,98s,AQo,KQo",mostly,20,"25bb BB vs UTG open. Closing-action defence, still disciplined.",true
+population-v1g,25,facing_open_middle,SB,HJ,middle,three_bet,"QQ+,AKs,AKo,A5s-A4s,KQs",mostly,30,25bb SB vs HJ open. Value plus clean blockers.,true
+population-v1g,25,facing_open_middle,SB,HJ,middle,jam,"88-JJ,AQs-AJs,AQo,KQo",mostly,25,25bb SB vs HJ open. Practical reshove/value tier.,true
+population-v1g,25,facing_open_middle,SB,HJ,middle,call,"55-77,ATs,A3s-A2s,KJs-KTs,QJs-QTs,JTs,T9s,98s,AJo,KJo,QJo,JTo",mostly,20,25bb SB vs HJ open. OOP call tier; A4s/A5s and KQs removed due 3bet.,true
+population-v1g,25,facing_open_middle,BB,HJ,middle,three_bet,"JJ+,AQs+,AKo,A5s-A4s,KQs",mostly,30,25bb BB vs HJ open. Value plus blockers.,true
+population-v1g,25,facing_open_middle,BB,HJ,middle,jam,"66-TT,AJs-ATs,KJs,QJs,AQo,AJo,KQo",mostly,25,25bb BB vs HJ open. Reshove tier.,true
+population-v1g,25,facing_open_middle,BB,HJ,middle,call,"22-55,A9s-A6s,A3s-A2s,KTs-K9s,QTs-Q9s,JTs-J9s,T9s,98s,87s,76s,KJo,QJo,JTo",mostly,20,25bb BB vs HJ open. BB call tier outside 3bet/jam hands.,true

@@ -1,0 +1,9 @@
+version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
+population-v1g,70,facing_open_early,SB,UTG,early,three_bet,"QQ+,AKs,AKo,A5s-A2s,KQs",mostly,30,70bb SB vs UTG open. Value plus blockers.,true
+population-v1g,70,facing_open_early,SB,UTG,early,call,"55-JJ,AQs-AJs,KJs-KTs,QJs-QTs,JTs,T9s,98s,AQo,KQo,QJo",mostly,20,"70bb SB vs UTG open. Deeper OOP call, still disciplined.",true
+population-v1g,70,facing_open_early,BB,UTG,early,three_bet,"QQ+,AKs,AKo,A5s-A2s,KQs",mostly,30,70bb BB vs UTG open. Value plus blockers.,true
+population-v1g,70,facing_open_early,BB,UTG,early,call,"22-JJ,AQs-AJs,KJs-KTs,QJs-QTs,JTs,T9s,98s,87s,76s,AQo,KQo,QJo,JTo",mostly,20,70bb BB vs UTG open. Deeper BB defence; no bottom junk.,true
+population-v1g,70,facing_open_middle,SB,HJ,middle,three_bet,"JJ+,AQs+,AKo,A5s-A2s,KQs,KTs,QTs,JTs",mostly,30,70bb SB vs HJ open. Deeper value/blocker 3bet.,true
+population-v1g,70,facing_open_middle,SB,HJ,middle,call,"44-TT,AJs-ATs,KJs,K9s,QJs,Q9s,J9s,T9s,98s,87s,76s,AQo-AJo,KQo,KJo,QJo,JTo,T9o",mostly,20,70bb SB vs HJ open. OOP call; 3bet combos removed.,true
+population-v1g,70,facing_open_middle,BB,HJ,middle,three_bet,"TT+,AQs+,AKo,A5s-A2s,KQs,KTs,QTs,JTs,T9s",mostly,30,70bb BB vs HJ open. Wider BB pressure versus middle open.,true
+population-v1g,70,facing_open_middle,BB,HJ,middle,call,"22-99,AJs-ATs,KJs,K9s,QJs,Q9s,J9s,T8s,98s,87s,76s,65s,AQo-AJo,KQo,KJo,QJo,JTo,T9o,98o",mostly,20,70bb BB vs HJ open. Deeper BB call; 3bet combos removed.,true
