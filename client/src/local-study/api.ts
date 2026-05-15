@@ -7,6 +7,25 @@ import type {
   StrategyPack,
 } from "@shared/strategy-v2/model";
 
+export interface StudyNoteRecord {
+  id: number;
+  title: string;
+  body: string;
+  category: string | null;
+  tags: string[];
+  linkedNodeKey: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudyNoteInput {
+  title: string;
+  body: string;
+  category?: string | null;
+  tags?: string[];
+  linkedNodeKey?: string | null;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...options,
@@ -136,4 +155,35 @@ export function getTrainerQuestion(filters?: { stackBb?: number | string; spotTy
   return request<{ ok: true; question: any }>(
     `/api/local/trainer/question${query ? `?${query}` : ""}`
   );
+}
+
+export function listStudyNotes(filters?: { query?: string; category?: string }) {
+  const params = new URLSearchParams();
+  Object.entries(filters ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== "all" && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  return request<{ ok: true; notes: StudyNoteRecord[] }>(
+    `/api/local/study-notes${query ? `?${query}` : ""}`
+  );
+}
+
+export function createStudyNote(payload: StudyNoteInput) {
+  return request<{ ok: true; note: StudyNoteRecord }>("/api/local/study-notes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateStudyNote(id: number, payload: StudyNoteInput) {
+  return request<{ ok: true; note: StudyNoteRecord }>(`/api/local/study-notes/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteStudyNote(id: number) {
+  return request<{ ok: true }>(`/api/local/study-notes/${id}`, {
+    method: "DELETE",
+  });
 }

@@ -34,6 +34,25 @@ import {
 type Row = Record<string, unknown>;
 type DatabaseSync = any;
 
+export interface StudyNoteRecord {
+  id: number;
+  title: string;
+  body: string;
+  category: string | null;
+  tags: string[];
+  linkedNodeKey: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudyNoteInput {
+  title: string;
+  body: string;
+  category?: string | null;
+  tags?: string[];
+  linkedNodeKey?: string | null;
+}
+
 const require = createRequire(import.meta.url);
 const { DatabaseSync } = require("node:sqlite") as { DatabaseSync: new (path: string) => DatabaseSync };
 
@@ -158,6 +177,38 @@ function mapDraft(row: Row): StrategyChartDraft {
   };
 }
 
+function mapStudyNote(row: Row): StudyNoteRecord {
+  return {
+    id: Number(row.id),
+    title: String(row.title),
+    body: String(row.body),
+    category: row.category ? String(row.category) : null,
+    tags: json<string[]>(row.tags_json ? String(row.tags_json) : null, []),
+    linkedNodeKey: row.linked_node_key ? String(row.linked_node_key) : null,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+function normalizeStudyNoteInput(input: StudyNoteInput) {
+  const title = input.title.trim();
+  if (!title) throw new Error("Study note title is required.");
+  const body = input.body ?? "";
+  const tags = Array.from(
+    new Set((input.tags ?? []).map(tag => tag.trim()).filter(Boolean))
+  );
+  const linkedNodeKey = input.linkedNodeKey?.trim()
+    ? normalizeNodeKey(input.linkedNodeKey)
+    : null;
+  return {
+    title,
+    body,
+    category: input.category?.trim() || null,
+    tags,
+    linkedNodeKey,
+  };
+}
+
 export function getLocalDb() {
   if (db) return db;
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -239,6 +290,17 @@ export function migrateLocalDb(database = getLocalDb()) {
       notes TEXT,
       created_at TEXT NOT NULL,
       created_by TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS study_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      category TEXT,
+      tags_json TEXT,
+      linked_node_key TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     );
   `);
 }
@@ -603,6 +665,83 @@ export function deleteDraft(nodeKey: string) {
     .run(normalizeNodeKey(nodeKey));
 }
 
+export function listStudyNotes(filters?: { query?: string; category?: string }) {
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters?.query?.trim()) {
+    clauses.push("(title LIKE ? OR body LIKE ? OR tags_json LIKE ? OR linked_node_key LIKE ?)");
+    const query = `%${filters.query.trim()}%`;
+    params.push(query, query, query, query);
+  }
+
+  if (filters?.category?.trim() && filters.category !== "all") {
+    clauses.push("category = ?");
+    params.push(filters.category.trim());
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  return getLocalDb()
+    .prepare(`SELECT * FROM study_notes ${where} ORDER BY updated_at DESC, id DESC`)
+    .all(...(params as any[]))
+    .map((row: unknown) => mapStudyNote(row as Row));
+}
+
+export function getStudyNote(id: number) {
+  const row = getLocalDb()
+    .prepare("SELECT * FROM study_notes WHERE id = ?")
+    .get(id);
+  return row ? mapStudyNote(row as Row) : null;
+}
+
+export function createStudyNote(input: StudyNoteInput) {
+  const note = normalizeStudyNoteInput(input);
+  const timestamp = nowIso();
+  const result = getLocalDb()
+    .prepare(
+      `INSERT INTO study_notes
+       (title, body, category, tags_json, linked_node_key, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      note.title,
+      note.body,
+      note.category,
+      JSON.stringify(note.tags),
+      note.linkedNodeKey,
+      timestamp,
+      timestamp
+    );
+  return getStudyNote(Number(result.lastInsertRowid))!;
+}
+
+export function updateStudyNote(id: number, input: StudyNoteInput) {
+  const existing = getStudyNote(id);
+  if (!existing) throw new Error(`Study note ${id} not found.`);
+  const note = normalizeStudyNoteInput(input);
+  const timestamp = nowIso();
+  getLocalDb()
+    .prepare(
+      `UPDATE study_notes
+       SET title = ?, body = ?, category = ?, tags_json = ?, linked_node_key = ?, updated_at = ?
+       WHERE id = ?`
+    )
+    .run(
+      note.title,
+      note.body,
+      note.category,
+      JSON.stringify(note.tags),
+      note.linkedNodeKey,
+      timestamp,
+      id
+    );
+  return getStudyNote(id)!;
+}
+
+export function deleteStudyNote(id: number) {
+  getLocalDb().prepare("DELETE FROM study_notes WHERE id = ?").run(id);
+}
+
 export function revertToSnapshot(nodeKey: string, snapshotId: number) {
   const snapshot = getSnapshotById(snapshotId);
   if (!snapshot || snapshot.nodeKey !== normalizeNodeKey(nodeKey)) {
@@ -671,6 +810,7 @@ export function exportFullBackup() {
     drafts: database.prepare("SELECT * FROM strategy_chart_drafts ORDER BY node_key").all(),
     auditLog: database.prepare("SELECT * FROM strategy_chart_audit_log ORDER BY id").all(),
     importExports: database.prepare("SELECT * FROM strategy_import_exports ORDER BY id").all(),
+    studyNotes: database.prepare("SELECT * FROM study_notes ORDER BY id").all(),
   };
 
   const checksum = computePackChecksum(
@@ -705,6 +845,7 @@ export function restoreFullBackup(backup: any) {
       throw new Error(`Backup is missing ${table}.`);
     }
   }
+  const studyNotes = Array.isArray(backup.studyNotes) ? backup.studyNotes : [];
 
   for (const row of backup.snapshots) {
     const nodeKey = String(row.node_key);
@@ -727,6 +868,7 @@ export function restoreFullBackup(backup: any) {
       DELETE FROM strategy_chart_drafts;
       DELETE FROM strategy_chart_snapshots;
       DELETE FROM strategy_charts;
+      DELETE FROM study_notes;
     `);
 
     const insertChart = database.prepare(
@@ -831,6 +973,24 @@ export function restoreFullBackup(backup: any) {
       );
     }
 
+    const insertStudyNote = database.prepare(
+      `INSERT INTO study_notes
+       (id, title, body, category, tags_json, linked_node_key, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    for (const row of studyNotes) {
+      insertStudyNote.run(
+        row.id,
+        row.title,
+        row.body,
+        row.category,
+        row.tags_json ?? "[]",
+        row.linked_node_key,
+        row.created_at,
+        row.updated_at
+      );
+    }
+
     database
       .prepare(
         `INSERT INTO strategy_import_exports
@@ -842,6 +1002,7 @@ export function restoreFullBackup(backup: any) {
     return {
       restoredCharts: backup.charts.length,
       restoredSnapshots: backup.snapshots.length,
+      restoredStudyNotes: studyNotes.length,
     };
   });
 }

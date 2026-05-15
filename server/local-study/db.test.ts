@@ -120,4 +120,41 @@ describe("local strategy database", () => {
     const trainer = dbModule.chooseTrainerQuestion({ stackBb: 15, spotType: "facing_jam" });
     expect(trainer?.allowedActions).toContain("CALL_JAM");
   });
+
+  it("persists study notes and includes them in full backup/restore", () => {
+    const created = dbModule.createStudyNote({
+      title: "BB defence review",
+      category: "Range Review",
+      tags: ["bb", "defence", "25bb"],
+      linkedNodeKey: "bb_vs_sb_open_15bb_bba",
+      body: "- Check suited trash before approving charts.",
+    });
+
+    expect(created.id).toBeGreaterThan(0);
+    expect(created.linkedNodeKey).toBe("bb_vs_sb_open_15bb_bba");
+    expect(created.tags).toEqual(["bb", "defence", "25bb"]);
+
+    const updated = dbModule.updateStudyNote(created.id, {
+      title: "BB defence review updated",
+      category: "Heuristic",
+      tags: ["bb", "review"],
+      linkedNodeKey: "bb_vs_sb_open_15bb_bba",
+      body: "- Fold assumptions must come from reviewed data.",
+    });
+
+    expect(updated.title).toBe("BB defence review updated");
+    expect(dbModule.listStudyNotes({ query: "Fold assumptions" })).toHaveLength(1);
+    expect(dbModule.listStudyNotes({ category: "Heuristic" })).toHaveLength(1);
+
+    const backup = dbModule.exportFullBackup() as any;
+    expect(backup.studyNotes).toHaveLength(1);
+
+    dbModule.restoreFullBackup(backup);
+    const restored = dbModule.listStudyNotes({ query: "defence review updated" });
+    expect(restored).toHaveLength(1);
+    expect(restored[0].body).toContain("reviewed data");
+
+    dbModule.deleteStudyNote(restored[0].id);
+    expect(dbModule.listStudyNotes({ query: "defence review updated" })).toHaveLength(0);
+  });
 });

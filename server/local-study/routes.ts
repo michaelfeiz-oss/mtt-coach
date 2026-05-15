@@ -3,7 +3,9 @@ import {
   buildAuditSummary,
   chooseTrainerQuestion,
   createSnapshotFromCells,
+  createStudyNote,
   deleteDraft,
+  deleteStudyNote,
   exportApprovedPack,
   exportFullBackup,
   getChart,
@@ -12,10 +14,12 @@ import {
   importApprovedPack,
   listCharts,
   listSnapshots,
+  listStudyNotes,
   resolveChart,
   restoreFullBackup,
   revertToSnapshot,
   saveDraft,
+  updateStudyNote,
 } from "./db";
 import { importTypedSeedsIntoLocalDb } from "./seedImport";
 import { toValidationProblem } from "../../shared/strategy-v2/validation";
@@ -180,6 +184,41 @@ export function registerLocalStudyRoutes(app: express.Express) {
     "/api/local/audit",
     asyncRoute((_req, res) => {
       res.json({ ok: true, audit: buildAuditSummary() });
+    })
+  );
+
+  app.get(
+    "/api/local/study-notes",
+    asyncRoute((req, res) => {
+      res.json({
+        ok: true,
+        notes: listStudyNotes({
+          query: req.query.query ? String(req.query.query) : undefined,
+          category: req.query.category ? String(req.query.category) : undefined,
+        }),
+      });
+    })
+  );
+
+  app.post(
+    "/api/local/study-notes",
+    asyncRoute((req, res) => {
+      res.json({ ok: true, note: createStudyNote(req.body) });
+    })
+  );
+
+  app.put(
+    "/api/local/study-notes/:id",
+    asyncRoute((req, res) => {
+      res.json({ ok: true, note: updateStudyNote(Number(req.params.id), req.body) });
+    })
+  );
+
+  app.delete(
+    "/api/local/study-notes/:id",
+    asyncRoute((req, res) => {
+      deleteStudyNote(Number(req.params.id));
+      res.json({ ok: true });
     })
   );
 

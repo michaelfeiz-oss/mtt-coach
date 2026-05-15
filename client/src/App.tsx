@@ -10,6 +10,7 @@ import ChartViewerV2 from "./pages/local/ChartViewerV2";
 import ImportExportV2 from "./pages/local/ImportExportV2";
 import LocalDashboard from "./pages/local/LocalDashboard";
 import StrategyLibraryV2 from "./pages/local/StrategyLibraryV2";
+import StudyNotesV2 from "./pages/local/StudyNotesV2";
 import TrainerV2 from "./pages/local/TrainerV2";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route key="strategy-chart" path="/strategy/chart/:nodeKey" component={ChartViewerV2} />
       <Route key="strategy-editor" path="/strategy/editor/:nodeKey" component={ChartEditorV2} />
       <Route key="strategy-trainer" path="/strategy/trainer" component={TrainerV2} />
+      <Route key="study-notes" path="/study/notes" component={StudyNotesV2} />
       <Route key="admin-import-export" path="/admin/import-export" component={ImportExportV2} />
       <Route key="admin-audit" path="/admin/audit" component={AuditV2} />
       <Route key="not-found-404" path="/404" component={NotFound} />

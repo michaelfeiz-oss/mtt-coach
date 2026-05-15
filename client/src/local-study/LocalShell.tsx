@@ -1,4 +1,4 @@
-import { BookOpen, Database, Dumbbell, Home, ShieldCheck } from "lucide-react";
+import { BookOpen, Database, Dumbbell, FileText, Home, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { ReactNode } from "react";
 
@@ -6,6 +6,7 @@ const NAV = [
   { href: "/", label: "Home", icon: Home },
   { href: "/strategy/library", label: "Library", icon: BookOpen },
   { href: "/strategy/trainer", label: "Drills", icon: Dumbbell },
+  { href: "/study/notes", label: "Notes", icon: FileText },
   { href: "/admin/import-export", label: "Backup", icon: Database },
   { href: "/admin/audit", label: "Audit", icon: ShieldCheck },
 ];
@@ -46,7 +47,7 @@ export function LocalShell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
-        <div className="mx-auto grid max-w-2xl grid-cols-5 gap-1">
+        <div className="mx-auto grid max-w-2xl grid-cols-6 gap-1">
           {NAV.map(item => {
             const Icon = item.icon;
             const active =
