@@ -15,10 +15,37 @@ export function LocalShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#f7f8fa] text-slate-950">
-      <main className="mx-auto w-full max-w-5xl px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:pt-8">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-20 border-r border-slate-200 bg-white/95 px-2 py-3 shadow-[12px_0_30px_rgba(15,23,42,0.06)] backdrop-blur lg:flex lg:flex-col">
+        <Link href="/" className="mb-3 flex h-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-700">
+          <Home className="h-5 w-5" />
+        </Link>
+        <nav className="grid gap-1">
+          {NAV.map(item => {
+            const Icon = item.icon;
+            const active =
+              item.href === "/" ? location === "/" : location.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                className={`flex min-h-14 flex-col items-center justify-center rounded-2xl text-[0.65rem] font-semibold ${
+                  active
+                    ? "bg-orange-50 text-orange-700"
+                    : "text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+      <main className="mx-auto w-full max-w-6xl px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:pl-24 lg:pr-4 lg:pt-3 lg:pb-4">
         {children}
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto grid max-w-2xl grid-cols-5 gap-1">
           {NAV.map(item => {
             const Icon = item.icon;

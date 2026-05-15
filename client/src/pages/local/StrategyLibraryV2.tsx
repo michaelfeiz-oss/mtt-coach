@@ -63,7 +63,7 @@ function StatusBadge({ status }: { status: string }) {
         : status === "draft"
           ? "border-amber-200 bg-amber-50 text-amber-800"
           : "border-slate-200 bg-slate-50 text-slate-600";
-  return <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${className}`}>{status}</span>;
+  return <span className={`rounded-full border px-2 py-0.5 text-[0.68rem] font-bold ${className}`}>{status}</span>;
 }
 
 function SourceBadge({ source }: { source: string }) {
@@ -75,7 +75,7 @@ function SourceBadge({ source }: { source: string }) {
         : source === "seed"
           ? "border-orange-200 bg-orange-50 text-orange-700"
           : "border-amber-200 bg-amber-50 text-amber-800";
-  return <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${className}`}>source: {source}</span>;
+  return <span className={`rounded-full border px-2 py-0.5 text-[0.68rem] font-bold ${className}`}>source: {source}</span>;
 }
 
 function chartMatchesFilters(chart: StrategyChartRecord, filters: FilterState) {
@@ -143,7 +143,7 @@ function FilterButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`min-h-9 rounded-xl border px-2.5 text-sm font-bold transition ${
+      className={`min-h-8 rounded-lg border px-2 text-sm font-bold transition ${
         active
           ? "border-orange-300 bg-orange-100 text-orange-800"
           : disabled
@@ -166,13 +166,13 @@ function MatchingChartSelect({
   onSelect: (nodeKey: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm sm:flex-row sm:items-center">
       <label className="shrink-0 text-xs font-bold uppercase tracking-wide text-slate-500" htmlFor="matching-chart-select">
         {charts.length} matches
       </label>
       <select
         id="matching-chart-select"
-        className="min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold"
+        className="min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold"
         value={selectedNodeKey ?? charts[0]?.nodeKey ?? ""}
         onChange={event => onSelect(event.target.value)}
       >
@@ -188,10 +188,10 @@ function MatchingChartSelect({
 
 function CompactHeader({ chartsCount, approvedCount }: { chartsCount: number; approvedCount: number }) {
   return (
-    <section className="mb-3 flex flex-wrap items-end justify-between gap-2">
+    <section className="mb-2 flex flex-wrap items-end justify-between gap-2">
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Strategy Library</p>
-        <h1 className="text-2xl font-black tracking-tight">Range Browser</h1>
+        <h1 className="text-xl font-black tracking-tight">Range Browser</h1>
       </div>
       <p className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
         {chartsCount} charts • {approvedCount} approved
@@ -214,19 +214,19 @@ function ChartPreview({
 
   if (loading) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-500 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-500 shadow-sm">
         Loading selected chart...
       </section>
     );
   }
 
   if (error) {
-    return <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</section>;
+    return <section className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-800">{error}</section>;
   }
 
   if (!chart) {
     return (
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+      <section className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900">
         <p className="font-black">Not yet reviewed / not seeded</p>
         <p className="mt-1 text-sm">No existing chart matches this combination. Nothing is inferred or rendered as Fold.</p>
       </section>
@@ -235,7 +235,7 @@ function ChartPreview({
 
   if (!snapshot) {
     return (
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+      <section className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900">
         <p className="font-black">Not yet reviewed</p>
         <p className="mt-1 text-sm">This node exists, but no seed, reviewed, or approved snapshot is available.</p>
       </section>
@@ -243,16 +243,16 @@ function ChartPreview({
   }
 
   return (
-    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="mb-2 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+    <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+      <div className="mb-1.5 flex flex-col gap-1.5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-black tracking-tight">{chart.title}</h2>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h2 className="text-lg font-black tracking-tight">{chart.title}</h2>
             <StatusBadge status={chart.status} />
             <SourceBadge source={resolved.source} />
           </div>
-          <p className="mt-1 break-all font-mono text-xs text-slate-500">{chart.nodeKey}</p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs font-bold">
+          <p className="mt-0.5 break-all font-mono text-[0.68rem] text-slate-500">{chart.nodeKey}</p>
+          <div className="mt-1 flex flex-wrap gap-1 text-[0.68rem] font-bold">
             <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-orange-800">{chart.stackBb}bb</span>
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">{SPOT_LABELS[chart.spotType] ?? chart.spotType}</span>
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">
@@ -262,21 +262,21 @@ function ChartPreview({
         </div>
         <Link
           href={`/strategy/editor/${chart.nodeKey}`}
-          className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-600 px-3 py-2 text-sm font-bold text-white shadow-lg shadow-orange-200"
+          className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-sm font-bold text-white shadow-lg shadow-orange-200"
         >
           <Edit3 className="h-4 w-4" />
           Edit Chart
         </Link>
       </div>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <ActionLegend actions={snapshot.allowedActions} />
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5">
+        <ActionLegend actions={snapshot.allowedActions} density="compact" />
         {resolved.source === "seed" ? (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[0.68rem] font-bold text-amber-800">
             Seed baseline - review before final truth
           </span>
         ) : null}
       </div>
-      <ChartGrid cells={snapshot.cells} allowedActions={snapshot.allowedActions} />
+      <ChartGrid cells={snapshot.cells} allowedActions={snapshot.allowedActions} density="compact" />
     </section>
   );
 }
@@ -370,12 +370,12 @@ export default function StrategyLibraryV2() {
 
       {error ? <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</div> : null}
 
-      <div className="grid gap-3 lg:grid-cols-[17rem_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-3 lg:self-start">
-          <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="grid gap-2.5 lg:grid-cols-[15.5rem_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-2 lg:self-start">
+          <section className="space-y-2.5 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Stack size</p>
-              <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              <div className="mt-1 grid grid-cols-2 gap-1.5">
                 <FilterButton active={filters.stackBb === "all"} onClick={() => updateFilters({ stackBb: "all" })}>
                   Any
                 </FilterButton>
@@ -402,7 +402,7 @@ export default function StrategyLibraryV2() {
               </label>
               <select
                 id="range-browser-spot"
-                className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold"
+                className="mt-1 min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold"
                 value={filters.spotType}
                 onChange={event => updateFilters({ spotType: event.target.value, villainPosition: "all" })}
               >
@@ -421,7 +421,7 @@ export default function StrategyLibraryV2() {
 
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Hero position</p>
-              <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+              <div className="mt-1 grid grid-cols-3 gap-1.5">
                 <FilterButton active={filters.position === "all"} onClick={() => updateFilters({ position: "all" })}>
                   Any
                 </FilterButton>
@@ -441,7 +441,7 @@ export default function StrategyLibraryV2() {
             {selectedSpotUsesVillain && villainOptions.length > 0 ? (
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Villain / opponent</p>
-                <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+                <div className="mt-1 grid grid-cols-3 gap-1.5">
                   <FilterButton
                     active={filters.villainPosition === "all"}
                     onClick={() => updateFilters({ villainPosition: "all" })}
@@ -468,7 +468,7 @@ export default function StrategyLibraryV2() {
               </label>
               <select
                 id="range-browser-status"
-                className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold"
+                className="mt-1 min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold"
                 value={filters.status}
                 onChange={event => updateFilters({ status: event.target.value })}
               >
@@ -486,7 +486,7 @@ export default function StrategyLibraryV2() {
           </section>
         </aside>
 
-        <section className="min-w-0 space-y-2.5">
+        <section className="min-w-0 space-y-2">
           {filteredCharts.length > 1 ? (
             <MatchingChartSelect
               charts={filteredCharts}

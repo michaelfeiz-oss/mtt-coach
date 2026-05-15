@@ -21,13 +21,22 @@ const ACTION_CLASS: Record<ActionToken, string> = {
   BET_BIG: "bg-indigo-600 text-white border-indigo-600",
 };
 
-export function ActionLegend({ actions }: { actions: ActionToken[] }) {
+export function ActionLegend({
+  actions,
+  density = "comfortable",
+}: {
+  actions: ActionToken[];
+  density?: "comfortable" | "compact";
+}) {
+  const compact = density === "compact";
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`}>
       {actions.map(action => (
         <span
           key={action}
-          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${ACTION_CLASS[action]}`}
+          className={`inline-flex items-center gap-1 rounded-full border font-semibold ${ACTION_CLASS[action]} ${
+            compact ? "px-2 py-0.5 text-[0.68rem]" : "px-2.5 py-1 text-xs"
+          }`}
         >
           {ACTION_LABELS[action]}
         </span>
@@ -42,16 +51,19 @@ export function ChartGrid({
   selectedHands = [],
   onToggleHand,
   compact = false,
+  density,
 }: {
   cells: Partial<ChartCells> | null | undefined;
   allowedActions: ActionToken[];
   selectedHands?: string[];
   onToggleHand?: (handCode: string) => void;
   compact?: boolean;
+  density?: "comfortable" | "compact";
 }) {
   const grid = generateHandGrid();
   const selected = new Set(selectedHands);
   const missing = ALL_HANDS.filter(hand => !cells?.[hand]);
+  const isCompact = density === "compact" || compact;
 
   if (!cells || missing.length > 0) {
     return (
@@ -63,28 +75,30 @@ export function ChartGrid({
   }
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl bg-slate-100 p-2">
+    <div className={`w-full overflow-x-auto bg-slate-100 ${isCompact ? "rounded-xl p-1.5" : "rounded-2xl p-2"}`}>
       <div
-        className="grid gap-1"
+        className={`mx-auto grid w-max ${isCompact ? "gap-0.5" : "gap-1"}`}
         style={{
-          gridTemplateColumns: "repeat(13, minmax(2.25rem, 1fr))",
-          minWidth: compact ? "32rem" : "36rem",
+          gridTemplateColumns: isCompact
+            ? "repeat(13, clamp(1.85rem, 2.6vw, 2.05rem))"
+            : "repeat(13, minmax(2.25rem, 1fr))",
+          minWidth: isCompact ? undefined : "36rem",
         }}
       >
         {grid.flat().map(hand => {
           const action = cells[hand] as ActionToken;
           const isSelected = selected.has(hand);
           const label = ACTION_LABELS[action];
-          const cell = (
-            <span className="block text-[0.7rem] font-bold leading-none sm:text-xs">{hand}</span>
-          );
+          const cell = <span className={`block font-bold leading-none ${isCompact ? "text-[0.64rem]" : "text-[0.7rem] sm:text-xs"}`}>{hand}</span>;
 
           if (!onToggleHand) {
             return (
               <div
                 key={hand}
                 title={`${hand}: ${label}`}
-                className={`aspect-square rounded-lg border text-center shadow-sm ${ACTION_CLASS[action]} flex items-center justify-center`}
+                className={`aspect-square border text-center shadow-sm ${ACTION_CLASS[action]} flex items-center justify-center ${
+                  isCompact ? "rounded-md" : "rounded-lg"
+                }`}
               >
                 {cell}
               </div>
@@ -98,7 +112,9 @@ export function ChartGrid({
               title={`${hand}: ${label}`}
               aria-pressed={isSelected}
               onClick={() => onToggleHand(hand)}
-              className={`aspect-square rounded-lg border text-center shadow-sm transition ${ACTION_CLASS[action]} ${
+              className={`aspect-square border text-center shadow-sm transition ${ACTION_CLASS[action]} ${
+                isCompact ? "rounded-md" : "rounded-lg"
+              } ${
                 isSelected ? "ring-4 ring-amber-300 ring-offset-1" : ""
               }`}
             >
