@@ -45,7 +45,7 @@ export default function ImportExportV2() {
       {message ? <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">{message}</div> : null}
       {error ? <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</div> : null}
 
-      <section className="grid gap-3 sm:grid-cols-2">
+      <section className="grid min-w-0 gap-3 sm:grid-cols-2">
         <button type="button" onClick={() => run(importTypedSeeds, "Typed seeds imported.")} className="rounded-2xl border border-orange-200 bg-orange-50 p-5 text-left font-bold text-orange-900">
           Import Typed Seeds
           <span className="mt-1 block text-sm font-normal">Skips seed-protected approved charts.</span>
@@ -60,7 +60,7 @@ export default function ImportExportV2() {
         </button>
       </section>
 
-      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="mt-4 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <label className="font-bold">Paste approved pack or full backup JSON</label>
         <textarea
           value={text}

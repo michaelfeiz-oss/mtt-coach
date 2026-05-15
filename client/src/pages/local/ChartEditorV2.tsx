@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useRoute } from "wouter";
 import { approveChart, getChart, getHistory, markReviewed, revertChart, saveDraft } from "@/local-study/api";
 import { ActionLegend, ChartGrid } from "@/local-study/ChartGrid";
@@ -46,8 +46,6 @@ export default function ChartEditorV2() {
     refresh().catch(error => setError(error instanceof Error ? error.message : String(error)));
   }, [nodeKey]);
 
-  const selectedSet = useMemo(() => new Set(selectedHands), [selectedHands]);
-
   function toggleHand(hand: string) {
     setSelectedHands(current =>
       current.includes(hand) ? current.filter(value => value !== hand) : [...current, hand]
@@ -93,7 +91,14 @@ export default function ChartEditorV2() {
         eyebrow="Chart Editor"
         title={chart?.title ?? "Loading editor"}
         body={chart ? `${chart.nodeKey} / drafts do not affect study mode until reviewed or approved.` : undefined}
-        action={chart ? <Link href={`/strategy/chart/${chart.nodeKey}`}><a className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">View</a></Link> : null}
+        action={chart ? (
+          <Link
+            href={`/strategy/chart/${chart.nodeKey}`}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold"
+          >
+            View
+          </Link>
+        ) : null}
       />
 
       {error ? <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</div> : null}

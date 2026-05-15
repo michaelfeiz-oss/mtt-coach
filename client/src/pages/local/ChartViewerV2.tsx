@@ -32,10 +32,11 @@ export default function ChartViewerV2() {
         body={chart ? `${chart.nodeKey} / active source: ${resolved?.source ?? "missing"}` : undefined}
         action={
           chart ? (
-            <Link href={`/strategy/editor/${chart.nodeKey}`}>
-              <a className="rounded-2xl bg-orange-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200">
-                Edit Chart
-              </a>
+            <Link
+              href={`/strategy/editor/${chart.nodeKey}`}
+              className="rounded-2xl bg-orange-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200"
+            >
+              Edit Chart
             </Link>
           ) : null
         }
@@ -51,7 +52,7 @@ export default function ChartViewerV2() {
       ) : null}
 
       {chart && snapshot ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-2 text-xs font-bold">
               <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-800">{chart.stackBb}bb</span>

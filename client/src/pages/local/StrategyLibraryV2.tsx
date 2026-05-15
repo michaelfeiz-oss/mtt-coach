@@ -66,20 +66,31 @@ export default function StrategyLibraryV2() {
 
       <section className="grid gap-3">
         {charts.map(chart => (
-          <Link key={chart.nodeKey} href={`/strategy/chart/${chart.nodeKey}`}>
-            <a className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-orange-300">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-black">{chart.title}</h2>
-                  <p className="mt-1 break-all text-xs text-slate-500">{chart.nodeKey}</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {chart.stackBb}bb / {chart.spotType} / {chart.position}
-                    {chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
-                  </p>
+          <Link
+            key={chart.nodeKey}
+            href={`/strategy/chart/${chart.nodeKey}`}
+            className="block rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition hover:border-orange-300"
+          >
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-sm font-black leading-tight sm:text-base">{chart.title}</h2>
+                  <StatusBadge status={chart.status} />
                 </div>
-                <StatusBadge status={chart.status} />
+                <p className="mt-1 break-all font-mono text-[0.72rem] text-slate-500">{chart.nodeKey}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5 text-[0.7rem] font-semibold text-slate-600">
+                  <span className="rounded-full bg-orange-50 px-2 py-0.5 text-orange-800">{chart.stackBb}bb</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5">{chart.spotType}</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                    {chart.position}{chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5">source: {chart.status}</span>
+                </div>
               </div>
-            </a>
+              <span className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-center text-xs font-bold text-slate-700">
+                View
+              </span>
+            </div>
           </Link>
         ))}
       </section>

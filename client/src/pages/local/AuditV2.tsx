@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import { getAudit } from "@/local-study/api";
 import { LocalShell, PageHeader } from "@/local-study/LocalShell";
 
@@ -38,10 +39,14 @@ export default function AuditV2() {
             <p className="font-bold">Not final-approved</p>
             <div className="mt-3 space-y-2">
               {audit.notReviewed.slice(0, 40).map((chart: any) => (
-                <div key={chart.nodeKey} className="rounded-xl bg-slate-50 p-3 text-sm">
+                <Link
+                  key={chart.nodeKey}
+                  href={`/strategy/chart/${chart.nodeKey}`}
+                  className="block rounded-xl bg-slate-50 p-3 text-sm hover:bg-orange-50"
+                >
                   <strong>{chart.title}</strong>
                   <span className="ml-2 text-slate-500">{chart.status}</span>
-                </div>
+                </Link>
               ))}
             </div>
           </section>
