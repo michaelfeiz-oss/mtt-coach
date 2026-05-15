@@ -243,7 +243,7 @@ function ChartPreview({
   }
 
   return (
-    <section className="w-full max-w-[34rem] min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+    <section className="w-full max-w-[34.25rem] min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
       <div className="mb-1.5 flex min-h-[4.75rem] flex-col gap-1.5">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
