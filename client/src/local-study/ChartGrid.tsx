@@ -30,7 +30,7 @@ export function ActionLegend({
 }) {
   const compact = density === "compact";
   return (
-    <div className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`}>
+    <div className={`flex w-fit flex-wrap ${compact ? "gap-1.5" : "gap-2"}`}>
       {actions.map(action => (
         <span
           key={action}
@@ -53,6 +53,7 @@ export function ChartGrid({
   compact = false,
   density,
   wrap = false,
+  fixedCellSizePx,
 }: {
   cells: Partial<ChartCells> | null | undefined;
   allowedActions: ActionToken[];
@@ -61,6 +62,7 @@ export function ChartGrid({
   compact?: boolean;
   density?: "comfortable" | "compact";
   wrap?: boolean;
+  fixedCellSizePx?: number;
 }) {
   const grid = generateHandGrid();
   const selected = new Set(selectedHands);
@@ -85,7 +87,9 @@ export function ChartGrid({
       <div
         className={`mx-auto grid w-max ${isCompact ? "gap-0.5" : "gap-1"}`}
         style={{
-          gridTemplateColumns: isCompact
+          gridTemplateColumns: fixedCellSizePx
+            ? `repeat(13, ${fixedCellSizePx}px)`
+            : isCompact
             ? "repeat(13, clamp(1.85rem, 2.6vw, 2.05rem))"
             : "repeat(13, minmax(2.25rem, 1fr))",
           minWidth: isCompact ? undefined : "36rem",

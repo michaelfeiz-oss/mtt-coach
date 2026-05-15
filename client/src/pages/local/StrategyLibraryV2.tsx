@@ -243,37 +243,39 @@ function ChartPreview({
   }
 
   return (
-    <section className="w-fit max-w-full min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
-      <div className="mb-1.5 flex flex-col gap-1.5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <h2 className="text-lg font-black tracking-tight">{chart.title}</h2>
-            <StatusBadge status={chart.status} />
-            <SourceBadge source={resolved.source} />
+    <section className="w-full max-w-[34rem] min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+      <div className="mb-1.5 flex min-h-[4.75rem] flex-col gap-1.5">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <h2 className="min-w-0 truncate text-lg font-black tracking-tight">{chart.title}</h2>
+              <StatusBadge status={chart.status} />
+              <SourceBadge source={resolved.source} />
+            </div>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-1 text-[0.68rem] font-bold">
-            <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-orange-800">{chart.stackBb}bb</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">{SPOT_LABELS[chart.spotType] ?? chart.spotType}</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">
-              {chart.position}{chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
-            </span>
-            <ActionLegend actions={snapshot.allowedActions} density="compact" />
-          </div>
+          <Link
+            href={`/strategy/editor/${chart.nodeKey}`}
+            className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-2.5 py-1 text-xs font-bold text-white shadow-lg shadow-orange-200"
+          >
+            <Edit3 className="h-3.5 w-3.5" />
+            Edit Chart
+          </Link>
         </div>
-        <Link
-          href={`/strategy/editor/${chart.nodeKey}`}
-          className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-sm font-bold text-white shadow-lg shadow-orange-200"
-        >
-          <Edit3 className="h-4 w-4" />
-          Edit Chart
-        </Link>
+        <div className="flex min-w-0 flex-wrap items-center gap-1 text-[0.68rem] font-bold">
+          <span className="shrink-0 rounded-full bg-orange-100 px-2.5 py-0.5 text-orange-800">{chart.stackBb}bb</span>
+          <span className="max-w-[9rem] truncate rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">{SPOT_LABELS[chart.spotType] ?? chart.spotType}</span>
+          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700">
+            {chart.position}{chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}
+          </span>
+          <ActionLegend actions={snapshot.allowedActions} density="compact" />
+        </div>
       </div>
       {resolved.source === "seed" ? (
         <div className="mb-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[0.68rem] font-bold text-amber-800">
           Seed baseline - review before final truth
         </div>
       ) : null}
-      <ChartGrid cells={snapshot.cells} allowedActions={snapshot.allowedActions} density="compact" wrap />
+      <ChartGrid cells={snapshot.cells} allowedActions={snapshot.allowedActions} density="compact" wrap fixedCellSizePx={38} />
     </section>
   );
 }
