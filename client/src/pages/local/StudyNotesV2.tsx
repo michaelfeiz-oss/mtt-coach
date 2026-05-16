@@ -148,6 +148,13 @@ export default function StudyNotesV2() {
     listStudyNotes()
       .then(result => {
         setNotes(result.notes);
+        if (selectedId === "new" && result.notes.length > 0) {
+          const latestNote = result.notes[0];
+          setSelectedId(latestNote.id);
+          updateDraftFromNote(draftFromNote(latestNote));
+          return;
+        }
+
         if (selectedId !== "new") {
           const selected = result.notes.find(note => note.id === selectedId);
           if (selected) updateDraftFromNote(draftFromNote(selected));
@@ -260,9 +267,11 @@ export default function StudyNotesV2() {
       <div>
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <label className="mb-3 block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Saved notes</span>
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Saved notes{notes.length > 0 ? ` (${notes.length})` : ""}
+            </span>
             <select
-              value={selectedId}
+              value={selectedId === "new" ? "new" : String(selectedId)}
               onChange={event => chooseSavedNote(event.target.value)}
               className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-bold"
             >
