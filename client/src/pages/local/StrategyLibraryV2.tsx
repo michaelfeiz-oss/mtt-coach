@@ -160,19 +160,23 @@ function MatchingChartSelect({
   charts,
   selectedNodeKey,
   onSelect,
+  chartsCount,
+  approvedCount,
 }: {
   charts: StrategyChartRecord[];
   selectedNodeKey: string | null;
   onSelect: (nodeKey: string) => void;
+  chartsCount: number;
+  approvedCount: number;
 }) {
   return (
-    <div className="flex w-full max-w-[34.25rem] flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm sm:flex-row sm:items-center">
+    <div className="grid w-full max-w-[34.25rem] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
       <label className="shrink-0 text-xs font-bold text-slate-500" htmlFor="matching-chart-select">
         {charts.length} matches
       </label>
       <select
         id="matching-chart-select"
-        className="min-h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold"
+        className="min-h-9 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold"
         value={selectedNodeKey ?? charts[0]?.nodeKey ?? ""}
         onChange={event => onSelect(event.target.value)}
       >
@@ -182,24 +186,36 @@ function MatchingChartSelect({
           </option>
         ))}
       </select>
+      <ChartCountBadge chartsCount={chartsCount} approvedCount={approvedCount} />
     </div>
   );
 }
 
 function ChartCountBadge({ chartsCount, approvedCount }: { chartsCount: number; approvedCount: number }) {
   return (
-    <p className="inline-flex min-h-8 shrink-0 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm">
+    <p className="inline-flex min-h-8 shrink-0 items-center whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-2.5 text-[0.68rem] font-bold text-slate-600">
       {chartsCount} charts • {approvedCount} approved
     </p>
   );
 }
 
-function SingleMatchLabel({ chart }: { chart: StrategyChartRecord }) {
+function SingleMatchLabel({
+  chart,
+  chartsCount,
+  approvedCount,
+}: {
+  chart: StrategyChartRecord;
+  chartsCount: number;
+  approvedCount: number;
+}) {
   return (
-    <p className="inline-flex min-h-8 max-w-[34.25rem] items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm">
-      <span className="shrink-0 text-slate-500">1 match:</span>
-      <span className="ml-1 truncate text-slate-800">{chart.title}</span>
-    </p>
+    <div className="grid w-full max-w-[34.25rem] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
+      <span className="shrink-0 pl-1 text-xs font-bold text-slate-500">1 match</span>
+      <span className="min-h-9 min-w-0 truncate rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800">
+        {chart.title}
+      </span>
+      <ChartCountBadge chartsCount={chartsCount} approvedCount={approvedCount} />
+    </div>
   );
 }
 
@@ -500,18 +516,21 @@ export default function StrategyLibraryV2() {
         </aside>
 
         <section className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <ChartCountBadge chartsCount={charts.length} approvedCount={approvedCount} />
-            {filteredCharts.length > 1 ? (
-              <MatchingChartSelect
-                charts={filteredCharts}
-                selectedNodeKey={selectedChart?.nodeKey ?? null}
-                onSelect={selectNodeKey}
-              />
-            ) : selectedChart ? (
-              <SingleMatchLabel chart={selectedChart} />
-            ) : null}
-          </div>
+          {filteredCharts.length > 1 ? (
+            <MatchingChartSelect
+              charts={filteredCharts}
+              selectedNodeKey={selectedChart?.nodeKey ?? null}
+              onSelect={selectNodeKey}
+              chartsCount={charts.length}
+              approvedCount={approvedCount}
+            />
+          ) : selectedChart ? (
+            <SingleMatchLabel
+              chart={selectedChart}
+              chartsCount={charts.length}
+              approvedCount={approvedCount}
+            />
+          ) : null}
 
           {filteredCharts.length === 0 ? (
             <ChartPreview resolved={null} loading={false} error={null} />
