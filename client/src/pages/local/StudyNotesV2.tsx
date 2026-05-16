@@ -1,5 +1,7 @@
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { Bold, List, Plus, Save, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   createStudyNote,
   deleteStudyNote,
@@ -58,52 +60,53 @@ function payloadFromDraft(draft: NoteDraft) {
   };
 }
 
-function applyBoldToBody(body: string, start: number, end: number) {
-  let formatStart = start;
-  let formatEnd = end;
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
-  if (start === end) {
-    const lineStart = body.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
-    const lineEndIndex = body.indexOf("\n", start);
-    const lineEnd = lineEndIndex === -1 ? body.length : lineEndIndex;
-    const currentLine = body.slice(lineStart, lineEnd);
-    if (currentLine.trim().length > 0) {
-      formatStart = lineStart;
-      formatEnd = lineEnd;
+function applyInlineMarkdown(value: string) {
+  return escapeHtml(value).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+function plainTextToEditorHtml(body: string) {
+  const lines = body.replace(/\r\n/g, "\n").split("\n");
+  const blocks: string[] = [];
+  let listItems: string[] = [];
+
+  function flushList() {
+    if (listItems.length === 0) return;
+    blocks.push(`<ul>${listItems.map(item => `<li>${item}</li>`).join("")}</ul>`);
+    listItems = [];
+  }
+
+  for (const line of lines) {
+    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+    if (bullet) {
+      listItems.push(applyInlineMarkdown(bullet[1] ?? ""));
+      continue;
+    }
+
+    flushList();
+    if (line.trim().length === 0) {
+      blocks.push("<p></p>");
+    } else {
+      blocks.push(`<p>${applyInlineMarkdown(line)}</p>`);
     }
   }
 
-  const selected = body.slice(formatStart, formatEnd);
-  const replacement = selected ? `**${selected}**` : "****";
-  const cursorStart = selected ? formatStart : start + 2;
-  const cursorEnd = selected ? formatStart + replacement.length : cursorStart;
-
-  return {
-    body: `${body.slice(0, formatStart)}${replacement}${body.slice(formatEnd)}`,
-    selectionStart: cursorStart,
-    selectionEnd: cursorEnd,
-  };
+  flushList();
+  return blocks.join("");
 }
 
-function applyBulletsToBody(body: string, start: number, end: number) {
-  const lineStart = body.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
-  const lineEndIndex = body.indexOf("\n", end);
-  const lineEnd = lineEndIndex === -1 ? body.length : lineEndIndex;
-  const block = body.slice(lineStart, lineEnd);
-  const replacement = block
-    .split("\n")
-    .map(line => {
-      if (line.trim().length === 0) return "- ";
-      if (/^\s*[-*]\s+/.test(line)) return line;
-      return `- ${line}`;
-    })
-    .join("\n");
-
-  return {
-    body: `${body.slice(0, lineStart)}${replacement}${body.slice(lineEnd)}`,
-    selectionStart: lineStart,
-    selectionEnd: lineStart + replacement.length,
-  };
+function normalizeBodyForEditor(body: string) {
+  if (!body.trim()) return "";
+  if (/<(?:p|ul|ol|li|strong|em|br|h[1-6])[\s>]/i.test(body)) return body;
+  return plainTextToEditorHtml(body);
 }
 
 export default function StudyNotesV2() {
@@ -114,7 +117,34 @@ export default function StudyNotesV2() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: normalizeBodyForEditor(EMPTY_DRAFT.body),
+    editorProps: {
+      attributes: {
+        "aria-label": "Body",
+        class:
+          "min-h-[22rem] rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 outline-none focus:border-orange-300",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      setDraft(current => ({ ...current, body: editor.getHTML() }));
+    },
+  });
+
+  function updateDraftFromNote(noteDraft: NoteDraft) {
+    const normalized = {
+      ...noteDraft,
+      body: normalizeBodyForEditor(noteDraft.body),
+    };
+    setDraft(normalized);
+    editor?.commands.setContent(normalized.body, { emitUpdate: false });
+  }
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.commands.setContent(normalizeBodyForEditor(draft.body), { emitUpdate: false });
+  }, [editor]);
 
   async function refresh(nextSelectedId = selectedId) {
     const result = await listStudyNotes({
@@ -124,7 +154,7 @@ export default function StudyNotesV2() {
     setNotes(result.notes);
     if (nextSelectedId !== "new") {
       const selected = result.notes.find(note => note.id === nextSelectedId);
-      if (selected) setDraft(draftFromNote(selected));
+      if (selected) updateDraftFromNote(draftFromNote(selected));
     }
   }
 
@@ -134,7 +164,7 @@ export default function StudyNotesV2() {
         setNotes(result.notes);
         if (selectedId !== "new") {
           const selected = result.notes.find(note => note.id === selectedId);
-          if (selected) setDraft(draftFromNote(selected));
+          if (selected) updateDraftFromNote(draftFromNote(selected));
         }
       })
       .catch(error => setError(error instanceof Error ? error.message : String(error)));
@@ -147,14 +177,14 @@ export default function StudyNotesV2() {
 
   function selectNote(note: StudyNoteRecord) {
     setSelectedId(note.id);
-    setDraft(draftFromNote(note));
+    updateDraftFromNote(draftFromNote(note));
     setMessage(null);
     setError(null);
   }
 
   function startNewNote() {
     setSelectedId("new");
-    setDraft(EMPTY_DRAFT);
+    updateDraftFromNote(EMPTY_DRAFT);
     setMessage(null);
     setError(null);
   }
@@ -166,12 +196,12 @@ export default function StudyNotesV2() {
       if (selectedId === "new") {
         const result = await createStudyNote(payloadFromDraft(draft));
         setSelectedId(result.note.id);
-        setDraft(draftFromNote(result.note));
+        updateDraftFromNote(draftFromNote(result.note));
         await refresh(result.note.id);
         setMessage("Note created.");
       } else {
         const result = await updateStudyNote(selectedId, payloadFromDraft(draft));
-        setDraft(draftFromNote(result.note));
+        updateDraftFromNote(draftFromNote(result.note));
         await refresh(result.note.id);
         setMessage("Note saved.");
       }
@@ -186,27 +216,31 @@ export default function StudyNotesV2() {
     if (!confirmed) return;
     await deleteStudyNote(selectedId);
     setSelectedId("new");
-    setDraft(EMPTY_DRAFT);
+    updateDraftFromNote(EMPTY_DRAFT);
     await refresh("new");
     setMessage("Note deleted.");
   }
 
-  function applyBodyFormat(
-    formatter: (body: string, start: number, end: number) => {
-      body: string;
-      selectionStart: number;
-      selectionEnd: number;
+  function applyBoldFormat() {
+    if (!editor) return;
+    const { empty, $from } = editor.state.selection;
+
+    if (empty && $from.parent.textContent.trim().length > 0) {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: $from.start(), to: $from.end() })
+        .setBold()
+        .run();
+      return;
     }
-  ) {
-    const textarea = bodyRef.current;
-    const start = textarea?.selectionStart ?? draft.body.length;
-    const end = textarea?.selectionEnd ?? draft.body.length;
-    const next = formatter(draft.body, start, end);
-    setDraft(current => ({ ...current, body: next.body }));
-    window.setTimeout(() => {
-      bodyRef.current?.focus();
-      bodyRef.current?.setSelectionRange(next.selectionStart, next.selectionEnd);
-    }, 0);
+
+    const chain = editor.chain().focus();
+    if (editor.isActive("bold")) {
+      chain.unsetBold().run();
+    } else {
+      chain.setBold().run();
+    }
   }
 
   return (
@@ -215,7 +249,7 @@ export default function StudyNotesV2() {
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Study</p>
           <h1 className="text-2xl font-black tracking-tight">Study Notes</h1>
-          <p className="mt-1 text-sm text-slate-600">Plain text reminders for MTT study, chart review, mistakes, and reflections.</p>
+          <p className="mt-1 text-sm text-slate-600">Formatted reminders for MTT study, chart review, mistakes, and reflections.</p>
         </div>
         <button
           type="button"
@@ -324,8 +358,13 @@ export default function StudyNotesV2() {
               <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <button
                   type="button"
-                  onClick={() => applyBodyFormat(applyBoldToBody)}
-                  className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-700 hover:bg-white"
+                  onClick={event => {
+                    event.preventDefault();
+                    applyBoldFormat();
+                  }}
+                  className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold ${
+                    editor?.isActive("bold") ? "bg-white text-orange-700 shadow-sm" : "text-slate-700 hover:bg-white"
+                  }`}
                   title="Bold selected text"
                 >
                   <Bold className="h-3.5 w-3.5" />
@@ -333,25 +372,25 @@ export default function StudyNotesV2() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => applyBodyFormat(applyBulletsToBody)}
-                  className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-700 hover:bg-white"
-                  title="Turn selected lines into bullets"
+                  onClick={event => {
+                    event.preventDefault();
+                    editor?.chain().focus().toggleBulletList().run();
+                  }}
+                  className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold ${
+                    editor?.isActive("bulletList") ? "bg-white text-orange-700 shadow-sm" : "text-slate-700 hover:bg-white"
+                  }`}
+                  title="Toggle bullet list"
                 >
                   <List className="h-3.5 w-3.5" />
                   Bullets
                 </button>
               </div>
             </div>
-            <textarea
-              ref={bodyRef}
-              aria-label="Body"
-              value={draft.body}
-              onChange={event => setDraft(current => ({ ...current, body: event.target.value }))}
-              placeholder="- One reminder per line&#10;- Use **bold** for key rules&#10;- Link to a chart when useful"
-              className="mt-1 min-h-[22rem] w-full resize-y rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-orange-300"
-            />
+            <div className="study-note-editor mt-1">
+              <EditorContent editor={editor} />
+            </div>
             <p className="mt-1 text-xs text-slate-500">
-              Uses simple markdown-style formatting: bullets with <span className="font-mono">-</span> and bold with <span className="font-mono">**text**</span>.
+              Select text, then use Bold or Bullets to apply real formatting.
             </p>
           </div>
 
