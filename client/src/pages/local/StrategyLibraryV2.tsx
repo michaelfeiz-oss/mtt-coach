@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { getChart, listCharts } from "@/local-study/api";
 import { ActionLegend, ChartGrid } from "@/local-study/ChartGrid";
 import { LocalShell } from "@/local-study/LocalShell";
+import { isPopulationDraft } from "@/local-study/provenance";
 import {
   POSITIONS,
   SPOT_TYPES,
@@ -302,7 +303,9 @@ function ChartPreview({
       </div>
       {resolved.source === "seed" ? (
         <div className="mb-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[0.68rem] font-bold text-amber-800">
-          Seed baseline - review before final truth
+          {isPopulationDraft(resolved)
+            ? "Population draft - review before approval"
+            : "Seed baseline - review before final truth"}
         </div>
       ) : null}
       <ChartGrid cells={snapshot.cells} allowedActions={snapshot.allowedActions} density="compact" wrap fixedCellSizePx={38} />

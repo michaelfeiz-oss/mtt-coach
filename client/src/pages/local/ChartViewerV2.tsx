@@ -3,6 +3,7 @@ import { Link, useRoute } from "wouter";
 import { getChart } from "@/local-study/api";
 import { ActionLegend, ChartGrid } from "@/local-study/ChartGrid";
 import { LocalShell, PageHeader } from "@/local-study/LocalShell";
+import { isPopulationDraft } from "@/local-study/provenance";
 import type { ResolvedStrategyChart } from "@shared/strategy-v2/model";
 
 export default function ChartViewerV2() {
@@ -64,7 +65,9 @@ export default function ChartViewerV2() {
           </div>
           {resolved.source === "seed" ? (
             <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              Seed baseline only. Review and approve before treating this as final truth.
+              {isPopulationDraft(resolved)
+                ? "Population draft - review before approval. This is a constructed seed, not final truth."
+                : "Seed baseline only. Review and approve before treating this as final truth."}
             </div>
           ) : null}
           <ChartGrid cells={snapshot.cells} allowedActions={snapshot.allowedActions} />

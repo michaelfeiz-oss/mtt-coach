@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "kind": "mtt-study-source-pack-template",
+  "kind": "mtt-study-population-draft-pack",
   "batch": "Batch B - SB first in",
   "description": "Population-draft full-cell pack for SB first-in at 15/25/40/70bb.",
   "instructions": [

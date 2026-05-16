@@ -53,6 +53,29 @@ export interface StudyNoteInput {
   linkedNodeKey?: string | null;
 }
 
+export interface PopulationDraftPackChart {
+  nodeKey: string;
+  title?: string;
+  stackBb: StackBucket;
+  spotFamily: SpotType;
+  heroPosition: Position;
+  villainPosition: Position | null;
+  allowedActions: ActionToken[];
+  sourceName: string;
+  sourceType: string;
+  sourceNotes: string;
+  reviewed: false;
+  cells: Record<string, string>;
+}
+
+export interface PopulationDraftPack {
+  schemaVersion: 1;
+  kind: "mtt-study-population-draft-pack" | "mtt-study-source-pack-template";
+  batch: string;
+  description?: string;
+  charts: PopulationDraftPackChart[];
+}
+
 const require = createRequire(import.meta.url);
 const { DatabaseSync } = require("node:sqlite") as { DatabaseSync: new (path: string) => DatabaseSync };
 
@@ -1056,6 +1079,103 @@ export function importApprovedPack(pack: StrategyPack) {
 
     return { imported: normalizedCharts.length, checksum };
   });
+}
+
+export function importPopulationDraftPack(pack: PopulationDraftPack) {
+  if (
+    pack?.schemaVersion !== 1 ||
+    (pack.kind !== "mtt-study-population-draft-pack" &&
+      pack.kind !== "mtt-study-source-pack-template")
+  ) {
+    throw new Error("Unsupported population draft pack.");
+  }
+
+  const normalizedCharts = pack.charts.map(chart => {
+    const nodeKey = normalizeNodeKey(chart.nodeKey);
+    if (chart.reviewed !== false) {
+      throw new Error(`${nodeKey}: population draft charts must keep reviewed=false.`);
+    }
+    if (chart.sourceType !== "population_constructed") {
+      throw new Error(`${nodeKey}: sourceType must be population_constructed.`);
+    }
+    const allowedActions = validateAllowedActions(chart.allowedActions, nodeKey);
+    const cells = validateChartCells({ nodeKey, allowedActions, cells: chart.cells });
+    return {
+      ...chart,
+      nodeKey,
+      allowedActions,
+      cells,
+      stackBb: chart.stackBb,
+      spotFamily: chart.spotFamily,
+      heroPosition: chart.heroPosition,
+      villainPosition: chart.villainPosition,
+    };
+  });
+
+  let imported = 0;
+  let skipped = 0;
+  for (const chart of normalizedCharts) {
+    const notes = [
+      "Population draft - review before approval.",
+      `sourceName=${chart.sourceName}`,
+      `sourceType=${chart.sourceType}`,
+      `batch=${pack.batch}`,
+      chart.sourceNotes,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const result = upsertSeedChart({
+      nodeKey: chart.nodeKey,
+      spotType: chart.spotFamily,
+      stackBb: chart.stackBb,
+      position: chart.heroPosition,
+      villainPosition: chart.villainPosition,
+      title: chart.title ?? chart.nodeKey,
+      description: "Population draft - review before approval. sourceType=population_constructed.",
+      allowedActions: chart.allowedActions,
+      cells: chart.cells,
+      notes,
+    });
+
+    if (result.skipped) skipped += 1;
+    else imported += 1;
+  }
+
+  getLocalDb()
+    .prepare(
+      `INSERT INTO strategy_import_exports
+       (type, file_name, chart_count, checksum, notes, created_at, created_by)
+       VALUES ('import', ?, ?, ?, ?, ?, 'population-draft-import')`
+    )
+    .run(
+      `${normalizeNodeKey(pack.batch)}.json`,
+      normalizedCharts.length,
+      computePackChecksum(
+        normalizedCharts.map(chart => ({
+          nodeKey: chart.nodeKey,
+          spotType: chart.spotFamily,
+          stackBb: chart.stackBb,
+          position: chart.heroPosition,
+          villainPosition: chart.villainPosition,
+          anteType: "BBA",
+          format: "MTT",
+          title: chart.title ?? chart.nodeKey,
+          status: "seed",
+          version: 0,
+          allowedActions: chart.allowedActions,
+          cells: chart.cells,
+          checksum: computeChartChecksum({
+            nodeKey: chart.nodeKey,
+            allowedActions: chart.allowedActions,
+            cells: chart.cells,
+          }),
+        }))
+      ),
+      "Population draft import. Not owner-approved.",
+      nowIso()
+    );
+
+  return { imported, skipped, totalCharts: normalizedCharts.length };
 }
 
 export function buildAuditSummary() {

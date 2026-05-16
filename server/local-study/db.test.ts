@@ -133,6 +133,56 @@ describe("local strategy database", () => {
     expect(dbModule.handsForTrainerPool(cells, "all")).toHaveLength(169);
   });
 
+  it("imports population draft packs as seed only and skips approved charts", () => {
+    const nodeKey = "population_draft_25bb_sb_vs_co_bba";
+    const seedCells = createEmptyCells("FOLD");
+    seedCells.AA = "JAM";
+
+    const pack = {
+      schemaVersion: 1 as const,
+      kind: "mtt-study-population-draft-pack" as const,
+      batch: "Test population draft",
+      charts: [
+        {
+          nodeKey,
+          title: "SB vs CO @ 25bb",
+          stackBb: 25 as const,
+          spotFamily: "facing_open_late" as const,
+          heroPosition: "SB" as const,
+          villainPosition: "CO" as const,
+          allowedActions: ["JAM", "FOLD"] as const,
+          sourceName: "test_population_rulebook",
+          sourceType: "population_constructed",
+          sourceNotes: "Population draft test.",
+          reviewed: false as const,
+          cells: seedCells,
+        },
+      ],
+    };
+
+    const imported = dbModule.importPopulationDraftPack(pack);
+    expect(imported).toMatchObject({ imported: 1, skipped: 0, totalCharts: 1 });
+    expect(dbModule.resolveChart(nodeKey)?.source).toBe("seed");
+    expect(dbModule.resolveChart(nodeKey)?.chart.description).toContain("population_constructed");
+
+    dbModule.createSnapshotFromCells({
+      nodeKey,
+      status: "approved",
+      allowedActions: ["JAM", "FOLD"],
+      cells: seedCells,
+      notes: "Owner approved test chart.",
+    });
+
+    const overwriteCells = createEmptyCells("FOLD");
+    const skipped = dbModule.importPopulationDraftPack({
+      ...pack,
+      charts: [{ ...pack.charts[0], allowedActions: ["FOLD"], cells: overwriteCells }],
+    });
+    expect(skipped).toMatchObject({ imported: 0, skipped: 1, totalCharts: 1 });
+    expect(dbModule.resolveChart(nodeKey)?.source).toBe("approved");
+    expect(dbModule.resolveChart(nodeKey)?.snapshot?.cells.AA).toBe("JAM");
+  });
+
   it("uses the same resolved snapshot for library and trainer while ignoring drafts", () => {
     const nodeKey = "audit_70bb_btn_vs_hj_bba";
     const seedCells = createEmptyCells("FOLD");

@@ -51,7 +51,10 @@ function findTemplateFiles(root: string) {
       const absolute = path.join(directory, entry.name);
       if (entry.isDirectory()) {
         walk(absolute);
-      } else if (entry.isFile() && entry.name.endsWith(".template.json")) {
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith(".template.json") || entry.name.endsWith(".population-draft.json"))
+      ) {
         files.push(absolute);
       }
     }
@@ -135,8 +138,11 @@ function main() {
       console.error(`${file}: schemaVersion must be 1`);
       issueCount += 1;
     }
-    if (parsed.kind !== "mtt-study-source-pack-template") {
-      console.error(`${file}: kind must be mtt-study-source-pack-template`);
+    if (
+      parsed.kind !== "mtt-study-source-pack-template" &&
+      parsed.kind !== "mtt-study-population-draft-pack"
+    ) {
+      console.error(`${file}: unsupported kind ${parsed.kind}`);
       issueCount += 1;
     }
 
@@ -157,7 +163,7 @@ function main() {
     }
   }
 
-  console.log(`\nChecked ${chartCount} template charts in ${files.length} files.`);
+  console.log(`\nChecked ${chartCount} source template/population-draft charts in ${files.length} files.`);
   if (issueCount > 0) {
     console.error(`${issueCount} template issue(s). Fill all placeholders before importing.`);
     process.exit(1);

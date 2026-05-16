@@ -1,6 +1,8 @@
 # Missing v1h Source Pack Templates
 
-These files are blank source-pack templates only. They are not active seed data and are not referenced by the seed manifest.
+These files started as source-pack templates. The `*.population-draft.json` files are completed population-draft packs generated from `population-construction-rules.md`; they are not approved truth.
+
+The matching `*.template.json` files are kept import-compatible so the validator can inspect the same full 169-cell maps. They still keep `reviewed=false`.
 
 ## Scope
 
@@ -72,7 +74,7 @@ Run:
 pnpm strategy:validate-source-templates
 ```
 
-Blank templates are expected to fail validation. The validator reports:
+The validator reports:
 
 - blank action cells
 - missing hand keys
@@ -81,16 +83,18 @@ Blank templates are expected to fail validation. The validator reports:
 - actions outside `allowedActions`
 - blank source metadata
 
-A template should not be promoted into active seed data until this command passes.
+A source template or population-draft pack should not be promoted into active seed data until this command passes.
 
 ## Import Policy
 
-These templates are not importable as-is. Promotion into active seed data requires a separate reviewed import step:
+Blank templates are not importable. Completed population-draft packs may be imported only as seed/population-draft data:
 
-1. Fill every cell from a verified source.
+1. Fill every cell from a verified source, or document the population-construction rulebook used for a draft.
 2. Add source/provenance notes.
 3. Run `pnpm strategy:validate-source-templates`.
-4. Convert or promote the completed source pack into the active typed seed workflow.
+4. Import as seed only, not reviewed or approved.
 5. Run the normal strategy validation/test/build suite.
+
+Population-draft imports must display "Population draft - review before approval" in the app and must not overwrite approved charts.
 
 Missing charts are better than fake charts.

@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { getTrainerQuestion } from "@/local-study/api";
 import { ChartGrid } from "@/local-study/ChartGrid";
 import { LocalShell, PageHeader } from "@/local-study/LocalShell";
+import { isPopulationDraft } from "@/local-study/provenance";
 import { ACTION_LABELS, STACK_BUCKETS, SPOT_TYPES, type ActionToken } from "@shared/strategy-v2/model";
 
 const HAND_POOL_OPTIONS = [
@@ -141,6 +142,11 @@ export default function TrainerV2() {
                 <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-600">
                   {question.source} source
                 </span>
+                {isPopulationDraft(question) ? (
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
+                    Population draft - review before approval
+                  </span>
+                ) : null}
               </div>
 
               <section className="rounded-2xl border border-slate-200 bg-white p-3">

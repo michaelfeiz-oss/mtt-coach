@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "kind": "mtt-study-source-pack-template",
+  "kind": "mtt-study-population-draft-pack",
   "batch": "Batch C - BB vs SB limp",
   "description": "Population-draft full-cell pack for BB versus SB limp at 15/25/40/70bb.",
   "instructions": [

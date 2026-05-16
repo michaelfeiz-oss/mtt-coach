@@ -12,6 +12,7 @@ import {
   getDraft,
   getLocalDbPath,
   importApprovedPack,
+  importPopulationDraftPack,
   listCharts,
   listSnapshots,
   listStudyNotes,
@@ -163,6 +164,13 @@ export function registerLocalStudyRoutes(app: express.Express) {
     "/api/local/import/approved",
     asyncRoute((req, res) => {
       res.json({ ok: true, ...importApprovedPack(req.body) });
+    })
+  );
+
+  app.post(
+    "/api/local/import/population-draft",
+    asyncRoute((req, res) => {
+      res.json({ ok: true, ...importPopulationDraftPack(req.body) });
     })
   );
 
