@@ -230,6 +230,7 @@ export function registerLocalStudyRoutes(app: express.Express) {
           ? req.query.handPool
           : "playable";
       const question = chooseTrainerQuestion({
+        nodeKey: req.query.nodeKey ? String(req.query.nodeKey) : undefined,
         stackBb: req.query.stackBb ? Number(req.query.stackBb) : undefined,
         spotType: req.query.spotType ? String(req.query.spotType) : undefined,
         handPool,

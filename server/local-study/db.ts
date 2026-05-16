@@ -1096,8 +1096,16 @@ export function handsForTrainerPool(
   return ALL_HANDS.filter(hand => cells[hand] && cells[hand] !== "FOLD");
 }
 
-export function chooseTrainerQuestion(filters?: { stackBb?: number; spotType?: string; handPool?: TrainerHandPool }) {
-  const candidates = listCharts(filters)
+export function chooseTrainerQuestion(filters?: {
+  stackBb?: number;
+  spotType?: string;
+  handPool?: TrainerHandPool;
+  nodeKey?: string;
+}) {
+  const candidateCharts = filters?.nodeKey
+    ? [getChart(filters.nodeKey)].filter((chart): chart is StrategyChartRecord => Boolean(chart))
+    : listCharts(filters);
+  const candidates = candidateCharts
     .map(chart => resolveChart(chart.nodeKey))
     .filter(
       (resolved): resolved is ResolvedStrategyChart =>

@@ -146,7 +146,12 @@ export function getAudit() {
   return request<{ ok: true; audit: unknown }>("/api/local/audit");
 }
 
-export function getTrainerQuestion(filters?: { stackBb?: number | string; spotType?: string; handPool?: string }) {
+export function getTrainerQuestion(filters?: {
+  stackBb?: number | string;
+  spotType?: string;
+  handPool?: string;
+  nodeKey?: string;
+}) {
   const params = new URLSearchParams();
   Object.entries(filters ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== "" && (key === "handPool" || value !== "all")) {

@@ -11,6 +11,14 @@ const HAND_POOL_OPTIONS = [
   { value: "fold", label: "Fold Practice" },
 ] as const;
 
+export function trainerChartHref(nodeKey: string) {
+  return `/strategy/chart/${nodeKey}`;
+}
+
+export function trainerEditorHref(nodeKey: string) {
+  return `/strategy/editor/${nodeKey}`;
+}
+
 export default function TrainerV2() {
   const [filters, setFilters] = useState({ stackBb: "all", spotType: "all", handPool: "playable" });
   const [question, setQuestion] = useState<any>(null);
@@ -146,13 +154,13 @@ export default function TrainerV2() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Link
-                      href={`/strategy/chart/${question.chart.nodeKey}`}
+                      href={trainerChartHref(question.chart.nodeKey)}
                       className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700"
                     >
                       Open Full Chart
                     </Link>
                     <Link
-                      href={`/strategy/editor/${question.chart.nodeKey}`}
+                      href={trainerEditorHref(question.chart.nodeKey)}
                       className="inline-flex min-h-9 items-center justify-center rounded-xl bg-orange-600 px-3 text-sm font-bold text-white"
                     >
                       Edit Chart

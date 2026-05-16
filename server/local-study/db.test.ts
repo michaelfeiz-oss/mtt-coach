@@ -133,6 +133,74 @@ describe("local strategy database", () => {
     expect(dbModule.handsForTrainerPool(cells, "all")).toHaveLength(169);
   });
 
+  it("uses the same resolved snapshot for library and trainer while ignoring drafts", () => {
+    const nodeKey = "audit_70bb_btn_vs_hj_bba";
+    const seedCells = createEmptyCells("FOLD");
+    seedCells.A9s = "FOLD";
+    seedCells.K9s = "CALL";
+
+    dbModule.upsertSeedChart({
+      nodeKey,
+      spotType: "facing_open_middle",
+      stackBb: 70,
+      position: "BTN",
+      villainPosition: "HJ",
+      title: "BTN vs HJ @ 70bb",
+      allowedActions: ["CALL", "FOLD"],
+      cells: seedCells,
+    });
+
+    const seedLibraryResolved = dbModule.resolveChart(nodeKey);
+    const seedTrainerQuestion = dbModule.chooseTrainerQuestion({ nodeKey, handPool: "all" });
+
+    expect(seedLibraryResolved?.source).toBe("seed");
+    expect(seedTrainerQuestion?.source).toBe("seed");
+    expect(seedTrainerQuestion?.chart.nodeKey).toBe(nodeKey);
+    expect(seedTrainerQuestion?.snapshot.cells).toEqual(seedLibraryResolved?.snapshot?.cells);
+    expect(seedTrainerQuestion?.snapshot.cells.A9s).toBe("FOLD");
+    expect(seedTrainerQuestion?.snapshot.cells.K9s).toBe("CALL");
+
+    const draftCells = { ...seedCells, A9s: "CALL" };
+    dbModule.saveDraft({
+      nodeKey,
+      allowedActions: ["CALL", "FOLD"],
+      cells: draftCells,
+    });
+
+    expect(dbModule.resolveChart(nodeKey)?.snapshot?.cells.A9s).toBe("FOLD");
+    expect(dbModule.chooseTrainerQuestion({ nodeKey, handPool: "all" })?.snapshot.cells.A9s).toBe("FOLD");
+
+    const approvedCells = { ...seedCells, A9s: "CALL" };
+    dbModule.createSnapshotFromCells({
+      nodeKey,
+      status: "approved",
+      allowedActions: ["CALL", "FOLD"],
+      cells: approvedCells,
+      notes: "Approved source audit regression.",
+    });
+
+    const approvedLibraryResolved = dbModule.resolveChart(nodeKey);
+    const approvedTrainerQuestion = dbModule.chooseTrainerQuestion({ nodeKey, handPool: "all" });
+    expect(approvedLibraryResolved?.source).toBe("approved");
+    expect(approvedTrainerQuestion?.source).toBe("approved");
+    expect(approvedTrainerQuestion?.snapshot.cells).toEqual(approvedLibraryResolved?.snapshot?.cells);
+    expect(approvedTrainerQuestion?.snapshot.cells.A9s).toBe("CALL");
+    expect(approvedTrainerQuestion?.snapshot.cells.K9s).toBe("CALL");
+
+    const capturedTrainerQuestion = dbModule.chooseTrainerQuestion({ nodeKey, handPool: "all" });
+    const recorrectedCells = { ...approvedCells, A9s: "FOLD" };
+    dbModule.createSnapshotFromCells({
+      nodeKey,
+      status: "approved",
+      allowedActions: ["CALL", "FOLD"],
+      cells: recorrectedCells,
+      notes: "Later approval should not mutate an existing trainer question.",
+    });
+
+    expect(capturedTrainerQuestion?.snapshot.cells.A9s).toBe("CALL");
+    expect(dbModule.resolveChart(nodeKey)?.snapshot?.cells.A9s).toBe("FOLD");
+  });
+
   it("persists study notes and includes them in full backup/restore", () => {
     const created = dbModule.createStudyNote({
       title: "BB defence review",
