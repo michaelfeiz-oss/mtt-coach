@@ -1,5 +1,5 @@
-import { Plus, Save, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Bold, List, Plus, Save, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createStudyNote,
   deleteStudyNote,
@@ -58,6 +58,54 @@ function payloadFromDraft(draft: NoteDraft) {
   };
 }
 
+function applyBoldToBody(body: string, start: number, end: number) {
+  let formatStart = start;
+  let formatEnd = end;
+
+  if (start === end) {
+    const lineStart = body.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+    const lineEndIndex = body.indexOf("\n", start);
+    const lineEnd = lineEndIndex === -1 ? body.length : lineEndIndex;
+    const currentLine = body.slice(lineStart, lineEnd);
+    if (currentLine.trim().length > 0) {
+      formatStart = lineStart;
+      formatEnd = lineEnd;
+    }
+  }
+
+  const selected = body.slice(formatStart, formatEnd);
+  const replacement = selected ? `**${selected}**` : "****";
+  const cursorStart = selected ? formatStart : start + 2;
+  const cursorEnd = selected ? formatStart + replacement.length : cursorStart;
+
+  return {
+    body: `${body.slice(0, formatStart)}${replacement}${body.slice(formatEnd)}`,
+    selectionStart: cursorStart,
+    selectionEnd: cursorEnd,
+  };
+}
+
+function applyBulletsToBody(body: string, start: number, end: number) {
+  const lineStart = body.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+  const lineEndIndex = body.indexOf("\n", end);
+  const lineEnd = lineEndIndex === -1 ? body.length : lineEndIndex;
+  const block = body.slice(lineStart, lineEnd);
+  const replacement = block
+    .split("\n")
+    .map(line => {
+      if (line.trim().length === 0) return "- ";
+      if (/^\s*[-*]\s+/.test(line)) return line;
+      return `- ${line}`;
+    })
+    .join("\n");
+
+  return {
+    body: `${body.slice(0, lineStart)}${replacement}${body.slice(lineEnd)}`,
+    selectionStart: lineStart,
+    selectionEnd: lineStart + replacement.length,
+  };
+}
+
 export default function StudyNotesV2() {
   const [notes, setNotes] = useState<StudyNoteRecord[]>([]);
   const [selectedId, setSelectedId] = useState<number | "new">("new");
@@ -66,6 +114,7 @@ export default function StudyNotesV2() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   async function refresh(nextSelectedId = selectedId) {
     const result = await listStudyNotes({
@@ -140,6 +189,24 @@ export default function StudyNotesV2() {
     setDraft(EMPTY_DRAFT);
     await refresh("new");
     setMessage("Note deleted.");
+  }
+
+  function applyBodyFormat(
+    formatter: (body: string, start: number, end: number) => {
+      body: string;
+      selectionStart: number;
+      selectionEnd: number;
+    }
+  ) {
+    const textarea = bodyRef.current;
+    const start = textarea?.selectionStart ?? draft.body.length;
+    const end = textarea?.selectionEnd ?? draft.body.length;
+    const next = formatter(draft.body, start, end);
+    setDraft(current => ({ ...current, body: next.body }));
+    window.setTimeout(() => {
+      bodyRef.current?.focus();
+      bodyRef.current?.setSelectionRange(next.selectionStart, next.selectionEnd);
+    }, 0);
   }
 
   return (
@@ -251,15 +318,42 @@ export default function StudyNotesV2() {
             </label>
           </div>
 
-          <label className="mt-3 block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Body</span>
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Body</span>
+              <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+                <button
+                  type="button"
+                  onClick={() => applyBodyFormat(applyBoldToBody)}
+                  className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-700 hover:bg-white"
+                  title="Bold selected text"
+                >
+                  <Bold className="h-3.5 w-3.5" />
+                  Bold
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyBodyFormat(applyBulletsToBody)}
+                  className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-700 hover:bg-white"
+                  title="Turn selected lines into bullets"
+                >
+                  <List className="h-3.5 w-3.5" />
+                  Bullets
+                </button>
+              </div>
+            </div>
             <textarea
+              ref={bodyRef}
+              aria-label="Body"
               value={draft.body}
               onChange={event => setDraft(current => ({ ...current, body: event.target.value }))}
-              placeholder="- One reminder per line&#10;- Keep the note practical&#10;- Link to a chart when useful"
+              placeholder="- One reminder per line&#10;- Use **bold** for key rules&#10;- Link to a chart when useful"
               className="mt-1 min-h-[22rem] w-full resize-y rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-orange-300"
             />
-          </label>
+            <p className="mt-1 text-xs text-slate-500">
+              Uses simple markdown-style formatting: bullets with <span className="font-mono">-</span> and bold with <span className="font-mono">**text**</span>.
+            </p>
+          </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-semibold text-slate-500">
