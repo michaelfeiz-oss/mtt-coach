@@ -24,16 +24,12 @@ const CATEGORIES = [
 type NoteDraft = {
   title: string;
   category: string;
-  tagsText: string;
-  linkedNodeKey: string;
   body: string;
 };
 
 const EMPTY_DRAFT: NoteDraft = {
   title: "",
   category: "General",
-  tagsText: "",
-  linkedNodeKey: "",
   body: "",
 };
 
@@ -41,8 +37,6 @@ function draftFromNote(note: StudyNoteRecord): NoteDraft {
   return {
     title: note.title,
     category: note.category ?? "General",
-    tagsText: note.tags.join(", "),
-    linkedNodeKey: note.linkedNodeKey ?? "",
     body: note.body,
   };
 }
@@ -51,11 +45,8 @@ function payloadFromDraft(draft: NoteDraft) {
   return {
     title: draft.title,
     category: draft.category,
-    tags: draft.tagsText
-      .split(",")
-      .map(tag => tag.trim())
-      .filter(Boolean),
-    linkedNodeKey: draft.linkedNodeKey.trim() || null,
+    tags: [],
+    linkedNodeKey: null,
     body: draft.body,
   };
 }
@@ -113,8 +104,6 @@ export default function StudyNotesV2() {
   const [notes, setNotes] = useState<StudyNoteRecord[]>([]);
   const [selectedId, setSelectedId] = useState<number | "new">("new");
   const [draft, setDraft] = useState<NoteDraft>(EMPTY_DRAFT);
-  const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const editor = useEditor({
@@ -147,10 +136,7 @@ export default function StudyNotesV2() {
   }, [editor]);
 
   async function refresh(nextSelectedId = selectedId) {
-    const result = await listStudyNotes({
-      query,
-      category: categoryFilter,
-    });
+    const result = await listStudyNotes();
     setNotes(result.notes);
     if (nextSelectedId !== "new") {
       const selected = result.notes.find(note => note.id === nextSelectedId);
@@ -159,7 +145,7 @@ export default function StudyNotesV2() {
   }
 
   useEffect(() => {
-    listStudyNotes({ query, category: categoryFilter })
+    listStudyNotes()
       .then(result => {
         setNotes(result.notes);
         if (selectedId !== "new") {
@@ -168,7 +154,7 @@ export default function StudyNotesV2() {
         }
       })
       .catch(error => setError(error instanceof Error ? error.message : String(error)));
-  }, [query, categoryFilter]);
+  }, []);
 
   const selectedNote = useMemo(
     () => notes.find(note => note.id === selectedId) ?? null,
@@ -187,6 +173,16 @@ export default function StudyNotesV2() {
     updateDraftFromNote(EMPTY_DRAFT);
     setMessage(null);
     setError(null);
+  }
+
+  function chooseSavedNote(value: string) {
+    if (value === "new") {
+      startNewNote();
+      return;
+    }
+
+    const note = notes.find(note => note.id === Number(value));
+    if (note) selectNote(note);
   }
 
   async function saveNote() {
@@ -261,52 +257,24 @@ export default function StudyNotesV2() {
         </button>
       </section>
 
-      <div className="grid gap-3 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-3 lg:self-start">
-          <input
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-            placeholder="Search notes"
-            className="min-h-10 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-orange-300"
-          />
-          <select
-            value={categoryFilter}
-            onChange={event => setCategoryFilter(event.target.value)}
-            className="min-h-10 w-full rounded-xl border border-slate-200 px-3 text-sm font-bold"
-          >
-            <option value="all">All categories</option>
-            {CATEGORIES.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-          <div className="max-h-[55vh] space-y-1.5 overflow-y-auto pr-1">
-            {notes.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 p-3 text-sm text-slate-500">
-                No notes yet.
-              </div>
-            ) : null}
-            {notes.map(note => (
-              <button
-                key={note.id}
-                type="button"
-                onClick={() => selectNote(note)}
-                className={`w-full rounded-xl border p-2.5 text-left transition ${
-                  note.id === selectedId
-                    ? "border-orange-300 bg-orange-50"
-                    : "border-slate-200 bg-white hover:border-orange-200"
-                }`}
-              >
-                <p className="line-clamp-1 text-sm font-black">{note.title}</p>
-                <div className="mt-1 flex flex-wrap gap-1 text-[0.68rem] font-bold text-slate-500">
-                  <span>{note.category ?? "General"}</span>
-                  {note.linkedNodeKey ? <span className="font-mono">{note.linkedNodeKey}</span> : null}
-                </div>
-              </button>
-            ))}
-          </div>
-        </aside>
-
+      <div>
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="mb-3 block">
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Saved notes</span>
+            <select
+              value={selectedId}
+              onChange={event => chooseSavedNote(event.target.value)}
+              className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-bold"
+            >
+              <option value="new">New unsaved note</option>
+              {notes.map(note => (
+                <option key={note.id} value={note.id}>
+                  {note.title || "Untitled note"}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Title</span>
@@ -328,27 +296,6 @@ export default function StudyNotesV2() {
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-            </label>
-          </div>
-
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Tags</span>
-              <input
-                value={draft.tagsText}
-                onChange={event => setDraft(current => ({ ...current, tagsText: event.target.value }))}
-                placeholder="comma, separated, tags"
-                className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold outline-none focus:border-orange-300"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Linked chart nodeKey</span>
-              <input
-                value={draft.linkedNodeKey}
-                onChange={event => setDraft(current => ({ ...current, linkedNodeKey: event.target.value }))}
-                placeholder="bb_vs_sb_open_15bb_bba"
-                className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 font-mono text-sm outline-none focus:border-orange-300"
-              />
             </label>
           </div>
 
