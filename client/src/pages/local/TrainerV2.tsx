@@ -12,6 +12,13 @@ const HAND_POOL_OPTIONS = [
   { value: "fold", label: "Fold Practice" },
 ] as const;
 
+const CHART_SOURCE_OPTIONS = [
+  { value: "approved", label: "Approved only" },
+  { value: "reviewed_approved", label: "Reviewed + approved" },
+  { value: "typed_seed", label: "Typed seed" },
+  { value: "include_population", label: "Include population drafts" },
+] as const;
+
 export function trainerChartHref(nodeKey: string) {
   return `/strategy/chart/${nodeKey}`;
 }
@@ -21,7 +28,12 @@ export function trainerEditorHref(nodeKey: string) {
 }
 
 export default function TrainerV2() {
-  const [filters, setFilters] = useState({ stackBb: "all", spotType: "all", handPool: "playable" });
+  const [filters, setFilters] = useState({
+    stackBb: "all",
+    spotType: "all",
+    handPool: "playable",
+    chartSource: "typed_seed",
+  });
   const [question, setQuestion] = useState<any>(null);
   const [selected, setSelected] = useState<ActionToken | null>(null);
   const [stats, setStats] = useState({ total: 0, correct: 0 });
@@ -41,7 +53,7 @@ export default function TrainerV2() {
 
   useEffect(() => {
     next();
-  }, [filters.stackBb, filters.spotType, filters.handPool]);
+  }, [filters.stackBb, filters.spotType, filters.handPool, filters.chartSource]);
 
   function choose(action: ActionToken) {
     if (!question || selected) return;
@@ -63,7 +75,7 @@ export default function TrainerV2() {
         body="Choose an action for the shown hand. The trainer uses resolved chart snapshots and never drills a missing chart."
       />
 
-      <section className="mb-4 grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-4">
+      <section className="mb-4 grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-5">
         <select className="rounded-xl border border-slate-200 p-3" value={filters.stackBb} onChange={event => setFilters({ ...filters, stackBb: event.target.value })}>
           <option value="all">Any stack</option>
           {STACK_BUCKETS.map(stack => <option key={stack} value={stack}>{stack}bb</option>)}
@@ -84,6 +96,18 @@ export default function TrainerV2() {
             ))}
           </select>
         </label>
+        <label className="block">
+          <span className="sr-only">Chart source</span>
+          <select
+            className="w-full rounded-xl border border-slate-200 p-3 font-bold"
+            value={filters.chartSource}
+            onChange={event => setFilters({ ...filters, chartSource: event.target.value })}
+          >
+            {CHART_SOURCE_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
         <div className="rounded-xl bg-slate-100 p-3 text-sm font-bold">
           {stats.correct}/{stats.total} correct / {accuracy}%
         </div>
@@ -100,6 +124,8 @@ export default function TrainerV2() {
             </div>
             <p className="mt-3 text-sm text-slate-500">
               {question.source} source / {HAND_POOL_OPTIONS.find(option => option.value === question.handPool)?.label ?? "Playable Only"}
+              {" / "}
+              {CHART_SOURCE_OPTIONS.find(option => option.value === filters.chartSource)?.label ?? "Typed seed"}
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">

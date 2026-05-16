@@ -35,6 +35,56 @@ export default function AuditV2() {
             <p className="font-bold">Database</p>
             <p className="mt-1 break-all text-sm text-slate-600">{audit.dbPath}</p>
           </section>
+          <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="font-bold text-amber-950">Population drafts requiring review</p>
+                <p className="mt-1 text-sm text-amber-900">
+                  These charts are constructed placeholders. Review before approval.
+                </p>
+              </div>
+              <span className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-black text-amber-800">
+                {audit.populationDrafts?.length ?? 0}
+              </span>
+            </div>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[46rem] text-left text-sm">
+                <thead className="text-xs uppercase text-amber-900">
+                  <tr>
+                    <th className="py-2 pr-3">nodeKey</th>
+                    <th className="py-2 pr-3">Title</th>
+                    <th className="py-2 pr-3">Stack</th>
+                    <th className="py-2 pr-3">Spot family</th>
+                    <th className="py-2 pr-3">sourceType</th>
+                    <th className="py-2 pr-3">Last imported</th>
+                    <th className="py-2 pr-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(audit.populationDrafts ?? []).map((chart: any) => (
+                    <tr key={chart.nodeKey} className="border-t border-amber-200">
+                      <td className="py-2 pr-3 font-mono text-xs">{chart.nodeKey}</td>
+                      <td className="py-2 pr-3 font-bold">{chart.title}</td>
+                      <td className="py-2 pr-3">{chart.stackBb}bb</td>
+                      <td className="py-2 pr-3">{chart.spotType}</td>
+                      <td className="py-2 pr-3">{chart.sourceType}</td>
+                      <td className="py-2 pr-3">{chart.lastImported}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex gap-2">
+                          <Link className="rounded-lg border border-amber-300 bg-white px-2 py-1 font-bold text-amber-900" href={`/strategy/chart/${chart.nodeKey}`}>
+                            Open Chart
+                          </Link>
+                          <Link className="rounded-lg bg-orange-600 px-2 py-1 font-bold text-white" href={`/strategy/editor/${chart.nodeKey}`}>
+                            Edit Chart
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
           <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="font-bold">Not final-approved</p>
             <div className="mt-3 space-y-2">

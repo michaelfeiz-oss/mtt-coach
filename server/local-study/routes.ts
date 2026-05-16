@@ -237,19 +237,21 @@ export function registerLocalStudyRoutes(app: express.Express) {
         req.query.handPool === "all" || req.query.handPool === "fold"
           ? req.query.handPool
           : "playable";
+      const chartSource =
+        req.query.chartSource === "approved" ||
+        req.query.chartSource === "reviewed_approved" ||
+        req.query.chartSource === "include_population"
+          ? req.query.chartSource
+          : "typed_seed";
       const question = chooseTrainerQuestion({
         nodeKey: req.query.nodeKey ? String(req.query.nodeKey) : undefined,
         stackBb: req.query.stackBb ? Number(req.query.stackBb) : undefined,
         spotType: req.query.spotType ? String(req.query.spotType) : undefined,
         handPool,
+        chartSource,
       });
       if (!question) {
-        const message =
-          handPool === "playable"
-            ? "No playable hands available for this chart."
-            : handPool === "fold"
-              ? "No Fold hands available for this chart."
-              : "No reviewed charts available.";
+        const message = "No eligible charts for this trainer filter.";
         res.status(404).json({ ok: false, error: { message } });
         return;
       }

@@ -164,6 +164,9 @@ describe("local strategy database", () => {
     expect(imported).toMatchObject({ imported: 1, skipped: 0, totalCharts: 1 });
     expect(dbModule.resolveChart(nodeKey)?.source).toBe("seed");
     expect(dbModule.resolveChart(nodeKey)?.chart.description).toContain("population_constructed");
+    expect(dbModule.chooseTrainerQuestion({ nodeKey })).toBeNull();
+    expect(dbModule.chooseTrainerQuestion({ nodeKey, chartSource: "include_population" })?.chart.nodeKey).toBe(nodeKey);
+    expect(dbModule.buildAuditSummary().populationDrafts.some(chart => chart.nodeKey === nodeKey)).toBe(true);
 
     dbModule.createSnapshotFromCells({
       nodeKey,

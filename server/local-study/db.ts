@@ -1180,6 +1180,28 @@ export function importPopulationDraftPack(pack: PopulationDraftPack) {
 
 export function buildAuditSummary() {
   const charts = listCharts();
+  const populationDrafts = charts
+    .map(chart => {
+      const resolved = resolveChart(chart.nodeKey);
+      const notes = resolved?.snapshot?.notes ?? "";
+      const description = chart.description ?? "";
+      const isPopulationDraft =
+        description.toLowerCase().includes("population_constructed") ||
+        description.toLowerCase().includes("population draft") ||
+        notes.toLowerCase().includes("population_constructed") ||
+        notes.toLowerCase().includes("population draft");
+      if (!isPopulationDraft) return null;
+
+      return {
+        nodeKey: chart.nodeKey,
+        title: chart.title,
+        stackBb: chart.stackBb,
+        spotType: chart.spotType,
+        sourceType: "population_constructed",
+        lastImported: resolved?.snapshot?.createdAt ?? chart.updatedAt,
+      };
+    })
+    .filter((chart): chart is NonNullable<typeof chart> => Boolean(chart));
   const counts = {
     charts: charts.length,
     seed: charts.filter(chart => chart.status === "seed").length,
@@ -1201,11 +1223,32 @@ export function buildAuditSummary() {
   return {
     dbPath: DB_PATH,
     counts,
+    populationDrafts,
     notReviewed: charts.filter(chart => chart.status === "seed" || chart.status === "draft"),
   };
 }
 
 export type TrainerHandPool = "all" | "playable" | "fold";
+export type TrainerChartSource = "approved" | "reviewed_approved" | "typed_seed" | "include_population";
+
+function isPopulationDraftResolved(resolved: ResolvedStrategyChart) {
+  const text = [resolved.chart.description, resolved.snapshot?.notes]
+    .filter(Boolean)
+    .join("\n")
+    .toLowerCase();
+  return text.includes("population_constructed") || text.includes("population draft");
+}
+
+function trainerSourceAllowed(resolved: ResolvedStrategyChart, chartSource: TrainerChartSource) {
+  if (!resolved.snapshot || resolved.source === "missing") return false;
+  if (chartSource === "include_population") return true;
+  if (isPopulationDraftResolved(resolved)) return false;
+  if (chartSource === "approved") return resolved.source === "approved";
+  if (chartSource === "reviewed_approved") {
+    return resolved.source === "approved" || resolved.source === "reviewed";
+  }
+  return resolved.source === "approved" || resolved.source === "reviewed" || resolved.source === "seed";
+}
 
 export function handsForTrainerPool(
   cells: Record<string, string>,
@@ -1221,7 +1264,9 @@ export function chooseTrainerQuestion(filters?: {
   spotType?: string;
   handPool?: TrainerHandPool;
   nodeKey?: string;
+  chartSource?: TrainerChartSource;
 }) {
+  const chartSource = filters?.chartSource ?? "typed_seed";
   const candidateCharts = filters?.nodeKey
     ? [getChart(filters.nodeKey)].filter((chart): chart is StrategyChartRecord => Boolean(chart))
     : listCharts(filters);
@@ -1229,7 +1274,7 @@ export function chooseTrainerQuestion(filters?: {
     .map(chart => resolveChart(chart.nodeKey))
     .filter(
       (resolved): resolved is ResolvedStrategyChart =>
-        resolved !== null && Boolean(resolved.snapshot) && resolved.source !== "missing"
+        resolved !== null && trainerSourceAllowed(resolved, chartSource)
     )
     .sort((left, right) => {
       const sourceScore = (source: ResolvedStrategyChart["source"]) =>

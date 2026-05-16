@@ -3,7 +3,7 @@ import { Link, useRoute } from "wouter";
 import { getChart } from "@/local-study/api";
 import { ActionLegend, ChartGrid } from "@/local-study/ChartGrid";
 import { LocalShell, PageHeader } from "@/local-study/LocalShell";
-import { isPopulationDraft } from "@/local-study/provenance";
+import { isPopulationDraft, PopulationDraftBadge, ReviewBeforeApprovalBadge } from "@/local-study/provenance";
 import type { ResolvedStrategyChart } from "@shared/strategy-v2/model";
 
 export default function ChartViewerV2() {
@@ -60,6 +60,8 @@ export default function ChartViewerV2() {
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{chart.spotType}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{chart.position}{chart.villainPosition ? ` vs ${chart.villainPosition}` : ""}</span>
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">{resolved.source}</span>
+              {isPopulationDraft(resolved) ? <PopulationDraftBadge /> : null}
+              {isPopulationDraft(resolved) ? <ReviewBeforeApprovalBadge /> : null}
             </div>
             <ActionLegend actions={snapshot.allowedActions} />
           </div>

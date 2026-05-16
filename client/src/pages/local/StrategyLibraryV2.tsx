@@ -5,7 +5,12 @@ import { Link, useLocation } from "wouter";
 import { getChart, listCharts } from "@/local-study/api";
 import { ActionLegend, ChartGrid } from "@/local-study/ChartGrid";
 import { LocalShell } from "@/local-study/LocalShell";
-import { isPopulationDraft } from "@/local-study/provenance";
+import {
+  isPopulationDraft,
+  isPopulationDraftChart,
+  PopulationDraftBadge,
+  ReviewBeforeApprovalBadge,
+} from "@/local-study/provenance";
 import {
   POSITIONS,
   SPOT_TYPES,
@@ -32,7 +37,7 @@ const EMPTY_FILTERS: FilterState = {
   status: "all",
 };
 
-const STATUS_OPTIONS = ["all", "seed", "draft", "reviewed", "approved", "not_yet_reviewed"] as const;
+const STATUS_OPTIONS = ["all", "seed", "draft", "reviewed", "approved", "population_draft", "not_yet_reviewed"] as const;
 
 const SPOT_LABELS: Record<string, string> = {
   all: "Any spot",
@@ -52,6 +57,7 @@ const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
   reviewed: "Reviewed",
   approved: "Approved",
+  population_draft: "Population draft",
   not_yet_reviewed: "Not yet reviewed",
 };
 
@@ -86,6 +92,7 @@ function chartMatchesFilters(chart: StrategyChartRecord, filters: FilterState) {
   if (filters.villainPosition !== "all" && chart.villainPosition !== filters.villainPosition) return false;
   if (filters.status !== "all") {
     if (filters.status === "not_yet_reviewed") return false;
+    if (filters.status === "population_draft") return isPopulationDraftChart(chart);
     if (chart.status !== filters.status) return false;
   }
 
@@ -282,6 +289,8 @@ function ChartPreview({
               <h2 className="min-w-0 truncate text-lg font-black tracking-tight">{chart.title}</h2>
               <StatusBadge status={chart.status} />
               <SourceBadge source={resolved.source} />
+              {isPopulationDraft(resolved) ? <PopulationDraftBadge /> : null}
+              {isPopulationDraft(resolved) ? <ReviewBeforeApprovalBadge /> : null}
             </div>
           </div>
           <Link

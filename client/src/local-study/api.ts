@@ -150,6 +150,7 @@ export function getTrainerQuestion(filters?: {
   stackBb?: number | string;
   spotType?: string;
   handPool?: string;
+  chartSource?: string;
   nodeKey?: string;
 }) {
   const params = new URLSearchParams();
