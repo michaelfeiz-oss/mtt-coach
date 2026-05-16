@@ -121,6 +121,18 @@ describe("local strategy database", () => {
     expect(trainer?.allowedActions).toContain("CALL_JAM");
   });
 
+  it("filters trainer hand pools without falling back to all hands", () => {
+    const cells = createEmptyCells("FOLD");
+    cells.AA = "RAISE";
+    cells.AKs = "CALL";
+
+    expect(dbModule.handsForTrainerPool(cells, "playable")).toEqual(["AA", "AKs"]);
+    expect(dbModule.handsForTrainerPool(cells, "fold")).not.toContain("AA");
+    expect(dbModule.handsForTrainerPool(cells, "fold")).not.toContain("AKs");
+    expect(dbModule.handsForTrainerPool(cells, "fold")).toContain("62o");
+    expect(dbModule.handsForTrainerPool(cells, "all")).toHaveLength(169);
+  });
+
   it("persists study notes and includes them in full backup/restore", () => {
     const created = dbModule.createStudyNote({
       title: "BB defence review",

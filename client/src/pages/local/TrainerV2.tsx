@@ -5,8 +5,14 @@ import { ChartGrid } from "@/local-study/ChartGrid";
 import { LocalShell, PageHeader } from "@/local-study/LocalShell";
 import { ACTION_LABELS, STACK_BUCKETS, SPOT_TYPES, type ActionToken } from "@shared/strategy-v2/model";
 
+const HAND_POOL_OPTIONS = [
+  { value: "playable", label: "Playable Only" },
+  { value: "all", label: "All Hands" },
+  { value: "fold", label: "Fold Practice" },
+] as const;
+
 export default function TrainerV2() {
-  const [filters, setFilters] = useState({ stackBb: "all", spotType: "all" });
+  const [filters, setFilters] = useState({ stackBb: "all", spotType: "all", handPool: "playable" });
   const [question, setQuestion] = useState<any>(null);
   const [selected, setSelected] = useState<ActionToken | null>(null);
   const [stats, setStats] = useState({ total: 0, correct: 0 });
@@ -26,7 +32,7 @@ export default function TrainerV2() {
 
   useEffect(() => {
     next();
-  }, [filters.stackBb, filters.spotType]);
+  }, [filters.stackBb, filters.spotType, filters.handPool]);
 
   function choose(action: ActionToken) {
     if (!question || selected) return;
@@ -48,7 +54,7 @@ export default function TrainerV2() {
         body="Choose an action for the shown hand. The trainer uses resolved chart snapshots and never drills a missing chart."
       />
 
-      <section className="mb-4 grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-3">
+      <section className="mb-4 grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-4">
         <select className="rounded-xl border border-slate-200 p-3" value={filters.stackBb} onChange={event => setFilters({ ...filters, stackBb: event.target.value })}>
           <option value="all">Any stack</option>
           {STACK_BUCKETS.map(stack => <option key={stack} value={stack}>{stack}bb</option>)}
@@ -57,6 +63,18 @@ export default function TrainerV2() {
           <option value="all">Any spot</option>
           {SPOT_TYPES.map(spot => <option key={spot} value={spot}>{spot}</option>)}
         </select>
+        <label className="block">
+          <span className="sr-only">Hand pool</span>
+          <select
+            className="w-full rounded-xl border border-slate-200 p-3 font-bold"
+            value={filters.handPool}
+            onChange={event => setFilters({ ...filters, handPool: event.target.value })}
+          >
+            {HAND_POOL_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
         <div className="rounded-xl bg-slate-100 p-3 text-sm font-bold">
           {stats.correct}/{stats.total} correct / {accuracy}%
         </div>
@@ -71,7 +89,9 @@ export default function TrainerV2() {
             <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 text-3xl font-black shadow-inner">
               {question.handCode}
             </div>
-            <p className="mt-3 text-sm text-slate-500">{question.source} source</p>
+            <p className="mt-3 text-sm text-slate-500">
+              {question.source} source / {HAND_POOL_OPTIONS.find(option => option.value === question.handPool)?.label ?? "Playable Only"}
+            </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {question.allowedActions.map((action: ActionToken) => {

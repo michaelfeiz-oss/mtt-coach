@@ -1085,7 +1085,18 @@ export function buildAuditSummary() {
   };
 }
 
-export function chooseTrainerQuestion(filters?: { stackBb?: number; spotType?: string }) {
+export type TrainerHandPool = "all" | "playable" | "fold";
+
+export function handsForTrainerPool(
+  cells: Record<string, string>,
+  handPool: TrainerHandPool = "playable"
+) {
+  if (handPool === "all") return ALL_HANDS;
+  if (handPool === "fold") return ALL_HANDS.filter(hand => cells[hand] === "FOLD");
+  return ALL_HANDS.filter(hand => cells[hand] && cells[hand] !== "FOLD");
+}
+
+export function chooseTrainerQuestion(filters?: { stackBb?: number; spotType?: string; handPool?: TrainerHandPool }) {
   const candidates = listCharts(filters)
     .map(chart => resolveChart(chart.nodeKey))
     .filter(
@@ -1100,8 +1111,11 @@ export function chooseTrainerQuestion(filters?: { stackBb?: number; spotType?: s
 
   if (candidates.length === 0) return null;
   const chart = candidates[Math.floor(Math.random() * candidates.length)]!;
-  const handCode = ALL_HANDS[Math.floor(Math.random() * ALL_HANDS.length)];
   const snapshot = chart.snapshot!;
+  const handPool = filters?.handPool ?? "playable";
+  const candidateHands = handsForTrainerPool(snapshot.cells, handPool);
+  if (candidateHands.length === 0) return null;
+  const handCode = candidateHands[Math.floor(Math.random() * candidateHands.length)];
   const correctAction = snapshot.cells[handCode]!;
   const allowedActions = [...snapshot.allowedActions].sort(
     (left, right) => ACTION_PRIORITY[right] - ACTION_PRIORITY[left]
@@ -1114,5 +1128,6 @@ export function chooseTrainerQuestion(filters?: { stackBb?: number; spotType?: s
     handCode,
     correctAction,
     allowedActions,
+    handPool,
   };
 }

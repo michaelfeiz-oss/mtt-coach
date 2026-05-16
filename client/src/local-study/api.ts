@@ -146,10 +146,12 @@ export function getAudit() {
   return request<{ ok: true; audit: unknown }>("/api/local/audit");
 }
 
-export function getTrainerQuestion(filters?: { stackBb?: number | string; spotType?: string }) {
+export function getTrainerQuestion(filters?: { stackBb?: number | string; spotType?: string; handPool?: string }) {
   const params = new URLSearchParams();
   Object.entries(filters ?? {}).forEach(([key, value]) => {
-    if (value !== undefined && value !== "all" && value !== "") params.set(key, String(value));
+    if (value !== undefined && value !== "" && (key === "handPool" || value !== "all")) {
+      params.set(key, String(value));
+    }
   });
   const query = params.toString();
   return request<{ ok: true; question: any }>(

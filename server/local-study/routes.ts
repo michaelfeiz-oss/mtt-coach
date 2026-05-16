@@ -225,12 +225,23 @@ export function registerLocalStudyRoutes(app: express.Express) {
   app.get(
     "/api/local/trainer/question",
     asyncRoute((req, res) => {
+      const handPool =
+        req.query.handPool === "all" || req.query.handPool === "fold"
+          ? req.query.handPool
+          : "playable";
       const question = chooseTrainerQuestion({
         stackBb: req.query.stackBb ? Number(req.query.stackBb) : undefined,
         spotType: req.query.spotType ? String(req.query.spotType) : undefined,
+        handPool,
       });
       if (!question) {
-        res.status(404).json({ ok: false, error: { message: "No reviewed charts available." } });
+        const message =
+          handPool === "playable"
+            ? "No playable hands available for this chart."
+            : handPool === "fold"
+              ? "No Fold hands available for this chart."
+              : "No reviewed charts available.";
+        res.status(404).json({ ok: false, error: { message } });
         return;
       }
       res.json({ ok: true, question });
