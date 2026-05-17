@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { getTrainerQuestion } from "@/local-study/api";
 import { ChartGrid } from "@/local-study/ChartGrid";
@@ -38,6 +38,7 @@ export default function TrainerV2() {
   const [selected, setSelected] = useState<ActionToken | null>(null);
   const [stats, setStats] = useState({ total: 0, correct: 0 });
   const [error, setError] = useState<string | null>(null);
+  const nextHandButtonRef = useRef<HTMLButtonElement | null>(null);
 
   async function next() {
     setSelected(null);
@@ -54,6 +55,17 @@ export default function TrainerV2() {
   useEffect(() => {
     next();
   }, [filters.stackBb, filters.spotType, filters.handPool, filters.chartSource]);
+
+  useEffect(() => {
+    if (!selected) return;
+
+    window.requestAnimationFrame(() => {
+      nextHandButtonRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+  }, [selected]);
 
   function choose(action: ActionToken) {
     if (!question || selected) return;
@@ -217,7 +229,12 @@ export default function TrainerV2() {
               </section>
             </div>
           ) : null}
-          <button type="button" onClick={next} className="mt-4 w-full rounded-2xl bg-orange-600 px-4 py-4 font-bold text-white">
+          <button
+            type="button"
+            ref={nextHandButtonRef}
+            onClick={next}
+            className="mt-4 w-full rounded-2xl bg-orange-600 px-4 py-4 font-bold text-white"
+          >
             Next Hand
           </button>
         </section>
