@@ -386,12 +386,40 @@ type InformationSchemaTable = {
   TABLE_NAME?: string;
 };
 
+type UserNoteInsertRow = Required<
+  Pick<InsertUserNote, "id" | "userId" | "category" | "content">
+> &
+  Pick<InsertUserNote, "title" | "createdAt" | "updatedAt">;
+
 function getRawQueryRows<T>(result: unknown): T[] {
   if (Array.isArray(result) && Array.isArray(result[0])) {
     return result[0] as T[];
   }
 
   return [];
+}
+
+function getDbErrorMessage(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return String(error);
+  }
+
+  const maybeError = error as {
+    code?: unknown;
+    errno?: unknown;
+    message?: unknown;
+    sqlMessage?: unknown;
+  };
+  const sqlMessage =
+    typeof maybeError.sqlMessage === "string" ? maybeError.sqlMessage : undefined;
+  const message = typeof maybeError.message === "string" ? maybeError.message : undefined;
+  const code = typeof maybeError.code === "string" ? maybeError.code : undefined;
+  const errno =
+    typeof maybeError.errno === "number" || typeof maybeError.errno === "string"
+      ? String(maybeError.errno)
+      : undefined;
+
+  return [code, errno, sqlMessage || message].filter(Boolean).join(": ");
 }
 
 function isIgnorableUserNotesSchemaError(error: unknown) {
@@ -570,14 +598,104 @@ async function ensureUserNotesTable(db: AppDb) {
   await userNotesSchemaSetup;
 }
 
-async function getNextUserNoteId(db: AppDb) {
-  const latest = await db
-    .select({ id: userNotes.id })
-    .from(userNotes)
-    .orderBy(desc(userNotes.id))
-    .limit(1);
+async function tryEnsureUserNotesTable(db: AppDb) {
+  try {
+    await ensureUserNotesTable(db);
+  } catch (error) {
+    console.warn("[Notes] Continuing after userNotes schema check failed", error);
+  }
+}
 
-  return (latest[0]?.id ?? 0) + 1;
+async function ensureLiveNotesUser(db: AppDb, userId: number) {
+  try {
+    const existingUser = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (existingUser.length > 0) {
+      return;
+    }
+
+    await db.insert(users).values({
+      id: userId,
+      openId: `live-local-user-${userId}-${Date.now()}`,
+      name: "Live Notes User",
+      loginMethod: "local",
+      role: "admin",
+      timezone: "Australia/Sydney",
+      lastSignedIn: new Date(),
+    });
+  } catch (error) {
+    console.warn("[Notes] Could not ensure live notes user", error);
+  }
+}
+
+async function getNextUserNoteId(db: AppDb) {
+  try {
+    const latest = await db
+      .select({ id: userNotes.id })
+      .from(userNotes)
+      .orderBy(desc(userNotes.id))
+      .limit(1);
+
+    return (latest[0]?.id ?? 0) + 1;
+  } catch (error) {
+    console.warn("[Notes] Falling back to raw id lookup", error);
+    const result = await db.execute<{ nextId: number | string | null }>(sql`
+      SELECT COALESCE(MAX(id), 0) + 1 AS nextId
+      FROM userNotes
+    `);
+    const [row] = getRawQueryRows<{ nextId: number | string | null }>(result);
+    return Number(row?.nextId ?? Date.now());
+  }
+}
+
+async function insertUserNoteRaw(db: AppDb, row: UserNoteInsertRow) {
+  const attempts = [
+    {
+      description: "full userNotes insert",
+      statement: sql`
+        INSERT INTO userNotes (id, userId, category, title, content, createdAt, updatedAt)
+        VALUES (${row.id}, ${row.userId}, ${row.category}, ${row.title ?? null}, ${row.content}, ${row.createdAt}, ${row.updatedAt})
+      `,
+    },
+    {
+      description: "without title",
+      statement: sql`
+        INSERT INTO userNotes (id, userId, category, content, createdAt, updatedAt)
+        VALUES (${row.id}, ${row.userId}, ${row.category}, ${row.content}, ${row.createdAt}, ${row.updatedAt})
+      `,
+    },
+    {
+      description: "without timestamps",
+      statement: sql`
+        INSERT INTO userNotes (id, userId, category, title, content)
+        VALUES (${row.id}, ${row.userId}, ${row.category}, ${row.title ?? null}, ${row.content})
+      `,
+    },
+    {
+      description: "minimum live note",
+      statement: sql`
+        INSERT INTO userNotes (id, userId, content)
+        VALUES (${row.id}, ${row.userId}, ${row.content})
+      `,
+    },
+  ];
+
+  const errors: string[] = [];
+  for (const attempt of attempts) {
+    try {
+      await db.execute(attempt.statement);
+      return row;
+    } catch (error) {
+      errors.push(`${attempt.description}: ${getDbErrorMessage(error)}`);
+      console.warn(`[Notes] Raw note insert failed (${attempt.description})`, error);
+    }
+  }
+
+  throw new Error(errors.join(" | "));
 }
 
 export async function createUserNote(note: InsertUserNote) {
@@ -585,9 +703,10 @@ export async function createUserNote(note: InsertUserNote) {
   if (!db) throw new Error("Database not available");
 
   try {
-    await ensureUserNotesTable(db);
+    await tryEnsureUserNotesTable(db);
+    await ensureLiveNotesUser(db, note.userId);
     const now = new Date();
-    const row = {
+    const row: UserNoteInsertRow = {
       ...note,
       id: note.id ?? await getNextUserNoteId(db),
       category: note.category || "general",
@@ -596,21 +715,40 @@ export async function createUserNote(note: InsertUserNote) {
       updatedAt: note.updatedAt ?? now,
     };
 
-    const [result] = await db.insert(userNotes).values(row);
-    const insertedId = result.insertId || row.id;
-    return (
-      await db.select().from(userNotes).where(eq(userNotes.id, insertedId)).limit(1)
-    )[0];
+    await db.insert(userNotes).values(row);
+    return row;
   } catch (error) {
-    console.error("[Notes] Failed to create user note", error);
-    throw new Error("Could not save note. The notes table rejected the save.");
+    console.warn("[Notes] ORM note insert failed; trying raw fallback", error);
+    try {
+      const now = new Date();
+      const row: UserNoteInsertRow = {
+        ...note,
+        id: note.id ?? await getNextUserNoteId(db),
+        category: note.category || "general",
+        title: note.title ?? null,
+        createdAt: note.createdAt ?? now,
+        updatedAt: note.updatedAt ?? now,
+      };
+
+      await ensureLiveNotesUser(db, row.userId);
+      await insertUserNoteRaw(db, row);
+      return row;
+    } catch (fallbackError) {
+      console.error("[Notes] Failed to create user note", {
+        ormError: error,
+        fallbackError,
+      });
+      throw new Error(
+        `Could not save note. ${getDbErrorMessage(fallbackError) || "The notes table rejected the save."}`
+      );
+    }
   }
 }
 
 export async function getUserNotes(userId: number, limit: number = 100) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await ensureUserNotesTable(db);
+  await tryEnsureUserNotesTable(db);
 
   return db
     .select()
@@ -627,7 +765,7 @@ export async function updateUserNote(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await ensureUserNotesTable(db);
+  await tryEnsureUserNotesTable(db);
 
   await db
     .update(userNotes)
@@ -646,7 +784,7 @@ export async function updateUserNote(
 export async function deleteUserNote(userId: number, noteId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await ensureUserNotesTable(db);
+  await tryEnsureUserNotesTable(db);
 
   await db
     .delete(userNotes)
