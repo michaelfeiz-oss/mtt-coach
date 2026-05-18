@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, weeks, studySessions, tournaments, hands, leaks, handLeaks, userNotes, InsertWeek, InsertStudySession, InsertTournament, InsertHand, InsertLeak, InsertUserNote } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -6,6 +6,7 @@ import { getLeakFamily, findLeakFamilyByLabel, type CanonicalLeakFamilyId } from
 import type { HandReviewStatus } from "../shared/coachingLoop";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+type AppDb = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
@@ -367,7 +368,209 @@ export async function deleteHand(handId: number) {
 }
 
 // Live notes
-async function getNextUserNoteId(db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
+let userNotesSchemaReady = false;
+let userNotesSchemaSetup: Promise<void> | null = null;
+
+type InformationSchemaColumn = {
+  columnName?: string;
+  COLUMN_NAME?: string;
+};
+
+type InformationSchemaIndex = {
+  indexName?: string;
+  INDEX_NAME?: string;
+};
+
+type InformationSchemaTable = {
+  tableName?: string;
+  TABLE_NAME?: string;
+};
+
+function getRawQueryRows<T>(result: unknown): T[] {
+  if (Array.isArray(result) && Array.isArray(result[0])) {
+    return result[0] as T[];
+  }
+
+  return [];
+}
+
+function isIgnorableUserNotesSchemaError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /already exists|duplicate column|duplicate key name|ER_DUP_FIELDNAME|ER_DUP_KEYNAME/i.test(message);
+}
+
+async function runUserNotesSchemaChange(db: AppDb, description: string, statement: SQL) {
+  try {
+    await db.execute(statement);
+  } catch (error) {
+    if (isIgnorableUserNotesSchemaError(error)) {
+      return;
+    }
+
+    console.warn(`[Notes] Could not apply schema change (${description})`, error);
+    throw error;
+  }
+}
+
+async function userNotesTableExists(db: AppDb) {
+  const result = await db.execute<InformationSchemaTable>(sql`
+    SELECT TABLE_NAME AS tableName
+    FROM information_schema.TABLES
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'userNotes'
+    LIMIT 1
+  `);
+
+  return getRawQueryRows<InformationSchemaTable>(result).length > 0;
+}
+
+async function getUserNotesColumns(db: AppDb) {
+  const result = await db.execute<InformationSchemaColumn>(sql`
+    SELECT COLUMN_NAME AS columnName
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'userNotes'
+  `);
+
+  return new Set(
+    getRawQueryRows<InformationSchemaColumn>(result)
+      .map(row => row.columnName ?? row.COLUMN_NAME ?? "")
+      .filter(Boolean)
+  );
+}
+
+async function getUserNotesIndexes(db: AppDb) {
+  const result = await db.execute<InformationSchemaIndex>(sql`
+    SELECT INDEX_NAME AS indexName
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'userNotes'
+  `);
+
+  return new Set(
+    getRawQueryRows<InformationSchemaIndex>(result)
+      .map(row => row.indexName ?? row.INDEX_NAME ?? "")
+      .filter(Boolean)
+  );
+}
+
+async function ensureUserNotesTable(db: AppDb) {
+  if (userNotesSchemaReady) {
+    return;
+  }
+
+  if (!userNotesSchemaSetup) {
+    userNotesSchemaSetup = (async () => {
+      const hasUserNotesTable = await userNotesTableExists(db);
+
+      if (!hasUserNotesTable) {
+        await db.execute(sql`
+          CREATE TABLE userNotes (
+            id int AUTO_INCREMENT NOT NULL,
+            userId int NOT NULL,
+            category varchar(80) NOT NULL DEFAULT 'general',
+            title varchar(255),
+            content text NOT NULL,
+            createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
+          )
+        `);
+      }
+
+      const columns = await getUserNotesColumns(db);
+
+      if (!columns.has("id")) {
+        await runUserNotesSchemaChange(
+          db,
+          "add id",
+          sql`ALTER TABLE userNotes ADD COLUMN id int NOT NULL DEFAULT 0 FIRST`
+        );
+        columns.add("id");
+      }
+
+      if (!columns.has("userId")) {
+        await runUserNotesSchemaChange(
+          db,
+          "add userId",
+          sql`ALTER TABLE userNotes ADD COLUMN userId int NOT NULL DEFAULT 1`
+        );
+        columns.add("userId");
+      }
+
+      if (!columns.has("category")) {
+        await runUserNotesSchemaChange(
+          db,
+          "add category",
+          sql`ALTER TABLE userNotes ADD COLUMN category varchar(80) NOT NULL DEFAULT 'general'`
+        );
+        columns.add("category");
+      }
+
+      if (!columns.has("title")) {
+        await runUserNotesSchemaChange(
+          db,
+          "add title",
+          sql`ALTER TABLE userNotes ADD COLUMN title varchar(255)`
+        );
+        columns.add("title");
+      }
+
+      if (!columns.has("content")) {
+        await runUserNotesSchemaChange(
+          db,
+          "add content",
+          sql`ALTER TABLE userNotes ADD COLUMN content text`
+        );
+        columns.add("content");
+      }
+
+      if (!columns.has("createdAt")) {
+        await runUserNotesSchemaChange(
+          db,
+          "add createdAt",
+          sql`ALTER TABLE userNotes ADD COLUMN createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP`
+        );
+        columns.add("createdAt");
+      }
+
+      if (!columns.has("updatedAt")) {
+        await runUserNotesSchemaChange(
+          db,
+          "add updatedAt",
+          sql`ALTER TABLE userNotes ADD COLUMN updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
+        );
+        columns.add("updatedAt");
+      }
+
+      const indexes = await getUserNotesIndexes(db);
+      if (!indexes.has("user_notes_user_created_idx")) {
+        try {
+          await runUserNotesSchemaChange(
+            db,
+            "add created index",
+            sql`CREATE INDEX user_notes_user_created_idx ON userNotes (userId, createdAt)`
+          );
+        } catch (error) {
+          console.warn("[Notes] Continuing without userNotes created index", error);
+        }
+      }
+
+      await db.execute(
+        sql`UPDATE userNotes SET category = 'general' WHERE category IS NULL OR category = ''`
+      );
+      await db.execute(sql`UPDATE userNotes SET content = '' WHERE content IS NULL`);
+      userNotesSchemaReady = true;
+    })().catch((error) => {
+      userNotesSchemaSetup = null;
+      throw error;
+    });
+  }
+
+  await userNotesSchemaSetup;
+}
+
+async function getNextUserNoteId(db: AppDb) {
   const latest = await db
     .select({ id: userNotes.id })
     .from(userNotes)
@@ -381,17 +584,18 @@ export async function createUserNote(note: InsertUserNote) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const now = new Date();
-  const row = {
-    ...note,
-    id: note.id ?? await getNextUserNoteId(db),
-    category: note.category || "general",
-    title: note.title ?? null,
-    createdAt: note.createdAt ?? now,
-    updatedAt: note.updatedAt ?? now,
-  };
-
   try {
+    await ensureUserNotesTable(db);
+    const now = new Date();
+    const row = {
+      ...note,
+      id: note.id ?? await getNextUserNoteId(db),
+      category: note.category || "general",
+      title: note.title ?? null,
+      createdAt: note.createdAt ?? now,
+      updatedAt: note.updatedAt ?? now,
+    };
+
     const [result] = await db.insert(userNotes).values(row);
     const insertedId = result.insertId || row.id;
     return (
@@ -406,6 +610,7 @@ export async function createUserNote(note: InsertUserNote) {
 export async function getUserNotes(userId: number, limit: number = 100) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  await ensureUserNotesTable(db);
 
   return db
     .select()
@@ -422,6 +627,7 @@ export async function updateUserNote(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  await ensureUserNotesTable(db);
 
   await db
     .update(userNotes)
@@ -440,6 +646,7 @@ export async function updateUserNote(
 export async function deleteUserNote(userId: number, noteId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  await ensureUserNotesTable(db);
 
   await db
     .delete(userNotes)
