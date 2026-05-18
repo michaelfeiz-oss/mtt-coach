@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { BottomSheetModal } from "./BottomSheetModal";
+import { RichTextNoteEditor } from "./RichTextNoteEditor";
 import { Label } from "@/components/ui/label";
+import { getNotePlainText, sanitizeNoteHtml } from "@/lib/noteHtml";
 import {
   Select,
   SelectContent,
@@ -9,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 
 interface AddNoteModalProps {
   isOpen: boolean;
@@ -47,11 +48,12 @@ export function AddNoteModal({
   };
 
   const handleSubmit = () => {
-    if (!formData.content.trim()) {
+    const content = sanitizeNoteHtml(formData.content);
+    if (!getNotePlainText(content).trim()) {
       toast.error("Enter a note before saving.");
       return;
     }
-    onSubmit(formData);
+    onSubmit({ ...formData, content });
     resetForm();
   };
 
@@ -94,15 +96,14 @@ export function AddNoteModal({
           <Label htmlFor="content" className="text-secondary-foreground">
             Note *
           </Label>
-          <Textarea
+          <RichTextNoteEditor
             id="content"
-            placeholder="Write the note while it is fresh."
             value={formData.content}
-            onChange={e => setFormData({ ...formData, content: e.target.value })}
-            className="min-h-28"
+            onChange={content => setFormData({ ...formData, content })}
+            minHeightClassName="min-h-32"
           />
           <div className="text-xs text-muted-foreground">
-            {formData.content.length} characters
+            {getNotePlainText(formData.content).length} characters
           </div>
         </div>
       </div>

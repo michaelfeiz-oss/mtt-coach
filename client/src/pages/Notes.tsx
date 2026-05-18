@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { FileText, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AddNoteModal, type AddNoteFormData } from "@/components/AddNoteModal";
+import { RichTextNoteEditor } from "@/components/RichTextNoteEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { getNotePlainText, normalizeNoteHtml, sanitizeNoteHtml } from "@/lib/noteHtml";
 import { trpc } from "@/lib/trpc";
 
 function categoryLabel(category: string) {
@@ -62,18 +63,19 @@ export default function Notes() {
   function handleCreateNote(data: AddNoteFormData) {
     createNote.mutate({
       category: data.category || "general",
-      content: data.content,
+      content: sanitizeNoteHtml(data.content),
     });
   }
 
   function handleSaveEdit(noteId: number) {
-    if (!draftContent.trim()) {
+    const content = sanitizeNoteHtml(draftContent);
+    if (!getNotePlainText(content).trim()) {
       toast.error("Note cannot be empty.");
       return;
     }
     updateNote.mutate({
       id: noteId,
-      content: draftContent,
+      content,
     });
   }
 
@@ -163,15 +165,18 @@ export default function Notes() {
                   </div>
 
                   {isEditing ? (
-                    <Textarea
+                    <RichTextNoteEditor
                       value={draftContent}
-                      onChange={event => setDraftContent(event.target.value)}
-                      className="min-h-28"
+                      onChange={setDraftContent}
+                      minHeightClassName="min-h-32"
                     />
                   ) : (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                      {note.content}
-                    </p>
+                    <div
+                      className="text-sm leading-relaxed text-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5"
+                      dangerouslySetInnerHTML={{
+                        __html: normalizeNoteHtml(note.content),
+                      }}
+                    />
                   )}
                 </article>
               );

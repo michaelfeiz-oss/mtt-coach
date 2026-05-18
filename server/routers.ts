@@ -11,6 +11,7 @@ import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } fro
 import { icmRouter } from "./icm/router";
 import { getLeakFamily, LEAK_FAMILY_IDS } from "../shared/leakFamilies";
 import { HAND_REVIEW_STATUSES } from "../shared/coachingLoop";
+import { deriveNoteTitle, hasVisibleNoteContent } from "../shared/noteContent";
 import { eq, and, desc, asc, inArray, gte } from "drizzle-orm";
 import { hands } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -472,15 +473,19 @@ export const appRouter = router({
       .input(
         z.object({
           category: z.string().trim().min(1).max(80).default("general"),
-          title: z.string().trim().max(255).optional(),
+          title: z.string().trim().optional(),
           content: z.string().trim().min(1),
         })
       )
       .mutation(async ({ input }) => {
+        if (!hasVisibleNoteContent(input.content)) {
+          throw new Error("Note cannot be empty.");
+        }
+
         return db.createUserNote({
           userId: HARDCODED_USER_ID,
           category: input.category,
-          title: input.title || null,
+          title: deriveNoteTitle(input.title || input.content),
           content: input.content,
         });
       }),
@@ -489,13 +494,26 @@ export const appRouter = router({
         z.object({
           id: z.number(),
           category: z.string().trim().min(1).max(80).optional(),
-          title: z.string().trim().max(255).nullable().optional(),
+          title: z.string().trim().nullable().optional(),
           content: z.string().trim().min(1).optional(),
         })
       )
       .mutation(async ({ input }) => {
         const { id, ...updates } = input;
-        return db.updateUserNote(HARDCODED_USER_ID, id, updates);
+        if (updates.content !== undefined && !hasVisibleNoteContent(updates.content)) {
+          throw new Error("Note cannot be empty.");
+        }
+
+        const nextUpdates = { ...updates };
+        if (updates.title === null) {
+          nextUpdates.title = null;
+        } else if (updates.title) {
+          nextUpdates.title = deriveNoteTitle(updates.title);
+        } else if (updates.content) {
+          nextUpdates.title = deriveNoteTitle(updates.content);
+        }
+
+        return db.updateUserNote(HARDCODED_USER_ID, id, nextUpdates);
       }),
     delete: publicProcedure
       .input(z.object({ id: z.number() }))
