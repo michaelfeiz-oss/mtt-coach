@@ -9,19 +9,8 @@ import { getCompletedPlanSlots } from "./studyPlanDb";
 import { generateDailyFocus, generateStudyRecommendations, getSuggestedDeepDiveTopic, type LeakData } from "./studyRecommendations";
 import { STUDY_CURRICULUM, getProgramWeekForDate, getTodayDrillsForProgram } from "./curriculumConfig";
 import { icmRouter } from "./icm/router";
-import { strategyRouter } from "./strategy/router";
 import { getLeakFamily, LEAK_FAMILY_IDS } from "../shared/leakFamilies";
-import {
-  HAND_REVIEW_STATUSES,
-  TRAINER_ATTEMPT_CONFIDENCES,
-} from "../shared/coachingLoop";
-import {
-  getHandTrainingSuggestion,
-  getReviewQueueSummary,
-  getTodayTrainingSuggestions,
-  getWeakSpotSummary,
-} from "./coachingLoop";
-import { submitTrainerAttempt, updateTrainerAttemptConfidence } from "./strategy/service";
+import { HAND_REVIEW_STATUSES } from "../shared/coachingLoop";
 import { eq, and, desc, asc, inArray, gte } from "drizzle-orm";
 import { hands } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -437,9 +426,6 @@ export const appRouter = router({
           .limit(input.limit)
           .offset(input.offset);
       }),
-    getReviewQueueSummary: publicProcedure.query(async () => {
-      return getReviewQueueSummary(HARDCODED_USER_ID);
-    }),
     getLeaks: publicProcedure
       .input(z.object({ handId: z.number() }))
       .query(async ({ input }) => {
@@ -672,76 +658,6 @@ export const appRouter = router({
     getAllCurriculum: publicProcedure.query(() => {
       return STUDY_CURRICULUM;
     }),
-  }),
-
-  // Strategy module
-  strategy: strategyRouter,
-
-  trainerAttempts: router({
-    submit: publicProcedure
-      .input(
-        z.object({
-          chartId: z.number().int().positive(),
-          handCode: z.string().min(2).max(4),
-          selectedAction: z.enum([
-            "FOLD",
-            "RAISE",
-            "CALL",
-            "THREE_BET",
-            "JAM",
-            "LIMP",
-            "CHECK",
-          ]),
-          drillPackId: z.string().optional(),
-          sessionId: z.string().optional(),
-          responseTimeMs: z.number().int().min(0).optional(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const userId = ctx.user?.id ?? HARDCODED_USER_ID;
-        return submitTrainerAttempt(userId, input);
-      }),
-    updateConfidence: publicProcedure
-      .input(
-        z.object({
-          attemptId: z.number().int().positive(),
-          confidence: z.enum(TRAINER_ATTEMPT_CONFIDENCES),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const userId = ctx.user?.id ?? HARDCODED_USER_ID;
-        const success = await updateTrainerAttemptConfidence(
-          userId,
-          input.attemptId,
-          input.confidence
-        );
-
-        return { success };
-      }),
-  }),
-
-  weakSpots: router({
-    getSummary: publicProcedure
-      .input(z.object({ limit: z.number().int().min(1).max(20).default(8) }).optional())
-      .query(async ({ input }) => {
-        return getWeakSpotSummary(HARDCODED_USER_ID, input?.limit ?? 8);
-      }),
-    getTop: publicProcedure
-      .input(z.object({ limit: z.number().int().min(1).max(10).default(5) }).optional())
-      .query(async ({ input }) => {
-        return getWeakSpotSummary(HARDCODED_USER_ID, input?.limit ?? 5);
-      }),
-  }),
-
-  suggestions: router({
-    getTodayTraining: publicProcedure.query(async () => {
-      return getTodayTrainingSuggestions(HARDCODED_USER_ID);
-    }),
-    getForHand: publicProcedure
-      .input(z.object({ handId: z.number().int().positive() }))
-      .query(async ({ input }) => {
-        return getHandTrainingSuggestion(HARDCODED_USER_ID, input.handId);
-      }),
   }),
 
   // ICM study packs

@@ -85,13 +85,6 @@
       "when": 1779056400000,
       "tag": "0010_live_notes",
       "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "5",
-      "when": 1779142800000,
-      "tag": "0011_strategy_phase2_compat",
-      "breakpoints": true
     }
   ]
 }

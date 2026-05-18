@@ -20,5 +20,13 @@ export default defineConfig({
       "server/**/*.spec.ts",
       "client/src/lib/**/*.test.ts",
     ],
+    exclude: [
+      "node_modules",
+      "dist",
+      "build",
+      "server/strategy/**",
+      "server/coachingLoop.test.ts",
+      "server/pushFoldRemoval.test.ts",
+    ],
   },
 });

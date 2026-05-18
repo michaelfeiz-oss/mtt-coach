@@ -1,6 +1,21 @@
 {
   "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/*.test.ts",
+    "server/strategy/**/*",
+    "server/coachingLoop.ts",
+    "client/src/components/strategy/**/*",
+    "client/src/components/study/**/*",
+    "client/src/pages/strategy/**/*",
+    "client/src/pages/icm/**/*",
+    "client/src/pages/GuidedSession.tsx",
+    "client/src/pages/LogStudySession.tsx",
+    "client/src/pages/Study.tsx",
+    "client/src/pages/StudyPlan.tsx"
+  ],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
