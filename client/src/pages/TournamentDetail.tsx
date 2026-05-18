@@ -134,12 +134,12 @@ export default function TournamentDetail() {
                   {tournament.name || tournament.venue || "Tournament Session"}
                 </CardTitle>
                 <CardDescription className="mt-1 text-muted-foreground">
-                  {new Date(tournament.date).toLocaleDateString()} - BBA tournament review
+                  {new Date(tournament.date).toLocaleDateString()} - Tournament review
                 </CardDescription>
               </div>
               <Badge className="rounded-full bg-primary text-primary-foreground">
                 <Trophy className="mr-1 h-3.5 w-3.5" />
-                Preflop Focus
+                Live Result
               </Badge>
             </div>
           </CardHeader>
@@ -188,7 +188,7 @@ export default function TournamentDetail() {
 
         <Card className="app-surface">
           <CardHeader>
-            <CardTitle>Preflop Review Summary</CardTitle>
+            <CardTitle>Hand Review Summary</CardTitle>
 
           </CardHeader>
           <CardContent className="space-y-4">
@@ -202,7 +202,7 @@ export default function TournamentDetail() {
                 <p className="mt-1 text-2xl font-black">{reviewedCount}</p>
               </div>
               <div className="rounded-xl border border-border/80 bg-accent/45 p-3">
-                <p className="text-xs text-muted-foreground">Preflop Mistakes</p>
+                <p className="text-xs text-muted-foreground">Mistakes</p>
                 <p className="mt-1 text-2xl font-black text-red-300">
                   {preflopMistakes.length}
                 </p>
@@ -245,7 +245,7 @@ export default function TournamentDetail() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Hands</SelectItem>
-                  <SelectItem value="mistakes">Preflop Mistakes</SelectItem>
+                  <SelectItem value="mistakes">Mistakes</SelectItem>
                   <SelectItem value="reviewed">Reviewed</SelectItem>
                 </SelectContent>
               </Select>
@@ -302,7 +302,6 @@ export default function TournamentDetail() {
                         {[
                           hand.spotType?.replace(/_/g, " "),
                           hand.effectiveStackBb ? `${Math.round(hand.effectiveStackBb)}bb` : null,
-                          "BBA",
                         ]
                           .filter(Boolean)
                           .join(" - ")}

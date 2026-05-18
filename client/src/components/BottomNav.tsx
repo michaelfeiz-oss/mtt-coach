@@ -1,11 +1,13 @@
-import { BookOpen, Home, Plus, Target } from "lucide-react";
+import { FileText, Hand, Home, Plus, Target, Trophy } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { id: "dashboard", label: "Dashboard", icon: Home, path: "/" },
+  { id: "dashboard", label: "Home", icon: Home, path: "/" },
   { id: "log", label: "Log", icon: Plus, path: "/log" },
-  { id: "study", label: "Study", icon: BookOpen, path: "/study" },
+  { id: "hands", label: "Hands", icon: Hand, path: "/hands" },
+  { id: "tournaments", label: "Tourn.", icon: Trophy, path: "/tournaments" },
+  { id: "notes", label: "Notes", icon: FileText, path: "/notes" },
 ];
 
 export default function BottomNav() {
@@ -22,7 +24,7 @@ export default function BottomNav() {
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground">MTT Coach</p>
-            <p className="text-xs text-muted-foreground">Preflop Study</p>
+            <p className="text-xs text-muted-foreground">Live Tracker</p>
           </div>
         </div>
 
@@ -50,9 +52,9 @@ export default function BottomNav() {
         </nav>
 
         <div className="rounded-xl border border-border bg-secondary px-3 py-2">
-          <p className="text-xs font-semibold text-foreground">BBA only</p>
+          <p className="text-xs font-semibold text-foreground">Live play only</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Preflop tournament charts at 15bb, 25bb, and 40bb.
+            Hands, tournaments, and notes.
           </p>
         </div>
       </aside>
@@ -76,7 +78,7 @@ export default function BottomNav() {
               >
                 <span
                   className={cn(
-                    "flex min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 transition",
+                    "flex min-w-[62px] flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-2 transition",
                     active
                       ? "bg-[#FFF3E8] text-[#9A4D12] ring-1 ring-amber-200/80"
                       : "hover:bg-sidebar-accent"

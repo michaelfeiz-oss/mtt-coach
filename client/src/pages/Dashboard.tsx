@@ -1,116 +1,68 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import {
-  ArrowRight,
-  ClipboardCheck,
-  FileText,
-  Hand,
-  Layers,
-  Target,
-  Trophy,
-} from "lucide-react";
-import type { TodayTrainingSuggestion } from "@shared/coachingLoop";
+import { FileText, Hand, Plus, Trophy } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EditTournamentModal } from "@/components/EditTournamentModal";
 
-type TournamentActivity = {
-  id: number;
-  title: string;
-  time: string;
-  tournament: any;
-};
-
-function formatNetResult(value: number | null | undefined) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "Logged";
-  if (value === 0) return "Even";
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
+function formatMoney(value: number | null | undefined) {
+  if (typeof value !== "number" || Number.isNaN(value)) return "-";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}$${Math.round(value)}`;
 }
 
-function ctaLabelForSuggestion(suggestion: TodayTrainingSuggestion) {
-  switch (suggestion.type) {
-    case "review_hands":
-      return "Open Review Queue";
-    case "drill_pack":
-      return "Start Pack";
-    case "icmizer_review":
-      return "Open ICMIZER";
-    case "study_chart":
-      return "View Chart";
-    case "exact_chart":
-    default:
-      return "Start Drill";
-  }
+function parseOptionalNumber(value: unknown) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const [currentWeek, setCurrentWeek] = useState(1);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<any>(null);
+  const utils = trpc.useUtils();
 
-  const { data: dashboardStats } = trpc.dashboard.getStats.useQuery({
-    weekId: currentWeek,
-  });
-  const { data: todayTraining = [] } = trpc.suggestions.getTodayTraining.useQuery();
-  const { data: reviewQueueSummary } = trpc.hands.getReviewQueueSummary.useQuery();
-  const { data: tournaments } = trpc.tournaments.getByWeek.useQuery({
-    weekId: currentWeek,
-  });
+  const { data: hands = [], isLoading: handsLoading } =
+    trpc.hands.getByUser.useQuery({ limit: 5 });
+  const { data: tournaments = [], isLoading: tournamentsLoading } =
+    trpc.tournaments.getByUser.useQuery({ limit: 5 });
+  const { data: notes = [] } = trpc.notes.list.useQuery({ limit: 3 });
+
   const { mutate: updateTournament, isPending: isUpdatingTournament } =
     trpc.tournaments.update.useMutation({
-      onSuccess: () => {
+      onSuccess: async () => {
         setShowEditModal(false);
         setSelectedTournament(null);
+        await utils.tournaments.getByUser.invalidate();
       },
     });
 
-  useEffect(() => {
-    const today = new Date();
-    const dayOfYear = Math.floor(
-      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
-        86400000
-    );
-    const weekNumber = Math.ceil(dayOfYear / 7);
-    const cycleWeek = ((weekNumber - 1) % 12) + 1;
-    setCurrentWeek(cycleWeek);
-  }, []);
-
-  const studyProgress = dashboardStats
-    ? (dashboardStats.studyHours / dashboardStats.studyHoursTarget) * 100
-    : 0;
-  const tournamentsProgress = dashboardStats
-    ? (dashboardStats.tournamentsCount / dashboardStats.tournamentsTarget) * 100
-    : 0;
-
-  const recentActivity: TournamentActivity[] =
-    tournaments?.map((t: any) => ({
-      id: t.id,
-      title: `${t.venue || "Tournament"} ${t.buyIn > 0 ? `$${t.buyIn}` : ""}`,
-      time: new Date(t.date).toLocaleDateString(),
-      tournament: t,
-    })) || [];
-
-  const pendingReviewCount = reviewQueueSummary?.totalNeedsReview ?? 0;
-  const activityPreview = recentActivity.slice(0, 4);
+  const pendingHands = useMemo(
+    () => hands.filter(hand => !hand.reviewed).length,
+    [hands]
+  );
+  const netResult = useMemo(
+    () =>
+      tournaments.reduce(
+        (total, tournament) => total + (tournament.netResult ?? 0),
+        0
+      ),
+    [tournaments]
+  );
 
   function handleEditTournament(data: any) {
     if (!selectedTournament) return;
     updateTournament({
       id: selectedTournament.id,
-      buyIn: parseFloat(data.buyIn),
-      reEntries: parseInt(data.reEntries, 10) || 0,
-      startingStack: parseInt(data.startingStack, 10) || 0,
-      finalPosition: data.finalPosition,
-      prize: parseFloat(data.prize) || 0,
+      buyIn: Number(data.buyIn) || 0,
+      reEntries: Number.parseInt(data.reEntries, 10) || 0,
+      startingStack: parseOptionalNumber(data.startingStack),
+      finalPosition: parseOptionalNumber(data.finalPosition),
+      prize: Number(data.prize) || 0,
       venue: data.venue || "",
       notesOverall: data.notes || "",
     });
@@ -119,85 +71,46 @@ export default function Dashboard() {
   return (
     <main className="app-shell min-h-screen pb-24 text-foreground">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
-        <header className="app-surface-elevated p-4 sm:p-5">
-          <p className="app-eyebrow mb-2">Daily Workspace</p>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <header className="app-surface-elevated p-5 sm:p-6">
+          <p className="app-eyebrow mb-2">Live Play Desk</p>
+          <h1 className="text-3xl font-bold tracking-tight">MTT Coach</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Choose the next preflop task, drill reps, and capture lessons while
-            they are still fresh.
+            Log hands, track tournaments, and keep notes without the study
+            tools getting in the way.
           </p>
         </header>
 
-        <Card className="app-surface">
-          <CardContent className="space-y-3.5 p-4 sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground">
-                  Today&apos;s Training
+        <section className="grid grid-cols-3 gap-2">
+          {[
+            {
+              label: "Hands",
+              value: String(hands.length),
+              helper: `${pendingHands} pending`,
+            },
+            {
+              label: "Tournaments",
+              value: String(tournaments.length),
+              helper: formatMoney(netResult),
+            },
+            {
+              label: "Notes",
+              value: String(notes.length),
+              helper: "latest saved",
+            },
+          ].map(stat => (
+            <Card key={stat.label} className="app-surface">
+              <CardContent className="p-3">
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                <p className="mt-1 text-2xl font-semibold">{stat.value}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {stat.helper}
                 </p>
-                <h2 className="mt-1 text-xl font-semibold">
-                  Based on your recent misses and review queue
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Clear next reps, review tasks, and chart work surfaced from your actual study history.
-                </p>
-              </div>
-              <Button
-                className="h-10 rounded-xl px-4"
-                onClick={() => setLocation("/study")}
-              >
-                Open Study
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
 
-            <div className="space-y-2">
-              {todayTraining.map((suggestion, index) => (
-                <div
-                  key={suggestion.id}
-                  className="rounded-xl border border-border bg-secondary p-2.5 sm:p-3"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-muted-foreground">
-                        {index + 1}. Today
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {suggestion.title}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {suggestion.reason}
-                      </p>
-                    </div>
-                    <Button
-                      variant={index === 0 ? "default" : "outline"}
-                      className="h-8 shrink-0 rounded-full px-4 text-xs font-semibold"
-                      onClick={() => setLocation(suggestion.targetRoute)}
-                    >
-                      {ctaLabelForSuggestion(suggestion)}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {[
-                { label: "BBA", value: "Only" },
-                { label: "Stack Cap", value: "40bb" },
-                { label: "Review Queue", value: `${pendingReviewCount}` },
-                { label: "Week", value: `${currentWeek}` },
-              ].map(item => (
-                <div key={item.label} className="app-surface-subtle px-3 py-2">
-                  <p className="text-xs text-muted-foreground">{item.label}</p>
-                  <p className="text-sm font-semibold">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <section className="grid grid-cols-3 gap-2">
           {[
             {
               label: "Log Hand",
@@ -207,150 +120,149 @@ export default function Dashboard() {
             {
               label: "Tournament",
               icon: Trophy,
-              onClick: () => setLocation("/log"),
+              onClick: () => setLocation("/tournaments"),
             },
             {
-              label: "Add Leak",
-              icon: ClipboardCheck,
-              onClick: () => setLocation("/log"),
-            },
-            {
-              label: "Add Note",
+              label: "Note",
               icon: FileText,
-              onClick: () => setLocation("/log"),
+              onClick: () => setLocation("/notes"),
             },
           ].map(action => (
             <button
               key={action.label}
               type="button"
               onClick={action.onClick}
-              className="app-surface flex items-center gap-2 p-3 text-left transition hover:-translate-y-0.5"
+              className="app-surface flex min-h-24 flex-col items-center justify-center gap-2 p-3 text-center transition hover:-translate-y-0.5"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-primary ring-1 ring-border/70">
-                <action.icon className="h-4 w-4" />
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-primary ring-1 ring-border/70">
+                <action.icon className="h-5 w-5" />
               </span>
               <span className="text-sm font-semibold">{action.label}</span>
             </button>
           ))}
         </section>
 
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setLocation("/strategy/library")}
-            className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-primary ring-1 ring-border/70">
-              <Layers className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold">Hand Ranges</p>
-              <p className="text-xs text-muted-foreground">
-                Open the current chart setup quickly.
-              </p>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setLocation("/strategy/trainer")}
-            className="app-surface flex items-center gap-3 p-4 text-left transition hover:-translate-y-0.5"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFF3E8] text-primary ring-1 ring-amber-200/70">
-              <Target className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold">Range Trainer</p>
-              <p className="text-xs text-muted-foreground">
-                Drill current spot and review misses.
-              </p>
-            </div>
-          </button>
-        </section>
-
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {[
-            {
-              title: "Study Hours",
-              value: dashboardStats?.studyHours.toFixed(0) || "0",
-              progress: studyProgress,
-            },
-            {
-              title: "Tournaments",
-              value: `${dashboardStats?.tournamentsCount || 0}`,
-              progress: tournamentsProgress,
-            },
-            {
-              title: "Range Reps",
-              value: "0",
-              progress: 0,
-            },
-            {
-              title: "Max Stack",
-              value: "40bb",
-              progress: 100,
-            },
-          ].map(stat => (
-            <Card key={stat.title} className="app-surface">
-              <CardContent className="space-y-2 p-3">
-                <p className="text-xs text-muted-foreground">{stat.title}</p>
-                <p className="text-xl font-semibold">{stat.value}</p>
-                <Progress value={stat.progress} className="h-1.5" />
-              </CardContent>
-            </Card>
-          ))}
-        </section>
-
-        <Card className="app-surface">
-          <CardHeader className="flex flex-row items-end justify-between gap-3">
-            <div>
-              <CardTitle className="text-lg">Tournament Updates</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Recent result logs and edits, kept quiet until there is
-                something worth reviewing.
-              </p>
-            </div>
-            {activityPreview.length > 0 && (
-              <Badge variant="outline">Latest {activityPreview.length}</Badge>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {activityPreview.length === 0 && (
-              <div className="app-empty-state px-4 py-3.5">
-                No tournament updates yet. Log a result when you finish your
-                next session.
+        <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <Card className="app-surface">
+            <CardHeader className="flex flex-row items-end justify-between gap-3">
+              <div>
+                <CardTitle className="text-lg">Recent Hands</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Quick review queue from the latest logs.
+                </p>
               </div>
-            )}
-
-            {activityPreview.map(activity => (
-              <button
-                key={activity.id}
-                type="button"
-                onClick={() => {
-                  setSelectedTournament(activity.tournament);
-                  setShowEditModal(true);
-                }}
-                className="app-list-row flex w-full items-center justify-between gap-3 p-3.5 text-left"
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setLocation("/hands")}
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{activity.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {activity.time}
-                  </p>
+                Open
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {handsLoading &&
+                [1, 2, 3].map(index => (
+                  <Skeleton key={index} className="h-14 rounded-xl" />
+                ))}
+              {!handsLoading && hands.length === 0 && (
+                <div className="app-empty-state px-4 py-3.5">
+                  No hands yet. Use Log Hand during or after play.
                 </div>
-                <Badge
-                  variant="outline"
-                  className={
-                    activity.tournament.netResult >= 0
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-amber-200 bg-[#FFF7E6] text-[#9A4D12]"
-                  }
+              )}
+              {hands.map(hand => (
+                <button
+                  key={hand.id}
+                  type="button"
+                  onClick={() => setLocation(`/hands/${hand.id}`)}
+                  className="app-list-row flex w-full items-center justify-between gap-3 p-3.5 text-left"
                 >
-                  {formatNetResult(activity.tournament.netResult)}
-                </Badge>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">
+                      {hand.heroHand || hand.handClass || "Logged hand"}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {[hand.heroPosition, hand.effectiveStackBb ? `${Math.round(hand.effectiveStackBb)}bb` : null]
+                        .filter(Boolean)
+                        .join(" | ") || "No details yet"}
+                    </p>
+                  </div>
+                  <Badge variant="outline">
+                    {hand.reviewed ? "Reviewed" : "Review"}
+                  </Badge>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="app-surface">
+            <CardHeader className="flex flex-row items-end justify-between gap-3">
+              <div>
+                <CardTitle className="text-lg">Recent Tournaments</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Latest results and session notes.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setLocation("/tournaments")}
+              >
+                Open
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {tournamentsLoading &&
+                [1, 2, 3].map(index => (
+                  <Skeleton key={index} className="h-14 rounded-xl" />
+                ))}
+              {!tournamentsLoading && tournaments.length === 0 && (
+                <div className="app-empty-state px-4 py-3.5">
+                  No tournaments yet. Add the result when the session ends.
+                </div>
+              )}
+              {tournaments.map(tournament => (
+                <button
+                  key={tournament.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTournament(tournament);
+                    setShowEditModal(true);
+                  }}
+                  className="app-list-row flex w-full items-center justify-between gap-3 p-3.5 text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">
+                      {tournament.venue || tournament.name || "Tournament"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {new Date(tournament.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={
+                      (tournament.netResult ?? 0) >= 0
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-amber-200 bg-[#FFF7E6] text-[#9A4D12]"
+                    }
+                  >
+                    {formatMoney(tournament.netResult)}
+                  </Badge>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+
+        <Button
+          className="h-12 rounded-xl"
+          onClick={() => setLocation("/log")}
+        >
+          <Plus className="h-4 w-4" />
+          Open Live Log
+        </Button>
       </div>
 
       <EditTournamentModal

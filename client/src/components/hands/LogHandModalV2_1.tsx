@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { LEAK_FAMILIES, type LeakFamilyDefinition } from "@/../../shared/leakFamilies";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -412,10 +411,8 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
   const [isMistake, setIsMistake] = useState<"yes" | "no" | "unsure">("unsure");
   const [mistakeStreet, setMistakeStreet] = useState<Street | "">("");
   const [severity, setSeverity] = useState(0);
-  const [leakFamilyId, setLeakFamilyId] = useState("");
   const [confidence, setConfidence] = useState<"LOW" | "MEDIUM" | "HIGH" | "">("")
   const [lesson, setLesson] = useState("");
-  const [icmizerReview, setIcmizerReview] = useState(false);
   const [showReviewTagging, setShowReviewTagging] = useState(false);
 
   // Card picker mode
@@ -439,7 +436,7 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
     setPreflopActions([]);
     setFlopData(null); setTurnData(null); setRiverData(null); setShowOptionalStreets(false);
     setIsMistake("unsure"); setMistakeStreet(""); setSeverity(0);
-    setLeakFamilyId(""); setConfidence(""); setLesson("");
+    setConfidence(""); setLesson("");
     setShowReviewTagging(false);
     setUseCardPicker(false);
     onClose();
@@ -522,8 +519,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
       boardJson: buildBoardJson(),
       mistakeStreet: isMistake !== "no" && mistakeStreet ? (mistakeStreet as any) : undefined,
       mistakeSeverity: isMistake !== "no" ? severity : 0,
-      tags: icmizerReview ? ["ICMIZER_REVIEW"] : undefined,
-      leakFamilyId: leakFamilyId && leakFamilyId !== "none" ? leakFamilyId : undefined,
       confidence: confidence || undefined,
       lesson: lesson.trim() || undefined,
       reviewStatus,
@@ -689,10 +684,10 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-slate-600">Range Read</Label>
+                  <Label className="text-xs text-slate-600">Villain Read</Label>
                   <Select value={rangeRead} onValueChange={setRangeRead}>
                     <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Range" />
+                      <SelectValue placeholder="Read" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
@@ -830,22 +825,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
             )}
 
-            {/* Leak Family */}
-            <div className="space-y-1.5">
-              <Label className="text-sm">Leak Family</Label>
-              <Select value={leakFamilyId} onValueChange={setLeakFamilyId}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="No leak family" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No leak family</SelectItem>
-                  {LEAK_FAMILIES.map((f: LeakFamilyDefinition) => (
-                    <SelectItem key={f.id} value={f.id}>{f.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Confidence */}
             <div className="space-y-1.5">
               <Label className="text-sm">Confidence</Label>
@@ -864,20 +843,6 @@ export function LogHandModalV2_1({ isOpen, onClose }: LogHandModalV2_1Props) {
               </div>
             </div>
 
-            {/* ICMIZER Review tag */}
-            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-amber-200 bg-[#FFF7E6] px-3 py-2 sm:flex-row sm:items-center">
-              <input
-                id="icmizer-review-checkbox"
-                type="checkbox"
-                checked={icmizerReview}
-                onChange={e => setIcmizerReview(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 accent-[#C96A1B]"
-              />
-              <label htmlFor="icmizer-review-checkbox" className="cursor-pointer text-xs font-medium text-[#9A4D12]">
-                Flag for ICMIZER review
-              </label>
-              <span className="text-xs text-[#B45309] sm:ml-auto">Short-stack / shove / call-off?</span>
-            </div>
             {/* Lesson */}
             <div className="space-y-1.5">
               <Label className="text-sm">Lesson</Label>

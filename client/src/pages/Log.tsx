@@ -1,18 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import {
-  AlertCircle,
-  ChevronRight,
-  Clock3,
-  FileText,
-  History,
-  Trophy,
-  Zap,
-} from "lucide-react";
+import { ChevronRight, Clock3, FileText, History, Trophy, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { LogHandModalV2_1 } from "@/components/hands/LogHandModalV2_1";
 import { LogTournamentModal } from "@/components/LogTournamentModal";
-import { AddLeakModal, type AddLeakFormData } from "@/components/AddLeakModal";
 import { AddNoteModal, type AddNoteFormData } from "@/components/AddNoteModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,8 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { getLeakFamily } from "@shared/leakFamilies";
-import { displayPositionLabel } from "@shared/strategy";
 
 interface TournamentFormData {
   buyIn: string;
@@ -33,8 +22,6 @@ interface TournamentFormData {
   notes: string;
 }
 
-type LeakCategory = "PREFLOP";
-
 const supportingActions = [
   {
     id: "tournament",
@@ -43,15 +30,9 @@ const supportingActions = [
     icon: Trophy,
   },
   {
-    id: "leak",
-    title: "Preflop Leak",
-    helper: "Capture recurring mistakes you can train",
-    icon: AlertCircle,
-  },
-  {
     id: "note",
-    title: "Add Note",
-    helper: "Save quick takeaways tied to study",
+    title: "Quick Note",
+    helper: "Player read, mental note, or session reminder",
     icon: FileText,
   },
 ] as const;
@@ -66,21 +47,17 @@ function parseFinalPosition(value: string) {
   return match ? Number.parseInt(match[0], 10) : undefined;
 }
 
-function leakCategoryFromType(): LeakCategory {
-  return "PREFLOP";
-}
-
 function reviewStatus(reviewed: boolean, mistakeSeverity: number) {
-  if (!reviewed) return "Draft";
-  if (mistakeSeverity > 0) return "Needs Review";
-  return "Reviewed";
+  if (!reviewed) return "Review";
+  if (mistakeSeverity > 0) return "Mistake";
+  return "Done";
 }
 
 function reviewStatusClass(status: string) {
-  if (status === "Reviewed") {
+  if (status === "Done") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
-  if (status === "Needs Review") {
+  if (status === "Mistake") {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
   return "border-slate-200 bg-slate-100 text-slate-700";
@@ -89,7 +66,6 @@ function reviewStatusClass(status: string) {
 export default function Log() {
   const [showLogHandModal, setShowLogHandModal] = useState(false);
   const [showLogTournamentModal, setShowLogTournamentModal] = useState(false);
-  const [showAddLeakModal, setShowAddLeakModal] = useState(false);
   const [showAddNoteModal, setShowAddNoteModal] = useState(false);
 
   const utils = trpc.useUtils();
@@ -98,22 +74,23 @@ export default function Log() {
 
   const { mutate: createTournament, isPending: isCreatingTournament } =
     trpc.tournaments.create.useMutation({
-      onSuccess: () => {
+      onSuccess: async () => {
         toast.success("Tournament saved");
         setShowLogTournamentModal(false);
+        await utils.tournaments.getByUser.invalidate();
       },
       onError: error =>
         toast.error(`Could not save tournament: ${error.message}`),
     });
 
-  const { mutate: createLeak, isPending: isCreatingLeak } =
-    trpc.leaks.create.useMutation({
+  const { mutate: createNote, isPending: isCreatingNote } =
+    trpc.notes.create.useMutation({
       onSuccess: async () => {
-        toast.success("Leak saved");
-        await utils.leaks.getTop.invalidate();
-        setShowAddLeakModal(false);
+        toast.success("Note saved");
+        setShowAddNoteModal(false);
+        await utils.notes.list.invalidate();
       },
-      onError: error => toast.error(`Could not save leak: ${error.message}`),
+      onError: error => toast.error(`Could not save note: ${error.message}`),
     });
 
   const statusCounts = useMemo(() => {
@@ -123,7 +100,7 @@ export default function Log() {
         accumulator[status] = (accumulator[status] ?? 0) + 1;
         return accumulator;
       },
-      { Draft: 0, "Needs Review": 0, Reviewed: 0 } as Record<string, number>
+      { Review: 0, Mistake: 0, Done: 0 } as Record<string, number>
     );
   }, [recentHands]);
   const recentHandPreview = recentHands.slice(0, 6);
@@ -141,27 +118,15 @@ export default function Log() {
     });
   }
 
-  function handleAddLeak(data: AddLeakFormData) {
-    const family = getLeakFamily(data.leakType);
-    createLeak({
-      name: family?.label ?? (data.leakType.replace(/_/g, " ") || "Poker leak"),
-      category: leakCategoryFromType(),
-      description:
-        data.notes ||
-        family?.description ||
-        "Recurring preflop leak tracked for future study.",
-      status: "ACTIVE",
-    });
-  }
-
   function handleAddNote(data: AddNoteFormData) {
-    toast.success(data.category ? "Note captured" : "Quick note captured");
-    setShowAddNoteModal(false);
+    createNote({
+      category: data.category || "general",
+      content: data.content,
+    });
   }
 
   function openSupportingAction(id: (typeof supportingActions)[number]["id"]) {
     if (id === "tournament") setShowLogTournamentModal(true);
-    if (id === "leak") setShowAddLeakModal(true);
     if (id === "note") setShowAddNoteModal(true);
   }
 
@@ -171,14 +136,18 @@ export default function Log() {
         <header className="app-surface-elevated p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
+              <p className="app-eyebrow mb-2">Fast Capture</p>
               <h1 className="text-3xl font-bold tracking-tight">Log</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Keep entries short while playing, then review details later.
+              </p>
             </div>
             <Button
               className="h-11 rounded-xl px-4"
               onClick={() => setShowLogHandModal(true)}
             >
               <Zap className="h-4 w-4" />
-              Log a Hand
+              Log Hand
             </Button>
           </div>
         </header>
@@ -189,6 +158,9 @@ export default function Log() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">Quick Hand Log</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Hand, stack, spot, line, and one lesson when needed.
+                  </p>
                 </div>
                 <Badge variant="outline" className="rounded-full">
                   Primary
@@ -197,8 +169,8 @@ export default function Log() {
 
               <div className="flex flex-wrap gap-2">
                 {[
-                  { label: "Fast capture", icon: Clock3 },
-                  { label: "Preflop first", icon: Zap },
+                  { label: "Fast", icon: Clock3 },
+                  { label: "Live-safe", icon: Zap },
                   { label: "Review later", icon: History },
                 ].map(item => (
                   <Badge
@@ -216,7 +188,7 @@ export default function Log() {
                 className="h-11 w-full rounded-xl"
                 onClick={() => setShowLogHandModal(true)}
               >
-                Open Quick Hand Log
+                Open Hand Log
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </CardContent>
@@ -253,6 +225,9 @@ export default function Log() {
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <CardTitle className="text-lg">Recent Hands</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  The latest hands waiting for review.
+                </p>
               </div>
               <Link href="/hands">
                 <Button
@@ -260,19 +235,16 @@ export default function Log() {
                   size="sm"
                   className="self-start rounded-full"
                 >
-                  Open Review Queue
+                  Open Hands
                 </Button>
               </Link>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {[
-                  { label: "Draft", value: statusCounts.Draft },
-                  {
-                    label: "Needs Review",
-                    value: statusCounts["Needs Review"],
-                  },
-                  { label: "Reviewed", value: statusCounts.Reviewed },
+                  { label: "Review", value: statusCounts.Review },
+                  { label: "Mistake", value: statusCounts.Mistake },
+                  { label: "Done", value: statusCounts.Done },
                 ].map(stat => (
                   <div key={stat.label} className="app-chip">
                     {stat.label}: {stat.value}
@@ -290,8 +262,8 @@ export default function Log() {
 
               {!handsLoading && recentHands.length === 0 && (
                 <div className="app-empty-state p-4">
-                  No hands logged yet. Capture your next preflop decision from
-                  the button above.
+                  No hands logged yet. Capture your next decision from the
+                  button above.
                 </div>
               )}
 
@@ -306,13 +278,11 @@ export default function Log() {
                       <div className="app-list-row flex items-center justify-between gap-3 p-3.5">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold">
-                            {hand.heroHand || "Captured hand"}
+                            {hand.heroHand || hand.handClass || "Captured hand"}
                           </p>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
                             {[
-                              hand.heroPosition
-                                ? displayPositionLabel(hand.heroPosition)
-                                : null,
+                              hand.heroPosition,
                               hand.effectiveStackBb
                                 ? `${Math.round(hand.effectiveStackBb)}bb`
                                 : null,
@@ -352,17 +322,11 @@ export default function Log() {
         isLoading={isCreatingTournament}
       />
 
-      <AddLeakModal
-        isOpen={showAddLeakModal}
-        onClose={() => setShowAddLeakModal(false)}
-        onSubmit={handleAddLeak}
-        isLoading={isCreatingLeak}
-      />
-
       <AddNoteModal
         isOpen={showAddNoteModal}
         onClose={() => setShowAddNoteModal(false)}
         onSubmit={handleAddNote}
+        isLoading={isCreatingNote}
       />
     </main>
   );

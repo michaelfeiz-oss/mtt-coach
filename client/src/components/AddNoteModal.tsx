@@ -30,13 +30,13 @@ export function AddNoteModal({
   isLoading = false,
 }: AddNoteModalProps) {
   const [formData, setFormData] = useState({
-    category: "",
+    category: "general",
     content: "",
   });
 
   const resetForm = () => {
     setFormData({
-      category: "",
+      category: "general",
       content: "",
     });
   };
@@ -60,8 +60,8 @@ export function AddNoteModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Add Note"
-      description="Capture a quick preflop takeaway or reminder."
-      eyebrow="Study Note"
+      description="Capture a live note, reminder, or tournament takeaway."
+      eyebrow="Live Note"
       onSubmit={handleSubmit}
       submitLabel="Save Note"
       isLoading={isLoading}
@@ -80,12 +80,11 @@ export function AddNoteModal({
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="observation">Observation</SelectItem>
-              <SelectItem value="range-note">Range Note</SelectItem>
-              <SelectItem value="spot-takeaway">Spot Takeaway</SelectItem>
-              <SelectItem value="hand-review">Hand Review</SelectItem>
-              <SelectItem value="trainer-reminder">Trainer Reminder</SelectItem>
-              <SelectItem value="other-preflop">Other Preflop Note</SelectItem>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="hand">Hand Note</SelectItem>
+              <SelectItem value="tournament">Tournament Note</SelectItem>
+              <SelectItem value="player-read">Player Read</SelectItem>
+              <SelectItem value="mental-game">Mental Game</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -97,7 +96,7 @@ export function AddNoteModal({
           </Label>
           <Textarea
             id="content"
-            placeholder="Write a preflop takeaway or reminder."
+            placeholder="Write the note while it is fresh."
             value={formData.content}
             onChange={e => setFormData({ ...formData, content: e.target.value })}
             className="min-h-28"

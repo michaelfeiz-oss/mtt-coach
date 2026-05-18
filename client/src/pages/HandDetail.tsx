@@ -1,27 +1,44 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Target } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { ACTION_LABELS } from "../../../shared/strategy";
-import { findLeakFamilyByLabel } from "@shared/leakFamilies";
-import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { trpc } from "@/lib/trpc";
 
 interface HandReviewForm {
   reviewed: boolean;
-  mistakeStreet: "NONE" | "PREFLOP";
+  mistakeStreet: "NONE" | "PREFLOP" | "FLOP" | "TURN" | "RIVER";
   mistakeSeverity: string;
   tags: string;
   lesson: string;
-  selectedLeakIds: number[];
+}
+
+interface LoggedAction {
+  street?: string;
+  actor?: string;
+  action?: string;
+  size?: string;
+  sizeUnit?: string;
 }
 
 function safeParseTags(tagsJson?: string | null): string[] {
@@ -36,6 +53,33 @@ function safeParseTags(tagsJson?: string | null): string[] {
   }
 }
 
+function safeParseActions(actionsJson?: string | null): LoggedAction[] {
+  if (!actionsJson) return [];
+  try {
+    const parsed = JSON.parse(actionsJson);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function safeParseBoard(boardJson?: string | null): Record<string, string | null> {
+  if (!boardJson) return {};
+  try {
+    const parsed = JSON.parse(boardJson);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function actionLabel(action: LoggedAction) {
+  const size = action.size
+    ? ` to ${action.size}${action.sizeUnit === "bb" ? "bb" : ` ${action.sizeUnit ?? ""}`}`
+    : "";
+  return [action.actor, action.action].filter(Boolean).join(" ") + size;
+}
+
 export default function HandDetail() {
   const { id } = useParams();
   const handId = Number(id);
@@ -46,19 +90,6 @@ export default function HandDetail() {
     { id: handId },
     { enabled: Number.isFinite(handId) }
   );
-  const { data: allLeaks = [] } = trpc.leaks.list.useQuery();
-  const { data: handLeaks = [] } = trpc.hands.getLeaks.useQuery(
-    { handId },
-    { enabled: Number.isFinite(handId) }
-  );
-  const { data: strategyRecommendation } = trpc.strategy.getHandRecommendation.useQuery(
-    { handId },
-    { enabled: Number.isFinite(handId) }
-  );
-  const { data: handTrainingSuggestion } = trpc.suggestions.getForHand.useQuery(
-    { handId },
-    { enabled: Number.isFinite(handId) }
-  );
 
   const [formData, setFormData] = useState<HandReviewForm>({
     reviewed: false,
@@ -66,20 +97,18 @@ export default function HandDetail() {
     mistakeSeverity: "0",
     tags: "",
     lesson: "",
-    selectedLeakIds: [],
   });
 
   useEffect(() => {
     if (!hand) return;
     setFormData({
       reviewed: hand.reviewed,
-      mistakeStreet: hand.mistakeStreet === "PREFLOP" ? "PREFLOP" : "NONE",
+      mistakeStreet: hand.mistakeStreet ?? "NONE",
       mistakeSeverity: String(hand.mistakeSeverity),
       tags: safeParseTags(hand.tagsJson).join(", "),
       lesson: hand.lesson ?? "",
-      selectedLeakIds: handLeaks.map(leak => leak.id),
     });
-  }, [hand, handLeaks]);
+  }, [hand]);
 
   const tagsPreview = useMemo(
     () =>
@@ -89,52 +118,26 @@ export default function HandDetail() {
         .filter(Boolean),
     [formData.tags]
   );
-  const suggestedLeakAlreadyLinked = useMemo(() => {
-    if (!handTrainingSuggestion?.leakFamilyId) return false;
-    return handLeaks.some(
-      leak =>
-        findLeakFamilyByLabel(leak.name)?.id === handTrainingSuggestion.leakFamilyId
-    );
-  }, [handLeaks, handTrainingSuggestion?.leakFamilyId]);
+
+  const actionsByStreet = useMemo(() => {
+    const grouped = new Map<string, LoggedAction[]>();
+    for (const action of safeParseActions(hand?.actionsJson)) {
+      const street = action.street ?? "OTHER";
+      grouped.set(street, [...(grouped.get(street) ?? []), action]);
+    }
+    return grouped;
+  }, [hand?.actionsJson]);
+
+  const board = useMemo(() => safeParseBoard(hand?.boardJson), [hand?.boardJson]);
 
   const updateHand = trpc.hands.update.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Hand review saved");
-      void utils.hands.getById.invalidate({ id: handId });
-      void utils.hands.getByUser.invalidate();
+      await utils.hands.getById.invalidate({ id: handId });
+      await utils.hands.getByUser.invalidate();
     },
     onError: error => {
       toast.error(`Could not save review: ${error.message}`);
-    },
-  });
-
-  const linkLeak = trpc.hands.linkLeak.useMutation({
-    onSuccess: () => {
-      void utils.hands.getLeaks.invalidate({ handId });
-      void utils.leaks.getTop.invalidate();
-    },
-  });
-
-  const unlinkLeak = trpc.hands.unlinkLeak.useMutation({
-    onSuccess: () => {
-      void utils.hands.getLeaks.invalidate({ handId });
-      void utils.leaks.getTop.invalidate();
-    },
-  });
-  const attachLeakFamily = trpc.hands.attachLeakFamily.useMutation({
-    onSuccess: leak => {
-      toast.success(`Linked ${leak.name}`);
-      void utils.hands.getLeaks.invalidate({ handId });
-      void utils.leaks.getTop.invalidate();
-      setFormData(previous => ({
-        ...previous,
-        selectedLeakIds: previous.selectedLeakIds.includes(leak.id)
-          ? previous.selectedLeakIds
-          : [...previous.selectedLeakIds, leak.id],
-      }));
-    },
-    onError: error => {
-      toast.error(`Could not link leak: ${error.message}`);
     },
   });
 
@@ -150,63 +153,28 @@ export default function HandDetail() {
       id: handId,
       reviewed: formData.reviewed,
       mistakeStreet:
-        formData.mistakeStreet === "PREFLOP" ? "PREFLOP" : undefined,
+        formData.mistakeStreet === "NONE" ? null : formData.mistakeStreet,
       mistakeSeverity: Number.parseInt(formData.mistakeSeverity, 10) || 0,
       tags: tagsArray,
       lesson: formData.lesson.trim() || undefined,
+      reviewStatus: formData.reviewed ? "REVIEWED" : "NEEDS_REVIEW",
     });
-
-    const currentLeakIds = handLeaks.map(leak => leak.id);
-    const toAdd = formData.selectedLeakIds.filter(leakId => !currentLeakIds.includes(leakId));
-    const toRemove = currentLeakIds.filter(leakId => !formData.selectedLeakIds.includes(leakId));
-
-    for (const leakId of toAdd) {
-      await linkLeak.mutateAsync({ handId, leakId });
-    }
-
-    for (const leakId of toRemove) {
-      await unlinkLeak.mutateAsync({ handId, leakId });
-    }
-
-    toast.success("Hand and leak links updated");
-  }
-
-  function toggleLeak(leakId: number) {
-    setFormData(previous => ({
-      ...previous,
-      selectedLeakIds: previous.selectedLeakIds.includes(leakId)
-        ? previous.selectedLeakIds.filter(idValue => idValue !== leakId)
-        : [...previous.selectedLeakIds, leakId],
-    }));
   }
 
   if (isLoading) {
     return (
-      <div className="app-shell min-h-screen text-foreground">
-        <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90">
-          <div className="container py-4">
-            <Skeleton className="h-8 w-36" />
-          </div>
-        </header>
-        <main className="container py-6">
-            <Card className="app-surface">
-              <CardHeader>
-                <Skeleton className="h-8 w-56" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+      <main className="app-shell min-h-screen text-foreground">
+        <div className="container max-w-5xl py-6">
+          <Skeleton className="h-12 w-40" />
+          <Skeleton className="mt-4 h-40 w-full rounded-2xl" />
+        </div>
+      </main>
     );
   }
 
   if (!hand) {
     return (
-      <div className="app-shell flex min-h-screen items-center justify-center text-foreground">
+      <main className="app-shell flex min-h-screen items-center justify-center text-foreground">
         <Card className="app-surface w-full max-w-md">
           <CardHeader>
             <CardTitle>Hand not found</CardTitle>
@@ -215,69 +183,38 @@ export default function HandDetail() {
             <Button onClick={() => setLocation("/hands")}>Back to hands</Button>
           </CardContent>
         </Card>
-      </div>
+      </main>
     );
   }
 
-  const isSaving =
-    updateHand.isPending ||
-    linkLeak.isPending ||
-    unlinkLeak.isPending ||
-    attachLeakFamily.isPending;
-
   return (
-    <div className="app-shell min-h-screen text-foreground">
-      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 backdrop-blur">
-        <div className="container py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/hands")}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Hands
-          </Button>
-        </div>
-      </header>
+    <main className="app-shell min-h-screen pb-24 text-foreground">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6 sm:py-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation("/hands")}
+          className="w-fit gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Hands
+        </Button>
 
-      <main className="container max-w-5xl space-y-4 py-6">
-        {/* ICMIZER review prompt — shown for shove/call-off spots or explicit tag */}
-        {(hand.spotType === "FOUR_BET_JAM" ||
-          hand.spotType === "ICM_SPOT" ||
-          safeParseTags(hand.tagsJson).includes("ICMIZER_REVIEW")) && (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-            <span className="mt-0.5 text-lg">📊</span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-amber-900">Review this exact spot in ICMIZER</p>
-              <p className="mt-0.5 text-xs text-amber-700">
-                Short-stack shoves and call-offs require Nash / ICM / FGS calculations.
-                Enter the exact stack depth, position, and hand into ICMIZER for the correct threshold.
-              </p>
-              <a
-                href="https://www.icmizer.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900"
-              >
-                Open ICMIZER ↗
-              </a>
-            </div>
-          </div>
-        )}
         <Card className="app-surface">
           <CardHeader>
             <CardTitle>Hand Details</CardTitle>
-            <CardDescription className="text-muted-foreground">
+            <CardDescription>
               {[hand.heroPosition, hand.spotType?.replace(/_/g, " ")]
                 .filter(Boolean)
-                .join(" - ") || "Preflop hand log"}
+                .join(" | ") || "Logged hand"}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label className="text-xs text-muted-foreground">Hero Hand</Label>
-              <p className="font-mono text-2xl font-black">{hand.heroHand || "-"}</p>
+              <p className="font-mono text-2xl font-black">
+                {hand.heroHand || hand.handClass || "-"}
+              </p>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Effective Stack</Label>
@@ -290,86 +227,59 @@ export default function HandDetail() {
               <p className="text-base font-semibold">{hand.heroPosition || "-"}</p>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Preflop Decision</Label>
-              <p className="text-base font-semibold">{hand.heroDecisionPreflop || "-"}</p>
+              <Label className="text-xs text-muted-foreground">Villain / Opener</Label>
+              <p className="text-base font-semibold">{hand.villainPosition || "-"}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <Label className="text-xs text-muted-foreground">Preflop Line</Label>
+              <p className="text-sm leading-relaxed">
+                {hand.preflopDecision || hand.heroDecisionPreflop || "-"}
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {strategyRecommendation && handTrainingSuggestion && (
+        {(actionsByStreet.size > 0 || Object.keys(board).length > 0) && (
           <Card className="app-surface">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Target className="h-4 w-4 text-primary" />
-                Next Study Actions
-              </CardTitle>
-              <CardDescription>{strategyRecommendation.reason}</CardDescription>
+              <CardTitle>Logged Line</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="app-surface-subtle p-3 text-sm">
-                <p className="font-semibold">{strategyRecommendation.chart.title}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {[
-                    strategyRecommendation.chart.heroPosition +
-                      (strategyRecommendation.chart.villainPosition
-                        ? ` vs ${strategyRecommendation.chart.villainPosition}`
-                        : ""),
-                    `${strategyRecommendation.chart.stackDepth}bb`,
-                    strategyRecommendation.handCode,
-                    strategyRecommendation.recommendedAction
-                      ? ACTION_LABELS[strategyRecommendation.recommendedAction]
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" - ")}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {handTrainingSuggestion.chartReferenceLabel && (
-                    <Badge variant="outline" className="rounded-full">
-                      {handTrainingSuggestion.chartReferenceLabel}
-                    </Badge>
-                  )}
-                  {handTrainingSuggestion.leakFamilyLabel && (
-                    <Badge variant="outline" className="rounded-full">
-                      {handTrainingSuggestion.leakFamilyLabel}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {handTrainingSuggestion.drillRoute && (
-                  <Button onClick={() => setLocation(handTrainingSuggestion.drillRoute!)}>
-                    Drill This Spot
-                  </Button>
-                )}
-                {handTrainingSuggestion.chartRoute && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setLocation(handTrainingSuggestion.chartRoute!)}
+              {["PREFLOP", "FLOP", "TURN", "RIVER"].map(street => {
+                const streetActions = actionsByStreet.get(street) ?? [];
+                const boardText =
+                  street === "FLOP"
+                    ? board.flopText
+                    : street === "TURN"
+                      ? board.turnCard
+                      : street === "RIVER"
+                        ? board.riverCard
+                        : null;
+
+                if (streetActions.length === 0 && !boardText) return null;
+                return (
+                  <div
+                    key={street}
+                    className="rounded-xl border border-border bg-secondary/70 p-3"
                   >
-                    View nearest chart
-                  </Button>
-                )}
-                {handTrainingSuggestion.leakFamilyId && (
-                  <Button
-                    variant="outline"
-                    disabled={suggestedLeakAlreadyLinked || attachLeakFamily.isPending}
-                    onClick={() =>
-                      attachLeakFamily.mutate({
-                        handId,
-                        leakFamilyId: handTrainingSuggestion.leakFamilyId!,
-                      })
-                    }
-                  >
-                    {suggestedLeakAlreadyLinked ? "Leak linked" : "Mark as leak"}
-                  </Button>
-                )}
-              </div>
-              {handTrainingSuggestion.leakReason && (
-                <p className="text-xs text-muted-foreground">
-                  {handTrainingSuggestion.leakReason}
-                </p>
-              )}
+                    <div className="mb-2 flex items-center gap-2">
+                      <Badge variant="outline">{street}</Badge>
+                      {boardText && (
+                        <span className="text-xs text-muted-foreground">
+                          {boardText}
+                        </span>
+                      )}
+                    </div>
+                    {streetActions.length > 0 && (
+                      <ul className="space-y-1 text-sm">
+                        {streetActions.map((action, index) => (
+                          <li key={`${street}-${index}`}>{actionLabel(action)}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         )}
@@ -378,7 +288,7 @@ export default function HandDetail() {
           <CardHeader>
             <CardTitle>Review and Notes</CardTitle>
             <CardDescription>
-              Keep this focused on preflop mistakes and repeatable takeaways.
+              Mark the hand reviewed and keep the lesson practical.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -411,6 +321,9 @@ export default function HandDetail() {
                     <SelectContent>
                       <SelectItem value="NONE">None</SelectItem>
                       <SelectItem value="PREFLOP">Preflop</SelectItem>
+                      <SelectItem value="FLOP">Flop</SelectItem>
+                      <SelectItem value="TURN">Turn</SelectItem>
+                      <SelectItem value="RIVER">River</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -436,14 +349,14 @@ export default function HandDetail() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tags">Tags (comma-separated)</Label>
+                <Label htmlFor="tags">Tags</Label>
                 <Input
                   id="tags"
                   value={formData.tags}
                   onChange={event =>
                     setFormData(prev => ({ ...prev, tags: event.target.value }))
                   }
-                  placeholder="BB_DEFENSE, OVERFOLD, VS_3BET"
+                  placeholder="player-read, bubble, value-bet"
                 />
                 {tagsPreview.length > 0 && (
                   <p className="text-xs text-muted-foreground">
@@ -453,7 +366,7 @@ export default function HandDetail() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lesson">Lesson</Label>
+                <Label htmlFor="lesson">Lesson / Note</Label>
                 <Textarea
                   id="lesson"
                   rows={4}
@@ -461,34 +374,9 @@ export default function HandDetail() {
                   onChange={event =>
                     setFormData(prev => ({ ...prev, lesson: event.target.value }))
                   }
-                  placeholder="Short preflop takeaway for future reps."
+                  placeholder="One useful takeaway from this hand."
                 />
               </div>
-
-              {allLeaks.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Link to Leaks</Label>
-                  <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-border bg-accent/70 p-3">
-                    {allLeaks.map(leak => (
-                      <label
-                        key={leak.id}
-                        className="flex items-start gap-2 rounded-lg p-2 hover:bg-accent/90"
-                      >
-                        <Checkbox
-                          checked={formData.selectedLeakIds.includes(leak.id)}
-                          onCheckedChange={() => toggleLeak(leak.id)}
-                        />
-                        <span className="min-w-0 text-sm">
-                          <span className="block font-semibold">{leak.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {leak.category}
-                          </span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="flex gap-3 pt-2">
                 <Button
@@ -499,14 +387,14 @@ export default function HandDetail() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save Changes"}
+                <Button type="submit" className="flex-1" disabled={updateHand.isPending}>
+                  {updateHand.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

@@ -1,6 +1,6 @@
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, weeks, studySessions, tournaments, hands, leaks, handLeaks, InsertWeek, InsertStudySession, InsertTournament, InsertHand, InsertLeak } from "../drizzle/schema";
+import { InsertUser, users, weeks, studySessions, tournaments, hands, leaks, handLeaks, userNotes, InsertWeek, InsertStudySession, InsertTournament, InsertHand, InsertLeak, InsertUserNote } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { getLeakFamily, findLeakFamilyByLabel, type CanonicalLeakFamilyId } from "../shared/leakFamilies";
 import type { HandReviewStatus } from "../shared/coachingLoop";
@@ -225,8 +225,20 @@ export async function createTournament(tournament: InsertTournament) {
 export async function getTournamentsByWeek(weekId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   return db.select().from(tournaments).where(eq(tournaments.weekId, weekId)).orderBy(desc(tournaments.date));
+}
+
+export async function getTournamentsByUser(userId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return db
+    .select()
+    .from(tournaments)
+    .where(eq(tournaments.userId, userId))
+    .orderBy(desc(tournaments.date))
+    .limit(limit);
 }
 
 export async function getTournamentById(tournamentId: number) {
@@ -350,8 +362,60 @@ export async function updateHand(handId: number, updates: Partial<InsertHand>) {
 export async function deleteHand(handId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   await db.delete(hands).where(eq(hands.id, handId));
+}
+
+// Live notes
+export async function createUserNote(note: InsertUserNote) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [result] = await db.insert(userNotes).values(note);
+  return (await db.select().from(userNotes).where(eq(userNotes.id, result.insertId)).limit(1))[0];
+}
+
+export async function getUserNotes(userId: number, limit: number = 100) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return db
+    .select()
+    .from(userNotes)
+    .where(eq(userNotes.userId, userId))
+    .orderBy(desc(userNotes.createdAt))
+    .limit(limit);
+}
+
+export async function updateUserNote(
+  userId: number,
+  noteId: number,
+  updates: Partial<InsertUserNote>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(userNotes)
+    .set(updates)
+    .where(and(eq(userNotes.id, noteId), eq(userNotes.userId, userId)));
+
+  const result = await db
+    .select()
+    .from(userNotes)
+    .where(and(eq(userNotes.id, noteId), eq(userNotes.userId, userId)))
+    .limit(1);
+
+  return result[0];
+}
+
+export async function deleteUserNote(userId: number, noteId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .delete(userNotes)
+    .where(and(eq(userNotes.id, noteId), eq(userNotes.userId, userId)));
 }
 
 // Leaks

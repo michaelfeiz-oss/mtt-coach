@@ -164,6 +164,11 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return db.getTournamentsByWeek(input.weekId);
       }),
+    getByUser: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional())
+      .query(async ({ input }) => {
+        return db.getTournamentsByUser(HARDCODED_USER_ID, input?.limit ?? 50);
+      }),
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
@@ -194,6 +199,12 @@ export const appRouter = router({
         }
         await db.updateTournament(id, updates);
         return db.getTournamentById(id);
+      }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteTournament(input.id);
+        return { success: true };
       }),
   }),
 
@@ -254,7 +265,7 @@ export const appRouter = router({
           heroDecisionFlop: input.heroDecisionFlop,
           heroDecisionTurn: input.heroDecisionTurn,
           heroDecisionRiver: input.heroDecisionRiver,
-          reviewed: input.reviewed,
+          reviewed: input.reviewed || input.reviewStatus === "REVIEWED",
           mistakeStreet: input.mistakeStreet,
           mistakeSeverity: input.mistakeSeverity,
           tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
@@ -319,7 +330,7 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         reviewed: z.boolean().optional(),
-        mistakeStreet: z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER']).optional(),
+        mistakeStreet: z.enum(['PREFLOP', 'FLOP', 'TURN', 'RIVER']).nullable().optional(),
         mistakeSeverity: z.number().optional(),
         tags: z.array(z.string()).optional(),
         lesson: z.string().optional(),
@@ -462,6 +473,49 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         return db.deleteHand(input.id);
+      }),
+  }),
+
+  notes: router({
+    list: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(100) }).optional())
+      .query(async ({ input }) => {
+        return db.getUserNotes(HARDCODED_USER_ID, input?.limit ?? 100);
+      }),
+    create: publicProcedure
+      .input(
+        z.object({
+          category: z.string().trim().min(1).max(80).default("general"),
+          title: z.string().trim().max(255).optional(),
+          content: z.string().trim().min(1),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return db.createUserNote({
+          userId: HARDCODED_USER_ID,
+          category: input.category,
+          title: input.title || null,
+          content: input.content,
+        });
+      }),
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          category: z.string().trim().min(1).max(80).optional(),
+          title: z.string().trim().max(255).nullable().optional(),
+          content: z.string().trim().min(1).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...updates } = input;
+        return db.updateUserNote(HARDCODED_USER_ID, id, updates);
+      }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteUserNote(HARDCODED_USER_ID, input.id);
+        return { success: true };
       }),
   }),
 

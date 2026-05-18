@@ -220,6 +220,24 @@ export const handLeaks = mysqlTable("handLeaks", {
 export type HandLeak = typeof handLeaks.$inferSelect;
 export type InsertHandLeak = typeof handLeaks.$inferInsert;
 
+/**
+ * Live notes captured during play or review.
+ */
+export const userNotes = mysqlTable("userNotes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  category: varchar("category", { length: 80 }).default("general").notNull(),
+  title: varchar("title", { length: 255 }),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userCreatedIdx: index("user_notes_user_created_idx").on(table.userId, table.createdAt),
+}));
+
+export type UserNote = typeof userNotes.$inferSelect;
+export type InsertUserNote = typeof userNotes.$inferInsert;
+
 
 /**
  * 12-Week Study Plan Block (Weeks 1-4, 5-8, 9-12)
