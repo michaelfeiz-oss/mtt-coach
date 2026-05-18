@@ -367,12 +367,40 @@ export async function deleteHand(handId: number) {
 }
 
 // Live notes
+async function getNextUserNoteId(db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
+  const latest = await db
+    .select({ id: userNotes.id })
+    .from(userNotes)
+    .orderBy(desc(userNotes.id))
+    .limit(1);
+
+  return (latest[0]?.id ?? 0) + 1;
+}
+
 export async function createUserNote(note: InsertUserNote) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [result] = await db.insert(userNotes).values(note);
-  return (await db.select().from(userNotes).where(eq(userNotes.id, result.insertId)).limit(1))[0];
+  const now = new Date();
+  const row = {
+    ...note,
+    id: note.id ?? await getNextUserNoteId(db),
+    category: note.category || "general",
+    title: note.title ?? null,
+    createdAt: note.createdAt ?? now,
+    updatedAt: note.updatedAt ?? now,
+  };
+
+  try {
+    const [result] = await db.insert(userNotes).values(row);
+    const insertedId = result.insertId || row.id;
+    return (
+      await db.select().from(userNotes).where(eq(userNotes.id, insertedId)).limit(1)
+    )[0];
+  } catch (error) {
+    console.error("[Notes] Failed to create user note", error);
+    throw new Error("Could not save note. The notes table rejected the save.");
+  }
 }
 
 export async function getUserNotes(userId: number, limit: number = 100) {
