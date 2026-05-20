@@ -362,6 +362,40 @@ describe("local strategy database", () => {
     expect(qa.strategyTruthTablesUnchanged).toBe(true);
     expect(qa.warnings).toEqual([]);
 
+    const facing3betCells = createEmptyCells("FOLD");
+    facing3betCells.AA = "FOUR_BET";
+    facing3betCells.KK = "FOUR_BET";
+    facing3betCells.AKs = "JAM";
+    facing3betCells.QQ = "CALL";
+    dbModule.importPopulationDraftPack({
+      schemaVersion: 1,
+      kind: "mtt-study-population-draft-pack",
+      batch: "Test restored facing 3-bet population draft",
+      charts: [
+        {
+          nodeKey: "facing_3bet_25bb_utg_vs_hj_bba",
+          title: "UTG vs HJ 3-Bet @ 25bb",
+          stackBb: 25,
+          spotFamily: "facing_3bet",
+          heroPosition: "UTG",
+          villainPosition: "HJ",
+          allowedActions: ["FOUR_BET", "JAM", "CALL", "FOLD"],
+          sourceName: "test_restored_facing_3bet_population_draft",
+          sourceType: "population_constructed",
+          sourceNotes: "Population draft restored for owner review only.",
+          reviewed: false,
+          cells: facing3betCells,
+        },
+      ],
+    });
+    const restoredFacing3bet = dbModule.getReviewScenario("facing_3bet_25bb_utg_vs_hj_bba");
+    expect(restoredFacing3bet?.rangeCellsStatus).toBe("FULL_169_POPULATION_DRAFT");
+    expect(restoredFacing3bet?.trainerDefaultVisibility).toBe("HIDDEN_DEFAULT_INCLUDE_POPULATION_ONLY");
+    expect(restoredFacing3bet?.linkedChartExists).toBe(true);
+    const qaAfterRestoredDraft = dbModule.getReviewScenarioQa();
+    expect(qaAfterRestoredDraft.invalidFacing3betRows).toBe(0);
+    expect(qaAfterRestoredDraft.populationDraftVisibilityErrors).toBe(0);
+
     const backup = dbModule.exportFullBackup() as any;
     expect(backup.reviewScenarios).toHaveLength(184);
     dbModule.restoreFullBackup(backup);

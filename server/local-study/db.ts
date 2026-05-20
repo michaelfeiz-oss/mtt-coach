@@ -303,6 +303,66 @@ function getReviewScenarioImportAudit(database = getLocalDb()) {
   };
 }
 
+function markReviewScenarioAsPopulationDraftChart(input: {
+  nodeKey: string;
+  allowedActions: ActionToken[];
+  batch: string;
+}) {
+  const database = getLocalDb();
+  const nodeKey = normalizeNodeKey(input.nodeKey);
+  const existing = database
+    .prepare("SELECT node_key FROM strategy_review_scenarios WHERE node_key = ?")
+    .get(nodeKey) as Row | undefined;
+  if (!existing) return;
+
+  database
+    .prepare(
+      `UPDATE strategy_review_scenarios
+       SET app_status = 'population_draft_seed',
+           source_class = 'population_constructed_restored_draft',
+           source_confidence = 'LOW_REVIEW_REQUIRED',
+           range_cells_status = 'FULL_169_POPULATION_DRAFT',
+           import_decision = 'KEEP_POPULATION_DRAFT_FOR_OWNER_REVIEW_NOT_APPROVAL',
+           trainer_default_visibility = 'HIDDEN_DEFAULT_INCLUDE_POPULATION_ONLY',
+           owner_review_required = 'TRUE',
+           approval_target = 'OWNER_REVIEW_REQUIRED_FOR_APPROVAL',
+           allowed_actions = ?,
+           risk_flags = CASE
+             WHEN instr(risk_flags, 'RESTORED_POPULATION_DRAFT_REQUIRES_OWNER_REVIEW') > 0 THEN risk_flags
+             ELSE risk_flags || ';RESTORED_POPULATION_DRAFT_REQUIRES_OWNER_REVIEW'
+           END,
+           codex_action = 'POPULATION_DRAFT_CHART_RESTORED_FOR_OWNER_REVIEW',
+           codex_notes = codex_notes || ' Restored full 169-cell population-draft chart from ' || ? || '; not approved.',
+           field_integrity = 'NO_EMPTY_FIELDS_USE_NOT_APPLICABLE_OR_SOURCE_REQUIRED',
+           updated_at = ?
+       WHERE node_key = ?`
+    )
+    .run(input.allowedActions.join(","), input.batch, nowIso(), nodeKey);
+}
+
+function syncReviewScenariosWithExistingPopulationDraftCharts(batch = "existing population draft chart") {
+  const database = getLocalDb();
+  const rows = database
+    .prepare(
+      `SELECT node_key, allowed_actions_json
+       FROM strategy_charts
+       WHERE LOWER(COALESCE(description, '')) LIKE '%population draft%'
+          OR LOWER(COALESCE(description, '')) LIKE '%population_constructed%'`
+    )
+    .all() as Row[];
+
+  for (const row of rows) {
+    markReviewScenarioAsPopulationDraftChart({
+      nodeKey: String(row.node_key),
+      allowedActions: validateAllowedActions(
+        json<string[]>(String(row.allowed_actions_json), []),
+        String(row.node_key)
+      ),
+      batch,
+    });
+  }
+}
+
 function normalizeStudyNoteInput(input: StudyNoteInput) {
   const title = input.title.trim();
   if (!title) throw new Error("Study note title is required.");
@@ -1076,6 +1136,8 @@ export function importReviewScenarioPack(pack: StrategyReviewPack) {
     return pack.scenario_records.length;
   });
 
+  syncReviewScenariosWithExistingPopulationDraftCharts("existing population draft chart");
+
   const after = getStrategyTruthTableCounts(database);
   if (JSON.stringify(before) !== JSON.stringify(after)) {
     throw new Error("Review scenario import changed strategy chart tables.");
@@ -1167,10 +1229,19 @@ export function getReviewScenarioQa(): StrategyReviewQaSummary {
         .prepare(
           `SELECT COUNT(*) AS count FROM strategy_review_scenarios
            WHERE spot_family = 'facing_3bet'
-             AND (
-               range_cells_status != 'NO_CHART_CELLS_IMPORTED'
-               OR trainer_default_visibility != 'HIDDEN_DEFAULT_NOT_DRILLABLE'
-               OR node_key IN (SELECT node_key FROM strategy_charts)
+             AND NOT (
+               (
+                 range_cells_status = 'NO_CHART_CELLS_IMPORTED'
+                 AND trainer_default_visibility = 'HIDDEN_DEFAULT_NOT_DRILLABLE'
+                 AND node_key NOT IN (SELECT node_key FROM strategy_charts)
+               )
+               OR
+               (
+                 app_status = 'population_draft_seed'
+                 AND range_cells_status = 'FULL_169_POPULATION_DRAFT'
+                 AND trainer_default_visibility = 'HIDDEN_DEFAULT_INCLUDE_POPULATION_ONLY'
+                 AND node_key IN (SELECT node_key FROM strategy_charts)
+               )
              )`
         )
         .get() as { count: number }
@@ -1649,7 +1720,14 @@ export function importPopulationDraftPack(pack: PopulationDraftPack) {
     });
 
     if (result.skipped) skipped += 1;
-    else imported += 1;
+    else {
+      imported += 1;
+      markReviewScenarioAsPopulationDraftChart({
+        nodeKey: chart.nodeKey,
+        allowedActions: chart.allowedActions,
+        batch: pack.batch,
+      });
+    }
   }
 
   getLocalDb()
