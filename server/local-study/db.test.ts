@@ -300,12 +300,15 @@ describe("local strategy database", () => {
 
     const before = dbModule.buildAuditSummary().counts;
     const result = dbModule.importReviewScenarioPack(pack);
+    const secondResult = dbModule.importReviewScenarioPack(pack);
     const after = dbModule.buildAuditSummary().counts;
 
     expect(result.imported).toBe(184);
+    expect(secondResult.imported).toBe(184);
     expect(after.charts).toBe(before.charts);
     expect(after.snapshots).toBe(before.snapshots);
     expect(after.drafts).toBe(before.drafts);
+    expect(secondResult.chartTableCountsBefore).toEqual(secondResult.chartTableCountsAfter);
 
     const summary = dbModule.getReviewScenarioSummary();
     expect(summary.total).toBe(184);
@@ -318,21 +321,83 @@ describe("local strategy database", () => {
     expect(facing3bet?.rangeCellsStatus).toBe("NO_CHART_CELLS_IMPORTED");
     expect(facing3bet?.trainerDefaultVisibility).toBe("HIDDEN_DEFAULT_NOT_DRILLABLE");
     expect(facing3bet?.linkedChartExists).toBe(false);
+    const facing3betRows = dbModule.listReviewScenarios({ spotFamily: "facing_3bet" });
+    expect(facing3betRows).toHaveLength(60);
+    expect(facing3betRows.every(row => row.trainerDefaultVisibility === "HIDDEN_DEFAULT_NOT_DRILLABLE")).toBe(true);
+    expect(facing3betRows.every(row => !row.linkedChartExists)).toBe(true);
+    expect(
+      dbModule
+        .listReviewScenarios({ rangeCellsStatus: "NO_CHART_CELLS_IMPORTED" })
+        .every(row => row.trainerDefaultVisibility === "HIDDEN_DEFAULT_NOT_DRILLABLE")
+    ).toBe(true);
 
     const populationDraft = dbModule.getReviewScenario("sb_first_in_25bb_bba");
     expect(populationDraft?.trainerDefaultVisibility).toBe("HIDDEN_DEFAULT_INCLUDE_POPULATION_ONLY");
 
+    const beforeDecision = dbModule.buildAuditSummary().counts;
     const updated = dbModule.updateReviewScenarioOwnerDecision("sb_first_in_25bb_bba", {
       ownerDecision: "NEEDS_EDIT",
       ownerNotes: "Review small-pair thresholds.",
     });
+    const afterDecision = dbModule.buildAuditSummary().counts;
     expect(updated.ownerDecision).toBe("NEEDS_EDIT");
     expect(updated.ownerNotes).toContain("small-pair");
+    expect(afterDecision.charts).toBe(beforeDecision.charts);
+    expect(afterDecision.snapshots).toBe(beforeDecision.snapshots);
+    expect(afterDecision.drafts).toBe(beforeDecision.drafts);
+    expect(
+      (dbModule.exportFullBackup() as any).auditLog.some(
+        (row: any) =>
+          row.action_type === "review_scenario_owner_decision_changed" &&
+          row.node_key === "sb_first_in_25bb_bba"
+      )
+    ).toBe(true);
+
+    const qa = dbModule.getReviewScenarioQa();
+    expect(qa.scenarioCount).toBe(184);
+    expect(qa.emptyFieldCount).toBe(0);
+    expect(qa.invalidFacing3betRows).toBe(0);
+    expect(qa.sourceRequiredDrillableRows).toBe(0);
+    expect(qa.populationDraftVisibilityErrors).toBe(0);
+    expect(qa.strategyTruthTablesUnchanged).toBe(true);
+    expect(qa.warnings).toEqual([]);
 
     const backup = dbModule.exportFullBackup() as any;
     expect(backup.reviewScenarios).toHaveLength(184);
     dbModule.restoreFullBackup(backup);
     expect(dbModule.getReviewScenarioSummary().total).toBe(184);
     expect(dbModule.getReviewScenario("sb_first_in_25bb_bba")?.ownerDecision).toBe("NEEDS_EDIT");
+  });
+
+  it("rejects malformed review scenario packs", () => {
+    const pack = reviewScenarioModule.loadReviewPack();
+    expect(() =>
+      reviewScenarioModule.validateReviewPack({
+        ...pack,
+        scenario_records: [{ ...pack.scenario_records[0], display_name: "" }, ...pack.scenario_records.slice(1)],
+      })
+    ).toThrow(/blank required field display_name/);
+
+    expect(() =>
+      reviewScenarioModule.validateReviewPack({
+        ...pack,
+        scenario_records: [
+          pack.scenario_records[0],
+          { ...pack.scenario_records[1], node_key: pack.scenario_records[0].node_key },
+          ...pack.scenario_records.slice(2),
+        ],
+      })
+    ).toThrow(/Duplicate node_key/);
+
+    expect(() =>
+      reviewScenarioModule.validateReviewPack({
+        ...pack,
+        scenario_records: [
+          pack.scenario_records[0],
+          { ...pack.scenario_records[1], record_id: pack.scenario_records[0].record_id },
+          ...pack.scenario_records.slice(2),
+        ],
+      })
+    ).toThrow(/Duplicate record_id/);
   });
 });

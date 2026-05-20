@@ -34,6 +34,8 @@ export default function AuditV2() {
           <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="font-bold">Database</p>
             <p className="mt-1 break-all text-sm text-slate-600">{audit.dbPath}</p>
+            <p className="mt-3 font-bold">Checkpoint backup</p>
+            <p className="mt-1 break-all text-sm text-slate-600">{audit.checkpointBackupPath}</p>
           </section>
           <section className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -59,6 +61,30 @@ export default function AuditV2() {
                   <p className="mt-1 text-xl font-black">{String(value)}</p>
                 </div>
               ))}
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {[
+                ["Pending", audit.reviewScenarios?.byOwnerDecision?.PENDING ?? 0],
+                ["Review layer", audit.reviewScenarios?.byOwnerDecision?.APPROVED_FOR_REVIEW_LAYER ?? 0],
+                ["Needs source", audit.reviewScenarios?.byOwnerDecision?.NEEDS_SOURCE ?? 0],
+                ["Needs edit", audit.reviewScenarios?.byOwnerDecision?.NEEDS_EDIT ?? 0],
+                ["Rejected", audit.reviewScenarios?.byOwnerDecision?.REJECTED ?? 0],
+                ["Archived", audit.reviewScenarios?.byOwnerDecision?.ARCHIVED ?? 0],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-purple-200 bg-white p-3">
+                  <p className="text-xs font-bold uppercase text-purple-700">{label}</p>
+                  <p className="mt-1 text-xl font-black">{String(value)}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 rounded-xl border border-purple-200 bg-white p-3">
+              <p className="text-xs font-bold uppercase text-purple-700">Safety</p>
+              <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+                <p>Facing 3-bet drillable rows: <strong>{audit.reviewScenarioQa?.invalidFacing3betRows ?? "-"}</strong></p>
+                <p>Source-required drillable rows: <strong>{audit.reviewScenarioQa?.sourceRequiredDrillableRows ?? "-"}</strong></p>
+                <p>Empty required fields: <strong>{audit.reviewScenarioQa?.emptyFieldCount ?? "-"}</strong></p>
+                <p>Truth table mutation after import: <strong>{audit.reviewScenarioQa?.strategyTruthTablesUnchanged ? "false" : "unknown/true"}</strong></p>
+              </div>
             </div>
           </section>
           <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">

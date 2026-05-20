@@ -12,6 +12,7 @@ import {
   getDraft,
   getLocalDbPath,
   getReviewScenario,
+  getReviewScenarioQa,
   getReviewScenarioSummary,
   importApprovedPack,
   importPopulationDraftPack,
@@ -225,6 +226,13 @@ export function registerLocalStudyRoutes(app: express.Express) {
     "/api/local/strategy-review/summary",
     asyncRoute((_req, res) => {
       res.json({ ok: true, summary: getReviewScenarioSummary() });
+    })
+  );
+
+  app.get(
+    "/api/local/strategy-review/qa",
+    asyncRoute((_req, res) => {
+      res.json(getReviewScenarioQa());
     })
   );
 

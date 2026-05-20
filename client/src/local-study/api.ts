@@ -8,6 +8,7 @@ import type {
 } from "@shared/strategy-v2/model";
 import type {
   ReviewScenarioOwnerDecision,
+  StrategyReviewQaSummary,
   StrategyReviewScenario,
   StrategyReviewSummary,
 } from "@shared/strategy-review-scenarios";
@@ -173,6 +174,12 @@ export function listReviewScenarios(filters?: {
 export function getReviewScenarioSummary() {
   return request<{ ok: true; summary: StrategyReviewSummary }>(
     "/api/local/strategy-review/summary"
+  );
+}
+
+export function getReviewScenarioQa() {
+  return request<StrategyReviewQaSummary>(
+    "/api/local/strategy-review/qa"
   );
 }
 

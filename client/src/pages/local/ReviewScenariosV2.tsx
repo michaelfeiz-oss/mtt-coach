@@ -15,8 +15,94 @@ import {
 
 const ALL = "all";
 
+type Priority = "P0" | "P1" | "P2" | "P3";
+
 function unique(values: string[]) {
   return Array.from(new Set(values)).filter(Boolean).sort();
+}
+
+function reviewPriority(scenario: StrategyReviewScenario): Priority {
+  const p0Families = new Set(["facing_3bet", "facing_raise_call", "all_in_3bet", "all_in_4bet"]);
+  if (p0Families.has(scenario.spotFamily)) return "P0";
+  if (scenario.spotFamily === "facing_jam" && [40, 70].includes(scenario.stackBb)) return "P0";
+  if (
+    [
+      "sb_first_in_40bb_bba",
+      "sb_first_in_70bb_bba",
+      "facing_open_late_15bb_sb_vs_co_bba",
+      "bb_vs_sb_limp_40bb_bba",
+    ].includes(scenario.nodeKey)
+  ) {
+    return "P1";
+  }
+  if (
+    scenario.riskFlags.some(flag => /A9s|K9s|DISCONTINUITY|SMALL_PAIR|JAM_HEAVY/i.test(flag)) ||
+    scenario.reviewHandFocus.some(hand => ["A9s", "K9s"].includes(hand))
+  ) {
+    return "P1";
+  }
+  if (scenario.appStatus === "population_draft_seed" || scenario.sourceClass.includes("population")) return "P2";
+  return "P3";
+}
+
+function priorityTone(priority: Priority) {
+  if (priority === "P0") return "red";
+  if (priority === "P1") return "amber";
+  if (priority === "P2") return "purple";
+  return "green";
+}
+
+function exportDownload(filename: string, mimeType: string, body: string) {
+  const blob = new Blob([body], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvEscape(value: unknown) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function scenariosToCsv(scenarios: StrategyReviewScenario[]) {
+  const columns = [
+    "priority",
+    "nodeKey",
+    "displayName",
+    "stackBb",
+    "spotFamily",
+    "heroPosition",
+    "villainPosition",
+    "sourceClass",
+    "rangeCellsStatus",
+    "trainerDefaultVisibility",
+    "linkedChartExists",
+    "ownerDecision",
+    "ownerNotes",
+    "updatedAt",
+  ];
+  const rows = scenarios.map(scenario => [
+    reviewPriority(scenario),
+    scenario.nodeKey,
+    scenario.displayName,
+    scenario.stackBb,
+    scenario.spotFamily,
+    scenario.heroPosition,
+    scenario.villainPosition,
+    scenario.sourceClass,
+    scenario.rangeCellsStatus,
+    scenario.trainerDefaultVisibility,
+    scenario.linkedChartExists,
+    scenario.ownerDecision,
+    scenario.ownerNotes,
+    scenario.updatedAt,
+  ]);
+  return [columns, ...rows].map(row => row.map(csvEscape).join(",")).join("\n");
 }
 
 function Chip({ children, tone = "slate" }: { children: React.ReactNode; tone?: "slate" | "amber" | "green" | "red" | "purple" }) {
@@ -83,7 +169,9 @@ export default function ReviewScenariosV2() {
   const [scenarios, setScenarios] = useState<StrategyReviewScenario[]>([]);
   const [summary, setSummary] = useState<StrategyReviewSummary | null>(null);
   const [selectedNodeKey, setSelectedNodeKey] = useState<string | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [filters, setFilters] = useState({
     family: ALL,
     stack: ALL,
@@ -109,6 +197,7 @@ export default function ReviewScenariosV2() {
     ]);
     setScenarios(scenarioResult.scenarios);
     setSummary(summaryResult.summary);
+    setSelectedKeys(current => new Set(Array.from(current).filter(nodeKey => scenarioResult.scenarios.some(scenario => scenario.nodeKey === nodeKey))));
     setSelectedNodeKey(current =>
       current && scenarioResult.scenarios.some(scenario => scenario.nodeKey === current)
         ? current
@@ -121,6 +210,7 @@ export default function ReviewScenariosV2() {
   }, [filters]);
 
   const selected = scenarios.find(scenario => scenario.nodeKey === selectedNodeKey) ?? scenarios[0];
+  const selectedScenarios = scenarios.filter(scenario => selectedKeys.has(scenario.nodeKey));
   const options = useMemo(
     () => ({
       family: unique(scenarios.map(scenario => scenario.spotFamily)),
@@ -140,6 +230,33 @@ export default function ReviewScenariosV2() {
     await refresh();
   }
 
+  async function bulkUpdateOwnerDecision(ownerDecision: ReviewScenarioOwnerDecision) {
+    if (selectedScenarios.length === 0) return;
+    setBulkSaving(true);
+    try {
+      await Promise.all(
+        selectedScenarios.map(scenario =>
+          updateReviewScenarioOwnerDecision(scenario.nodeKey, {
+            ownerDecision,
+            ownerNotes: scenario.ownerNotes,
+          })
+        )
+      );
+      await refresh();
+    } finally {
+      setBulkSaving(false);
+    }
+  }
+
+  function toggleSelected(nodeKey: string) {
+    setSelectedKeys(current => {
+      const next = new Set(current);
+      if (next.has(nodeKey)) next.delete(nodeKey);
+      else next.add(nodeKey);
+      return next;
+    });
+  }
+
   return (
     <LocalShell>
       <PageHeader
@@ -150,6 +267,52 @@ export default function ReviewScenariosV2() {
 
       {error ? <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error}</div> : null}
       <SummaryCards summary={summary} />
+      <section className="mt-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-black">{selectedScenarios.length} selected</span>
+          {(["NEEDS_SOURCE", "NEEDS_EDIT", "APPROVED_FOR_REVIEW_LAYER", "REJECTED"] as ReviewScenarioOwnerDecision[]).map(decision => (
+            <button
+              key={decision}
+              type="button"
+              disabled={bulkSaving || selectedScenarios.length === 0}
+              onClick={() => bulkUpdateOwnerDecision(decision)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black disabled:opacity-50"
+            >
+              Mark {decision.replaceAll("_", " ").toLowerCase()}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={selectedScenarios.length === 0}
+            onClick={() => exportDownload("selected-review-scenarios.csv", "text/csv", scenariosToCsv(selectedScenarios))}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black disabled:opacity-50"
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
+            disabled={selectedScenarios.length === 0}
+            onClick={() => exportDownload("selected-review-scenarios.json", "application/json", JSON.stringify(selectedScenarios, null, 2))}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black disabled:opacity-50"
+          >
+            Export JSON
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedKeys(new Set(scenarios.map(scenario => scenario.nodeKey)))}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black"
+          >
+            Select filtered
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedKeys(new Set())}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black"
+          >
+            Clear
+          </button>
+        </div>
+      </section>
 
       <section className="mt-3 grid gap-3 lg:grid-cols-[20rem_minmax(0,1fr)]">
         <aside className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -165,25 +328,35 @@ export default function ReviewScenariosV2() {
 
           <div className="mt-3 max-h-[34rem] space-y-2 overflow-y-auto pr-1">
             {scenarios.map(scenario => (
-              <button
+              <div
                 key={scenario.nodeKey}
-                type="button"
-                onClick={() => setSelectedNodeKey(scenario.nodeKey)}
                 className={`w-full rounded-xl border p-3 text-left text-sm ${
                   selected?.nodeKey === scenario.nodeKey
                     ? "border-orange-300 bg-orange-50"
                     : "border-slate-200 bg-slate-50 hover:bg-white"
                 }`}
               >
-                <p className="truncate font-black">{scenario.displayName}</p>
-                <p className="mt-1 truncate font-mono text-[0.68rem] text-slate-500">{scenario.nodeKey}</p>
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedKeys.has(scenario.nodeKey)}
+                    onChange={() => toggleSelected(scenario.nodeKey)}
+                    className="mt-1 h-4 w-4"
+                    aria-label={`Select ${scenario.displayName}`}
+                  />
+                  <button type="button" onClick={() => setSelectedNodeKey(scenario.nodeKey)} className="min-w-0 flex-1 text-left">
+                    <p className="truncate font-black">{scenario.displayName}</p>
+                    <p className="mt-1 truncate font-mono text-[0.68rem] text-slate-500">{scenario.nodeKey}</p>
+                  </button>
+                </div>
                 <div className="mt-2 flex flex-wrap gap-1">
+                  <Chip tone={priorityTone(reviewPriority(scenario))}>{reviewPriority(scenario)}</Chip>
                   <Chip>{scenario.stackBb}bb</Chip>
                   <Chip tone={scenario.rangeCellsStatus === "NO_CHART_CELLS_IMPORTED" ? "red" : "green"}>
                     {scenario.rangeCellsStatus}
                   </Chip>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </aside>
@@ -196,6 +369,7 @@ export default function ReviewScenariosV2() {
                   <p className="text-xs font-bold uppercase text-slate-500">{selected.spotFamily}</p>
                   <h2 className="mt-1 text-2xl font-black">{selected.displayName}</h2>
                   <p className="mt-1 break-all font-mono text-xs text-slate-500">{selected.nodeKey}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">Updated {selected.updatedAt}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {selected.linkedChartExists ? (
@@ -212,14 +386,17 @@ export default function ReviewScenariosV2() {
               </div>
 
               <div className="mt-3 flex flex-wrap gap-1.5">
+                <Chip tone={priorityTone(reviewPriority(selected))}>{reviewPriority(selected)}</Chip>
                 <Chip>{selected.stackBb}bb</Chip>
                 <Chip>{selected.heroPosition} vs {selected.villainPosition}</Chip>
+                <Chip>{selected.appStatus}</Chip>
                 <Chip tone={selected.trainerDefaultVisibility === "VISIBLE_DEFAULT" ? "green" : "amber"}>
                   {selected.trainerDefaultVisibility}
                 </Chip>
                 <Chip tone={selected.rangeCellsStatus === "NO_CHART_CELLS_IMPORTED" ? "red" : "green"}>
                   {selected.rangeCellsStatus}
                 </Chip>
+                <Chip tone={selected.linkedChartExists ? "green" : "red"}>linked chart: {String(selected.linkedChartExists)}</Chip>
                 <Chip tone={selected.sourceClass.includes("quarantined") ? "red" : selected.sourceClass.includes("population") ? "amber" : "slate"}>
                   {selected.sourceClass}
                 </Chip>

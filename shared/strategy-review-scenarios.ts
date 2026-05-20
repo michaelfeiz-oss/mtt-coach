@@ -100,6 +100,25 @@ export interface StrategyReviewSummary {
   facing3betCount: number;
 }
 
+export interface StrategyReviewQaSummary {
+  scenarioCount: number;
+  familyCounts: Record<string, number>;
+  visibilityCounts: Record<string, number>;
+  ownerDecisionCounts: Record<string, number>;
+  sourceClassCounts: Record<string, number>;
+  rangeCellsStatusCounts: Record<string, number>;
+  linkedChartExistsCounts: Record<"true" | "false", number>;
+  emptyFieldCount: number;
+  invalidFacing3betRows: number;
+  sourceRequiredDrillableRows: number;
+  populationDraftVisibilityErrors: number;
+  strategyTruthTablesUnchanged: boolean;
+  strategyTruthTableCountsBefore: Record<string, number> | null;
+  strategyTruthTableCountsAfter: Record<string, number> | null;
+  lastImportedAt: string | null;
+  warnings: string[];
+}
+
 export function splitReviewList(value: string) {
   return value
     .split(",")

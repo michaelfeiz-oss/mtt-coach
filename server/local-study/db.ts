@@ -35,6 +35,7 @@ import {
   splitReviewList,
   type ReviewScenarioOwnerDecision,
   type StrategyReviewPack,
+  type StrategyReviewQaSummary,
   type StrategyReviewScenario,
   type StrategyReviewScenarioInput,
   type StrategyReviewSummary,
@@ -269,6 +270,36 @@ function mapReviewScenario(row: Row): StrategyReviewScenario {
     ownerNotes: String(row.owner_notes ?? ""),
     updatedAt: String(row.updated_at),
     linkedChartExists: Boolean(row.linked_chart_exists),
+  };
+}
+
+function getStrategyTruthTableCounts(database = getLocalDb()) {
+  return {
+    strategy_charts: Number(
+      (database.prepare("SELECT COUNT(*) AS count FROM strategy_charts").get() as { count: number }).count
+    ),
+    strategy_chart_snapshots: Number(
+      (database.prepare("SELECT COUNT(*) AS count FROM strategy_chart_snapshots").get() as { count: number }).count
+    ),
+    strategy_chart_drafts: Number(
+      (database.prepare("SELECT COUNT(*) AS count FROM strategy_chart_drafts").get() as { count: number }).count
+    ),
+  };
+}
+
+function getReviewScenarioImportAudit(database = getLocalDb()) {
+  const row = database
+    .prepare(
+      `SELECT * FROM strategy_chart_audit_log
+       WHERE action_type = 'review_scenarios_imported'
+       ORDER BY id DESC
+       LIMIT 1`
+    )
+    .get() as Row | undefined;
+  if (!row) return null;
+  return {
+    createdAt: String(row.created_at),
+    details: json<Record<string, unknown>>(String(row.details_json), {}),
   };
 }
 
@@ -930,17 +961,41 @@ export function updateReviewScenarioOwnerDecision(
   const ownerDecision = assertOwnerDecision(input.ownerDecision);
   const ownerNotes = input.ownerNotes?.trim() ?? "";
   const updatedAt = nowIso();
-  const result = getLocalDb()
-    .prepare(
-      `UPDATE strategy_review_scenarios
-       SET owner_decision = ?, owner_notes = ?, updated_at = ?
-       WHERE node_key = ?`
-    )
-    .run(ownerDecision, ownerNotes, updatedAt, normalizedNodeKey);
-  if (Number(result.changes ?? 0) === 0) {
-    throw new Error(`${normalizedNodeKey}: review scenario not found.`);
-  }
-  return getReviewScenario(normalizedNodeKey)!;
+  const database = getLocalDb();
+  return runTransaction(database, () => {
+    const previous = getReviewScenario(normalizedNodeKey);
+    if (!previous) {
+      throw new Error(`${normalizedNodeKey}: review scenario not found.`);
+    }
+    database
+      .prepare(
+        `UPDATE strategy_review_scenarios
+         SET owner_decision = ?, owner_notes = ?, updated_at = ?
+         WHERE node_key = ?`
+      )
+      .run(ownerDecision, ownerNotes, updatedAt, normalizedNodeKey);
+    database
+      .prepare(
+        `INSERT INTO strategy_chart_audit_log
+         (node_key, action_type, details_json, created_at, created_by)
+         VALUES (?, 'review_scenario_owner_decision_changed', ?, ?, 'owner')`
+      )
+      .run(
+        normalizedNodeKey,
+        JSON.stringify({
+          node_key: normalizedNodeKey,
+          previous_owner_decision: previous.ownerDecision,
+          next_owner_decision: ownerDecision,
+          previous_owner_notes: previous.ownerNotes,
+          next_owner_notes: ownerNotes,
+          timestamp: updatedAt,
+          actor: "owner",
+          source_route: "/strategy/review-scenarios",
+        }),
+        updatedAt
+      );
+    return getReviewScenario(normalizedNodeKey)!;
+  });
 }
 
 function requiredScenarioValue(record: StrategyReviewScenarioInput, field: keyof StrategyReviewScenarioInput) {
@@ -954,13 +1009,21 @@ function requiredScenarioValue(record: StrategyReviewScenarioInput, field: keyof
 export function importReviewScenarioPack(pack: StrategyReviewPack) {
   const validation = validateReviewPack(pack);
   const database = getLocalDb();
-  const before = {
-    charts: Number((database.prepare("SELECT COUNT(*) AS count FROM strategy_charts").get() as { count: number }).count),
-    snapshots: Number((database.prepare("SELECT COUNT(*) AS count FROM strategy_chart_snapshots").get() as { count: number }).count),
-    drafts: Number((database.prepare("SELECT COUNT(*) AS count FROM strategy_chart_drafts").get() as { count: number }).count),
-  };
+  const before = getStrategyTruthTableCounts(database);
 
   const imported = runTransaction(database, () => {
+    const existingDecisions = new Map<string, { ownerDecision: ReviewScenarioOwnerDecision; ownerNotes: string }>(
+      database
+        .prepare("SELECT node_key, owner_decision, owner_notes FROM strategy_review_scenarios")
+        .all()
+        .map((row: any) => [
+          String(row.node_key),
+          {
+            ownerDecision: assertOwnerDecision(String(row.owner_decision)),
+            ownerNotes: String(row.owner_notes ?? ""),
+          },
+        ])
+    );
     database.prepare("DELETE FROM strategy_review_scenarios").run();
     const insert = database.prepare(
       `INSERT INTO strategy_review_scenarios
@@ -971,13 +1034,15 @@ export function importReviewScenarioPack(pack: StrategyReviewPack) {
         population_strategy_summary, latest_research_alignment, simplified_live_rule,
         risk_flags, review_hand_focus, codex_action, codex_notes, field_integrity,
         created_date, owner_decision, owner_notes, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', '', ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const importedAt = nowIso();
     for (const record of pack.scenario_records) {
+      const normalizedNodeKey = normalizeNodeKey(requiredScenarioValue(record, "node_key"));
+      const previousDecision = existingDecisions.get(normalizedNodeKey);
       insert.run(
         requiredScenarioValue(record, "record_id"),
-        normalizeNodeKey(requiredScenarioValue(record, "node_key")),
+        normalizedNodeKey,
         requiredScenarioValue(record, "display_name"),
         Number(requiredScenarioValue(record, "stack_bb")),
         requiredScenarioValue(record, "spot_family"),
@@ -1003,20 +1068,30 @@ export function importReviewScenarioPack(pack: StrategyReviewPack) {
         requiredScenarioValue(record, "codex_notes"),
         requiredScenarioValue(record, "field_integrity"),
         requiredScenarioValue(record, "created_date"),
+        previousDecision?.ownerDecision ?? "PENDING",
+        previousDecision?.ownerNotes ?? "",
         importedAt
       );
     }
     return pack.scenario_records.length;
   });
 
-  const after = {
-    charts: Number((database.prepare("SELECT COUNT(*) AS count FROM strategy_charts").get() as { count: number }).count),
-    snapshots: Number((database.prepare("SELECT COUNT(*) AS count FROM strategy_chart_snapshots").get() as { count: number }).count),
-    drafts: Number((database.prepare("SELECT COUNT(*) AS count FROM strategy_chart_drafts").get() as { count: number }).count),
-  };
+  const after = getStrategyTruthTableCounts(database);
   if (JSON.stringify(before) !== JSON.stringify(after)) {
     throw new Error("Review scenario import changed strategy chart tables.");
   }
+  logAudit(
+    "__review_scenarios__",
+    "review_scenarios_imported",
+    {
+      imported,
+      scenarioRecordCount: pack.scenario_records.length,
+      strategyTruthTableCountsBefore: before,
+      strategyTruthTableCountsAfter: after,
+      strategyTruthTablesUnchanged: true,
+    },
+    "review-scenario-import"
+  );
 
   return { imported, validation, chartTableCountsBefore: before, chartTableCountsAfter: after };
 }
@@ -1040,6 +1115,113 @@ export function getReviewScenarioSummary(): StrategyReviewSummary {
     linkedChartCount: rows.filter(row => row.linkedChartExists).length,
     sourceRequiredCount: rows.filter(row => row.rangeCellsStatus === "NO_CHART_CELLS_IMPORTED").length,
     facing3betCount: rows.filter(row => row.spotFamily === "facing_3bet").length,
+  };
+}
+
+export function getReviewScenarioQa(): StrategyReviewQaSummary {
+  const database = getLocalDb();
+  const rows: StrategyReviewScenario[] = listReviewScenarios();
+  const requiredColumns = [
+    "record_id",
+    "node_key",
+    "display_name",
+    "stack_bb",
+    "spot_family",
+    "hero_position",
+    "villain_position",
+    "player_count",
+    "action_context",
+    "allowed_actions",
+    "app_status",
+    "source_class",
+    "source_confidence",
+    "range_cells_status",
+    "import_decision",
+    "trainer_default_visibility",
+    "owner_review_required",
+    "approval_target",
+    "population_strategy_summary",
+    "latest_research_alignment",
+    "simplified_live_rule",
+    "risk_flags",
+    "review_hand_focus",
+    "codex_action",
+    "codex_notes",
+    "field_integrity",
+    "created_date",
+    "owner_decision",
+    "updated_at",
+  ];
+  const emptyFieldCount = requiredColumns.reduce((total, column) => {
+    const row = database
+      .prepare(
+        `SELECT COUNT(*) AS count FROM strategy_review_scenarios
+         WHERE ${column} IS NULL OR TRIM(CAST(${column} AS TEXT)) = ''`
+      )
+      .get() as { count: number };
+    return total + Number(row.count);
+  }, 0);
+  const invalidFacing3betRows = Number(
+    (
+      database
+        .prepare(
+          `SELECT COUNT(*) AS count FROM strategy_review_scenarios
+           WHERE spot_family = 'facing_3bet'
+             AND (
+               range_cells_status != 'NO_CHART_CELLS_IMPORTED'
+               OR trainer_default_visibility != 'HIDDEN_DEFAULT_NOT_DRILLABLE'
+               OR node_key IN (SELECT node_key FROM strategy_charts)
+             )`
+        )
+        .get() as { count: number }
+    ).count
+  );
+  const sourceRequiredDrillableRows = rows.filter(
+    row =>
+      row.rangeCellsStatus === "NO_CHART_CELLS_IMPORTED" &&
+      row.trainerDefaultVisibility !== "HIDDEN_DEFAULT_NOT_DRILLABLE"
+  ).length;
+  const populationDraftVisibilityErrors = rows.filter(
+    row =>
+      row.appStatus === "population_draft_seed" &&
+      row.trainerDefaultVisibility !== "HIDDEN_DEFAULT_INCLUDE_POPULATION_ONLY"
+  ).length;
+  const latestImport = getReviewScenarioImportAudit(database);
+  const before = (latestImport?.details.strategyTruthTableCountsBefore ??
+    null) as Record<string, number> | null;
+  const after = (latestImport?.details.strategyTruthTableCountsAfter ??
+    null) as Record<string, number> | null;
+  const strategyTruthTablesUnchanged = Boolean(
+    before && after && JSON.stringify(before) === JSON.stringify(after)
+  );
+  const warnings: string[] = [];
+  if (rows.length !== 184) warnings.push(`Expected 184 review scenarios, found ${rows.length}.`);
+  if (emptyFieldCount > 0) warnings.push(`${emptyFieldCount} required review scenario fields are blank.`);
+  if (invalidFacing3betRows > 0) warnings.push(`${invalidFacing3betRows} facing-3bet rows violate quarantine rules.`);
+  if (sourceRequiredDrillableRows > 0) warnings.push(`${sourceRequiredDrillableRows} source-required rows are drillable.`);
+  if (populationDraftVisibilityErrors > 0) warnings.push(`${populationDraftVisibilityErrors} population draft rows are not opt-in only.`);
+  if (!strategyTruthTablesUnchanged) warnings.push("No matching review import audit proving strategy truth tables stayed unchanged.");
+
+  return {
+    scenarioCount: rows.length,
+    familyCounts: tally(rows.map(row => row.spotFamily)),
+    visibilityCounts: tally(rows.map(row => row.trainerDefaultVisibility)),
+    ownerDecisionCounts: tally(rows.map(row => row.ownerDecision)),
+    sourceClassCounts: tally(rows.map(row => row.sourceClass)),
+    rangeCellsStatusCounts: tally(rows.map(row => row.rangeCellsStatus)),
+    linkedChartExistsCounts: {
+      true: rows.filter(row => row.linkedChartExists).length,
+      false: rows.filter(row => !row.linkedChartExists).length,
+    },
+    emptyFieldCount,
+    invalidFacing3betRows,
+    sourceRequiredDrillableRows,
+    populationDraftVisibilityErrors,
+    strategyTruthTablesUnchanged,
+    strategyTruthTableCountsBefore: before,
+    strategyTruthTableCountsAfter: after,
+    lastImportedAt: latestImport?.createdAt ?? null,
+    warnings,
   };
 }
 
@@ -1551,9 +1733,15 @@ export function buildAuditSummary() {
 
   return {
     dbPath: DB_PATH,
+    checkpointBackupPath: path.join(
+      DATA_DIR,
+      "backups",
+      "mtt-study-backup-after-review-scenario-layer-2026-05-20.json"
+    ),
     counts,
     populationDrafts,
     reviewScenarios: getReviewScenarioSummary(),
+    reviewScenarioQa: getReviewScenarioQa(),
     notReviewed: charts.filter(chart => chart.status === "seed" || chart.status === "draft"),
   };
 }
