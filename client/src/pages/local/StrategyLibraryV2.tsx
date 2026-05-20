@@ -45,6 +45,7 @@ const SPOT_LABELS: Record<string, string> = {
   facing_open_early: "Facing early open",
   facing_open_middle: "Facing middle open",
   facing_open_late: "Facing late open",
+  facing_3bet: "Facing 3-bet",
   facing_jam: "Facing jam",
   sb_first_in: "SB first in",
   bb_vs_sb_open: "BB vs SB open",

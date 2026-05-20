@@ -74,6 +74,7 @@ export const SPOT_TYPES = [
   "facing_open_early",
   "facing_open_middle",
   "facing_open_late",
+  "facing_3bet",
   "facing_jam",
   "sb_first_in",
   "bb_vs_sb_open",
