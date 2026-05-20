@@ -6,6 +6,11 @@ import type {
   StrategyChartSnapshot,
   StrategyPack,
 } from "@shared/strategy-v2/model";
+import type {
+  ReviewScenarioOwnerDecision,
+  StrategyReviewScenario,
+  StrategyReviewSummary,
+} from "@shared/strategy-review-scenarios";
 
 export interface StudyNoteRecord {
   id: number;
@@ -144,6 +149,41 @@ export function restoreFullBackup(backup: unknown) {
 
 export function getAudit() {
   return request<{ ok: true; audit: unknown }>("/api/local/audit");
+}
+
+export function listReviewScenarios(filters?: {
+  family?: string;
+  stackBb?: string | number;
+  status?: string;
+  sourceClass?: string;
+  rangeCellsStatus?: string;
+  trainerVisibility?: string;
+  ownerDecision?: string;
+}) {
+  const params = new URLSearchParams();
+  Object.entries(filters ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== "all" && value !== "") params.set(key, String(value));
+  });
+  const query = params.toString();
+  return request<{ ok: true; scenarios: StrategyReviewScenario[] }>(
+    `/api/local/strategy-review/scenarios${query ? `?${query}` : ""}`
+  );
+}
+
+export function getReviewScenarioSummary() {
+  return request<{ ok: true; summary: StrategyReviewSummary }>(
+    "/api/local/strategy-review/summary"
+  );
+}
+
+export function updateReviewScenarioOwnerDecision(
+  nodeKey: string,
+  payload: { ownerDecision: ReviewScenarioOwnerDecision; ownerNotes?: string | null }
+) {
+  return request<{ ok: true; scenario: StrategyReviewScenario }>(
+    `/api/local/strategy-review/scenarios/${encodeURIComponent(nodeKey)}/owner-decision`,
+    { method: "PATCH", body: JSON.stringify(payload) }
+  );
 }
 
 export function getTrainerQuestion(filters?: {

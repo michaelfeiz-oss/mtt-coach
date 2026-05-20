@@ -9,6 +9,7 @@ import ChartEditorV2 from "./pages/local/ChartEditorV2";
 import ChartViewerV2 from "./pages/local/ChartViewerV2";
 import ImportExportV2 from "./pages/local/ImportExportV2";
 import LocalDashboard from "./pages/local/LocalDashboard";
+import ReviewScenariosV2 from "./pages/local/ReviewScenariosV2";
 import StrategyLibraryV2 from "./pages/local/StrategyLibraryV2";
 import StudyNotesV2 from "./pages/local/StudyNotesV2";
 import TrainerV2 from "./pages/local/TrainerV2";
@@ -18,6 +19,7 @@ function Router() {
     <Switch>
       <Route key="home" path="/" component={LocalDashboard} />
       <Route key="strategy-library" path="/strategy/library" component={StrategyLibraryV2} />
+      <Route key="strategy-review-scenarios" path="/strategy/review-scenarios" component={ReviewScenariosV2} />
       <Route key="strategy-chart" path="/strategy/chart/:nodeKey" component={ChartViewerV2} />
       <Route key="strategy-editor" path="/strategy/editor/:nodeKey" component={ChartEditorV2} />
       <Route key="strategy-trainer" path="/strategy/trainer" component={TrainerV2} />

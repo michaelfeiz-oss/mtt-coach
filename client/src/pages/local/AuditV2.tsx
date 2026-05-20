@@ -35,6 +35,32 @@ export default function AuditV2() {
             <p className="font-bold">Database</p>
             <p className="mt-1 break-all text-sm text-slate-600">{audit.dbPath}</p>
           </section>
+          <section className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="font-bold text-purple-950">Review scenario layer</p>
+                <p className="mt-1 text-sm text-purple-900">
+                  Metadata-only scenario records. These do not write chart cells or approve charts.
+                </p>
+              </div>
+              <Link className="rounded-xl bg-purple-700 px-3 py-2 text-sm font-black text-white" href="/strategy/review-scenarios">
+                Open Review
+              </Link>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+              {[
+                ["scenarios", audit.reviewScenarios?.total ?? 0],
+                ["source required", audit.reviewScenarios?.sourceRequiredCount ?? 0],
+                ["facing 3bet", audit.reviewScenarios?.facing3betCount ?? 0],
+                ["linked charts", audit.reviewScenarios?.linkedChartCount ?? 0],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-purple-200 bg-white p-3">
+                  <p className="text-xs font-bold uppercase text-purple-700">{label}</p>
+                  <p className="mt-1 text-xl font-black">{String(value)}</p>
+                </div>
+              ))}
+            </div>
+          </section>
           <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>

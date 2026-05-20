@@ -21,6 +21,7 @@ COPY patches ./patches
 RUN pnpm install --prod --frozen-lockfile
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server/strategy/seeds ./dist/seeds
+COPY --from=build /app/server/strategy/review-packs ./server/strategy/review-packs
 EXPOSE 3000
 VOLUME ["/data"]
 CMD ["node", "dist/index.js"]

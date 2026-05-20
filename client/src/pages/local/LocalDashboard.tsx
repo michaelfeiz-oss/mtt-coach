@@ -51,6 +51,10 @@ export default function LocalDashboard() {
           <p className="text-lg font-bold">Basic Drills</p>
           <p className="mt-1 text-sm text-slate-600">Practice random hands from resolved charts.</p>
         </Link>
+        <Link href="/strategy/review-scenarios" className="block h-full min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-orange-300">
+          <p className="text-lg font-bold">Scenario Review</p>
+          <p className="mt-1 text-sm text-slate-600">Review metadata, risk flags, and source-required spots.</p>
+        </Link>
         <Link href="/study/notes" className="block h-full min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-orange-300">
           <p className="text-lg font-bold">Study Notes</p>
           <p className="mt-1 text-sm text-slate-600">Capture chart review notes, heuristics, and drill reflections.</p>

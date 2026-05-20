@@ -10,10 +10,12 @@ process.env.LOCAL_SQLITE_PATH = path.join(tempDir, "test.sqlite");
 
 let dbModule: typeof import("./db");
 let seedImportModule: typeof import("./seedImport");
+let reviewScenarioModule: typeof import("./reviewScenarios");
 
 beforeAll(async () => {
   dbModule = await import("./db");
   seedImportModule = await import("./seedImport");
+  reviewScenarioModule = await import("./reviewScenarios");
 });
 
 describe("local strategy database", () => {
@@ -289,5 +291,48 @@ describe("local strategy database", () => {
 
     dbModule.deleteStudyNote(restored[0].id);
     expect(dbModule.listStudyNotes({ query: "defence review updated" })).toHaveLength(0);
+  });
+
+  it("imports review scenarios without mutating strategy chart tables", () => {
+    const pack = reviewScenarioModule.loadReviewPack();
+    const validation = reviewScenarioModule.validateReviewPack(pack);
+    expect(validation.scenarioRecords).toBe(184);
+
+    const before = dbModule.buildAuditSummary().counts;
+    const result = dbModule.importReviewScenarioPack(pack);
+    const after = dbModule.buildAuditSummary().counts;
+
+    expect(result.imported).toBe(184);
+    expect(after.charts).toBe(before.charts);
+    expect(after.snapshots).toBe(before.snapshots);
+    expect(after.drafts).toBe(before.drafts);
+
+    const summary = dbModule.getReviewScenarioSummary();
+    expect(summary.total).toBe(184);
+    expect(summary.byFamily.facing_3bet).toBe(60);
+    expect(summary.byVisibility.VISIBLE_DEFAULT).toBe(88);
+    expect(summary.byVisibility.HIDDEN_DEFAULT_INCLUDE_POPULATION_ONLY).toBe(12);
+    expect(summary.byVisibility.HIDDEN_DEFAULT_NOT_DRILLABLE).toBe(84);
+
+    const facing3bet = dbModule.getReviewScenario("facing_3bet_25bb_utg_vs_hj_bba");
+    expect(facing3bet?.rangeCellsStatus).toBe("NO_CHART_CELLS_IMPORTED");
+    expect(facing3bet?.trainerDefaultVisibility).toBe("HIDDEN_DEFAULT_NOT_DRILLABLE");
+    expect(facing3bet?.linkedChartExists).toBe(false);
+
+    const populationDraft = dbModule.getReviewScenario("sb_first_in_25bb_bba");
+    expect(populationDraft?.trainerDefaultVisibility).toBe("HIDDEN_DEFAULT_INCLUDE_POPULATION_ONLY");
+
+    const updated = dbModule.updateReviewScenarioOwnerDecision("sb_first_in_25bb_bba", {
+      ownerDecision: "NEEDS_EDIT",
+      ownerNotes: "Review small-pair thresholds.",
+    });
+    expect(updated.ownerDecision).toBe("NEEDS_EDIT");
+    expect(updated.ownerNotes).toContain("small-pair");
+
+    const backup = dbModule.exportFullBackup() as any;
+    expect(backup.reviewScenarios).toHaveLength(184);
+    dbModule.restoreFullBackup(backup);
+    expect(dbModule.getReviewScenarioSummary().total).toBe(184);
+    expect(dbModule.getReviewScenario("sb_first_in_25bb_bba")?.ownerDecision).toBe("NEEDS_EDIT");
   });
 });

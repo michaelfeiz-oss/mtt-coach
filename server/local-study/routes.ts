@@ -11,9 +11,13 @@ import {
   getChart,
   getDraft,
   getLocalDbPath,
+  getReviewScenario,
+  getReviewScenarioSummary,
   importApprovedPack,
   importPopulationDraftPack,
+  importReviewScenarioPack,
   listCharts,
+  listReviewScenarios,
   listSnapshots,
   listStudyNotes,
   resolveChart,
@@ -21,8 +25,10 @@ import {
   revertToSnapshot,
   saveDraft,
   updateStudyNote,
+  updateReviewScenarioOwnerDecision,
 } from "./db";
 import { importTypedSeedsIntoLocalDb } from "./seedImport";
+import { loadReviewPack } from "./reviewScenarios";
 import { toValidationProblem } from "../../shared/strategy-v2/validation";
 import type { ActionToken, ChartCells } from "../../shared/strategy-v2/model";
 
@@ -192,6 +198,62 @@ export function registerLocalStudyRoutes(app: express.Express) {
     "/api/local/audit",
     asyncRoute((_req, res) => {
       res.json({ ok: true, audit: buildAuditSummary() });
+    })
+  );
+
+  app.get(
+    "/api/local/strategy-review/scenarios",
+    asyncRoute((req, res) => {
+      res.json({
+        ok: true,
+        scenarios: listReviewScenarios({
+          spotFamily: req.query.family ? String(req.query.family) : undefined,
+          stackBb: req.query.stackBb ? Number(req.query.stackBb) : undefined,
+          appStatus: req.query.status ? String(req.query.status) : undefined,
+          sourceClass: req.query.sourceClass ? String(req.query.sourceClass) : undefined,
+          rangeCellsStatus: req.query.rangeCellsStatus ? String(req.query.rangeCellsStatus) : undefined,
+          trainerDefaultVisibility: req.query.trainerVisibility
+            ? String(req.query.trainerVisibility)
+            : undefined,
+          ownerDecision: req.query.ownerDecision ? String(req.query.ownerDecision) : undefined,
+        }),
+      });
+    })
+  );
+
+  app.get(
+    "/api/local/strategy-review/summary",
+    asyncRoute((_req, res) => {
+      res.json({ ok: true, summary: getReviewScenarioSummary() });
+    })
+  );
+
+  app.post(
+    "/api/local/strategy-review/import",
+    asyncRoute((_req, res) => {
+      res.json({ ok: true, ...importReviewScenarioPack(loadReviewPack()) });
+    })
+  );
+
+  app.get(
+    "/api/local/strategy-review/scenarios/:nodeKey",
+    asyncRoute((req, res) => {
+      const scenario = getReviewScenario(req.params.nodeKey);
+      if (!scenario) {
+        res.status(404).json({ ok: false, error: { message: "Review scenario not found" } });
+        return;
+      }
+      res.json({ ok: true, scenario });
+    })
+  );
+
+  app.patch(
+    "/api/local/strategy-review/scenarios/:nodeKey/owner-decision",
+    asyncRoute((req, res) => {
+      res.json({
+        ok: true,
+        scenario: updateReviewScenarioOwnerDecision(req.params.nodeKey, req.body),
+      });
     })
   );
 
