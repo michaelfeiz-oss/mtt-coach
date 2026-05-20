@@ -166,6 +166,84 @@
   }
 }
 
+@media print {
+  @page {
+    size: A5 portrait;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    width: 148mm;
+    min-height: 210mm;
+    background: #ffffff !important;
+  }
+
+  body {
+    margin: 0 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .printable-chart,
+  .printable-chart * {
+    visibility: visible !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .printable-chart {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 132mm !important;
+    max-width: 132mm !important;
+    min-width: 132mm !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .printable-chart .print-chart-title {
+    display: block !important;
+  }
+
+  .printable-chart .chart-grid-shell {
+    width: fit-content !important;
+    max-width: 132mm !important;
+    overflow: visible !important;
+    border-radius: 3mm !important;
+    padding: 1.5mm !important;
+    background: #eef2f7 !important;
+  }
+
+  .printable-chart .chart-grid-inner {
+    width: fit-content !important;
+    grid-template-columns: repeat(13, 9.35mm) !important;
+    gap: 0.55mm !important;
+  }
+
+  .printable-chart .chart-grid-cell {
+    width: 9.35mm !important;
+    height: 9.35mm !important;
+    min-width: 9.35mm !important;
+    min-height: 9.35mm !important;
+    border-radius: 1.6mm !important;
+    border-width: 0.35mm !important;
+    box-shadow: none !important;
+  }
+
+  .printable-chart .chart-grid-cell span {
+    font-size: 7.4pt !important;
+    line-height: 1 !important;
+  }
+}
+
 @layer components {
   .app-shell {
     background-color: var(--bg);

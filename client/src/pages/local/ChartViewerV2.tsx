@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Edit3, Printer } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { getChart } from "@/local-study/api";
 import { ActionLegend, ChartGrid } from "@/local-study/ChartGrid";
@@ -33,12 +34,23 @@ export default function ChartViewerV2() {
         body={chart ? `${chart.nodeKey} / active source: ${resolved?.source ?? "missing"}` : undefined}
         action={
           chart ? (
-            <Link
-              href={`/strategy/editor/${chart.nodeKey}`}
-              className="rounded-2xl bg-orange-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200"
-            >
-              Edit Chart
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="print:hidden inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm hover:border-orange-200 hover:bg-orange-50"
+              >
+                <Printer className="h-4 w-4" />
+                Print
+              </button>
+              <Link
+                href={`/strategy/editor/${chart.nodeKey}`}
+                className="print:hidden inline-flex min-h-11 items-center gap-2 rounded-2xl bg-orange-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200"
+              >
+                <Edit3 className="h-4 w-4" />
+                Edit Chart
+              </Link>
+            </div>
           ) : null
         }
       />
@@ -53,7 +65,11 @@ export default function ChartViewerV2() {
       ) : null}
 
       {chart && snapshot ? (
-        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="printable-chart min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="print-chart-title mb-3 hidden">
+            <h2 className="text-2xl font-black tracking-tight">{chart.title}</h2>
+            <p className="mt-1 text-xs font-bold text-slate-500">{chart.nodeKey}</p>
+          </div>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-2 text-xs font-bold">
               <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-800">{chart.stackBb}bb</span>

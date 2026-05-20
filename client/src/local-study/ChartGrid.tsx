@@ -84,12 +84,12 @@ export function ChartGrid({
 
   return (
     <div
-      className={`overflow-x-auto bg-slate-100 ${isCompact ? "rounded-xl p-1" : "rounded-2xl p-2"} ${
+      className={`chart-grid-shell overflow-x-auto bg-slate-100 ${isCompact ? "rounded-xl p-1" : "rounded-2xl p-2"} ${
         wrap ? "w-fit max-w-full" : "w-full"
       }`}
     >
       <div
-        className={`mx-auto grid w-max ${isCompact ? "gap-0.5" : "gap-1"}`}
+        className={`chart-grid-inner mx-auto grid w-max ${isCompact ? "gap-0.5" : "gap-1"}`}
         style={{
           gridTemplateColumns: fixedCellSizePx
             ? `repeat(13, ${fixedCellSizePx}px)`
@@ -118,7 +118,7 @@ export function ChartGrid({
               <div
                 key={hand}
                 title={`${hand}: ${label}`}
-                className={`aspect-square border text-center shadow-sm ${ACTION_CLASS[action]} flex items-center justify-center ${
+                className={`chart-grid-cell aspect-square border text-center shadow-sm ${ACTION_CLASS[action]} flex items-center justify-center ${
                   isCompact ? "rounded-md" : "rounded-lg"
                 } ${highlightClass}`}
               >
@@ -134,7 +134,7 @@ export function ChartGrid({
               title={`${hand}: ${label}`}
               aria-pressed={isSelected}
               onClick={() => onToggleHand(hand)}
-              className={`aspect-square border text-center shadow-sm transition ${ACTION_CLASS[action]} ${
+              className={`chart-grid-cell aspect-square border text-center shadow-sm transition ${ACTION_CLASS[action]} ${
                 isCompact ? "rounded-md" : "rounded-lg"
               } ${
                 isSelected ? "ring-4 ring-amber-300 ring-offset-1" : ""

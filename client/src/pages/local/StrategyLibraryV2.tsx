@@ -1,4 +1,4 @@
-import { Edit3 } from "lucide-react";
+import { Edit3, Printer } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -208,6 +208,20 @@ function ChartCountBadge({ chartsCount, approvedCount }: { chartsCount: number; 
   );
 }
 
+function PrintChartButton() {
+  return (
+    <button
+      type="button"
+      onClick={() => window.print()}
+      className="print:hidden inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm hover:border-orange-200 hover:bg-orange-50"
+      title="Print this chart on A5 paper"
+    >
+      <Printer className="h-3.5 w-3.5" />
+      Print
+    </button>
+  );
+}
+
 function SingleMatchLabel({
   chart,
   chartsCount,
@@ -282,7 +296,7 @@ function ChartPreview({
   }
 
   return (
-    <section className="w-full max-w-[34.25rem] min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+    <section className="printable-chart w-full max-w-[34.25rem] min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
       <div className="mb-1.5 flex min-h-[4.75rem] flex-col gap-1.5">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
@@ -294,13 +308,16 @@ function ChartPreview({
               {isPopulationDraft(resolved) ? <ReviewBeforeApprovalBadge /> : null}
             </div>
           </div>
-          <Link
-            href={`/strategy/editor/${chart.nodeKey}`}
-            className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-2.5 py-1 text-xs font-bold text-white shadow-lg shadow-orange-200"
-          >
-            <Edit3 className="h-3.5 w-3.5" />
-            Edit Chart
-          </Link>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <PrintChartButton />
+            <Link
+              href={`/strategy/editor/${chart.nodeKey}`}
+              className="print:hidden inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-600 px-2.5 py-1 text-xs font-bold text-white shadow-lg shadow-orange-200"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              Edit Chart
+            </Link>
+          </div>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-1 text-[0.68rem] font-bold">
           <span className="shrink-0 rounded-full bg-orange-100 px-2.5 py-0.5 text-orange-800">{chart.stackBb}bb</span>
