@@ -16,6 +16,10 @@ function exactRows(primaryAction: StrategyNodeRangeRow["action"]) {
   }));
 }
 
+function seedAction(chart: (typeof SEED_CHARTS)[number], handCode: string) {
+  return chart.actions.find(action => action.handCode === handCode)?.primaryAction;
+}
+
 describe("typed strategy seed data", () => {
   it("loads the reviewed starter RFI, in-position open defence, extra early/middle IP defence, blind defence versus early/middle opens, late-open, blind-vs-blind, and facing-jam packs from the typed seed files", () => {
     expect(SEED_CHARTS.length).toBe(88);
@@ -308,6 +312,43 @@ describe("typed strategy seed data", () => {
     expect(bbVsHjOpen70?.actions.find(action => action.handCode === "T8s")?.primaryAction).toBe(
       "CALL"
     );
+  });
+
+  it("does not contain obvious late-open blind-defence stronger-hand fold gaps", () => {
+    const monotonicChecks = [
+      { target: "ATs", weakerPlayable: "A9s" },
+      { target: "KJs", weakerPlayable: "KTs" },
+      { target: "QJs", weakerPlayable: "QTs" },
+      { target: "JTs", weakerPlayable: "J9s" },
+      { target: "T9s", weakerPlayable: "98s" },
+    ];
+
+    const findings = SEED_CHARTS.flatMap(chart => {
+      const shouldAudit =
+        chart.spotGroup === "facing_open_late" &&
+        ["SB", "BB"].includes(chart.heroPosition) &&
+        chart.villainPosition === "BTN" &&
+        chart.stackDepth >= 40;
+
+      if (!shouldAudit) return [];
+
+      return monotonicChecks
+        .filter(({ target, weakerPlayable }) => {
+          const targetAction = seedAction(chart, target);
+          const weakerAction = seedAction(chart, weakerPlayable);
+
+          return targetAction === "FOLD" && weakerAction !== "FOLD";
+        })
+        .map(({ target, weakerPlayable }) => ({
+          chart: chart.nodeKey,
+          target,
+          targetAction: seedAction(chart, target),
+          weakerPlayable,
+          weakerAction: seedAction(chart, weakerPlayable),
+        }));
+    });
+
+    expect(findings).toEqual([]);
   });
 
   it("builds unreviewed charts from parsed typed seed nodes", () => {

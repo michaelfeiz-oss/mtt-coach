@@ -1,5 +1,5 @@
 version,stackBucket,scenarioFamily,heroPosition,villainPosition,villainGroup,action,rangeNotation,frequencyBucket,priority,notes,reviewed
 population-v1b-clean,70,facing_open_late,BB,BTN,late,three_bet,"99+,AJs+,KQs,AQo+,A5s-A2s,KTs,QTs,JTs",mostly,30,70bb BB vs BTN 3bet. Adds playable blockers/suited broadways.,true
-population-v1b-clean,70,facing_open_late,BB,BTN,late,call,"22-88,A9s-A6s,K2s-K9s,Q5s-Q9s,J6s-J9s,T6s-T9s,96s+,85s+,75s+,64s+,54s,A2o-AJo,K7o-KJo,Q8o-QJo,J8o+,T8o+,98o,87o",mostly,20,"70bb BB vs BTN call defence. Wider due deeper playability, still not solver junk.",true
+population-v1b-clean,70,facing_open_late,BB,BTN,late,call,"22-88,ATs,A9s-A6s,KJs,K2s-K9s,QJs,Q5s-Q9s,J6s-J9s,T6s-T9s,96s+,85s+,75s+,64s+,54s,A2o-AJo,K7o-KJo,Q8o-QJo,J8o+,T8o+,98o,87o",mostly,20,"70bb BB vs BTN call defence. Wider due deeper playability, still not solver junk.",true
 population-v1b-clean,70,facing_open_late,BB,CO,late,three_bet,"TT+,AQs+,AKo,A5s-A4s,KQs",mostly,30,70bb BB vs CO 3bet. Linear and disciplined.,true
 population-v1b-clean,70,facing_open_late,BB,CO,late,call,"22-99,AJs-A6s,A3s-A2s,K9s-KJs,Q9s-QJs,J8s-JTs,T8s+,98s,87s,76s,65s,54s,AQo-ATo,KQo,KJo,QJo,JTo,T9o",mostly,20,70bb BB vs CO call defence. A4s-A5s removed due 3bet overlap.,true
